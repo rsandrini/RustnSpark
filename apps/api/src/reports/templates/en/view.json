@@ -11,11 +11,11 @@
     "success": "Mission accomplished",
     "partial_failure": "Partial success",
     "failed": "Mission failed",
-    "adrift": "Ship adrift"
+    "adrift": "Ship adrift — out of fuel"
   },
   "legStatuses": {
     "completed": "completed",
-    "adrift": "adrift",
+    "adrift": "out of fuel",
     "escort_destroyed": "escort lost",
     "motor_abort": "engine failure",
     "defeat_failed": "defeated"
@@ -33,6 +33,7 @@
     "wear": "-{value} condition",
     "loot": "+{value} × {name}",
     "distance": "route {value}",
+    "fuel": "only {value} fuel left",
     "none": "—"
   }
 }

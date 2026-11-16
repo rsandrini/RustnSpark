@@ -222,7 +222,7 @@ describe('S9.3 — narrative view', () => {
     expect(chapters.map((chapter) => chapter.leg)).toEqual([0, 1, 2]);
     expect(chapters.map((chapter) => chapter.header.text)).toEqual([
       'Leg 1 — completed',
-      'Leg 2 — adrift',
+      'Leg 2 — out of fuel',
       'Leg 3 — completed',
     ]);
     expect(chapters[0]!.lines.map((line) => line.text)).toEqual([desc(0), desc(1)]);
@@ -243,7 +243,7 @@ describe('S9.3 — narrative view', () => {
     const chapters = renderNarrative(LOG, 'pt-BR', NAMES);
     expect(chapters.map((chapter) => chapter.header.text)).toEqual([
       'Perna 1 — concluída',
-      'Perna 2 — à deriva',
+      'Perna 2 — sem combustível',
       'Perna 3 — concluída',
     ]);
     expect(chapters[0]!.lines[0]!.text).toBe(desc(0, 'pt-BR'));

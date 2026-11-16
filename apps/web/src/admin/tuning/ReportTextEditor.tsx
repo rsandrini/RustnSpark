@@ -15,6 +15,7 @@ const SAMPLE: Record<string, string> = {
   condition: '62',
   conditionLost: '14',
   fuelLost: '8',
+  fuel: '120',
   shield: '30',
   armor: '12',
   hull: '5',

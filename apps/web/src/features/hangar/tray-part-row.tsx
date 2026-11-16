@@ -21,6 +21,8 @@ import {
 
 export interface TrayPartRowProps {
   part: InventoryItem;
+  /** The part has just landed in the list: it grows into place. */
+  arrived?: boolean;
   name: string;
   disabled: boolean;
   selected: boolean;
@@ -37,6 +39,7 @@ export function TrayPartRow({
   name,
   disabled,
   selected,
+  arrived = false,
   onSelect,
   onPointerDragStart,
   compare,
@@ -47,7 +50,10 @@ export function TrayPartRow({
   const { ref: cardRef, style: cardStyle } = useClampedPosition(anchor);
 
   return (
-    <div className="part-btn-wrap">
+    <div
+      className={`part-btn-wrap${arrived ? ' arrived' : ''}`}
+      data-tour={part.catalog.partClass === 'ENGINE' ? 'part_engine' : undefined}
+    >
       <button
         type="button"
         className={`part-btn rarity-${part.rarity.toLowerCase()}${part.broken ? ' broken' : ''}${selected ? ' on' : ''}`}

@@ -21,6 +21,10 @@ export type Moment = `prologue_${string}`;
 export const enterOf = (step: string): Moment => `prologue_${step}_enter`;
 export const doneOf = (step: string): Moment => `prologue_${step}_done`;
 export const legOf = (leg: number): Moment => `prologue_race_leg_${leg}`;
+/** The final run's radio: the pirates strike on its second leg. */
+/** The final run's radar: the friend sees movement ahead, halfway through the leg the pirates strike on. */
+export const radarOf = (): Moment => 'prologue_final-run_radar';
+export const finalLegOf = (leg: number): Moment => `prologue_final-run_leg_${leg}`;
 
 /**
  * The scenes hung on a moment, in the order the Admin gave them, from every guide. A moment with no scene gives an

@@ -279,6 +279,8 @@ export type DialoguePosition = z.infer<typeof DialoguePositionSchema>;
 /** The screen elements a node may point at (each carries a `data-tour` attribute); a missing one centres the popup. */
 export const DialogueAnchorSchema = z.enum([
   'ship_grid',
+  'parts_tray',
+  'part_engine',
   'auto_layout',
   'ship_tab',
   'port_tab',
@@ -322,6 +324,10 @@ export const DialogueNodeSchema = z.object({
   anchor: DialogueAnchorSchema.nullable(),
   /** A blocking node dims the screen and waits for the pilot; the others leave the game usable. */
   blocking: z.boolean(),
+  /** Seconds the popup waits, after its moment starts, before it opens (0 or absent = at once): the pilot sees the screen first. */
+  openDelay: z.number().min(0).max(30).optional(),
+  /** Seconds after the popup opens before the screen dims (0 or absent = dims with the popup). Only a blocking node dims. */
+  dimDelay: z.number().min(0).max(30).optional(),
   /** The node after this one when there are no choices; null ends the scene. */
   next: z.string().nullable(),
   choices: z.array(DialogueChoiceSchema),
@@ -385,6 +391,8 @@ export const PrologueResponseSchema = z.object({
   moduleCost: z.number().int(),
   /** What the hull upgrade at the second stop costs. */
   upgradeCost: z.number().int(),
+  /** What the repair at the port (before the hull upgrade) costs. */
+  repairCost: z.number().int().optional(),
   /** The three payouts (race, job one, job two) that add up to `startCredits - purse + refuelCost + moduleCost + upgradeCost`. */
   payouts: z.array(z.number().int()),
   /** The free faction guides and their editable dialogue scenes. */
@@ -1225,6 +1233,8 @@ export const MarketListingSchema = z.object({
   price: z.number(),
   /** The part's generated connector cells — what a buyer receives; empty = no layout. */
   connectors: z.array(ConnectorCellSchema),
+  /** Set when the part is on the shelf but cannot be bought now (the opening shows the other job's module like this). */
+  blockedReason: LocalizedTextSchema.optional(),
 });
 export type MarketListing = z.infer<typeof MarketListingSchema>;
 

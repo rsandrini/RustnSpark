@@ -14,7 +14,7 @@ import { usePrologueMode } from '../prologue/prologue-mode';
 import { ShipNeedsList, isShield, lackingParts, useDismissedNeeds } from './ship-needs';
 import { useNotice, type FeedbackOptions } from '../../ui/feedback';
 import { rankReplaceCandidates, type InstalledPartForCompare } from '../parts/part-compare-match';
-import type { PartCompareContext } from '../parts/part-detail';
+import { PartDetail, type PartCompareContext } from '../parts/part-detail';
 import { classOfGroup, matchesPartGroup, partGroupOf } from '../parts/part-group';
 
 interface ConfirmBuy {
@@ -425,7 +425,7 @@ export function MarketPanel({
                 <button
                   type="button"
                   className="btn primary"
-                  disabled={!affordable}
+                  disabled={!affordable || listing.blockedReason !== undefined}
                   onClick={() => {
                     setNotice(null);
                     setConfirm({
@@ -436,9 +436,11 @@ export function MarketPanel({
                     });
                   }}
                 >
-                  {affordable
-                    ? t('port.buy')
-                    : t('port.needMore', { amount: money(listing.price - wallet) })}
+                  {listing.blockedReason !== undefined
+                    ? pickLocalized(listing.blockedReason, i18n.language)
+                    : affordable
+                      ? t('port.buy')
+                      : t('port.needMore', { amount: money(listing.price - wallet) })}
                 </button>
               }
             />
@@ -471,7 +473,22 @@ export function MarketPanel({
                 </figcaption>
               </figure>
             )}
-            <p>{t('port.balanceAfter', { balance: money(wallet - confirm.price) })}</p>
+            {/* what buying it does to the ship: each stat as it is now and as it would be, so the pilot sees it before paying */}
+            {confirm.listing !== undefined && (
+              <div className="buy-diff" data-testid="buy-diff">
+                <PartDetail
+                  part={confirm.listing}
+                  compare={compareContextFor(confirm.listing)}
+                  hideMeta
+                  gainsOnly
+                />
+              </div>
+            )}
+            <p>
+              {t('port.balanceAfter', {
+                balance: new Intl.NumberFormat(i18n.language).format(wallet - confirm.price),
+              })}
+            </p>
             {confirm.hint !== undefined && <p className="sub">{confirm.hint}</p>}
             {insufficient && <p className="error-text">{t('port.insufficient')}</p>}
             <button

@@ -5,7 +5,13 @@ import type {
   ReportResponse,
   ReportStats,
 } from '../../../api/generated';
-import { RACE_FRIEND_LEGS, RACE_PILOT_LEGS, routeOf, SANDBOX_WORLD } from './sandbox-world';
+import {
+  RACE_ENGINE_FAIL_LEG,
+  RACE_FRIEND_LEGS,
+  RACE_PILOT_LEGS,
+  routeOf,
+  SANDBOX_WORLD,
+} from './sandbox-world';
 import type { Sandbox, SandboxResult } from './sandbox-state';
 
 /*
@@ -27,19 +33,31 @@ function placeName(sandbox: Sandbox, id: string, say: Say): string {
 
 function statsOf(sandbox: Sandbox, result: SandboxResult): ReportStats {
   const distance = result.job.routes.reduce((sum, id) => sum + (routeOf(id)?.distance ?? 0), 0);
-  const friend = sandbox.config.friendName ?? 'Kite';
+  const friend = sandbox.config.friendName ?? 'Bob';
   const total = (legs: readonly number[]) => legs.reduce((sum, seconds) => sum + seconds, 0);
   const lost = result.outcome === 'failure';
+  const hurt = result.damage ?? [];
   return {
     credits: result.paid,
     balanceAfter: null,
     legs: result.job.routes.length,
     distance,
-    fights: { won: 0, lost: lost ? 1 : 0, escaped: 0, drawn: 0, pvp: 0 },
-    damage: { shield: 0, armor: 0, hull: lost ? 40 : 0 },
+    // the pirates are active on the second run: the flight slips away from them, but not unhurt
+    fights: { won: 0, lost: lost ? 1 : 0, escaped: hurt.length > 0 ? 1 : 0, drawn: 0, pvp: 0 },
+    damage: {
+      shield: 0,
+      armor: 0,
+      hull: lost ? 40 : hurt.reduce((sum, part) => sum + (part.before - part.after), 0),
+    },
     travelWear: { points: 0, parts: 0 },
     hasShield: false,
-    partsDamage: [],
+    partsDamage: hurt.map((part) => ({
+      partId: part.partId,
+      partType: part.partType,
+      name: part.name.en,
+      before: part.before,
+      after: part.after,
+    })),
     partFailures: 0,
     fuelLost: 0,
     found: [],
@@ -70,7 +88,7 @@ function statsOf(sandbox: Sandbox, result: SandboxResult): ReportStats {
                     you: true,
                     legSeconds: PILOT_LEGS[leg] ?? 0,
                     totalSeconds: you,
-                    trouble: false,
+                    trouble: leg === RACE_ENGINE_FAIL_LEG,
                   },
                 ].sort((a, b) => a.totalSeconds - b.totalSeconds),
               };
@@ -83,7 +101,7 @@ function statsOf(sandbox: Sandbox, result: SandboxResult): ReportStats {
 
 function summaryLines(sandbox: Sandbox, result: SandboxResult, say: Say) {
   const to = placeName(sandbox, result.job.destination, say);
-  const friend = sandbox.config.friendName ?? 'Kite';
+  const friend = sandbox.config.friendName ?? 'Bob';
   if (result.outcome === 'failure') {
     return [
       line(
@@ -111,6 +129,17 @@ function summaryLines(sandbox: Sandbox, result: SandboxResult, say: Say) {
       line(say(`Prize: ${result.paid} credits.`, `Prêmio: ${result.paid} créditos.`)),
     ];
   }
+  if ((result.damage ?? []).length > 0) {
+    return [
+      line(
+        say(
+          `Pirates hit the flight on the way to ${to}. It got through, but the ship took damage.`,
+          `Piratas atacaram o voo a caminho de ${to}. Ele passou, mas a nave sofreu danos.`,
+        ),
+      ),
+      line(say(`Paid: ${result.paid} credits.`, `Pago: ${result.paid} créditos.`)),
+    ];
+  }
   return [
     line(say(`The flight reached ${to} without trouble.`, `O voo chegou a ${to} sem problemas.`)),
     line(say(`Paid: ${result.paid} credits.`, `Pago: ${result.paid} créditos.`)),
@@ -131,6 +160,18 @@ function narrativeOf(sandbox: Sandbox, result: SandboxResult, say: Say): Narrati
         type: 'transit',
       },
     ];
+    if (result.job.kind === 'race' && index === RACE_ENGINE_FAIL_LEG) {
+      lines.push({
+        ...line(
+          say(
+            'The engine coughed and lost power. The ship limped on, and the friend pulled ahead for good.',
+            'O motor engasgou e perdeu potência. A nave seguiu mancando, e o amigo disparou na frente.',
+          ),
+        ),
+        category: 'wear',
+        type: 'part_failure',
+      });
+    }
     if (lost && last) {
       lines.push({
         ...line(
@@ -142,6 +183,29 @@ function narrativeOf(sandbox: Sandbox, result: SandboxResult, say: Say): Narrati
         category: 'combat',
         type: 'combat_loss',
       });
+    } else if (last && (result.damage ?? []).length > 0) {
+      lines.push(
+        {
+          ...line(
+            say(
+              'Pirates came out of the dark and opened fire. The ship slipped away, but parts of it are badly worn.',
+              'Piratas surgiram do escuro e abriram fogo. A nave escapou, mas partes dela estão muito desgastadas.',
+            ),
+          ),
+          category: 'combat',
+          type: 'combat_escape',
+        },
+        {
+          ...line(
+            say(
+              `Docked at ${placeName(sandbox, result.job.destination, say)}. ${result.paid} credits paid.`,
+              `Atracou em ${placeName(sandbox, result.job.destination, say)}. ${result.paid} créditos pagos.`,
+            ),
+          ),
+          category: 'payment',
+          type: 'payment',
+        },
+      );
     } else if (last) {
       lines.push({
         ...line(

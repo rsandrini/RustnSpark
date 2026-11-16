@@ -172,6 +172,7 @@ export type ConfigKey =
   | 'onboarding.prologue_refuel_cost'
   | 'onboarding.prologue_module_cost'
   | 'onboarding.prologue_upgrade_cost'
+  | 'onboarding.prologue_repair_cost'
   | 'parts.replacement_condition'
   | 'parts.replacement_types'
   | 'parts.starter_condition'
@@ -688,6 +689,8 @@ export type GameRules = Readonly<{
     prologue_module_cost: number;
     /** What the hull upgrade at the opening's second stop costs; the payouts also cover this. */
     prologue_upgrade_cost: number;
+    /** What the opening's repair costs; the payouts also cover this. */
+    prologue_repair_cost: number;
   }>;
   world: Readonly<{
     seed: string;

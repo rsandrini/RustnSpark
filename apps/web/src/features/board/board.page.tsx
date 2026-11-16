@@ -296,6 +296,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
               <button
                 type="button"
                 className="btn primary"
+                data-opening="open-ship"
                 onClick={() => {
                   if (embedded && onGoToShip !== undefined) onGoToShip();
                   else void navigate('/ship');

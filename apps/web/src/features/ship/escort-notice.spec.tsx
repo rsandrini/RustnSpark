@@ -36,6 +36,9 @@ describe('escort notice', () => {
     );
     renderWithProviders(<EscortNotice />);
     fireEvent.click(await screen.findByRole('button', { name: 'Accept the escort' }));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(started).toBe(0); // one click is not enough: the pilot must confirm
+    fireEvent.click(await screen.findByRole('button', { name: 'Yes, send the escort' }));
     await waitFor(() => expect(started).toBe(1));
   });
 

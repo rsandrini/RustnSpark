@@ -244,16 +244,21 @@
 
   /* the missions board: title, route, time, risk, reward and the two buttons. The sender, the faction, the
      countdown and the "eligible" pills are inside Details; what blocks you stays in red. */
-  .mrow-badges > :not(.badge.warn) {
+  .mrow-expires,
+  .mrow-giver {
     display: none;
   }
-  .mrow-needs li.met {
-    display: none;
+  .mrow-main {
+    grid-template-columns: minmax(0, 1fr) 40%;
+  }
+  .mrow-map {
+    min-height: 130px;
   }
   .fuel-chip.fuel-ok {
     display: none;
   }
-  .mrow-actions .btn {
+  .mrow-actions .btn,
+  .mrow-toggle {
     min-height: 44px;
   }
 

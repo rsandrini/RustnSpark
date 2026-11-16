@@ -63,6 +63,7 @@ describe('the new-pilot opening: payouts and a saved outcome', () => {
       refuelCost: number;
       moduleCost: number;
       upgradeCost: number;
+      repairCost: number;
       payouts: number[];
       guides: { giver: { id: string }; scenes: unknown[] }[];
     };
@@ -71,13 +72,15 @@ describe('the new-pilot opening: payouts and a saved outcome', () => {
     expect(body.refuelCost).toBe(GAME_CONFIG_DEFAULTS.onboarding.prologue_refuel_cost);
     expect(body.moduleCost).toBe(GAME_CONFIG_DEFAULTS.onboarding.prologue_module_cost);
     expect(body.payouts).toHaveLength(3);
+    // the missions pay what the opening costs: the pilot reaches the last mission with the purse they began with
     expect(
       body.payouts.reduce((sum, payout) => sum + payout, 0) +
         body.purse -
         body.refuelCost -
         body.moduleCost -
-        body.upgradeCost,
-    ).toBe(START);
+        body.upgradeCost -
+        body.repairCost,
+    ).toBe(body.purse);
     expect(body.guides.map((guide) => guide.giver.id)).toEqual([
       'free_mentor_dara',
       'free_mentor_kite',

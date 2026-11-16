@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useIntentKey } from '../../api/intent-key';
@@ -6,6 +7,7 @@ import type { ShipResponse, WorldResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
+import { Popup } from '../../ui/Popup';
 
 /** What the server says about the escort to a safe port (`GET /v1/ships/:id/escort`). */
 interface EscortInfo {
@@ -26,6 +28,7 @@ export function EscortNotice() {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const key = useIntentKey();
+  const [confirming, setConfirming] = useState(false);
   const shipsQuery = useQuery({
     queryKey: ['ships'],
     queryFn: () => client.get<ShipResponse[]>('/v1/ships'),
@@ -53,8 +56,10 @@ export function EscortNotice() {
       }),
     onSuccess: () => {
       key.clear();
+      setConfirming(false);
       refresh();
     },
+    onError: () => setConfirming(false),
   });
 
   const info = escortQuery.data;
@@ -89,10 +94,28 @@ export function EscortNotice() {
           type="button"
           className="btn primary"
           disabled={accept.isPending}
-          onClick={() => accept.mutate()}
+          onClick={() => setConfirming(true)}
         >
           {t('escort.accept')}
         </button>
+        <Popup open={confirming} title={t('escort.title')} onClose={() => setConfirming(false)}>
+          <div className="stack">
+            <p>
+              {t('escort.confirm', {
+                place: placeName(info.destinationId),
+                time: formatDuration(info.durationSeconds ?? 0, t),
+              })}
+            </p>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={accept.isPending}
+              onClick={() => accept.mutate()}
+            >
+              {t('escort.confirmAction')}
+            </button>
+          </div>
+        </Popup>
         {accept.isError && <p className="error-text">{t('escort.failed')}</p>}
       </div>
     );

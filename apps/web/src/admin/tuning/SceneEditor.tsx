@@ -25,6 +25,8 @@ export interface SceneNodeData {
   position: string;
   anchor: string | null;
   blocking: boolean;
+  openDelay?: number;
+  dimDelay?: number;
   next: string | null;
   choices: SceneChoiceData[];
 }
@@ -57,6 +59,7 @@ const PROLOGUE_STEP_IDS = [
   'fit-module',
   'dispatch-job',
   'job-report',
+  'repair',
   'upgrade',
   'stop-two',
   'final-run',
@@ -89,7 +92,14 @@ export const SCENE_TRIGGERS = [
           'prologue_race_leg_3',
           'prologue_race_done',
         ]
-      : [`prologue_${step}_enter`, `prologue_${step}_done`],
+      : step === 'final-run'
+        ? [
+            'prologue_final-run_enter',
+            'prologue_final-run_radar',
+            'prologue_final-run_leg_2',
+            'prologue_final-run_done',
+          ]
+        : [`prologue_${step}_enter`, `prologue_${step}_done`],
   ),
 ] as const;
 
@@ -133,6 +143,8 @@ function asScenes(value: unknown): SceneData[] {
           position: typeof node.position === 'string' ? node.position : 'center',
           anchor: typeof node.anchor === 'string' ? node.anchor : null,
           blocking: node.blocking === true,
+          ...(typeof node.openDelay === 'number' ? { openDelay: node.openDelay } : {}),
+          ...(typeof node.dimDelay === 'number' ? { dimDelay: node.dimDelay } : {}),
           next: typeof node.next === 'string' ? node.next : null,
           choices: choices.map((rawChoice) => {
             const choice = (
@@ -329,6 +341,24 @@ export function SceneEditor({ value, onChange, giver = PLACEHOLDER_GIVER }: Scen
                           ))}
                         </select>
                       </label>
+                      <label>
+                        {t('admin.dialogue.openDelay')}
+                        <input
+                          type="number"
+                          min={0}
+                          max={30}
+                          step={0.5}
+                          value={node.openDelay ?? 0}
+                          onChange={(event) => {
+                            const seconds = Number(event.target.value);
+                            setNode(index, nodeIndex, {
+                              openDelay: Number.isFinite(seconds)
+                                ? Math.min(30, Math.max(0, seconds))
+                                : 0,
+                            });
+                          }}
+                        />
+                      </label>
                       <label className="check">
                         <input
                           type="checkbox"
@@ -339,6 +369,26 @@ export function SceneEditor({ value, onChange, giver = PLACEHOLDER_GIVER }: Scen
                         />
                         {t('admin.dialogue.blocking')}
                       </label>
+                      {node.blocking && (
+                        <label>
+                          {t('admin.dialogue.dimDelay')}
+                          <input
+                            type="number"
+                            min={0}
+                            max={30}
+                            step={0.5}
+                            value={node.dimDelay ?? 0}
+                            onChange={(event) => {
+                              const seconds = Number(event.target.value);
+                              setNode(index, nodeIndex, {
+                                dimDelay: Number.isFinite(seconds)
+                                  ? Math.min(30, Math.max(0, seconds))
+                                  : 0,
+                              });
+                            }}
+                          />
+                        </label>
+                      )}
                     </div>
                     <label>
                       {t('admin.dialogue.textEn')}

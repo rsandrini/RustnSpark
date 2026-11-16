@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { MENTOR_SCENES } from '../../../prisma/seed-data/dialogue-scenes.js';
+import { ALL_MENTOR_SCENES, MENTOR_SCENES } from '../../../prisma/seed-data/dialogue-scenes.js';
 import { parseScenes, sceneProblems } from '../../../src/dialogue/scenes.js';
 
 const text = { en: 'Hello', 'pt-BR': 'Olá' };
@@ -24,8 +24,8 @@ const scene = (nodes: unknown[], extra: Record<string, unknown> = {}) => ({
 });
 
 describe('dialogue scenes', () => {
-  it('the seeded scenes of every mentor are valid and complete', () => {
-    for (const [mentor, scenes] of Object.entries(MENTOR_SCENES)) {
+  it('the scenes the engine knows of are valid and complete for every mentor', () => {
+    for (const [mentor, scenes] of Object.entries(ALL_MENTOR_SCENES)) {
       expect({ mentor, problems: sceneProblems(scenes) }).toEqual({ mentor, problems: [] });
       expect(scenes.map((entry) => entry.id)).toEqual([
         'welcome',
@@ -43,6 +43,13 @@ describe('dialogue scenes', () => {
         'upgrades',
       ]);
       expect(parseScenes(scenes)).toHaveLength(13);
+    }
+  });
+
+  it('seeds a faction pilot only the presentation of the faction: the opening taught the rest', () => {
+    for (const [mentor, scenes] of Object.entries(MENTOR_SCENES)) {
+      expect({ mentor, problems: sceneProblems(scenes) }).toEqual({ mentor, problems: [] });
+      expect(scenes.map((entry) => entry.id)).toEqual(['welcome']);
     }
   });
 

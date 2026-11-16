@@ -39,13 +39,14 @@ export class OnboardingService {
     private readonly events: PlayerEventService,
   ) {}
 
-  /** The opening's payouts and guides (the payouts cover the refuel and the module, so the pilot ends with exactly the credits a new pilot starts with). */
+  /** The opening's payouts and guides (the payouts cover the refuel, module, repair and upgrade; the rest of the start credits arrives after the rescue). */
   async prologue(): Promise<{
     startCredits: number;
     purse: number;
     refuelCost: number;
     moduleCost: number;
     upgradeCost: number;
+    repairCost: number;
     payouts: number[];
     guides: { giver: GiverRef; scenes: SceneData[] }[];
   }> {
@@ -54,6 +55,7 @@ export class OnboardingService {
     const refuelCost = onboarding.prologue_refuel_cost;
     const moduleCost = onboarding.prologue_module_cost;
     const upgradeCost = onboarding.prologue_upgrade_cost;
+    const repairCost = onboarding.prologue_repair_cost;
     const guides = await this.prologueGuides();
     return {
       startCredits: economy.start_credits,
@@ -61,14 +63,14 @@ export class OnboardingService {
       refuelCost,
       moduleCost,
       upgradeCost,
-      // the refuel and module are paid out of what the opening earns, so the pilot ends with exactly the start credits
+      repairCost,
+      // the missions pay what the pilot spends in the opening (the rest of the start credits comes after the rescue)
       payouts: prologuePayouts(
-        economy.start_credits,
-        purse,
         refuelCost,
         moduleCost,
         upgradeCost,
         onboarding.prologue_payout_shares,
+        repairCost,
       ),
       guides,
     };
@@ -167,7 +169,11 @@ export class OnboardingService {
         },
       });
 
-      await tx.player.update({ where: { id: playerId }, data: { factionId: faction } });
+      // the checklist (Getting started) stays hidden; the pilot brings it back from the account menu if they want to track it
+      await tx.player.update({
+        where: { id: playerId },
+        data: { factionId: faction, tutorialDone: true },
+      });
 
       await this.applyStarterKit(tx, playerId, created.id, rules);
 

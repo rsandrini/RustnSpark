@@ -4,9 +4,9 @@ import { useEffect } from 'react';
 const CONTROLS =
   'button, a[href], input, select, textarea, summary, [role="tab"], [role="button"], [role="switch"], [draggable="true"], .hangar-scene';
 
-/** Always alive: the story's own boxes and bar, and any popup the real screens open (confirmations, part cards). */
+/** Always alive: the story's own boxes and bar, the account menu (language, Sign out), and any popup the real screens open. */
 const FREE =
-  '[data-dialogue], [data-opening-free], [role="dialog"], [role="alertdialog"], .shell-top .brand, .toast, .notice';
+  '[data-dialogue], [data-opening-free], [role="dialog"], [role="alertdialog"], .shell-top .brand, .shell-account, .toast, .notice';
 
 const LOCKED = 'data-opening-locked';
 const ALLOWED = 'data-opening-allowed';

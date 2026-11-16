@@ -1,10 +1,10 @@
 {
   "variants": [
-    "O tanque secou entre queimas — sem empuxo, sem discussão, só deriva.",
-    "Falta de combustível: a última queima engasgou e a nave esfriou.",
-    "O medidor tocou zero e a propulsão calou. Aqui fora, silêncio significa encalhado.",
-    "Sem combustível para queimar — a nave deslizou no embalo até ele acabar também.",
-    "Os motores falharam uma, duas vezes, e pararam. A rota segue sem você.",
-    "Tanques vazios. As estrelas ficam paradas e você espera alguém te encontrar."
+    "SEM COMBUSTÍVEL: o tanque tinha só {fuel} unidades, o que não bastava para terminar este trecho. A propulsão calou e a nave está à deriva.",
+    "Combustível esgotado — restavam {fuel} unidades e este trecho pedia mais. Sem empuxo, sem discussão, só deriva.",
+    "O medidor marcava {fuel} e o próximo trecho gastava mais que isso. Os motores pararam; a rota segue sem você.",
+    "Tanques secos: só {fuel} unidades de combustível para um trecho que queima mais. A nave desliza até parar, à deriva.",
+    "Combustível insuficiente para completar o trecho (restavam {fuel}). A nave parou no espaço e espera um resgate.",
+    "Tanques vazios neste trecho — {fuel} unidades não bastaram. As estrelas ficam paradas e você espera ser encontrado."
   ]
 }

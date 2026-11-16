@@ -29,7 +29,8 @@ import { SHIP_ID, type Sandbox } from './sandbox-state';
 import { tankSpace } from './sandbox-ship';
 import {
   SANDBOX_WORLD,
-  SANDBOX_PASSENGER_MODULE,
+  SANDBOX_LIFE_SUPPORT,
+  SANDBOX_PASSENGER_CABIN,
   SCRAP_NAME,
   UPGRADE_SCRAP,
   fuelNeededFor,
@@ -38,13 +39,61 @@ import {
 } from './sandbox-world';
 
 const CATALOG_PARTS = [
-  SANDBOX_PASSENGER_MODULE,
+  SANDBOX_PASSENGER_CABIN,
+  SANDBOX_LIFE_SUPPORT,
   PROLOGUE_BRIDGE,
   PROLOGUE_TANK,
   PROLOGUE_HULL,
   PROLOGUE_ENGINE,
   PROLOGUE_CARGO,
 ] as const;
+
+/** The workshop in the opening is quick: the parts are as good as new at once, the notice only says it took a moment. */
+const REPAIR_SECONDS = 2;
+
+/**
+ * What a repair asks for: the workshop's price for the whole ship is the opening's one repair cost, shared out by how
+ * much each worn part has to gain, so repairing every part costs exactly that (a part of them, a part of it).
+ */
+function repairPlanOf(sandbox: Sandbox, body: unknown) {
+  const worn = new Map(sandbox.wornParts().map((part) => [part.id, part.condition]));
+  const asked =
+    (body as { targets?: Array<{ partInstanceId?: string; toCondition?: number }> } | null)
+      ?.targets ?? [];
+  const wanted = asked.flatMap((target) => {
+    const from = worn.get(target.partInstanceId ?? '');
+    const to = Math.min(100, target.toCondition ?? 0);
+    return from !== undefined && to > from
+      ? [{ partInstanceId: target.partInstanceId as string, fromCondition: from, toCondition: to }]
+      : [];
+  });
+  if (wanted.length === 0) {
+    throw new ApiError(CONFLICT, 'nothing to repair', 'NO_REPAIR_TARGETS', {
+      statusCode: CONFLICT,
+      message: { error: 'NO_REPAIR_TARGETS' },
+    });
+  }
+  const missingAll = [...worn.values()].reduce((sum, condition) => sum + (100 - condition), 0);
+  const items = wanted.map((target) => ({
+    ...target,
+    cost: Math.round(
+      (sandbox.config.repairCost * (target.toCondition - target.fromCondition)) / missingAll,
+    ),
+  }));
+  // the rounding never changes the total of a full repair
+  const full =
+    items.reduce((sum, item) => sum + (item.toCondition - item.fromCondition), 0) === missingAll;
+  if (full && items[0] !== undefined) {
+    const others = items.slice(1).reduce((sum, item) => sum + item.cost, 0);
+    items[0] = { ...items[0], cost: sandbox.config.repairCost - others };
+  }
+  return { items, cost: items.reduce((sum, item) => sum + item.cost, 0) };
+}
+
+/** The part types the pilot already has (bought modules leave the shelf). */
+function ownedTypes(sandbox: Sandbox): Set<string> {
+  return new Set(sandbox.state.parts.map((entry) => entry.part.catalog.partType));
+}
 
 const NOT_FOUND = 404;
 const BAD_REQUEST = 400;
@@ -114,7 +163,8 @@ const ROUTES: readonly Route[] = [
     ...(sandbox.config.profile.publicId === undefined
       ? {}
       : { publicId: sandbox.config.profile.publicId }),
-    isGuest: false,
+    // a guest pilot stays a guest in the story (leaving asks first, and the pilot can still be saved)
+    isGuest: sandbox.config.profile.isGuest === true,
   })),
   route('GET', '/v1/players/me/stats', () => SANDBOX_STATS),
   route('GET', '/v1/players/me/tutorial-progress', () => SANDBOX_TUTORIAL_PROGRESS),
@@ -153,7 +203,16 @@ const ROUTES: readonly Route[] = [
   route('GET', '/v1/inventory', ({ sandbox }) =>
     sandbox.state.parts.map((entry) => inventoryItemOf(entry, SHIP_ID)),
   ),
-  route('POST', '/v1/ships/:id/preview', ({ sandbox, body }) => previewOf(sandbox, layoutOf(body))),
+  route('POST', '/v1/ships/:id/preview', ({ sandbox, body }) => {
+    // the market asks what a part it sells would do to the ship: it is counted as if installed
+    const wanted = (body as { virtualPart?: { partType?: string } } | null)?.virtualPart?.partType;
+    const part =
+      wanted === undefined
+        ? undefined
+        : CATALOG_PARTS.find((entry) => entry.catalog.partType === wanted);
+    if (part !== undefined) return previewOf(sandbox, sandbox.state.layout, [part.catalog]);
+    return previewOf(sandbox, layoutOf(body));
+  }),
   route('POST', '/v1/ships/:id/assemble', ({ sandbox, body }) => {
     const layout = layoutOf(body);
     assertSavable(sandbox, layout);
@@ -222,7 +281,11 @@ const ROUTES: readonly Route[] = [
   }),
   route('GET', '/v1/locations/:id/market', ({ sandbox, params }) => ({
     locationId: params.id,
-    listings: marketListingsOf(sandbox.config.moduleCost, sandbox.state.chosen),
+    listings: marketListingsOf(
+      sandbox.config.moduleCost,
+      sandbox.state.chosen,
+      ownedTypes(sandbox),
+    ),
     sellOffers: [],
     sellMinCondition: 1,
   })),
@@ -231,10 +294,16 @@ const ROUTES: readonly Route[] = [
       listingId?: string;
       expectedPrice?: number;
     };
-    const listing = marketListingsOf(sandbox.config.moduleCost, sandbox.state.chosen).find(
-      (entry) => entry.listingId === listingId,
-    );
+    const listing = marketListingsOf(
+      sandbox.config.moduleCost,
+      sandbox.state.chosen,
+      ownedTypes(sandbox),
+    ).find((entry) => entry.listingId === listingId);
     if (listing === undefined) throw new ApiError(404, 'listing not found', 'NOT_FOUND');
+    // the other job's module is on the shelf to look at, not to buy
+    if (listing.blockedReason !== undefined) {
+      throw new ApiError(CONFLICT, 'not for this job', 'LISTING_BLOCKED');
+    }
     if (listing.price !== expectedPrice) {
       throw new ApiError(CONFLICT, 'price changed', 'PRICE_CHANGED', {
         statusCode: CONFLICT,
@@ -284,11 +353,39 @@ const ROUTES: readonly Route[] = [
     fillSeconds: null,
     ores: [],
   })),
-  route('POST', '/v1/ships/:id/repair/quote', () => {
-    throw new ApiError(CONFLICT, 'nothing to repair', 'NO_REPAIR_TARGETS', {
-      statusCode: CONFLICT,
-      message: { error: 'NO_REPAIR_TARGETS' },
-    });
+  route('POST', '/v1/ships/:id/repair/quote', ({ sandbox, body }) => {
+    const plan = repairPlanOf(sandbox, body);
+    return {
+      shipId: SHIP_ID,
+      cost: plan.cost,
+      durationSeconds: REPAIR_SECONDS,
+      items: plan.items.map((item) => ({
+        partInstanceId: item.partInstanceId,
+        cost: item.cost,
+        durationSeconds: REPAIR_SECONDS,
+      })),
+      fee: 0,
+      firstRepair: true,
+    };
+  }),
+  route('POST', '/v1/ships/:id/repair', ({ sandbox, body }) => {
+    const plan = repairPlanOf(sandbox, body);
+    if (sandbox.state.credits < plan.cost) {
+      throw new ApiError(CONFLICT, 'not enough credits', 'INSUFFICIENT_FUNDS');
+    }
+    sandbox.repair(plan.items, plan.cost);
+    return {
+      repairJobId: 'sandbox-repair',
+      shipId: SHIP_ID,
+      cost: plan.cost,
+      durationSeconds: REPAIR_SECONDS,
+      completesAt: new Date(sandbox.now() + REPAIR_SECONDS * MS).toISOString(),
+      targets: plan.items.map((item) => ({
+        partInstanceId: item.partInstanceId,
+        fromCondition: item.fromCondition,
+        toCondition: item.toCondition,
+      })),
+    };
   }),
   route('POST', '/v1/parts/:id/upgrade/quote', ({ sandbox, params }) => {
     const entry = sandbox.state.parts.find((part) => part.id === params.id);

@@ -478,9 +478,53 @@ describe('report (S10.8)', () => {
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
     const legs = await screen.findByTestId('race-legs');
     const items = Array.from(legs.querySelectorAll('li')).map((item) => item.textContent);
-    expect(items[0]).toBe('Leg 1 — you lead');
+    expect(items[0]).toContain('Leg 1 — you lead');
+    expect(items[0]).toContain('your leg');
     expect(items[1]).toContain('Leg 2 — Vega Dart leads, you are 2º');
     expect(items[1]).toContain('your engines failed here and cost you time');
+  });
+
+  it('opens a short animated result card on a flight that has just ended; a race says the place and the time', async () => {
+    window.localStorage.clear();
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'success',
+            stats: {
+              ...STATS,
+              race: {
+                place: 2,
+                timeScale: 1,
+                standings: [
+                  { name: 'Vega Dart', mobility: 4.1, seconds: 400, you: false },
+                  { name: '', mobility: 3.2, seconds: 600, you: true },
+                ],
+              },
+            },
+            view: 'summary',
+            lines: [{ text: 'Done', segments: [{ t: 'text', value: 'Done' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, {
+      initialEntries: [{ pathname: '/report/m-race', state: { fresh: true } }],
+    });
+    const card = await screen.findByTestId('mission-result');
+    expect(within(card).getByTestId('mission-result-race')).toHaveTextContent('You finished #2');
+    expect(within(card).getByTestId('mission-result-race')).toHaveTextContent('Time 10m');
+    fireEvent.click(within(card).getByTestId('mission-result-close'));
+    await waitFor(() => expect(screen.queryByTestId('mission-result')).not.toBeInTheDocument());
+  });
+
+  it('does not open the result card when an old report is opened from the history', async () => {
+    window.localStorage.clear();
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    await screen.findByTestId('debrief');
+    expect(screen.queryByTestId('mission-result')).not.toBeInTheDocument();
   });
 
   it('never says a shield took 0 damage on a ship that never had one', async () => {

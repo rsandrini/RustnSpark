@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { flyOneMission, openPortTab, registerAndLaunch } from './support';
+import { flyOneMission, openPortTab, registerAndLaunch, showChecklist } from './support';
 
 /**
  * The newcomer checklist ticks from what the pilot really does on the real stack: after the first
@@ -17,6 +17,8 @@ test('the checklist ticks "Fill the tank" after a real refuel', async ({ page })
   await expect(page.getByText(/^Filled \d+ units/)).toBeVisible();
 
   await page.goto('/ship');
+  // picking a faction hides the checklist: bring it back from the account menu
+  await showChecklist(page);
   // on a phone the checklist is a small pill until it is opened
   const step = page.locator('.tutorial-step', { hasText: 'Fill the tank' });
   // wait for the checklist to render, as the open card or as the small pill
@@ -52,6 +54,7 @@ test('the checklist ticks "Take a mission", "Dispatch it" and "Read your report"
   await registerAndLaunch(page, 'explorers');
   await flyOneMission(page); // ends on the report
   await page.goto('/ship');
+  await showChecklist(page);
   // on a phone the checklist is a small pill until it is opened
   const first = page.locator('.tutorial-step').first();
   await expect(

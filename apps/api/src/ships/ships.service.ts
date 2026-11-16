@@ -810,6 +810,7 @@ export class ShipsService implements OnModuleInit {
   /** Where an adrift ship floats and what its rescue would cost (shared with the rescue itself). */
   async adriftOf(
     ship: {
+      readonly ownerPlayerId: string;
       readonly currentLocationId: string;
       readonly floatRouteId: string | null;
       readonly floatFromId: string | null;
@@ -818,19 +819,27 @@ export class ShipsService implements OnModuleInit {
     },
     rules: GameRules,
   ): Promise<{ float: ShipResponse['float']; rescue: RescueOptions; plan: TowPlan }> {
-    const [routes, locations] = await Promise.all([
+    const [routes, locations, owner] = await Promise.all([
       this.prisma.route.findMany(),
-      this.prisma.location.findMany({ select: { id: true, type: true } }),
+      this.prisma.location.findMany({ select: { id: true, type: true, factionId: true } }),
+      this.prisma.player.findUnique({
+        where: { id: ship.ownerPlayerId },
+        select: { factionId: true },
+      }),
     ]);
-    const baseIds = new Set(
-      locations.filter((place) => RESCUE_BASE_TYPES.has(place.type)).map((place) => place.id),
+    const bases = locations.filter((place) => RESCUE_BASE_TYPES.has(place.type));
+    const baseIds = new Set(bases.map((place) => place.id));
+    const ownBaseIds = new Set(
+      owner?.factionId == null
+        ? []
+        : bases.filter((place) => place.factionId === owner.factionId).map((place) => place.id),
     );
     const spot: FloatSpot | null =
       ship.floatRouteId !== null && ship.floatFromId !== null && ship.floatProgress !== null
         ? { routeId: ship.floatRouteId, fromId: ship.floatFromId, progress: ship.floatProgress }
         : null;
     // A ship that went adrift before positions were recorded stays where it is docked on the map.
-    const plan = (spot === null ? null : towPlanFor(spot, routes, baseIds)) ?? {
+    const plan = (spot === null ? null : towPlanFor(spot, routes, baseIds, ownBaseIds)) ?? {
       baseId: ship.currentLocationId,
       distance: 0,
     };

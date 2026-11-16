@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { GridCellsPreview } from './GridCellsPreview';
 import { PartCompare } from './PartCompare';
+import { GiverThumb, useGiverPortraits } from './GiverThumb';
 import { Popup } from '../../ui/Popup';
 import { pickLocalized } from '../../i18n/localized';
 import type * as dto from '../../api/generated';
@@ -46,6 +47,7 @@ export function EntityScreen() {
   const [confirmRetire, setConfirmRetire] = useState<string | null>(null);
   const [columnPickerOpen, setColumnPickerOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const portraits = useGiverPortraits();
 
   const entityName = entity ?? '';
   const search = searchParams.get('q') ?? '';
@@ -236,6 +238,7 @@ export function EntityScreen() {
           <thead>
             <tr>
               {isParts && <td aria-label={t('tuning.compare')} />}
+              {entityName === 'quest-givers' && <td aria-hidden="true" />}
               {listFields.map((field) => {
                 const label =
                   field.description !== undefined
@@ -282,6 +285,11 @@ export function EntityScreen() {
                         checked={selectedIds.includes(id)}
                         onChange={() => toggleSelected(id)}
                       />
+                    </td>
+                  )}
+                  {entityName === 'quest-givers' && (
+                    <td>
+                      <GiverThumb url={portraits[id]} name={typeof row.name === 'string' ? row.name : id} />
                     </td>
                   )}
                   {listFields.map((field) => (

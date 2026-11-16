@@ -28,8 +28,8 @@ export const onStep = (page: Page, id: string, timeout = 15_000) =>
 /** Reads a guide's lines to the end: the first press finishes the typing, the next goes on. */
 export async function read(page: Page): Promise<void> {
   const box = page.getByTestId('dialogue');
-  // the lines of a step open a moment after the step starts
-  await box.waitFor({ timeout: 3000 }).catch(() => undefined);
+  // the lines of a step open a moment after the step starts (a line can wait a few seconds on purpose)
+  await box.waitFor({ timeout: 6000 }).catch(() => undefined);
   for (let guard = 0; guard < 40 && (await box.isVisible().catch(() => false)); guard += 1) {
     await box
       .locator('.dialogue-actions .btn.primary')
@@ -38,6 +38,13 @@ export async function read(page: Page): Promise<void> {
       .catch(() => undefined);
     await page.waitForTimeout(150);
   }
+}
+
+/** A finished mission opens its short result card first; the guide's lines wait until it is closed. */
+export async function closeResult(page: Page): Promise<void> {
+  const close = page.getByTestId('mission-result-close');
+  await close.waitFor({ timeout: 8000 }).catch(() => undefined);
+  if (await close.isVisible().catch(() => false)) await close.click();
 }
 
 /** The step's button that moves the story on (a report to read, the gift, the choice of job). */

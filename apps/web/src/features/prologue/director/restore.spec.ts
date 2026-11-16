@@ -6,11 +6,12 @@ import { OPENING_STEPS, type StepId } from './steps';
 
 function at(step: StepId, kind: 'passengers' | 'crates' | null = 'passengers') {
   const sandbox = createSandbox({
-    payouts: [646, 494, 2660],
+    payouts: [646, 494, 2810],
     purse: 300,
     refuelCost: 100,
     moduleCost: 800,
     upgradeCost: 200,
+    repairCost: 150,
     profile: { id: 'player-1', name: 'Test Pilot', locale: 'en', role: 'PLAYER' },
   });
   restoreSandbox(sandbox, step, kind);
@@ -68,10 +69,22 @@ describe('coming back to the opening (the sandbox is rebuilt to where the pilot 
     for (const step of OPENING_STEPS) {
       const credits = at(step).state.credits;
       expect(credits).toBeGreaterThanOrEqual(0);
-      // the only drops are the refuel, the module and the hull upgrade
-      if (credits < last) expect([100, 800, 200]).toContain(last - credits);
+      // the only drops are the refuel, the module, the repair and the hull upgrade
+      if (credits < last) expect([100, 800, 150, 200]).toContain(last - credits);
       last = credits;
     }
+  });
+
+  it('the pirates hurt the ship on the second run: its parts are more worn after it', () => {
+    const condition = (sandbox: ReturnType<typeof at>) =>
+      sandbox.state.parts
+        .filter((entry) => entry.location === 'INSTALLED')
+        .reduce((sum, entry) => sum + (entry.part.condition ?? 100), 0);
+    const before = condition(at('stop-two'));
+    const after = condition(at('final-run'));
+    expect(after).toBeLessThan(before - 50);
+    const second = at('final-run').state.history.at(-1);
+    expect(second?.damage?.length).toBeGreaterThan(2);
   });
 
   it('has the final run taken (not flown) on the final-run step', () => {

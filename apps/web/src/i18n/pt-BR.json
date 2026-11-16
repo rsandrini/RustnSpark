@@ -86,51 +86,25 @@
       "play": "Jogar a abertura",
       "confirm": "Pular mesmo assim"
     },
-    "loss": {
-      "lostTitle": "Perdido",
-      "savedTitle": "Salvo",
-      "ship": "A nave",
-      "parts": "As peças dela",
-      "player": "Você",
-      "credits": "Seus créditos",
-      "friend": "{{friend}} (sinal perdido)"
-    },
     "port": {
-      "body": "O Kite se foi, e não será o último. Os três poderes agora lutam contra os piratas, cada um à sua maneira. Escolha a bandeira pela qual você vai voar, e eles te dão uma nave."
+      "body": "A Bob se foi, e não será a última. Os três poderes agora lutam contra os piratas, cada um à sua maneira. Escolha a bandeira pela qual você vai voar, e eles te dão uma nave."
     },
+    "shipClassNone": "Nada",
     "director": {
       "continue": "Continuar",
       "choose": "Escolher este trabalho"
     },
     "moment": {
-      "signalLost": "SINAL PERDIDO",
-      "lossCaption": "Piratas emboscaram vocês na rota. Sua nave foi destruída, e {{friend}} parou de responder.",
-      "rescueCaption": "Um cortador de resgate achou o seu sinal.",
-      "rescued": "Você foi resgatado com vida.",
-      "friendLost": "{{friend}} não foi encontrado."
-    },
-    "hint": {
-      "gift": "Seu amigo vai te dar um motor.",
-      "fit-engine": "Arraste o motor para a sua nave. Ele salva sozinho.",
-      "race-board": "Aceite a corrida.",
-      "race": "Aperte Despachar para começar a corrida.",
-      "race-report": "Leia como foi a corrida.",
-      "stop-port": "Encha o tanque: aperte Comprar.",
-      "choose-job": "Escolha o trabalho que quer voar.",
-      "buy-module": "Compre o módulo que o seu trabalho precisa.",
-      "fit-module": "Arraste o módulo para a sua nave.",
-      "dispatch-job": "Aceite o trabalho e aperte Despachar.",
-      "job-report": "Leia o seu relatório.",
-      "stop-two": "Pegue um trabalho e voe.",
-      "final-run": "Aceite o trabalho grande e aperte Despachar.",
-      "rescue": "Você foi resgatado.",
-      "upgrade": "Melhore o casco: aperte Melhorar e confirme."
+      "rescueCaption": "O resgate recebeu seu sinal e te resgatou.",
+      "rescued": "Você sobreviveu: o resgate chegou a tempo.",
+      "friendLost": "{{friend}} não foi encontrada.",
+      "rescueGrant": "+{{amount}} ¢ do resgate, para recomeçar."
     },
     "continueLabel": {
       "gift": "Pegar o motor",
       "race-report": "Ir para o porto",
       "job-report": "Próxima parada",
-      "rescue": "Escolher a facção"
+      "rescue": "Continuar"
     }
   },
   "onboarding": {
@@ -806,6 +780,9 @@
     "loginLink": "Entrar",
     "registerLink": "Criar uma conta",
     "logout": "Sair",
+    "logoutConfirmTitle": "Sair?",
+    "logoutConfirmText": "Você pode entrar de novo depois e continuar a história de onde parou.",
+    "logoutKeep": "Ficar",
     "adminLink": "Admin"
   },
   "admin": {
@@ -978,6 +955,8 @@
       "anchor": "Aponta para",
       "noAnchor": "Nada",
       "blocking": "Escurece a tela e espera",
+      "openDelay": "Segundos até o popup abrir (o piloto vê a tela antes)",
+      "dimDelay": "Segundos após o popup abrir até escurecer (0 = junto com o popup)",
       "textEn": "Texto (inglês)",
       "textPt": "Texto (português)",
       "next": "Depois",
@@ -1032,11 +1011,15 @@
         "prologue_dispatch-job_done": "Abertura · Voar o trabalho · quando termina",
         "prologue_job-report_enter": "Abertura · Relatório do trabalho · quando começa",
         "prologue_job-report_done": "Abertura · Relatório do trabalho · quando termina",
+        "prologue_repair_enter": "Abertura · Reparo no porto · quando começa",
+        "prologue_repair_done": "Abertura · Reparo no porto · quando termina",
         "prologue_upgrade_enter": "Abertura · Melhorar o casco · quando começa",
         "prologue_upgrade_done": "Abertura · Melhorar o casco · quando termina",
         "prologue_stop-two_enter": "Abertura · Segundo trabalho · quando começa",
         "prologue_stop-two_done": "Abertura · Segundo trabalho · quando termina",
         "prologue_final-run_enter": "Abertura · A última viagem · quando começa",
+        "prologue_final-run_radar": "Abertura · A última viagem · movimento no radar (no meio do trecho 2)",
+        "prologue_final-run_leg_2": "Abertura · A corrida final · depois do trecho 2 (os piratas)",
         "prologue_final-run_done": "Abertura · A última viagem · quando termina",
         "prologue_loss_enter": "Abertura · A perda · quando começa",
         "prologue_loss_done": "Abertura · A perda · quando termina",
@@ -1055,6 +1038,8 @@
       },
       "anchors": {
         "ship_grid": "A grade da nave",
+        "parts_tray": "A lista de peças",
+        "part_engine": "O motor na lista de peças",
         "auto_layout": "Botão Layout automático",
         "ship_tab": "Aba Nave",
         "port_tab": "Aba Porto",
@@ -1092,7 +1077,7 @@
       "unknown": "Indisponível para este evento: {{names}}"
     },
     "givers": {
-      "linesHelp": "Linhas curtas que o doador de missões diz, uma lista por chave. Uma lista vazia significa que o texto do modelo é usado. {destination}, {cargo} e {reward} são preenchidos a partir da oferta.",
+      "linesHelp": "Linhas curtas que o NPC diz, uma lista por chave. Uma lista vazia significa que o texto do modelo é usado. {destination}, {cargo} e {reward} são preenchidos a partir da oferta.",
       "addLine": "Adicionar linha",
       "removeLine": "Remover",
       "lineEn": "Inglês",
@@ -1133,7 +1118,7 @@
         "tutorial_first_failure": "Tutorial: primeira falha",
         "tutorial_low_fuel": "Tutorial: tanque baixo"
       },
-      "personalityHelp": "O que este doador oferece: pesos relativos por tipo de missão (0 = nunca), a faixa de zonas em que opera e o tom usado para escolher as linhas.",
+      "personalityHelp": "O que este NPC oferece: pesos relativos por tipo de missão (0 = nunca), a faixa de zonas em que opera e o tom usado para escolher as linhas.",
       "missionType": "Tipo de missão",
       "typeWeight": "Peso",
       "riskMin": "Zona mais segura",
@@ -1306,7 +1291,7 @@
       "environments": "Ambientes",
       "mission-templates": "Modelos de missão",
       "drop-tables": "Tabelas de drop",
-      "quest-givers": "Dadores de missão",
+      "quest-givers": "NPCs",
       "report-templates": "Textos do relatório"
     },
     "gridCells": {
@@ -1517,7 +1502,7 @@
         "wide": "Faixa larga atrás do lugar nas telas de porto, quadro e relatório.",
         "square": "Imagem quadrada do lugar.",
         "icon": "Ícone pequeno do lugar.",
-        "portrait": "O rosto do dador no painel, no relatório e no cartão do tutorial."
+        "portrait": "O rosto do NPC no painel, no relatório e no cartão do tutorial."
       },
       "none": "Sem imagem",
       "usingDefault": "Usando o padrão embutido",
@@ -1606,11 +1591,11 @@
     "buy": "Comprar",
     "notEnoughFunds": "Fundos insuficientes",
     "sell": "Vender",
-    "buyConfirm": "Comprar {{name}} por {{price}} ¢?",
+    "buyConfirm": "Comprar {{name}} por {{price}} ¢?",
     "sellConfirm": "Vender {{name}}?",
-    "sellQuote": "Vender {{name}} por {{price}} ¢?",
+    "sellQuote": "Vender {{name}} por {{price}} ¢?",
     "balanceAfter": "Saldo após: {{balance}} ¢",
-    "priceUpdated": "O preço mudou para {{price}} ¢ — confirme novamente.",
+    "priceUpdated": "O preço mudou para {{price}} ¢ — confirme novamente.",
     "insufficient": "Créditos insuficientes",
     "bought": "Comprou {{name}} por {{price}} ¢.",
     "sold": "Vendeu {{name}} por {{price}} ¢.",
@@ -1641,7 +1626,7 @@
     "refueled": "Abasteceu {{units}} unidades por {{cost}} ¢.",
     "scavenge": "Mandar a nave vasculhar",
     "repairQuote": "Custo do reparo: {{cost}} ¢ · {{time}}",
-    "repairConfirmTitle": "Reparar por {{cost}} ¢?",
+    "repairConfirmTitle": "Reparar por {{cost}} ¢?",
     "repairConfirm": "Iniciar reparo",
     "noShip": "Você não tem uma nave.",
     "sellAll": "Vender tudo",
@@ -1745,13 +1730,10 @@
     "upgradeCost": "Custo da melhoria",
     "upgradesTo": "Melhora para {{name}}",
     "upgrade": "Melhorar",
-    "upgradeConfirmTitle": "Melhorar por {{cost}} ¢?",
-    "upgradeQuote": "Melhorar <from>{{name}}</from> para <to>{{nextName}}</to> por {{cost}} ¢?",
+    "upgradeConfirmTitle": "Melhorar {{name}}?",
+    "upgradeQuote": "<from>{{name}}</from> → <to>{{nextName}}</to>",
     "upgradeConfirm": "Melhorar",
     "upgraded": "Melhorado para {{name}}.",
-    "upgradeFilter": "Filtro de melhorias",
-    "upgradeOnlyAffordable": "Só o que eu posso pagar",
-    "upgradeNoneAffordable": "Nada que você possa melhorar com os créditos de agora. Desligue o filtro para ver tudo que pode ser melhorado.",
     "scavengeFoot": "Vasculhar a pé",
     "upgradeFromTo": "{{from}} → {{to}}",
     "upgradeMaterial": "{{name}}: {{needed}} (você tem {{have}})",
@@ -1763,7 +1745,6 @@
     "upgradeGoWork": "Abrir Trabalho",
     "upgradeYouHave": "Você tem",
     "upgradeHeld": "{{name}}: {{have}}",
-    "upgradeCounts": "{{ready}} prontas · {{credits}} precisam de créditos · {{materials}} precisam de materiais",
     "upgradeGroup": {
       "ready": "Prontas para melhorar",
       "credits": "Faltam créditos",
@@ -1974,7 +1955,8 @@
       "success": "Missão cumprida",
       "partial_failure": "Sucesso parcial",
       "failed": "Missão falhou",
-      "adrift": "Nave à deriva"
+      "adrift": "Nave à deriva — sem combustível",
+      "adriftHint": "O tanque secou antes do fim da rota, então a nave parou no espaço. Encha o tanque antes de partir e lembre que rotas longas, zonas hostis e motor muito forçado gastam mais combustível."
     },
     "cascade": {
       "shield": "Absorvido pelo escudo",
@@ -2005,6 +1987,11 @@
     "refCategory": {
       "part": "Classe",
       "loot": "Raridade"
+    },
+    "popup": {
+      "racePlace": "Você chegou em {{place}}º",
+      "raceTime": "Tempo {{time}}",
+      "close": "Ver o relatório"
     },
     "glyph": {
       "ok": "✔",
@@ -2044,6 +2031,7 @@
       "raceLegsTitle": "Etapa por etapa",
       "raceLeg": "Etapa {{leg}} — {{leader}} na frente, você está em {{place}}º",
       "raceLegLead": "Etapa {{leg}} — você lidera",
+      "raceLegTimes": " · sua etapa {{you}} (mais rápida {{leader}}), total {{total}}",
       "raceLegYouTrouble": " · seus motores falharam aqui e custaram tempo",
       "raceLegRivalTrouble": " · problemas para {{names}}",
       "damageCombat": "Dano em lutas",
@@ -2141,9 +2129,7 @@
       "rivalPushed": "{{name}} — velocidade {{mobility}}, forçando ×{{level}}",
       "projected": "A corrida até agora (projeção)",
       "projectedStart": "A corrida está em andamento em {{legs}} etapas. A ordem aparece aqui a cada etapa concluída.",
-      "projectedAfter": "Depois da etapa {{leg}} de {{legs}}:",
-      "projectedTrouble": "problema de motor numa etapa",
-      "projectedNote": "Projeção: vale a menos que um motor forçado falhe no caminho. O relatório tem o resultado real."
+      "projectedTrouble": "problema de motor numa etapa"
     },
     "workingAt": {
       "scavenging": "Vasculhando em {{place}}",
@@ -2316,6 +2302,8 @@
     "title": "Preso? Uma escolta pode levar você para casa",
     "body": "Uma escolta vai levar sua nave até {{place}}, o porto mais próximo da sua facção. É de graça e sem combates, mas é lento: cerca de {{time}}. Dá para chamar uma vez por semana.",
     "accept": "Aceitar a escolta",
+    "confirm": "Mandar sua nave para {{place}} com a escolta? A viagem leva cerca de {{time}}, você não pode voar nesse tempo e só dá para chamar uma vez por semana.",
+    "confirmAction": "Sim, mandar a escolta",
     "failed": "A escolta não pôde partir. Recarregue e tente de novo.",
     "underwayTitle": "A escolta está levando sua nave para {{place}}",
     "underwayBody": "Chega em",
@@ -2458,6 +2446,7 @@
     "INVALID_QUANTITY": "Quantidade inválida.",
     "INVALID_REPAIR_TARGET": "Esse reparo ficaria abaixo da condição atual da peça. Recarregue a aba de reparo e tente de novo.",
     "LISTING_SOLD": "Essa peça usada acabou de ser vendida.",
+    "LISTING_BLOCKED": "Não é para este trabalho.",
     "MAINTENANCE": "O jogo está em manutenção. Tente novamente em breve.",
     "MINER": "Nenhum equipamento de mineração instalado.",
     "MIN_MOBILITY": "Mobilidade abaixo do mínimo da missão.",
@@ -2534,8 +2523,8 @@
     "waiting": "Resgate a caminho — chega em",
     "wait": "Esperar o resgate — {{cost}} ¢ (cerca de {{minutes}} min)",
     "now": "Resgate já — {{cost}} ¢",
-    "confirmWait": "Esperar o resgate? Ele chega em cerca de {{minutes}} minutos e reboca a nave para {{base}}. Você paga {{cost}} ¢ quando ele chegar.",
-    "confirmNow": "Chamar o resgate já? A nave é rebocada para {{base}} na hora e você paga {{cost}} ¢.",
+    "confirmWait": "Esperar o resgate? Ele chega em cerca de {{minutes}} minutos e reboca a nave para {{base}}. Você paga {{cost}} ¢ quando ele chegar.",
+    "confirmNow": "Chamar o resgate já? A nave é rebocada para {{base}} na hora e você paga {{cost}} ¢.",
     "waitAction": "Esperar o resgate",
     "nowAction": "Resgate já",
     "waitStarted": "O resgate está a caminho. Você paga quando ele chegar.",

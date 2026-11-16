@@ -604,7 +604,9 @@ function RaceProjection({
         aria-label={t('transit.race.projected')}
       >
         <b>{t('transit.race.projected')}</b>
-        <small className="sub">{t('transit.race.projectedStart', { legs })}</small>
+        <small className="sub race-projection-note">
+          {t('transit.race.projectedStart', { legs })}
+        </small>
       </section>
     );
   }
@@ -617,18 +619,17 @@ function RaceProjection({
       aria-label={t('transit.race.projected')}
     >
       <b>{t('transit.race.projected')}</b>
-      <small className="sub">{t('transit.race.projectedAfter', { leg, legs })}</small>
       <ol className="race-legs">
         {standings.map((row, index) => (
           <li key={`${row.name}-${index}`} className={row.you ? 'race-you' : undefined}>
-            {t('board.race.rank', { place: index + 1 })} {row.you ? t('board.race.you') : row.name}
+            {/* the list's own marker numbers the places */}
+            {row.you ? t('board.race.you') : row.name}
             {row.trouble && (
               <small className="race-trouble"> {t('transit.race.projectedTrouble')}</small>
             )}
           </li>
         ))}
       </ol>
-      <small className="sub">{t('transit.race.projectedNote')}</small>
     </section>
   );
 }

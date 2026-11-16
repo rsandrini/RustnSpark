@@ -27,6 +27,8 @@ import { FactionBadge } from '../../ui/FactionBadge';
 import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
 import { placeArtUrl, usePlaceArt } from '../../ui/PlaceArt';
 import { Popup } from '../../ui/Popup';
+import { MissionResultPopup } from './mission-result-popup';
+import { holdForResultCard } from './result-card-gate';
 
 const infoGlyph = 'i';
 
@@ -141,6 +143,8 @@ export function ReportPage({ guided = false }: ReportPageProps) {
           mission={report.mission}
           world={worldQuery.data}
           onRef={setRefPopup}
+          missionId={missionId}
+          fresh={(location.state as { fresh?: boolean } | null)?.fresh === true}
         />
       )}
 
@@ -457,18 +461,53 @@ function outcomeTone(outcome: string): 'ok' | 'warn' | 'bad' {
   return 'ok';
 }
 
+/** The result card is shown once per pilot and mission, even if the page is opened again. */
+function hasSeen(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+}
+function markSeen(key: string): void {
+  try {
+    window.localStorage.setItem(key, '1');
+  } catch {
+    // the card simply may show again
+  }
+}
+
 interface DebriefProps {
   outcome: string;
   stats: ReportStats;
   mission: ReportMission | undefined;
   world: WorldResponse | undefined;
   onRef: (segment: Extract<ReportSegment, { t: 'ref' }>) => void;
+  missionId: string;
+  /** The pilot has just arrived from the flight: the short result card opens (once). */
+  fresh: boolean;
 }
 
 // The first thing after a flight: how it ended, what it was, what it paid, and what it cost.
 // Everything here is read from the stored run (stats), never worked out on the client.
-function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
+function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: DebriefProps) {
   const placeArt = usePlaceArt();
+  const { user } = useAuthContext();
+  const seenKey = `rs.report.card.${user?.id ?? ''}.${missionId}`;
+  const [cardOpen, setCardOpen] = useState(() => fresh && !hasSeen(seenKey));
+  const closeCard = () => {
+    markSeen(seenKey);
+    setCardOpen(false);
+    holdForResultCard(false);
+  };
+  // no card to show (an old report, or one already seen): nothing holds the story's guide back
+  useEffect(() => {
+    // (no cleanup: the report redraws while its data reloads, and that must not let the guide in; the director's own
+    // time limit covers a page that never shows the card)
+    if (!cardOpen) holdForResultCard(false);
+    // only the first look decides; closing the card lowers the hold itself
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { t, i18n } = useTranslation();
   const display = useDisplay();
   const tone = outcomeTone(outcome);
@@ -492,8 +531,40 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
     0;
   const damageTotal = stats.damage.shield + stats.damage.armor + stats.damage.hull;
 
+  const you = stats.race?.standings.find((row) => row.you);
+  const missionName =
+    mission === undefined
+      ? ''
+      : mission.type === 'TRAVEL'
+        ? t('board.type.TRAVEL')
+        : pickLocalized(mission.title, i18n.language);
+  const missionRoute =
+    mission === undefined
+      ? ''
+      : mission.originId === mission.destinationId
+        ? place(mission.originId)
+        : [place(mission.originId), place(mission.destinationId)].join(' → ');
+
   return (
     <section className={`debrief ${tone}`} data-testid="debrief">
+      {cardOpen && (
+        <MissionResultPopup
+          tone={tone}
+          outcome={t(`report.outcome.${outcome}`, { defaultValue: outcome })}
+          title={missionName}
+          route={missionRoute}
+          credits={creditsText}
+          race={
+            stats.race === null || stats.race === undefined || you === undefined
+              ? null
+              : {
+                  place: stats.race.place,
+                  time: formatDuration(you.seconds * stats.race.timeScale, t),
+                }
+          }
+          onClose={closeCard}
+        />
+      )}
       {mission !== undefined && (
         <div
           className="debrief-art"
@@ -511,6 +582,11 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
           <div className="debrief-outcome">
             {t(`report.outcome.${outcome}`, { defaultValue: outcome })}
           </div>
+          {outcome === 'adrift' && (
+            <p className="debrief-hint" role="note" data-testid="adrift-hint">
+              {t('report.outcome.adriftHint')}
+            </p>
+          )}
           {mission !== undefined && (
             <div className="debrief-mission">
               {[
@@ -687,6 +763,22 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
                             leader: leader?.name ?? '',
                             place: youIndex + 1,
                           })}
+                      <small className="race-leg-times">
+                        {t('report.debrief.raceLegTimes', {
+                          you: formatDuration(
+                            (youRow?.legSeconds ?? 0) * (stats.race?.timeScale ?? 1),
+                            t,
+                          ),
+                          leader: formatDuration(
+                            (leader?.legSeconds ?? 0) * (stats.race?.timeScale ?? 1),
+                            t,
+                          ),
+                          total: formatDuration(
+                            (youRow?.totalSeconds ?? 0) * (stats.race?.timeScale ?? 1),
+                            t,
+                          ),
+                        })}
+                      </small>
                       {youRow?.trouble === true && (
                         <small className="race-trouble">
                           {t('report.debrief.raceLegYouTrouble')}

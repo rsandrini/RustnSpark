@@ -616,12 +616,26 @@ const EXPLORERS: Voice = {
   },
 };
 
-/** The scenes by mentor id. */
-export const MENTOR_SCENES: Readonly<Record<string, readonly SceneData[]>> = {
+/** Every scene the dialogue engine knows how to hang on a moment, by mentor id (the engine's tests walk through them). */
+export const ALL_MENTOR_SCENES: Readonly<Record<string, readonly SceneData[]>> = {
   luna_mentor_ines: scenes(LUNA),
   sun_mentor_tomas: scenes(SUN),
   explorers_mentor_vik: scenes(EXPLORERS),
 };
+
+/**
+ * What a new faction pilot meets: only the presentation of the faction. The opening already taught the rest (the ship,
+ * refuel, missions, repair, upgrades), so the other scenes are not seeded; an Admin can add any of them back.
+ */
+const INTRO_SCENES = ['welcome'];
+
+/** The scenes by mentor id. */
+export const MENTOR_SCENES: Readonly<Record<string, readonly SceneData[]>> = Object.fromEntries(
+  Object.entries(ALL_MENTOR_SCENES).map(([id, list]) => [
+    id,
+    list.filter((scene) => INTRO_SCENES.includes(scene.id)),
+  ]),
+);
 
 /**
  * Gives each mentor their scenes while the column is still empty, and brings a mentor still holding the original six

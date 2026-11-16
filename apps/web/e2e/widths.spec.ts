@@ -106,7 +106,7 @@ for (const language of ['en', 'pt-BR'] as const) {
     await page.locator('.mrow').first().waitFor();
     await everywhere(page, tag('/missions'));
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.locator('.mrow-details summary').first().click();
+    await page.locator('.mrow-toggle').first().click();
     await everywhere(page, tag('/missions details'));
 
     for (const path of ['/map', '/map?place=ceres', '/guide', '/guide/fuel', '/profile']) {

@@ -13,6 +13,7 @@ import { BugReportDialog } from './BugReportDialog';
 import { ClaimPopup } from '../features/auth/claim-popup';
 import { SAVE_PILOT_PARAM } from '../features/auth/guest-reminder';
 import { Popup } from './Popup';
+import { usePrologueMode } from '../features/prologue/prologue-mode';
 
 /** Two letters for the avatar button: the pilot's initials, never empty. */
 function initialsOf(name: string | undefined): string {
@@ -46,7 +47,11 @@ export function AccountMenu() {
   const [reporting, setReporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  // in the story a registered pilot is asked too: Sign out is never a stray click
+  const [signingOut, setSigningOut] = useState(false);
   const isGuest = user?.isGuest === true;
+  // in the opening the menu is only the language and Sign out: the rest of the game is not open to the pilot yet
+  const opening = usePrologueMode().active;
   // The reminder's button lands here with ?save=1: open the save popup and tidy the address.
   const [search, setSearch] = useSearchParams();
   useEffect(() => {
@@ -114,96 +119,100 @@ export function AccountMenu() {
       {open && (
         <div className="shell-menu" id="account-menu">
           <div className="label shell-menu-name">{user?.name}</div>
-          {isGuest && (
+          {!opening && (
             <>
-              <div className="label shell-menu-guest">{t('guest.label')}</div>
+              {isGuest && (
+                <>
+                  <div className="label shell-menu-guest">{t('guest.label')}</div>
+                  <button
+                    type="button"
+                    className="shell-menu-item"
+                    onClick={() => {
+                      setOpen(false);
+                      setSaving(true);
+                    }}
+                  >
+                    {t('guest.saveMenu')}
+                  </button>
+                </>
+              )}
+              <Link className="shell-menu-item" to="/profile" onClick={() => setOpen(false)}>
+                {t('nav.profile')}
+              </Link>
+              <Link className="shell-menu-item" to="/rankings" onClick={() => setOpen(false)}>
+                {t('nav.rankings')}
+              </Link>
+              <Link className="shell-menu-item" to="/guide" onClick={() => setOpen(false)}>
+                {t('nav.guide')}
+              </Link>
+              {user?.tutorialDone === true && (
+                <button
+                  type="button"
+                  className="shell-menu-item"
+                  onClick={() => {
+                    setOpen(false);
+                    void authApi.setTutorialDone(false).then(() => reloadProfile());
+                  }}
+                >
+                  {t('nav.gettingStarted')}
+                </button>
+              )}
+              {dialogue.data !== undefined && (
+                <div className="shell-menu-dialogue" data-testid="menu-dialogue">
+                  <button
+                    type="button"
+                    className="shell-menu-item shell-menu-fold"
+                    aria-expanded={talkOpen}
+                    onClick={() => setTalkOpen((was) => !was)}
+                  >
+                    {t('dialogue.menuTitle')} {talkOpen ? '▾' : '▸'}
+                  </button>
+                  {talkOpen && (
+                    <>
+                      {dialogue.data.replayable.map((scene) => (
+                        <button
+                          key={scene.id}
+                          type="button"
+                          className="shell-menu-item"
+                          onClick={() => {
+                            setOpen(false);
+                            dialogueActions.replay.mutate(scene.id);
+                          }}
+                        >
+                          {t('dialogue.replayLabel', {
+                            title: pickLocalized(scene.title, i18n.language),
+                          })}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        className="shell-menu-item"
+                        aria-pressed={dialogueOn}
+                        onClick={() => dialogueActions.setEnabled.mutate(!dialogueOn)}
+                      >
+                        {t(dialogueOn ? 'dialogue.turnOff' : 'dialogue.turnOn')}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+              {user?.role === 'ADMIN' && (
+                <Link className="shell-menu-item" to="/admin" onClick={() => setOpen(false)}>
+                  {t('nav.admin')}
+                </Link>
+              )}
               <button
                 type="button"
                 className="shell-menu-item"
                 onClick={() => {
                   setOpen(false);
-                  setSaving(true);
+                  setReporting(true);
                 }}
               >
-                {t('guest.saveMenu')}
+                {t('bugReport.menu')}
               </button>
             </>
           )}
-          <Link className="shell-menu-item" to="/profile" onClick={() => setOpen(false)}>
-            {t('nav.profile')}
-          </Link>
-          <Link className="shell-menu-item" to="/rankings" onClick={() => setOpen(false)}>
-            {t('nav.rankings')}
-          </Link>
-          <Link className="shell-menu-item" to="/guide" onClick={() => setOpen(false)}>
-            {t('nav.guide')}
-          </Link>
-          {user?.tutorialDone === true && (
-            <button
-              type="button"
-              className="shell-menu-item"
-              onClick={() => {
-                setOpen(false);
-                void authApi.setTutorialDone(false).then(() => reloadProfile());
-              }}
-            >
-              {t('nav.gettingStarted')}
-            </button>
-          )}
-          {dialogue.data !== undefined && (
-            <div className="shell-menu-dialogue" data-testid="menu-dialogue">
-              <button
-                type="button"
-                className="shell-menu-item shell-menu-fold"
-                aria-expanded={talkOpen}
-                onClick={() => setTalkOpen((was) => !was)}
-              >
-                {t('dialogue.menuTitle')} {talkOpen ? '▾' : '▸'}
-              </button>
-              {talkOpen && (
-                <>
-                  {dialogue.data.replayable.map((scene) => (
-                    <button
-                      key={scene.id}
-                      type="button"
-                      className="shell-menu-item"
-                      onClick={() => {
-                        setOpen(false);
-                        dialogueActions.replay.mutate(scene.id);
-                      }}
-                    >
-                      {t('dialogue.replayLabel', {
-                        title: pickLocalized(scene.title, i18n.language),
-                      })}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    className="shell-menu-item"
-                    aria-pressed={dialogueOn}
-                    onClick={() => dialogueActions.setEnabled.mutate(!dialogueOn)}
-                  >
-                    {t(dialogueOn ? 'dialogue.turnOff' : 'dialogue.turnOn')}
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-          {user?.role === 'ADMIN' && (
-            <Link className="shell-menu-item" to="/admin" onClick={() => setOpen(false)}>
-              {t('nav.admin')}
-            </Link>
-          )}
-          <button
-            type="button"
-            className="shell-menu-item"
-            onClick={() => {
-              setOpen(false);
-              setReporting(true);
-            }}
-          >
-            {t('bugReport.menu')}
-          </button>
           <div className="shell-menu-lang">
             <LanguageSwitcher />
           </div>
@@ -215,18 +224,40 @@ export function AccountMenu() {
               if (isGuest) {
                 setOpen(false);
                 setLeaving(true);
+              } else if (opening) {
+                setOpen(false);
+                setSigningOut(true);
               } else logout.mutate();
             }}
           >
             {t('nav.logout')}
           </button>
-          <div className="label shell-menu-version" data-testid="app-version">
-            {APP_VERSION}
-          </div>
+          {!opening && (
+            <div className="label shell-menu-version" data-testid="app-version">
+              {APP_VERSION}
+            </div>
+          )}
         </div>
       )}
       <BugReportDialog open={reporting} onClose={() => setReporting(false)} />
       <ClaimPopup open={saving} onClose={() => setSaving(false)} />
+      <Popup
+        open={signingOut}
+        title={t('nav.logoutConfirmTitle')}
+        onClose={() => setSigningOut(false)}
+        actions={
+          <>
+            <button type="button" className="btn primary" onClick={() => setSigningOut(false)}>
+              {t('nav.logoutKeep')}
+            </button>
+            <button type="button" className="btn" onClick={() => logout.mutate()}>
+              {t('nav.logout')}
+            </button>
+          </>
+        }
+      >
+        <p>{t('nav.logoutConfirmText')}</p>
+      </Popup>
       <Popup
         open={leaving}
         title={t('guest.leave.title')}

@@ -121,11 +121,13 @@ export function legSecondsOf(routeIds: readonly string[]): number[] {
   return routeIds.map((id) => routeOf(id)?.seconds ?? 0);
 }
 
-/** The pilot's own three legs of the race (the flight's real times) and the friend's: ahead early, behind at the end. */
+/** The pilot's own three legs of the race (the flight's real times) and the friend's: ahead early, well behind at the end (the engine fails in the second leg). */
 export const RACE_PILOT_LEGS: readonly number[] = ROUTE_DEFS.slice(0, 3).map(
   (route) => route.seconds,
 );
-export const RACE_FRIEND_LEGS = [19.5, 16, 17.5] as const;
+/** The leg (0-based) where the pilot's engine fails: only the race's report tells it (the board does not spoil it). */
+export const RACE_ENGINE_FAIL_LEG = 1;
+export const RACE_FRIEND_LEGS = [19, 14, 13.5] as const;
 
 /** The race's three legs, Haven to Dockside. */
 export const RACE_ROUTES = ['sandbox-r1', 'sandbox-r2', 'sandbox-r3'] as const;
@@ -148,12 +150,12 @@ export const SCRAP_NAME: LocalizedText = { en: 'Scrap', 'pt-BR': 'Sucata' };
 // ---------------------------------------------------------------------------------------------
 // The module the job needs, sold at every port
 
-/** The passenger module of the opening: a cabin with its life support built in, one square. */
-export const SANDBOX_PASSENGER_MODULE: ProloguePart = {
-  id: 'sandbox-passenger-module',
-  name: { en: 'Passenger Module', 'pt-BR': 'Módulo de Passageiros' },
+/** The passenger cabin of the opening: a pressurized room for people, one square, joined to the bridge's east side. */
+export const SANDBOX_PASSENGER_CABIN: ProloguePart = {
+  id: 'sandbox-passenger-cabin',
+  name: { en: 'Passenger Cabin', 'pt-BR': 'Cabine de Passageiros' },
   catalog: {
-    partType: 'passenger_module',
+    partType: 'passenger_cabin',
     partClass: 'CARGO',
     w: 1,
     h: 1,
@@ -176,27 +178,76 @@ export const SANDBOX_PASSENGER_MODULE: ProloguePart = {
     batOutput: 0,
     batInput: 0,
     pressurized: true,
+    lifeSupport: false,
+  },
+  connectors: PROLOGUE_CARGO.connectors,
+  rarity: 'COMMON',
+  target: { partInstanceId: 'sandbox-passenger-cabin', gx: 1, gy: 0, rot: 0 },
+};
+
+/** The life support the cabin only works with: air and heat, one square, joined to the cabin's east side. */
+export const SANDBOX_LIFE_SUPPORT: ProloguePart = {
+  id: 'sandbox-life-support',
+  name: { en: 'Life Support', 'pt-BR': 'Suporte de Vida' },
+  catalog: {
+    ...SANDBOX_PASSENGER_CABIN.catalog,
+    partType: 'life_support',
+    mass: 3,
+    structureCost: 4,
+    partHp: 20,
+    pressurized: false,
     lifeSupport: true,
   },
   connectors: PROLOGUE_CARGO.connectors,
   rarity: 'COMMON',
-  target: { partInstanceId: 'sandbox-passenger-module', gx: 1, gy: 0, rot: 0 },
+  target: { partInstanceId: 'sandbox-life-support', gx: 2, gy: 0, rot: 0 },
 };
 
 export const SANDBOX_DESCRIPTIONS: Record<string, LocalizedText> = {
-  passenger_module: {
-    en: 'A pressurized cabin with its air and heat built in: room for people instead of freight. Passenger jobs need one.',
+  passenger_cabin: {
+    en: 'A pressurized cabin: room for people instead of freight. Passenger jobs need one, together with a Life Support module.',
     'pt-BR':
-      'Uma cabine pressurizada com ar e aquecimento embutidos: espaço para pessoas em vez de carga. Os trabalhos de passageiros precisam de uma.',
+      'Uma cabine pressurizada: espaço para pessoas em vez de carga. Os trabalhos de passageiros precisam de uma, junto com um módulo de Suporte de Vida.',
+  },
+  life_support: {
+    en: 'Air and heat for the people on board. A Passenger Cabin only works together with one.',
+    'pt-BR':
+      'Ar e aquecimento para as pessoas a bordo. Uma Cabine de Passageiros só funciona junto com um.',
   },
 };
 
-/** Both modules cost the same (one price, in the opening's config), so the choice of job never changes the money. */
-export function marketListingsOf(price: number, chosen: ModuleKind | null = null): MarketListing[] {
-  const sold = [SANDBOX_PASSENGER_MODULE, PROLOGUE_CARGO].filter(
-    (part) => chosen === null || (chosen === 'passengers') === (part === SANDBOX_PASSENGER_MODULE),
+/** The parts a kind of job needs fitted: a cargo hold, or a passenger cabin together with life support. */
+export function modulesFor(kind: ModuleKind): readonly ProloguePart[] {
+  return kind === 'passengers' ? [SANDBOX_PASSENGER_CABIN, SANDBOX_LIFE_SUPPORT] : [PROLOGUE_CARGO];
+}
+
+/**
+ * What one of the job's parts costs. Every job's modules cost the same together (one price, in the opening's config), so
+ * the choice of job never changes the money: the cabin takes the larger half when the price does not split evenly.
+ */
+export function modulePrice(part: ProloguePart, total: number): number {
+  if (part === SANDBOX_PASSENGER_CABIN) return Math.ceil(total / 2);
+  if (part === SANDBOX_LIFE_SUPPORT) return total - Math.ceil(total / 2);
+  return total;
+}
+
+const NOT_FOR_THIS_JOB: LocalizedText = {
+  en: 'Not for this job',
+  'pt-BR': 'Não é para este trabalho',
+};
+
+/** Every module not yet bought is on the shelf; the ones the chosen job does not need are shown but cannot be bought. */
+export function marketListingsOf(
+  total: number,
+  chosen: ModuleKind | null = null,
+  owned: ReadonlySet<string> = new Set(),
+): MarketListing[] {
+  const needed = chosen === null ? null : modulesFor(chosen);
+  // a part the pilot already bought leaves the shelf: there is only one of each
+  const onShelf = [SANDBOX_PASSENGER_CABIN, SANDBOX_LIFE_SUPPORT, PROLOGUE_CARGO].filter(
+    (part) => !owned.has(part.catalog.partType),
   );
-  return sold.map((part) => ({
+  return onShelf.map((part) => ({
     listingId: `catalog:sandbox:${part.catalog.partType}`,
     kind: 'catalog',
     partType: part.catalog.partType,
@@ -206,8 +257,9 @@ export function marketListingsOf(price: number, chosen: ModuleKind | null = null
     rarity: part.rarity,
     catalog: part.catalog,
     condition: 100,
-    price,
+    price: modulePrice(part, total),
     connectors: [...part.connectors],
+    ...(needed === null || needed.includes(part) ? {} : { blockedReason: NOT_FOR_THIS_JOB }),
   }));
 }
 

@@ -110,8 +110,22 @@ function distanceToBase(
   return best;
 }
 
-/** The nearest base from a floating spot: along the route to either end, then on to a base. */
+/**
+ * Where a floating ship is towed: the nearest of the pilot's own faction bases when one can be
+ * reached (so a rescue never drops a pilot among strangers), else the nearest base of any kind.
+ */
 export function towPlanFor(
+  spot: FloatSpot,
+  routes: readonly RouteEdge[],
+  baseIds: ReadonlySet<string>,
+  ownBaseIds: ReadonlySet<string> = new Set(),
+): TowPlan | null {
+  const own = ownBaseIds.size > 0 ? nearestBasePlan(spot, routes, ownBaseIds) : null;
+  return own ?? nearestBasePlan(spot, routes, baseIds);
+}
+
+/** The nearest base from a floating spot: along the route to either end, then on to a base. */
+function nearestBasePlan(
   spot: FloatSpot,
   routes: readonly RouteEdge[],
   baseIds: ReadonlySet<string>,

@@ -155,7 +155,7 @@ describe('port (S10.9)', () => {
 
     fireEvent.click(rowButton('Plated Hull'));
     const popup = await screen.findByRole('dialog', {
-      name: 'Buy Plated Hull for 300 ¢?',
+      name: 'Buy Plated Hull for 300 ¢?',
     });
     expect(popup).toHaveTextContent('Balance after: 4,520 ¢');
     // the part's footprint and ports, big enough to read, and its size in cells
@@ -202,7 +202,7 @@ describe('port (S10.9)', () => {
 
     openPortTab('Your goods');
     fireEvent.click(rowButton(/Iron/));
-    const popup = await screen.findByRole('dialog', { name: 'Sell Iron for 24 ¢?' });
+    const popup = await screen.findByRole('dialog', { name: 'Sell Iron for 24 ¢?' });
     expect(popup).toHaveTextContent('Balance after: 4,844 ¢');
     fireEvent.click(within(popup).getByRole('button', { name: 'Sell' }));
 
@@ -217,7 +217,7 @@ describe('port (S10.9)', () => {
     const slider = await screen.findByTestId('sell-amount-iron');
     fireEvent.change(slider, { target: { value: '1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Sell 1' }));
-    const popup = await screen.findByRole('dialog', { name: /Sell Iron for \d+ ¢\?/ });
+    const popup = await screen.findByRole('dialog', { name: /Sell Iron for \d+\s¢\?/ });
     fireEvent.click(within(popup).getByRole('button', { name: 'Sell' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent(/Sold Iron for \d+ ¢\./);
@@ -267,7 +267,7 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
 
     fireEvent.click(within(summary).getByRole('button', { name: 'Start repair' }));
-    const popup = await screen.findByRole('dialog', { name: 'Repair for 1188 ¢?' });
+    const popup = await screen.findByRole('dialog', { name: 'Repair for 1188 ¢?' });
     expect(economyState.wallet).toBe(4820);
     fireEvent.click(within(popup).getByRole('button', { name: 'Start repair' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Repair started for 1188 ¢');
@@ -431,7 +431,7 @@ describe('port (S10.9)', () => {
     const summary = screen.getByTestId('repair-summary');
     await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
     fireEvent.click(within(summary).getByRole('button', { name: 'Start repair' }));
-    const popup = await screen.findByRole('dialog', { name: 'Repair for 1188 ¢?' });
+    const popup = await screen.findByRole('dialog', { name: 'Repair for 1188 ¢?' });
     fireEvent.click(within(popup).getByRole('button', { name: 'Start repair' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Repair started for 1188 ¢');
     await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('112 ¢'));
@@ -761,7 +761,7 @@ describe('port (S10.9)', () => {
     fireEvent.click(rowButton('Plated Hull'));
     const popup = await screen.findByRole('dialog');
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
-    expect(await screen.findByRole('dialog', { name: /320 ¢/ })).toHaveTextContent(
+    expect(await screen.findByRole('dialog', { name: /320\s¢/ })).toHaveTextContent(
       'The price changed to 320 ¢ — confirm again.',
     );
   });
@@ -887,17 +887,15 @@ describe('port (S10.9)', () => {
   // Round-10 owner request: "Upgrade UI should show diff between current part and upgraded
   // part" — the same before/after popup Market already has, built from a virtual part at the
   // next tier (which doesn't exist as an owned instance yet).
-  it('the upgrade tab lists everything upgradable, with the "only what I can afford" filter off', async () => {
+  it('the upgrade tab lists everything upgradable, with no filter and no counts line above it', async () => {
     await renderPort();
     openPortTab('Upgrade');
     expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Only what I can afford' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    expect(screen.queryByRole('button', { name: 'Only what I can afford' })).toBeNull();
+    expect(screen.queryByTestId('upgrade-counts')).toBeNull();
   });
 
-  it('with too few credits the card says how many are missing, and the filter hides it', async () => {
+  it('with too few credits the card says how many are missing', async () => {
     setWallet(1);
     await renderPort();
     openPortTab('Upgrade');
@@ -912,12 +910,6 @@ describe('port (S10.9)', () => {
     expect(within(needs).getByText(/missing/)).toBeInTheDocument();
     expect(rowButton('Plated Hull')).toBeDisabled();
     expect(rowButton('Plated Hull')).toHaveTextContent(/^Need .* ¢ more$/);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Only what I can afford' }));
-    expect(
-      await screen.findByText(/Nothing you can upgrade with your credits/),
-    ).toBeInTheDocument();
-    expect(screen.queryByText('Plated Hull')).not.toBeInTheDocument();
   });
 
   it('puts the upgrade price before what the pilot has in the requirements line', async () => {
@@ -961,7 +953,6 @@ describe('port (S10.9)', () => {
       'Missing materials',
     );
     expect(screen.queryByTestId('upgrade-group-ready')).not.toBeInTheDocument();
-    expect(screen.getByTestId('upgrade-counts')).toHaveTextContent('0 ready');
   });
 
   it('hovering an upgrade card shows only the diff table between this part and the upgraded part', async () => {
@@ -1000,8 +991,9 @@ describe('port (S10.9)', () => {
     await screen.findByText('Plated Hull');
 
     fireEvent.click(rowButton('Plated Hull'));
-    const popup = await screen.findByRole('dialog', { name: 'Upgrade for 115 ¢?' });
-    expect(popup).toHaveTextContent('Upgrade Plated Hull to Reinforced Hull for 115 ¢?');
+    const popup = await screen.findByRole('dialog', { name: 'Upgrade Plated Hull?' });
+    // the price is said once, in the list below the names
+    expect(popup).toHaveTextContent('Plated Hull → Reinforced Hull');
     // The whole price: credits and what else it asks for, against what the pilot holds.
     const price = within(popup).getByTestId('upgrade-price');
     expect(price).toHaveTextContent('Credits: 115 ¢');
@@ -1012,6 +1004,11 @@ describe('port (S10.9)', () => {
       'rarity-name',
       'rarity-uncommon',
     );
+    // The main differences, today against the upgraded part, are in the popup before the pilot pays.
+    // (the table lists each stat as today -> upgraded, with the change)
+    expect(
+      within(within(popup).getByTestId('upgrade-confirm-diff')).getByTestId('upgrade-diff'),
+    ).toBeInTheDocument();
     fireEvent.click(within(popup).getByRole('button', { name: 'Upgrade' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Upgraded to Reinforced Hull.');

@@ -2,8 +2,8 @@ import type { PrismaClient } from '@prisma/client';
 import type { NodeData, SceneData } from '../../src/dialogue/scenes.js';
 
 /**
- * Default dialogue scenes for the new-pilot opening (Task 8): Kite the friend, Dara the rescuer,
- * Marshal Oren the harbour office. Short, warm, spoken lines, centred on the screen by default.
+ * Default dialogue scenes for the new-pilot opening (Task 8): Bob the friend, Dara the rescuer,
+ * Marshal Oren the harbour office (only the port's own business: the refuel, the market, the way back from the rescue). Short, warm, spoken lines, centred on the screen by default.
  * Admin owns them once seeded; these are only the starting words.
  */
 
@@ -47,10 +47,10 @@ const KITE: SceneData[] = [
       node(
         'k_gift_1',
         [
-          "Hey. I'm Kite. You look like someone whose ship needs to get somewhere.",
-          'Ei. Sou Kite. Você parece alguém cuja nave precisa chegar a algum lugar.',
+          "Hey. I'm Bob. You look like someone whose ship needs to get somewhere.",
+          'Ei. Sou Bob. Você parece alguém cuja nave precisa chegar a algum lugar.',
         ],
-        { next: 'k_gift_2' },
+        { next: 'k_gift_2', openDelay: 2 },
       ),
       node('k_gift_2', [
         "Here's an old engine. Worn, but honest. Drag it onto your grid and let's hear her hum.",
@@ -64,10 +64,14 @@ const KITE: SceneData[] = [
     'prologue_gift_done',
     2,
     [
-      node('k_gift_done', [
-        'There. She hums. You did that with your own hands.',
-        'Pronto. Ronrona. Você fez isso com suas próprias mãos.',
-      ]),
+      node(
+        'k_gift_done',
+        [
+          'There. She hums. You did that with your own hands.',
+          'Pronto. Ronrona. Você fez isso com suas próprias mãos.',
+        ],
+        { openDelay: 3.5 },
+      ),
     ],
   ),
   scene(
@@ -152,13 +156,13 @@ const KITE: SceneData[] = [
   ),
   scene(
     'race_leg_2',
-    ['Halfway', 'Metade'],
+    ['The engine fails', 'O motor falha'],
     'prologue_race_leg_2',
     9,
     [
       node('k_leg_2', [
-        'Halfway there. The ship likes you. That helps more than raw speed.',
-        'Na metade. A nave gosta de você. Isso ajuda mais que velocidade pura.',
+        'Something is wrong... the engine is coughing! You are losing speed. Hold on, keep her flying.',
+        'Algo está errado... o motor está engasgando! Você está perdendo velocidade. Aguente firme, mantenha ela voando.',
       ]),
     ],
   ),
@@ -214,7 +218,7 @@ const KITE: SceneData[] = [
     'choose_job',
     ['What calls to you', 'O que te chama'],
     'prologue_choose-job_enter',
-    14,
+    15,
     [
       node('k_choose', [
         'Passengers or cargo. Different work, same pay. What feels right for your ship?',
@@ -226,7 +230,7 @@ const KITE: SceneData[] = [
     'choose_job_done',
     ['That one', 'Essa'],
     'prologue_choose-job_done',
-    15,
+    16,
     [
       node('k_choose_done', [
         'Good pick. We will need the right module for it. Buy it here at the port.',
@@ -237,8 +241,8 @@ const KITE: SceneData[] = [
   scene(
     'upgrade',
     ['Pirates ahead', 'Piratas à frente'],
-    'prologue_upgrade_enter',
-    15,
+    'prologue_job-report_enter',
+    24,
     [
       node(
         'k_upgrade_1',
@@ -258,7 +262,7 @@ const KITE: SceneData[] = [
     'upgrade_done',
     ['Sturdier', 'Mais resistente'],
     'prologue_upgrade_done',
-    15,
+    28,
     [
       node('k_upgrade_done', [
         'Look at those numbers. She can take a hit now. Let us earn some more.',
@@ -270,7 +274,7 @@ const KITE: SceneData[] = [
     'stop_two',
     ['Second job', 'Segundo serviço'],
     'prologue_stop-two_enter',
-    16,
+    29,
     [
       node('k_stop_two', [
         'Second job, different place. Same deal: we fly together, earn enough to improve both ships.',
@@ -282,7 +286,7 @@ const KITE: SceneData[] = [
     'final_board',
     ['One last run', 'Uma última viagem'],
     'prologue_final-run_enter',
-    17,
+    31,
     [
       node('k_final_board', [
         'One last run. Dangerous lane, but the pay fixes everything. You in?',
@@ -294,7 +298,7 @@ const KITE: SceneData[] = [
     'final_run',
     ['Stay close', 'Fique perto'],
     'prologue_final-run_enter',
-    19,
+    32,
     [
       node('k_final_run', [
         'Stay close. Pirates hunt this lane. We fly through together.',
@@ -303,10 +307,22 @@ const KITE: SceneData[] = [
     ],
   ),
   scene(
+    'final_radar',
+    ['Movement on the radar', 'Movimento no radar'],
+    'prologue_final-run_radar',
+    33,
+    [
+      node('k_final_radar', [
+        'Wait... I am picking up movement ahead on the radar. Stay sharp.',
+        'Peraí... estou vendo movimento à frente no radar. Fique atento.',
+      ]),
+    ],
+  ),
+  scene(
     'loss',
-    ['Kite!', 'Kite!'],
-    'prologue_loss_enter',
-    20,
+    ['Bob!', 'Bob!'],
+    'prologue_final-run_leg_2',
+    34,
     [
       node(
         'k_loss_1',
@@ -314,7 +330,7 @@ const KITE: SceneData[] = [
           'Pirates! They are on us! Break away, I will draw them off!',
           'Piratas! Estão em cima de nós! Fuja, eu vou distraí-los!',
         ],
-        { next: 'k_loss_2' },
+        { next: 'k_loss_2', openDelay: 3 },
       ),
       node('k_loss_2', [
         '...they hit me... my engines are gone... I am losing... [static]',
@@ -323,14 +339,134 @@ const KITE: SceneData[] = [
     ],
   ),
   scene(
-    'loss_done',
-    ['Gone', 'Se foi'],
-    'prologue_loss_done',
+    'fit_module',
+    ['Fit the module', 'Encaixe o módulo'],
+    'prologue_fit-module_enter',
+    19,
+    [
+      node('k_fit_module', [
+        'Drag, connect, save. The yard does not bite.',
+        'Arraste, conecte, salve. O estaleiro não morde.',
+      ]),
+    ],
+  ),
+  scene(
+    'fit_module_done',
+    ['Ready for the run', 'Pronto para a viagem'],
+    'prologue_fit-module_done',
+    20,
+    [
+      node('k_fit_done', [
+        'Your ship is ready for the run. Dispatch when you are steady.',
+        'Sua nave está pronta para a viagem. Despache quando estiver firme.',
+      ]),
+    ],
+  ),
+  scene(
+    'dispatch_job',
+    ['Send her out', 'Mande-a partir'],
+    'prologue_dispatch-job_enter',
     21,
     [
-      node('k_loss_done', [
-        'The pirates hit you both. Your ship is wrecked and drifting, and Kite stopped answering. Your beacon is still on.',
-        'Os piratas atingiram vocês dois. Sua nave está destruída e à deriva, e Kite parou de responder. Seu sinal ainda está ligado.',
+      node('k_dispatch', [
+        'Press dispatch. She will fly while you breathe.',
+        'Aperte partir. Ela vai voar enquanto você respira.',
+      ]),
+    ],
+  ),
+  scene(
+    'dispatch_job_done',
+    ['Away', 'Partiu'],
+    'prologue_dispatch-job_done',
+    22,
+    [
+      node('k_dispatch_done', [
+        'She is away. The report will be here when she returns.',
+        'Ela partiu. O relatório estará aqui quando ela voltar.',
+      ]),
+    ],
+  ),
+  scene(
+    'job_report',
+    ['Job done', 'Serviço feito'],
+    'prologue_job-report_enter',
+    23,
+    [
+      node('k_job_report', [
+        'Job done. Credits in hand. This is how a ship earns her keep.',
+        'Serviço feito. Créditos em mãos. É assim que uma nave ganha a vida.',
+      ]),
+    ],
+  ),
+  scene(
+    'job_report_done',
+    ['Enough for one more', 'O suficiente para mais uma'],
+    'prologue_job-report_done',
+    25,
+    [
+      node('k_job_report_done', [
+        'One more like that and you will have enough to make her truly yours.',
+        'Mais uma dessas e você terá o suficiente para fazê-la realmente sua.',
+      ]),
+    ],
+  ),
+  scene(
+    'repair',
+    ['The flight wore her down', 'O voo a desgastou'],
+    'prologue_repair_enter',
+    26,
+    [
+      node('k_repair', [
+        'Look at her. That run took a toll: the parts are worn. Open Repair and pay the workshop, so she does not give out when we need her most.',
+        'Olha só. Esse voo cobrou seu preço: as peças estão gastas. Abra Reparo e pague a oficina, para ela não falhar quando mais precisarmos.',
+      ]),
+    ],
+  ),
+  scene(
+    'repair_done',
+    ['Good as new', 'Como nova'],
+    'prologue_repair_done',
+    27,
+    [
+      node('k_repair_done', [
+        'Good as new. Now she can take whatever comes. One more thing before the big run: the hull.',
+        'Como nova. Agora ela aguenta o que vier. Mais uma coisa antes da corrida grande: o casco.',
+      ]),
+    ],
+  ),
+  scene(
+    'stop_two_done',
+    ['Good run', 'Boa viagem'],
+    'prologue_stop-two_done',
+    30,
+    [
+      node('k_stop_two_done', [
+        'Good run. One more to go, then we talk about your future.',
+        'Boa viagem. Mais uma e aí conversamos sobre seu futuro.',
+      ]),
+    ],
+  ),
+  scene(
+    'buy_module',
+    ['Buy the module', 'Compre o módulo'],
+    'prologue_buy-module_enter',
+    17,
+    [
+      node('k_buy_module', [
+        'Buy what your job needs. People ride in a cabin, and a cabin only works with life support, so take both. Crates go in the cargo hold.',
+        'Compre o que seu serviço precisa. Pessoas viajam numa cabine, e a cabine só funciona com suporte de vida, então leve os dois. Caixas vão no porão de carga.',
+      ]),
+    ],
+  ),
+  scene(
+    'buy_module_done',
+    ['Paid for', 'Pago'],
+    'prologue_buy-module_done',
+    18,
+    [
+      node('k_buy_done', [
+        'Paid for. Now fit it the same way you fitted the engine.',
+        'Pago. Agora encaixe do mesmo jeito que encaixou o motor.',
       ]),
     ],
   ),
@@ -341,7 +477,7 @@ const DARA: SceneData[] = [
     'rescue',
     ['Found you', 'Encontramos você'],
     'prologue_rescue_enter',
-    30,
+    37,
     [
       node(
         'd_rescue_1',
@@ -352,8 +488,8 @@ const DARA: SceneData[] = [
         { next: 'd_rescue_2' },
       ),
       node('d_rescue_2', [
-        'We are pulling you aboard. You are alive. We searched for Kite and found only wreckage. Kite did not make it. I am so sorry.',
-        'Estamos puxando você para bordo. Você está vivo. Procuramos Kite e só achamos destroços. Kite não sobreviveu. Sinto muito.',
+        'We are pulling you aboard. You are alive. We searched for Bob and found only wreckage. Bob did not make it. I am so sorry.',
+        'Estamos puxando você para bordo. Você está vivo. Procuramos Bob e só achamos destroços. Bob não sobreviveu. Sinto muito.',
       ]),
     ],
   ),
@@ -361,11 +497,59 @@ const DARA: SceneData[] = [
     'rescue_done',
     ['Come aboard', 'Suba a bordo'],
     'prologue_rescue_done',
-    31,
+    38,
     [
       node('d_rescue_done', [
         'Come aboard when you are ready. There is someone at the harbour who needs to talk to you.',
         'Suba a bordo quando estiver pronto. Tem alguém no porto que precisa falar com você.',
+      ]),
+    ],
+  ),
+  scene(
+    'final_run_done',
+    ['You made it', 'Você conseguiu'],
+    'prologue_loss_enter',
+    35,
+    [
+      node('d_final_done', [
+        'You were rescued. Your friend was not. The pirates are the reason. I am sorry.',
+        'Você foi resgatado. Sua amiga não. Os piratas são o motivo. Sinto muito.',
+      ]),
+    ],
+  ),
+  scene(
+    'loss_done',
+    ['The rescue is here', 'O resgate chegou'],
+    'prologue_loss_done',
+    36,
+    [
+      node(
+        'd_loss_1',
+        [
+          'Hey kid, can you breathe? The rescue is here.',
+          'Ei você, consegue respirar? O resgate chegou.',
+        ],
+        { next: 'd_loss_2' },
+      ),
+      node(
+        'd_loss_2',
+        [
+          'The pirates hit you both. Your ship is wrecked and drifting. At least we got here in time.',
+          'Os piratas atingiram vocês dois. Sua nave está destruída e à deriva. Ainda bem que chegamos a tempo.',
+        ],
+        { next: 'd_loss_3' },
+      ),
+      node(
+        'd_loss_3',
+        [
+          'Stay with me. We are pulling you out of the wreckage. Help over here, everyone! There is a survivor.',
+          'Fique comigo. Vamos te tirar dos destroços. Ajuda aqui, pessoal! Tem um sobrevivente.',
+        ],
+        { next: 'd_loss_4' },
+      ),
+      node('d_loss_4', [
+        "Bob's signal has stopped answering. There is nothing left of her. I am sorry.",
+        'O sinal da Bob parou de responder. Não sobrou nada dela. Me desculpe.',
       ]),
     ],
   ),
@@ -376,7 +560,7 @@ const OREN: SceneData[] = [
     'stop_port_done',
     ['Tank full', 'Tanque cheio'],
     'prologue_stop-port_done',
-    40,
+    14,
     [
       node('o_refuel_done', [
         'Tank full. Good. Now you can reach the board.',
@@ -385,130 +569,10 @@ const OREN: SceneData[] = [
     ],
   ),
   scene(
-    'buy_module',
-    ['Buy the module', 'Compre o módulo'],
-    'prologue_buy-module_enter',
-    41,
-    [
-      node('o_buy_module', [
-        'Buy the module your job needs. Passenger cabin for people, cargo hold for crates.',
-        'Compre o módulo que seu serviço precisa. Cabine de passageiros para pessoas, porão de carga para caixas.',
-      ]),
-    ],
-  ),
-  scene(
-    'buy_module_done',
-    ['Paid for', 'Pago'],
-    'prologue_buy-module_done',
-    42,
-    [
-      node('o_buy_done', [
-        'Paid for. Now fit it the same way you fitted the engine.',
-        'Pago. Agora encaixe do mesmo jeito que encaixou o motor.',
-      ]),
-    ],
-  ),
-  scene(
-    'fit_module',
-    ['Fit the module', 'Encaixe o módulo'],
-    'prologue_fit-module_enter',
-    43,
-    [
-      node('o_fit_module', [
-        'Drag, connect, save. The yard does not bite.',
-        'Arraste, conecte, salve. O estaleiro não morde.',
-      ]),
-    ],
-  ),
-  scene(
-    'fit_module_done',
-    ['Ready for the run', 'Pronto para a viagem'],
-    'prologue_fit-module_done',
-    44,
-    [
-      node('o_fit_done', [
-        'Your ship is ready for the run. Dispatch when you are steady.',
-        'Sua nave está pronta para a viagem. Despache quando estiver firme.',
-      ]),
-    ],
-  ),
-  scene(
-    'dispatch_job',
-    ['Send her out', 'Mande-a partir'],
-    'prologue_dispatch-job_enter',
-    45,
-    [
-      node('o_dispatch', [
-        'Press dispatch. She will fly while you breathe.',
-        'Aperte partir. Ela vai voar enquanto você respira.',
-      ]),
-    ],
-  ),
-  scene(
-    'dispatch_job_done',
-    ['Away', 'Partiu'],
-    'prologue_dispatch-job_done',
-    46,
-    [
-      node('o_dispatch_done', [
-        'She is away. The report will be here when she returns.',
-        'Ela partiu. O relatório estará aqui quando ela voltar.',
-      ]),
-    ],
-  ),
-  scene(
-    'job_report',
-    ['Job done', 'Serviço feito'],
-    'prologue_job-report_enter',
-    47,
-    [
-      node('o_job_report', [
-        'Job done. Credits in hand. This is how a ship earns her keep.',
-        'Serviço feito. Créditos em mãos. É assim que uma nave ganha a vida.',
-      ]),
-    ],
-  ),
-  scene(
-    'job_report_done',
-    ['Enough for one more', 'O suficiente para mais uma'],
-    'prologue_job-report_done',
-    48,
-    [
-      node('o_job_report_done', [
-        'One more like that and you will have enough to make her truly yours.',
-        'Mais uma dessas e você terá o suficiente para fazê-la realmente sua.',
-      ]),
-    ],
-  ),
-  scene(
-    'stop_two_done',
-    ['Good run', 'Boa viagem'],
-    'prologue_stop-two_done',
-    49,
-    [
-      node('o_stop_two_done', [
-        'Good run. One more to go, then we talk about your future.',
-        'Boa viagem. Mais uma e aí conversamos sobre seu futuro.',
-      ]),
-    ],
-  ),
-  scene(
-    'final_run_done',
-    ['You made it', 'Você conseguiu'],
-    'prologue_final-run_done',
-    50,
-    [
-      node('o_final_done', [
-        'You were rescued. Your friend was not. The pirates are the reason. I am sorry.',
-        'Você foi resgatado. Seu amigo não. Os piratas são o motivo. Sinto muito.',
-      ]),
-    ],
-  ),
-  scene(
     'choose_faction',
     ['Choose who you fight with', 'Escolha com quem lutar'],
     'prologue_rescue_done',
-    51,
+    39,
     [
       node('o_choose_faction', [
         'The three powers are fighting the pirates. You can fly under one flag. Choose who you fight with.',
@@ -537,6 +601,7 @@ export const PROLOGUE_STEPS = [
   'fit-module',
   'dispatch-job',
   'job-report',
+  'repair',
   'upgrade',
   'stop-two',
   'final-run',

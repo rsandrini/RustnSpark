@@ -2857,6 +2857,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'onboarding.prologue_repair_cost',
+    group: 'onboarding',
+    type: 'integer',
+    min: 0,
+    max: 100000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.onboarding.prologue_repair_cost),
+    description: {
+      en: "What the repair at the new-pilot opening costs (the worn parts go back to full at the port's workshop). The opening payouts cover it, so the pilot still ends with the start credits.",
+      'pt-BR':
+        'Quanto custa o reparo na abertura do piloto novo (as peças gastas voltam ao máximo na oficina do porto). Os pagamentos da abertura o cobrem, então o piloto ainda termina com os créditos iniciais.',
+    },
+  },
+  {
     key: 'onboarding.home_locations',
     group: 'onboarding',
     type: 'json',

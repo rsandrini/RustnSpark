@@ -47,7 +47,6 @@ import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
 import { RescueBanner } from '../rescue/rescue-banner';
 import { TransitPage } from '../transit/transit.page';
-import { useActiveMissions } from '../transit/use-active-mission';
 import { useIsPhone } from '../../ui/use-phone';
 import { useAnswer, useFeedback } from '../../ui/feedback';
 import { useProblemText } from './problem-text';
@@ -259,6 +258,30 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     [effectiveLayout],
   );
   const trayParts = parts.filter((part) => !placedIds.has(part.id));
+  // A part that arrives in the list after the screen is up (an engine handed over, a purchase) grows into place.
+  const seenTray = useRef<ReadonlySet<string> | null>(null);
+  const [arrived, setArrived] = useState<ReadonlySet<string>>(new Set());
+  const trayKey = trayParts.map((part) => part.id).join('|');
+  useEffect(() => {
+    if (!inventoryQuery.isSuccess) return;
+    const now = new Set(trayKey === '' ? [] : trayKey.split('|'));
+    const before = seenTray.current;
+    seenTray.current = now;
+    if (before === null) return;
+    const added = [...now].filter((id) => !before.has(id));
+    // one or two parts landing (an engine handed over, a purchase) drop in; a whole ship emptied into the list does not
+    if (added.length === 0 || added.length > 2) return;
+    setArrived((current) => new Set([...current, ...added]));
+    window.setTimeout(
+      () =>
+        setArrived((current) => {
+          const next = new Set(current);
+          added.forEach((id) => next.delete(id));
+          return next;
+        }),
+      3000,
+    );
+  }, [trayKey, inventoryQuery.isSuccess]);
   // Nothing installed yet: the loose parts are the starter kit the player still has to assemble.
   const isKit = effectiveLayout.length === 0 && trayParts.length > 0;
   const hoveredPart = parts.find((part) => part.id === hoveredId) ?? null;
@@ -655,8 +678,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
   // In the opening there is no Save button: a part dropped on the ship is saved a moment later (when the ship is sound).
   const opening = usePrologueMode().active;
-  // in the opening a pilot with a job taken (or flying it) sees the job and nothing else: no yard below it
-  const jobTaken = (useActiveMissions().data?.length ?? 0) > 0;
   const autoSaveBlocked =
     save.isPending ||
     modifyBlocked ||
@@ -828,10 +849,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           )}
 
           {/* On a phone a ship that is out on a mission shows only its flight: the yard cannot be edited then. */}
-          <div
-            className="hangar-layout"
-            hidden={(phone && modifyBlocked) || (opening && (modifyBlocked || jobTaken))}
-          >
+          <div className="hangar-layout" hidden={phone && modifyBlocked}>
             {phone && partsOpen && (
               <div
                 className="phone-sheet-backdrop"
@@ -841,7 +859,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             )}
             <section
               aria-label={t('hangar.tray')}
-              className={`hangar-side${phone ? ' phone-sheet' : ''}${phone && partsOpen ? ' open' : ''}${removeZoneOn && draggingId !== null ? ' drop-ready' : ''}`}
+              data-tour="parts_tray"
+              className={`hangar-side${arrived.size > 0 ? ' impact' : ''}${phone ? ' phone-sheet' : ''}${phone && partsOpen ? ' open' : ''}${removeZoneOn && draggingId !== null ? ' drop-ready' : ''}`}
               // A part dragged out of the ship and released over this list leaves the ship (Parts tab only).
               data-drop-zone={removeZoneOn ? 'parts' : undefined}
             >
@@ -890,6 +909,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     <TrayPartRow
                       key={part.id}
                       part={part}
+                      arrived={arrived.has(part.id)}
                       name={nameById.get(part.id) ?? part.partType}
                       disabled={modifyBlocked}
                       selected={pendingPartId === part.id}
@@ -1331,6 +1351,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 )}
                 <ShipSheetPanel
                   shipClass={shipClass}
+                  // the opening's ship is a blank start: no class, and no renaming it yet
+                  classLabel={opening ? t('prologue.shipClassNone') : undefined}
                   shipName={
                     ship === undefined
                       ? undefined
@@ -1338,7 +1360,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                         ? ship.name
                         : hexPlaceholder(ship.id)
                   }
-                  onRename={ship === undefined ? undefined : () => setRenaming(true)}
+                  onRename={ship === undefined || opening ? undefined : () => setRenaming(true)}
                   sheet={sheet}
                   problemCount={allProblems.length}
                   warningCount={allWarnings.length}

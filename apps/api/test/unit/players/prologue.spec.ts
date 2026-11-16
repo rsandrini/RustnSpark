@@ -6,12 +6,12 @@ import {
 } from '../../../src/config/game-rules.schema.js';
 import { prologuePayouts } from '../../../src/players/prologue.js';
 
-const SHARES = [17, 13, 70];
+const SHARES = [50, 25, 25];
 const PURSE = 300;
 const REFUEL = 100;
 const MODULE = 800;
 const UPGRADE = 200;
-const POOL = 3000 - PURSE + REFUEL + MODULE + UPGRADE;
+const POOL = REFUEL + MODULE + UPGRADE;
 const withShares = (shares: number[]) => ({
   ...GAME_CONFIG_DEFAULTS,
   onboarding: { ...GAME_CONFIG_DEFAULTS.onboarding, prologue_payout_shares: shares },
@@ -19,20 +19,25 @@ const withShares = (shares: number[]) => ({
 const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
 
 describe('prologuePayouts', () => {
-  it('splits the pool so start - purse + refuel + module is covered exactly', () => {
-    const payouts = prologuePayouts(3000, PURSE, REFUEL, MODULE, UPGRADE, SHARES);
+  it('splits the pool so the refuel, module and upgrade are covered exactly', () => {
+    const payouts = prologuePayouts(REFUEL, MODULE, UPGRADE, SHARES);
     expect(sum(payouts)).toBe(POOL);
-    expect(payouts).toEqual([646, 494, 2660]);
+    expect(payouts).toEqual([550, 275, 275]);
   });
 
   it('gives the rounding remainder to the last payout', () => {
-    const payouts = prologuePayouts(3001, PURSE, REFUEL, MODULE, UPGRADE, SHARES);
-    expect(sum(payouts)).toBe(3001 - PURSE + REFUEL + MODULE + UPGRADE);
-    expect(payouts).toEqual([646, 494, 2661]);
+    const payouts = prologuePayouts(REFUEL, MODULE, UPGRADE + 1, SHARES);
+    expect(sum(payouts)).toBe(POOL + 1);
+    expect(payouts).toEqual([550, 275, 276]);
+  });
+
+  it('covers the repair as well when the opening has one', () => {
+    const payouts = prologuePayouts(REFUEL, MODULE, UPGRADE, SHARES, 150);
+    expect(sum(payouts)).toBe(POOL + 150);
   });
 
   it('returns an empty list for no shares', () => {
-    expect(prologuePayouts(3000, PURSE, REFUEL, MODULE, UPGRADE, [])).toEqual([]);
+    expect(prologuePayouts(REFUEL, MODULE, UPGRADE, [])).toEqual([]);
   });
 });
 

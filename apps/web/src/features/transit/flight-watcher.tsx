@@ -97,7 +97,8 @@ export function FlightWatcher() {
       });
       return;
     }
-    void navigate(`/report/${newest}`);
+    // `fresh`: the report page opens its short animated result card for a flight that has just ended
+    void navigate(`/report/${newest}`, { state: { fresh: true } });
   }, [
     opening,
     activeIsEmpty,

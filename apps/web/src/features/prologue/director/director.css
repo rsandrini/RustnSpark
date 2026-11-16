@@ -1,17 +1,7 @@
 /* Locked controls: shown as they will be in the game, but they do nothing. */
 [data-opening-locked] {
-  opacity: 0.45;
   pointer-events: none;
-  filter: saturate(0.6);
 }
-
-/* A job card is something to read: its parts stay as bright as the card itself (they still do nothing unless allowed). */
-.mrow [data-opening-locked],
-.mcard [data-opening-locked] {
-  opacity: 1;
-  filter: none;
-}
-
 /* What the step wants pressed glows. */
 [data-opening-allowed] {
   animation: opening-glow 1.8s ease-in-out infinite;
@@ -69,15 +59,17 @@
     opacity: 1;
   }
 }
+/* After a report the card sits at the top, so it does not cover the report's leg-by-leg text the pilot is reading. */
+.opening-confirm[data-step$='report'] {
+  top: 72px;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+}
 .opening-confirm .opening-continue {
   font-size: 1.1rem;
   padding: 12px 26px;
 }
 @media (max-width: 720px) {
-  .opening-hint {
-    bottom: 76px;
-    width: calc(100vw - 24px);
-  }
   .opening-bar {
     bottom: 76px; /* above the phone's tab bar */
     right: 12px;
@@ -92,27 +84,11 @@
   border-radius: 8px;
 }
 
-/* What to do now, in one line, next to the skip link. */
-.opening-hint {
-  position: fixed;
-  left: 50%;
-  bottom: 16px;
-  z-index: 95;
-  transform: translateX(-50%);
-  text-align: center;
-  margin: 0;
-  max-width: 320px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: rgba(20, 24, 32, 0.92);
-  border: 1px solid rgba(255, 196, 77, 0.7);
-  color: var(--text, #f3f4f6);
-  font-size: 0.95rem;
-}
-
 /* Smooth hand-over between the screens of the story: a new screen fades and settles in instead of cutting. */
+/* `backwards`, not `both`: a finished animation that keeps its last frame leaves an identity transform on the screen, and any
+   position: fixed card inside it (the part hover cards) is then placed relative to the screen instead of the window. */
 body[data-opening] main.app {
-  animation: opening-screen-in 0.55s ease-out both;
+  animation: opening-screen-in 0.55s ease-out backwards;
 }
 @keyframes opening-screen-in {
   from {
@@ -128,4 +104,10 @@ body[data-opening] main.app {
   body[data-opening] main.app {
     animation: none;
   }
+}
+
+/* The account menu (language, Sign out) is reachable on every screen of the story: above a guide's dimmed backdrop and the
+   full-screen moments, like the opening's own bar. */
+body[data-opening] .shell-top {
+  z-index: 96;
 }

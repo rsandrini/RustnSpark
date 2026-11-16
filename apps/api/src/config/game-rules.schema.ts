@@ -370,7 +370,7 @@ const onboardingSchema = z.object({
     .refine((shares) => shares.reduce((sum, share) => sum + share, 0) === 100, {
       message: 'the payout shares must add up to 100',
     })
-    .default([17, 13, 70]),
+    .default([50, 25, 25]),
   // The pilot starts the opening with this small purse; the engine is a gift, so it costs nothing.
   prologue_purse: z.number().int().min(0).max(100000).default(300),
   // What the refuel at the opening's first stop costs the pilot. The payouts add up to the start credits PLUS the refuel
@@ -380,6 +380,8 @@ const onboardingSchema = z.object({
   prologue_module_cost: z.number().int().min(0).max(100000).default(800),
   // What the hull upgrade at the second stop costs; the payouts also cover it.
   prologue_upgrade_cost: z.number().int().min(0).max(100000).default(200),
+  // What the workshop charges at the first repair of the opening (the worn parts are brought back to full); the payouts cover it too.
+  prologue_repair_cost: z.number().int().min(0).max(100000).default(330),
 });
 
 const worldSchema = z.object({

@@ -1,8 +1,9 @@
-import { PROLOGUE_ENGINE, PROLOGUE_CARGO, PROLOGUE_HULL_UPGRADED } from '../prologue-fixtures';
+import { PROLOGUE_ENGINE, PROLOGUE_HULL_UPGRADED } from '../prologue-fixtures';
 import {
   fuelNeededFor,
   jobsAt,
-  SANDBOX_PASSENGER_MODULE,
+  modulePrice,
+  modulesFor,
   UPGRADE_SCRAP,
   type ModuleKind,
 } from '../sandbox/sandbox-world';
@@ -11,12 +12,6 @@ import type { Sandbox } from '../sandbox/sandbox-state';
 import { OPENING_STEPS, type StepId } from './steps';
 
 const at = (step: StepId) => OPENING_STEPS.indexOf(step);
-
-/** The part a job kind needs (the pilot bought one of these at the first stop). */
-const MODULE_OF = {
-  passengers: SANDBOX_PASSENGER_MODULE,
-  crates: PROLOGUE_CARGO,
-} as const;
 
 /** Flies a job from start to finish at once (the pilot has already done this in an earlier visit). */
 function fly(sandbox: Sandbox, job: ReturnType<typeof jobsAt>[number]): void {
@@ -61,16 +56,31 @@ export function restoreSandbox(sandbox: Sandbox, step: StepId, kind: ModuleKind 
   // the kind of job chosen, the module bought, then fitted
   if (index >= at('buy-module')) sandbox.choose(chosen);
   if (index > at('buy-module')) {
-    const part = MODULE_OF[chosen];
-    const id = sandbox.buy(part, sandbox.config.moduleCost);
+    const bought = modulesFor(chosen).map((part) => ({
+      part,
+      id: sandbox.buy(part, modulePrice(part, sandbox.config.moduleCost)),
+    }));
     if (index > at('fit-module')) {
-      sandbox.saveLayout([...sandbox.state.layout, { ...part.target, partInstanceId: id }]);
+      sandbox.saveLayout([
+        ...sandbox.state.layout,
+        ...bought.map(({ part, id }) => ({ ...part.target, partInstanceId: id })),
+      ]);
     }
   }
   // the first job flown
   if (index >= at('job-report')) {
     const job = jobOf(sandbox, 1, chosen);
     if (job !== null) fly(sandbox, job);
+  }
+  // the worn parts repaired at the port (after the first job, before the hull upgrade)
+  if (index > at('repair')) {
+    const worn = sandbox.wornParts();
+    if (worn.length > 0) {
+      sandbox.repair(
+        worn.map((part) => ({ partInstanceId: part.id, toCondition: 100 })),
+        sandbox.config.repairCost,
+      );
+    }
   }
   // the hull upgraded (the friend's advice), once the first job is flown
   if (index >= at('upgrade')) sandbox.giveScrap(UPGRADE_SCRAP);

@@ -1,6 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
 import { walletOf } from './support';
-import { accept, bar, dispatch, dragPart, next, onStep, read, register } from './opening-support';
+import {
+  accept,
+  bar,
+  closeResult,
+  dispatch,
+  dragPart,
+  next,
+  onStep,
+  read,
+  register,
+} from './opening-support';
 
 /**
  * The new-pilot opening against the real stack: a fresh account meets the story on the game's own screens before the
@@ -33,6 +43,7 @@ async function playOpening(page: Page): Promise<void> {
   }
 
   await onStep(page, 'race-report');
+  await closeResult(page);
   await read(page);
   await next(page);
 
@@ -51,14 +62,20 @@ async function playOpening(page: Page): Promise<void> {
 
   await onStep(page, 'buy-module');
   await read(page);
-  await page.getByRole('button', { name: /^Buy/ }).first().click();
-  const confirm = page.getByRole('dialog').getByRole('button', { name: /^Buy/ });
-  if (await confirm.isVisible().catch(() => false)) await confirm.click();
+  // a passenger job takes two parts, the cabin and its life support; a bought part leaves the shelf, and the cargo hold
+  // that stays on it cannot be bought
+  for (let bought = 0; bought < 2; bought += 1) {
+    await page.getByRole('button', { name: /^Buy$/ }).first().click();
+    const confirm = page.getByRole('dialog').getByRole('button', { name: /^Buy/ });
+    if (await confirm.isVisible().catch(() => false)) await confirm.click();
+    await page.waitForTimeout(500);
+  }
   await read(page);
 
   await onStep(page, 'fit-module');
   await read(page);
-  await dragPart(page, /module|cargo/i, 1, 0);
+  await dragPart(page, /cabin/i, 1, 0);
+  await dragPart(page, /life support/i, 2, 0);
 
   await onStep(page, 'dispatch-job');
   await read(page);
@@ -71,8 +88,17 @@ async function playOpening(page: Page): Promise<void> {
   }
 
   await onStep(page, 'job-report');
+  await closeResult(page);
   await read(page);
   await next(page);
+
+  // the flight wore the parts: the workshop at the port brings them back
+  await onStep(page, 'repair');
+  await read(page);
+  await page.getByRole('button', { name: /^Start repair$/ }).click();
+  const paid = page.getByRole('dialog').getByRole('button', { name: /Start repair/ });
+  if (await paid.isVisible().catch(() => false)) await paid.click();
+  await read(page);
 
   // the friend warns about the pirates, hands over scrap, and the pilot makes the hull stronger
   await onStep(page, 'upgrade');
@@ -107,14 +133,16 @@ async function playOpening(page: Page): Promise<void> {
     await page.waitForTimeout(2000);
   }
 
+  // the pirates strike BEFORE the route is complete: the friend's last lines come in flight, then the ship is lost
   await onStep(page, 'loss');
-  await expect(page.getByTestId('loss-moment')).toBeVisible();
-  await read(page);
-  await page.getByTestId('loss-continue').click();
+  // no picture takes over: the failed flight stays on the screen while the rescuer speaks over it
+  await page.getByTestId('dialogue').waitFor({ timeout: 10_000 });
   await read(page);
 
   await onStep(page, 'rescue');
   await expect(page.getByTestId('rescue-moment')).toBeVisible();
+  // the cutter comes in first; the rescuer speaks after the picture has played
+  await page.getByTestId('dialogue').waitFor({ timeout: 12_000 });
   await read(page);
   await next(page);
   await read(page);

@@ -47,7 +47,12 @@ export function flaggedLayout(sandbox: Sandbox, layout: readonly Placement[]): P
   });
 }
 
-export function previewOf(sandbox: Sandbox, candidate: readonly Placement[]): PreviewResponse {
+export function previewOf(
+  sandbox: Sandbox,
+  candidate: readonly Placement[],
+  /** Parts the pilot does not own yet, counted as if installed (the market's "what would it add" question). */
+  extra: readonly PartCatalogStats[] = [],
+): PreviewResponse {
   const layout = flaggedLayout(sandbox, candidate);
   const onShip = layout.filter((placement) => placement.outside !== true);
   const outsideIds = new Set(
@@ -59,7 +64,10 @@ export function previewOf(sandbox: Sandbox, candidate: readonly Placement[]): Pr
     sandbox,
     onShip,
   );
-  const sheet = sheetOf(counted, sandbox.state.fuel, conditions);
+  const sheet = sheetOf([...counted, ...extra], sandbox.state.fuel, [
+    ...conditions,
+    ...extra.map(() => 100),
+  ]);
   const problems: PreviewResponse['viability']['problems'] = [];
   if (!counted.some((stats) => stats.partClass === 'BRIDGE')) {
     problems.push({ code: 'NO_BRIDGE', message: 'Ship has no bridge installed.' });

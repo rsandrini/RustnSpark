@@ -159,18 +159,19 @@ export const PROLOGUE_HULL: ProloguePart = {
 };
 
 /**
- * The hull one tier up (the friend's advice before the dangerous run): sturdier, heavier, and it turns shots aside, so the
- * ship sheet shows the jump at once. Same id and place as the plain hull: the upgrade replaces the part on the ship.
+
+ * The hull one tier up, with the figures of the game's own catalog (Hull Frame to Reinforced Hull Frame): lighter, a little
+ * lighter on structure and more hit points; a hull gives no armor and no firepower at any tier. Same id and place as the
+ * plain hull: the upgrade replaces the part on the ship.
  */
 export const PROLOGUE_HULL_UPGRADED: ProloguePart = {
   ...PROLOGUE_HULL,
-  name: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
+  name: { en: 'Reinforced Hull Frame', 'pt-BR': 'Estrutura de Casco Reforçada' },
   catalog: {
     ...PROLOGUE_HULL.catalog,
-    mass: 10,
-    partHp: 140,
-    pdf: 18,
-    bli: 12,
+    mass: 4,
+    structureCost: 4,
+    partHp: 80,
   },
   rarity: 'UNCOMMON',
 };

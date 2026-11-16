@@ -4,13 +4,13 @@ import { createMemoryRouter, MemoryRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { I18nextProvider } from 'react-i18next';
 import type { ReactElement } from 'react';
-import type { RouteObject } from 'react-router';
+import type { InitialEntry, RouteObject } from 'react-router';
 import i18n from '../i18n';
 
 export function renderWithProviders(
   ui: ReactElement,
   options: {
-    initialEntries?: string[];
+    initialEntries?: InitialEntry[];
     withRouter?: boolean;
   } = {},
 ) {
@@ -36,7 +36,7 @@ export function renderWithProviders(
 
 export function renderWithRouter(
   routes: RouteObject[],
-  options: { initialEntries?: string[] } = {},
+  options: { initialEntries?: InitialEntry[] } = {},
 ) {
   const router = createMemoryRouter(routes, {
     initialEntries: options.initialEntries ?? ['/'],

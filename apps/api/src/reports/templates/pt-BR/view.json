@@ -11,11 +11,11 @@
     "success": "Missão cumprida",
     "partial_failure": "Sucesso parcial",
     "failed": "Missão falhou",
-    "adrift": "Nave à deriva"
+    "adrift": "Nave à deriva — sem combustível"
   },
   "legStatuses": {
     "completed": "concluída",
-    "adrift": "à deriva",
+    "adrift": "sem combustível",
     "escort_destroyed": "escolta perdida",
     "motor_abort": "falha do motor",
     "defeat_failed": "derrotada"
@@ -33,6 +33,7 @@
     "wear": "-{value} condição",
     "loot": "+{value} × {name}",
     "distance": "rota {value}",
+    "fuel": "restavam só {value} de combustível",
     "none": "—"
   }
 }

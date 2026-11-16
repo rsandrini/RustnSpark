@@ -35,7 +35,13 @@ export function moduleKindOf(sandbox: Sandbox): ModuleKind | null {
   const installed = sandbox.state.layout.map((placement) =>
     catalogById.get(placement.partInstanceId),
   );
-  if (installed.some((stats) => stats?.pressurized === true)) return 'passengers';
+  // a passenger job needs the cabin AND the life support it only works with
+  if (
+    installed.some((stats) => stats?.pressurized === true) &&
+    installed.some((stats) => stats?.lifeSupport === true)
+  ) {
+    return 'passengers';
+  }
   if (installed.some((stats) => (stats?.crg ?? 0) > 0)) return 'crates';
   return null;
 }
@@ -70,17 +76,20 @@ function requirementsOf(sandbox: Sandbox, job: JobSpec): RequirementCheck[] {
       unit: 'cargo',
     });
   } else {
+    // the real game's one requirement: a Passenger Cabin and the Life Support it only works with, both installed
     checks.push({
-      code: 'PASSENGER_MODULE',
-      message: 'Needs a Passenger Module fitted on the ship',
-      met: installed.some((stats) => stats?.pressurized === true),
+      code: 'PRESSURIZED_LIFE_SUPPORT',
+      message: 'Needs a Passenger Cabin and Life Support (both installed)',
+      met:
+        installed.some((stats) => stats?.pressurized === true) &&
+        installed.some((stats) => stats?.lifeSupport === true),
     });
   }
   return checks;
 }
 
 function raceInfoOf(sandbox: Sandbox, job: JobSpec): NonNullable<MissionOffer['info']['race']> {
-  const friend = sandbox.config.friendName ?? 'Kite';
+  const friend = sandbox.config.friendName ?? 'Bob';
   const total = (legs: readonly number[]) => legs.reduce((sum, seconds) => sum + seconds, 0);
   return {
     rivals: [
@@ -214,7 +223,8 @@ export function boardOf(sandbox: Sandbox): MissionOffer[] {
     state.locationId,
     moduleKindOf(sandbox),
   );
-  return jobs.map((job) => offerOf(sandbox, job));
+  // like the real board: the job the pilot has taken is pinned on its own (the active mission), not offered a second time
+  return jobs.filter((job) => state.mission?.job.id !== job.id).map((job) => offerOf(sandbox, job));
 }
 
 /** The job the pilot has taken, as the active-mission list shows it (with the leg windows once it has left). */

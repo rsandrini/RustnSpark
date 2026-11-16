@@ -79,7 +79,7 @@ test('the game screens and their states', async ({ page }, info) => {
   await page.goto('/missions');
   await expect(page.locator('.mrow').first()).toBeVisible();
   await audit(page, `${width} /missions`);
-  await page.locator('.mrow-details summary').first().click();
+  await page.locator('.mrow-toggle').first().click();
   await audit(page, `${width} /missions details open`);
 
   // map: nothing selected, then a place

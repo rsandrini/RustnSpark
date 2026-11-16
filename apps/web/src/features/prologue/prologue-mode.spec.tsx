@@ -51,7 +51,7 @@ describe('the real screens in the opening (the sandbox mode)', () => {
     await vi.waitFor(() => expect(view.router.state.location.pathname).toBe('/ship'));
     // the sandbox ship, not the test server's
     const ships = await client.get<Array<{ name: string }>>('/v1/ships');
-    expect(ships[0]?.name).toBe('Wayfarer');
+    expect(ships[0]?.name).toBe('RustNSpark');
     expect(await screen.findByRole('navigation')).toBeInTheDocument();
   });
 
@@ -61,13 +61,13 @@ describe('the real screens in the opening (the sandbox mode)', () => {
     const view = renderWithRouter(routes, { initialEntries: ['/ship'] });
     await vi.waitFor(async () => {
       const ships = await client.get<Array<{ name: string }>>('/v1/ships');
-      expect(ships[0]?.name).toBe('Wayfarer');
+      expect(ships[0]?.name).toBe('RustNSpark');
     });
 
     view.unmount();
 
     const real = await client.get<Array<{ name: string }>>('/v1/ships');
-    expect(real[0]?.name).not.toBe('Wayfarer');
+    expect(real[0]?.name).not.toBe('RustNSpark');
   });
 
   it('gives the faction picker and the real server to a pilot whose opening has ended', async () => {
@@ -79,7 +79,7 @@ describe('the real screens in the opening (the sandbox mode)', () => {
       await screen.findByRole('heading', { name: /choose your faction/i }),
     ).toBeInTheDocument();
     const ships = await client.get<Array<{ name: string }>>('/v1/ships');
-    expect(ships[0]?.name).not.toBe('Wayfarer');
+    expect(ships[0]?.name).not.toBe('RustNSpark');
   });
 
   it('never gives the sandbox to a pilot who already has a faction', async () => {
@@ -89,7 +89,7 @@ describe('the real screens in the opening (the sandbox mode)', () => {
 
     await screen.findByRole('navigation');
     const ships = await client.get<Array<{ name: string }>>('/v1/ships');
-    expect(ships[0]?.name).not.toBe('Wayfarer');
+    expect(ships[0]?.name).not.toBe('RustNSpark');
   });
 
   it('is on by default, and a build can switch it off (the pilot goes to the picker)', async () => {
@@ -100,6 +100,6 @@ describe('the real screens in the opening (the sandbox mode)', () => {
       await screen.findByRole('heading', { name: /choose your faction/i }),
     ).toBeInTheDocument();
     const ships = await client.get<Array<{ name: string }>>('/v1/ships');
-    expect(ships[0]?.name).not.toBe('Wayfarer');
+    expect(ships[0]?.name).not.toBe('RustNSpark');
   });
 });

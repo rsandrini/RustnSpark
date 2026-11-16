@@ -153,6 +153,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'onboarding.prologue_payout_shares',
   'onboarding.prologue_purse',
   'onboarding.prologue_refuel_cost',
+  'onboarding.prologue_repair_cost',
   'onboarding.prologue_upgrade_cost',
   'onboarding.start_fuel_fraction',
   'onboarding.starter_parts',

@@ -6,6 +6,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import request from 'supertest';
 import { assembleStarterKit } from '../support/assemble.js';
+import { ALL_MENTOR_SCENES } from '../../prisma/seed-data/dialogue-scenes.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -54,6 +55,13 @@ describe('mentor dialogue scenes', () => {
   async function freshWorld(): Promise<void> {
     await resetDatabase(prisma);
     await seed(prisma);
+    // the seed only gives a faction pilot the welcome and the first ship; these tests walk through every scene the engine has
+    for (const [id, scenes] of Object.entries(ALL_MENTOR_SCENES)) {
+      await prisma.questGiver.update({
+        where: { id },
+        data: { scenes: JSON.parse(JSON.stringify(scenes)) },
+      });
+    }
     await config.refresh();
   }
 
@@ -147,6 +155,8 @@ describe('mentor dialogue scenes', () => {
   it('the first flight is due once the ship is built, and the tank scene only after a first flight', async () => {
     await freshWorld();
     const player = await newPlayer('luna', true);
+    // picking a faction hides the checklist; this test follows the checklist's scenes, so it brings it back
+    await prisma.player.update({ where: { id: player.playerId }, data: { tutorialDone: false } });
     await post(player.token, '/welcome', { event: 'done' });
     await post(player.token, '/first_ship', { event: 'done' });
     expect((await stateOf(player.token)).scene?.id).toBe('first_flight');

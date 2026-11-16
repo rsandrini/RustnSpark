@@ -340,13 +340,12 @@ describe('transit (S10.7)', () => {
     renderWithRouter(routes, { initialEntries: ['/transit'] });
     const box = await screen.findByTestId('race-projection');
     // the first leg is finished, the second is not: the order is the one after leg 1
-    expect(box).toHaveTextContent('After leg 1 of 2:');
     const order = within(box)
       .getAllByRole('listitem')
       .map((item) => item.textContent);
     expect(order[0]).toContain('You');
     expect(order[1]).toContain('Vega Dart');
-    expect(box).toHaveTextContent('Projected');
+    expect(box).toHaveTextContent('The race so far (projected)');
   });
 
   it("an accepted mission shows the engine tuning with this trip's time and fuel; dispatch sends only the mission", async () => {

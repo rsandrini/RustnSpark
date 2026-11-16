@@ -23,6 +23,17 @@
   inset: 0;
   background: color-mix(in oklab, var(--paper) 72%, transparent);
   pointer-events: auto;
+  animation: dialogue-dim 0.45s ease-out both;
+}
+@keyframes dialogue-dim {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialogue-backdrop {
+    animation: none;
+  }
 }
 .dialogue-ring {
   position: fixed;

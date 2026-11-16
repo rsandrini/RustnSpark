@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { client, serverNow } from '../../../api/client';
 import { routes } from '../../../app/router';
@@ -177,7 +177,8 @@ describe('the director: the story on the real screens', () => {
     server.use(story([]));
     saveStep('choose-job');
     renderWithRouter(routes, { initialEntries: ['/missions'] });
-    expect(await screen.findByTestId('opening-hint')).toHaveTextContent('Choose the job');
+    await screen.findByTestId('opening-bar');
+    expect(screen.queryByTestId('opening-hint')).not.toBeInTheDocument();
     await new Promise((resolve) => setTimeout(resolve, 300));
     expect(readSaved('player-1').step).toBe('choose-job');
 
@@ -192,10 +193,123 @@ describe('the director: the story on the real screens', () => {
     saveStep('upgrade');
     const view = renderWithRouter(routes, { initialEntries: ['/port'] });
     await waitFor(() => expect(view.router.state.location.pathname).toBe('/port'));
-    expect(await screen.findByTestId('opening-hint')).toHaveTextContent('Upgrade your hull');
+    await screen.findByTestId('opening-bar');
+    expect(screen.queryByTestId('opening-hint')).not.toBeInTheDocument();
 
     await client.post('/v1/parts/prologue-hull/upgrade', {});
     await waitFor(() => expect(readSaved('player-1').step).toBe('stop-two'));
+  });
+
+  it('after the module is bought the pilot is taken to the ship, not kept in the shop', async () => {
+    server.use(
+      story([
+        scene('bought', 'prologue_buy-module_done', 1, 'Paid for. Now fit it.'),
+        scene('fit', 'prologue_fit-module_enter', 1, 'Drag, connect, save.'),
+      ]),
+    );
+    saveStep('buy-module', 'crates');
+    const view = renderWithRouter(routes, { initialEntries: ['/port?tab=market'] });
+    await screen.findByTestId('opening-bar');
+    const listings = await client.get<{
+      listings: Array<{ listingId: string; price: number; partType: string }>;
+    }>('/v1/locations/loc/market');
+    const listing = listings.listings.find((entry) => entry.partType === 'cargo') as {
+      listingId: string;
+      price: number;
+    };
+    await client.post('/v1/market/buy', {
+      listingId: listing.listingId,
+      expectedPrice: listing.price,
+    });
+
+    // the shop lets go of the pilot as soon as the module is paid for
+    await waitFor(() => expect(view.router.state.location.pathname).toBe('/ship'));
+    expect(readSaved('player-1').step).toBe('buy-module');
+    // the friend speaks, the pilot reads it, and the story walks them to the ship
+    const button = await screen.findByRole('button', { name: 'Continue' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    await waitFor(() => expect(readSaved('player-1').step).toBe('fit-module'));
+    await waitFor(() => expect(view.router.state.location.pathname).toBe('/ship'));
+  });
+
+  it('a passenger job needs both its parts: the step is done only when the cabin and the life support are bought', async () => {
+    server.use(story([scene('bought', 'prologue_buy-module_done', 1, 'Paid for.')]));
+    saveStep('buy-module', 'passengers');
+    const view = renderWithRouter(routes, { initialEntries: ['/port?tab=market'] });
+    await screen.findByTestId('opening-bar');
+    const { listings } = await client.get<{
+      listings: Array<{ listingId: string; price: number; partType: string }>;
+    }>('/v1/locations/loc/market');
+    const buy = (type: string) => {
+      const listing = listings.find((entry) => entry.partType === type) as {
+        listingId: string;
+        price: number;
+      };
+      return client.post('/v1/market/buy', {
+        listingId: listing.listingId,
+        expectedPrice: listing.price,
+      });
+    };
+    await buy('passenger_cabin');
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    // one part is not the job's module yet: the shop keeps the pilot
+    expect(view.router.state.location.pathname).toBe('/port');
+    await buy('life_support');
+    await waitFor(() => expect(view.router.state.location.pathname).toBe('/ship'));
+  });
+
+  it('the repair step: pay the workshop at the port and the story moves on to the upgrade', async () => {
+    server.use(story([]));
+    saveStep('repair', 'passengers');
+    renderWithRouter(routes, { initialEntries: ['/port?tab=repair'] });
+    await screen.findByTestId('opening-bar');
+    const ship = await client.get<Array<{ id: string }>>('/v1/ships');
+    const parts =
+      await client.get<Array<{ id: string; condition: number; location: string }>>('/v1/inventory');
+    const targets = parts
+      .filter((part) => part.location === 'INSTALLED' && part.condition < 100)
+      .map((part) => ({ partInstanceId: part.id, toCondition: 100 }));
+    expect(targets.length).toBeGreaterThan(0);
+    await client.post(`/v1/ships/${ship[0]?.id ?? ''}/repair`, { targets });
+    await waitFor(() => expect(readSaved('player-1').step).toBe('upgrade'));
+  });
+
+  it('the taken job\u2019s Open on My Ship button is not locked on the steps that fly a job', async () => {
+    server.use(story([]));
+    saveStep('final-run', 'passengers');
+    renderWithRouter(routes, { initialEntries: ['/missions'] });
+    await screen.findByTestId('opening-bar');
+    const open = await screen.findByRole('button', { name: 'Open on My Ship' });
+    // the story has locked the rest of the screen (the filter chips), and left this button alone
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Only eligible' })).toHaveAttribute('inert'),
+    );
+    expect(open).not.toHaveAttribute('inert');
+  });
+
+  it('the account menu (language, Sign out) is never locked, on any screen of the story', async () => {
+    server.use(story([]));
+    saveStep('choose-job');
+    renderWithRouter(routes, { initialEntries: ['/missions'] });
+    await screen.findByTestId('opening-bar');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Only eligible' })).toHaveAttribute('inert'),
+    );
+    expect(screen.getByRole('button', { name: 'Account menu' })).not.toHaveAttribute('inert');
+  });
+
+  it('the race ends on its report with the short result card open, before the guide speaks', async () => {
+    server.use(story([scene('rr', 'prologue_race-report_enter', 1, 'I crossed first.')]));
+    saveStep('race-report');
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    // the card first: place and time of the race
+    const card = await screen.findByTestId('mission-result');
+    expect(within(card).getByTestId('mission-result-race')).toBeInTheDocument();
+    // the guide waits for it
+    expect(screen.queryByText('I crossed first.')).not.toBeInTheDocument();
+    fireEvent.click(within(card).getByTestId('mission-result-close'));
+    expect(await screen.findByText('I crossed first.')).toBeInTheDocument();
   });
 
   it('stops the race at the end of a leg while the friend speaks, and goes on when the line is read', async () => {
@@ -239,6 +353,8 @@ describe('the director: the story on the real screens', () => {
 
     fireEvent.click(take);
     await waitFor(async () => expect(await hold()).toContain(PROLOGUE_ENGINE.id));
+    // and it drops into the parts list with its animation
+    await waitFor(() => expect(document.querySelector('.part-btn-wrap.arrived')).not.toBeNull());
   });
 
   it('asks twice before skipping, at any step', async () => {
@@ -270,7 +386,7 @@ describe('the director: the story on the real screens', () => {
     await waitFor(() => expect(saved).toEqual({ outcome: 'skipped' }));
     await waitFor(async () => {
       const ships = await client.get<Array<{ name: string }>>('/v1/ships');
-      expect(ships[0]?.name).not.toBe('Wayfarer');
+      expect(ships[0]?.name).not.toBe('RustNSpark');
     });
   });
 
@@ -291,6 +407,6 @@ describe('the director: the story on the real screens', () => {
   }, 15000);
 
   it('has a step for every moment the Admin can hang a line on', () => {
-    expect(OPENING_STEPS).toHaveLength(16);
+    expect(OPENING_STEPS).toHaveLength(17);
   });
 });

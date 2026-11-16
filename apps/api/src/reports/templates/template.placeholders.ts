@@ -11,7 +11,7 @@ const CASCADE = ['shield', 'armor', 'hull'] as const;
  */
 export const TEMPLATE_PLACEHOLDERS: Readonly<Record<string, readonly string[]>> = {
   leg_travel: ['distance'],
-  fuel_exhausted: [],
+  fuel_exhausted: ['fuel'],
   combat_win: [...CASCADE, 'hp', 'credits'],
   combat_loss: [...CASCADE, 'hp', 'credits'],
   combat_draw: [...CASCADE, 'hp'],

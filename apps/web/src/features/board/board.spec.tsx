@@ -53,9 +53,9 @@ describe('board (S10.6)', () => {
     );
     expect(screen.getAllByText('Flight time').length).toBeGreaterThan(0);
     expect(screen.getAllByText('You need:').length).toBeGreaterThan(0);
-    // each verdict shows twice: in the row's line and in the card behind Details
-    expect(screen.getAllByText('Eligible')).toHaveLength(6);
-    expect(screen.getAllByText('Blocked')).toHaveLength(2);
+    // the verdict is in the card behind Details; the row says what stops the pilot, once
+    expect(screen.getAllByText('Eligible')).toHaveLength(3);
+    expect(screen.getAllByText('Blocked')).toHaveLength(1);
     // MINER is now shown via the requirement checklist ("A mining rig installed", unmet),
     // not the old failure-only sentence; MOB_TOO_LOW is a general viability reason and still
     // uses the old reasons list.
@@ -151,7 +151,7 @@ describe('board (S10.6)', () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
-    expect(screen.getAllByText('Blocked')).toHaveLength(2);
+    expect(screen.getAllByText('Blocked')).toHaveLength(1);
   });
 
   it('says how many offers are open, sorts by reward first and can re-sort', async () => {
@@ -296,6 +296,8 @@ describe('board (S10.6)', () => {
     );
     await renderBoard();
     await screen.findAllByText('Corporate Delivery');
+    // the row flags the shortfall with a chip
+    expect(screen.getAllByTestId('fuel-chip')[0]).toHaveAttribute('data-state', 'short');
     const block = screen.getAllByTestId('mcard-fuel')[0]!;
     expect(block).toHaveAttribute('data-state', 'short');
     // 5 aboard, the trip needs 8: short by 3, and refuelling fixes it
@@ -437,14 +439,12 @@ describe('board (S10.6)', () => {
     expect(within(pinned).queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
   });
 
-  it('every mission row carries a fuel chip with the same three states', async () => {
+  it('a row says nothing about fuel while the tank covers the trip', async () => {
     await renderBoard();
     await screen.findAllByText('Corporate Delivery');
-    const chips = screen.getAllByTestId('fuel-chip');
-    expect(chips.length).toBeGreaterThan(0);
-    // 25 aboard, 8 needed, tank 40
-    expect(chips[0]).toHaveAttribute('data-state', 'ok');
-    expect(chips[0]).toHaveTextContent('Fuel OK');
+    // 25 aboard, 8 needed, tank 40: no chip; the row's figure is just the amount
+    expect(screen.queryAllByTestId('fuel-chip')).toHaveLength(0);
+    expect(screen.getAllByText('uses 8 fuel').length).toBeGreaterThan(0);
   });
 
   it('says once, above the list, what is wrong with the ship when that blocks every offer', async () => {

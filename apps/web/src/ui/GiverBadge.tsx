@@ -7,7 +7,7 @@ import { useFactions } from './factions';
 // faction colour stands in, so every build looks finished. The name is server data and never
 // translated; the title arrives already in the player's language (the caller picks it from the
 // bilingual pair with pickLocalized).
-export type GiverBadgeSize = 'row' | 'card' | 'tutorial';
+export type GiverBadgeSize = 'row' | 'card' | 'tutorial' | 'dialogue';
 
 export interface GiverBadgeProps {
   name: string;
@@ -16,7 +16,7 @@ export interface GiverBadgeProps {
   /** Served URL of the uploaded portrait; null/undefined → faction-symbol placeholder. */
   portraitUrl?: string | null;
   factionId: string;
-  /** row = 48 px (board rows), card = 96 px (open card), tutorial = the checklist header. */
+  /** row = 48 px (board rows), card = 96 px (open card), tutorial = the checklist header, dialogue = the big face of a speaking guide. */
   size?: GiverBadgeSize;
 }
 

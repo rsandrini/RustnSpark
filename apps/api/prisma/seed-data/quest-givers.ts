@@ -618,7 +618,7 @@ const GIVERS: readonly GiverSeed[] = [
     id: 'free_mentor_kite',
     factionId: 'free',
     role: 'MENTOR',
-    name: 'Kite',
+    name: 'Bob',
     title: L('Free pilot', 'Piloto livre'),
     personality: { types: { RACE: 1 }, minZone: 0, maxZone: 0, tone: 'friendly' },
     weight: 10,

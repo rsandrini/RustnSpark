@@ -13,7 +13,7 @@ import { sandboxInterceptor } from './sandbox-api';
 import { createSandbox, type SandboxEvent } from './sandbox-state';
 
 const T0 = 1_700_000_000_000;
-const MODULE = 'catalog:sandbox:passenger_module';
+const MODULE = 'catalog:sandbox:passenger_cabin';
 
 function fresh() {
   let now = T0;
@@ -23,6 +23,7 @@ function fresh() {
     refuelCost: 100,
     moduleCost: 800,
     upgradeCost: 200,
+    repairCost: 150,
     clock: () => now,
     profile: { id: 'player-1', name: 'Test Pilot', locale: 'en', role: 'PLAYER' },
   });
@@ -60,22 +61,59 @@ async function raceDone(env: Env) {
 }
 
 describe('the sandbox port: the market and the refuel', () => {
-  it('lists the two modules at the opening’s one price', async () => {
+  it('lists every module; a passenger job costs the same in two parts as a cargo job in one', async () => {
     const { call } = fresh();
     const market = MarketResponseSchema.parse(
       await call('GET', '/v1/locations/sandbox-dockside/market'),
     );
     expect(market.listings.map((listing) => listing.partType).sort()).toEqual([
       'cargo',
-      'passenger_module',
+      'life_support',
+      'passenger_cabin',
     ]);
-    for (const listing of market.listings) expect(listing.price).toBe(800);
+    const price = (type: string) => market.listings.find((l) => l.partType === type)?.price;
+    expect(price('cargo')).toBe(800);
+    expect((price('passenger_cabin') ?? 0) + (price('life_support') ?? 0)).toBe(800);
+  });
+
+  it('shows the other job’s modules but will not sell them', async () => {
+    const env = fresh();
+    env.sandbox.addCredits(2000);
+    env.sandbox.choose('passengers');
+    const market = MarketResponseSchema.parse(
+      await env.call('GET', '/v1/locations/sandbox-dockside/market'),
+    );
+    const blocked = market.listings.filter((l) => l.blockedReason !== undefined);
+    expect(blocked.map((l) => l.partType)).toEqual(['cargo']);
+    await expect(
+      env.call('POST', '/v1/market/buy', {
+        listingId: 'catalog:sandbox:cargo',
+        expectedPrice: 800,
+      }),
+    ).rejects.toMatchObject({ code: 'LISTING_BLOCKED' });
+  });
+
+  it('takes a bought part off the shelf', async () => {
+    const env = fresh();
+    env.sandbox.addCredits(2000);
+    env.sandbox.choose('passengers');
+    await env.call('POST', '/v1/market/buy', { listingId: MODULE, expectedPrice: 400 });
+    const market = MarketResponseSchema.parse(
+      await env.call('GET', '/v1/locations/sandbox-dockside/market'),
+    );
+    expect(market.listings.map((listing) => listing.partType).sort()).toEqual([
+      'cargo',
+      'life_support',
+    ]);
+    await expect(
+      env.call('POST', '/v1/market/buy', { listingId: MODULE, expectedPrice: 400 }),
+    ).rejects.toMatchObject({ status: 404 });
   });
 
   it('refuses a purchase the pilot cannot pay for, and one at a stale price', async () => {
     const { call } = fresh();
     await expect(
-      call('POST', '/v1/market/buy', { listingId: MODULE, expectedPrice: 800 }),
+      call('POST', '/v1/market/buy', { listingId: MODULE, expectedPrice: 400 }),
     ).rejects.toMatchObject({
       status: 409,
       code: 'INSUFFICIENT_FUNDS',
@@ -91,11 +129,11 @@ describe('the sandbox port: the market and the refuel', () => {
     const env = fresh();
     env.sandbox.addCredits(1000);
     const bought = BuyResponseSchema.parse(
-      await env.call('POST', '/v1/market/buy', { listingId: MODULE, expectedPrice: 800 }),
+      await env.call('POST', '/v1/market/buy', { listingId: MODULE, expectedPrice: 400 }),
     );
-    expect(bought.price).toBe(800);
-    expect(bought.credits).toBe(500);
-    expect(env.events).toContainEqual({ type: 'bought', partType: 'passenger_module' });
+    expect(bought.price).toBe(400);
+    expect(bought.credits).toBe(900);
+    expect(env.events).toContainEqual({ type: 'bought', partType: 'passenger_cabin' });
     const inventory = ((await env.call('GET', '/v1/inventory')) as unknown[]).map((item) =>
       InventoryItemSchema.parse(item),
     );
@@ -103,7 +141,27 @@ describe('the sandbox port: the market and the refuel', () => {
     expect(part?.location).toBe('INVENTORY');
     expect(part?.catalog.pressurized).toBe(true);
     const me = (await env.call('GET', '/v1/players/me')) as { credits: number };
-    expect(me.credits).toBe(500);
+    expect(me.credits).toBe(900);
+  });
+
+  it('repairs the worn parts for the opening’s one repair price, then there is nothing left to repair', async () => {
+    const env = fresh();
+    env.sandbox.addCredits(500);
+    const worn = env.sandbox.wornParts();
+    expect(worn.length).toBeGreaterThan(0);
+    const targets = worn.map((part) => ({ partInstanceId: part.id, toCondition: 100 }));
+    const quote = (await env.call('POST', '/v1/ships/prologue-ship/repair/quote', { targets })) as {
+      cost: number;
+    };
+    expect(quote.cost).toBe(150);
+    const before = env.sandbox.state.credits;
+    await env.call('POST', '/v1/ships/prologue-ship/repair', { targets });
+    expect(env.sandbox.state.credits).toBe(before - 150);
+    expect(env.sandbox.wornParts()).toEqual([]);
+    expect(env.events).toContainEqual({ type: 'repaired' });
+    await expect(
+      env.call('POST', '/v1/ships/prologue-ship/repair/quote', { targets }),
+    ).rejects.toMatchObject({ code: 'NO_REPAIR_TARGETS' });
   });
 
   it('quotes a full tank at the opening’s refuel price and fills it', async () => {
@@ -141,14 +199,23 @@ describe('the sandbox port: the market and the refuel', () => {
     const env = fresh();
     await raceDone(env);
     await env.call('POST', '/v1/ships/prologue-ship/refuel', { mode: 'full' });
-    const bought = BuyResponseSchema.parse(
-      await env.call('POST', '/v1/market/buy', { listingId: MODULE, expectedPrice: 800 }),
+    env.sandbox.choose('passengers');
+    // a passenger job's two parts cost what one cargo hold does
+    const cabin = BuyResponseSchema.parse(
+      await env.call('POST', '/v1/market/buy', { listingId: MODULE, expectedPrice: 400 }),
+    );
+    const life = BuyResponseSchema.parse(
+      await env.call('POST', '/v1/market/buy', {
+        listingId: 'catalog:sandbox:life_support',
+        expectedPrice: 400,
+      }),
     );
     await env.call('POST', '/v1/ships/prologue-ship/assemble', {
       layout: [
         ...PROLOGUE_START_PARTS.map((part) => part.target),
         { partInstanceId: PROLOGUE_ENGINE.id, gx: -4, gy: 0, rot: 0 },
-        { partInstanceId: bought.partInstanceId, gx: 1, gy: 0, rot: 0 },
+        { partInstanceId: cabin.partInstanceId, gx: 1, gy: 0, rot: 0 },
+        { partInstanceId: life.partInstanceId, gx: 2, gy: 0, rot: 0 },
       ],
     });
     for (const slot of [1, 2]) {
@@ -204,8 +271,9 @@ describe('the sandbox upgrade: the hull, with the scrap the friend gives', () =>
     expect(env.sandbox.state.scrap).toBe(0);
     expect(env.events).toContainEqual({ type: 'upgraded', partId: 'prologue-hull' });
     const after = await sheetNow(env);
+    // the catalog's own tier: more hit points, and a hull never gives firepower
     expect(after.hp).toBeGreaterThan(before.hp);
-    expect(after.pdf).toBeGreaterThan(before.pdf);
+    expect(after.pdf).toBe(before.pdf);
     const again = PartUpgradeQuoteResponseSchema.parse(
       await env.call('POST', '/v1/parts/prologue-hull/upgrade/quote'),
     );

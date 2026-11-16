@@ -345,6 +345,8 @@ export interface PartDetailProps {
   /** Render only the comparison table: no description, meta, picker or warnings. Used by the
       Upgrade tab's hover card. */
   hideMeta?: boolean;
+  /** With a ship comparison: list only the stats the part raises for the better (the buy confirmation says what it adds, nothing more). */
+  gainsOnly?: boolean;
 }
 
 interface VersusRow {
@@ -404,7 +406,13 @@ function versusRowsOf(
     });
 }
 
-export function PartDetail({ part, compare, versus, hideMeta = false }: PartDetailProps) {
+export function PartDetail({
+  part,
+  compare,
+  versus,
+  hideMeta = false,
+  gainsOnly = false,
+}: PartDetailProps) {
   const { t, i18n } = useTranslation();
   const problemText = useProblemText();
   const format = useNumberFormat();
@@ -552,30 +560,34 @@ export function PartDetail({ part, compare, versus, hideMeta = false }: PartDeta
             </tr>
           </thead>
           <tbody>
-            {versus !== undefined && (
-              <tr>
-                <td>{t('parts.size')}</td>
-                <td>{sizeNow}</td>
-                <td
-                  className={`delta delta-${
-                    versus.catalog.w === catalog.w && versus.catalog.h === catalog.h
-                      ? 'same'
-                      : 'bad'
-                  }`}
-                >
-                  {sizeUpgraded}
-                </td>
-              </tr>
-            )}
-            {versusRows.map((row) => (
-              <tr key={row.key} title={t(`parts.stat.${row.key}.hint`)}>
-                <td>{t(`parts.stat.${row.key}.label`)}</td>
-                <td>{row.now}</td>
-                <td className={`delta delta-${row.tone}`}>
-                  {row.change === '' ? row.after : `${row.after} (${row.change})`}
-                </td>
-              </tr>
-            ))}
+            {/* only what the upgrade changes: a size or a stat that stays the same is not listed */}
+            {versus !== undefined &&
+              (versus.catalog.w !== catalog.w || versus.catalog.h !== catalog.h) && (
+                <tr>
+                  <td>{t('parts.size')}</td>
+                  <td>{sizeNow}</td>
+                  <td
+                    className={`delta delta-${
+                      versus.catalog.w === catalog.w && versus.catalog.h === catalog.h
+                        ? 'same'
+                        : 'bad'
+                    }`}
+                  >
+                    {sizeUpgraded}
+                  </td>
+                </tr>
+              )}
+            {versusRows
+              .filter((row) => row.change !== '')
+              .map((row) => (
+                <tr key={row.key} title={t(`parts.stat.${row.key}.hint`)}>
+                  <td>{t(`parts.stat.${row.key}.label`)}</td>
+                  <td>{row.now}</td>
+                  <td className={`delta delta-${row.tone}`}>
+                    {row.change === '' ? row.after : `${row.after} (${row.change})`}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       )}
@@ -597,6 +609,7 @@ export function PartDetail({ part, compare, versus, hideMeta = false }: PartDeta
                   : row.sheetKey === 'structureUsed'
                     ? structureDeltaFor()
                     : deltaFor(row.sheetKey);
+              if (gainsOnly && (delta === null || delta.tone !== 'good')) return null;
               return (
                 <tr key={row.key} title={t(`parts.stat.${row.key}.hint`)}>
                   <td>{t(`parts.stat.${row.key}.label`)}</td>
@@ -615,6 +628,7 @@ export function PartDetail({ part, compare, versus, hideMeta = false }: PartDeta
             {compare !== undefined &&
               DERIVED_COMPARE_STATS.map((sheetKey) => {
                 const delta = deltaFor(sheetKey);
+                if (gainsOnly && (delta === null || delta.tone !== 'good')) return null;
                 return (
                   <tr key={sheetKey} title={t(`hangar.statHelp.${sheetKey}`)}>
                     <td>{t(`hangar.stats.${sheetKey}`)}</td>

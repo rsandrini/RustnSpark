@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { MENTOR_SCENES } from '../../../prisma/seed-data/dialogue-scenes.js';
+import { ALL_MENTOR_SCENES as MENTOR_SCENES } from '../../../prisma/seed-data/dialogue-scenes.js';
 import {
   dueScene,
   triggerHolds,

@@ -532,3 +532,9 @@ tr.ev-transit td:first-child {
 .report-tabs {
   margin: 0 0 16px;
 }
+
+/* The race's note before the first leg is over sits at the right edge of the card. */
+.race-projection-note {
+  display: block;
+  text-align: right;
+}

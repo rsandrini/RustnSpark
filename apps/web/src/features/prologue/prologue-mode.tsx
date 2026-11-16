@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { client, setApiInterceptor } from '../../api/client';
 import { useAuth } from '../auth/auth.hooks';
@@ -15,6 +23,7 @@ interface PrologueConfig {
   purse?: number;
   moduleCost?: number;
   upgradeCost?: number;
+  repairCost?: number;
   payouts: number[];
   guides?: Guide[];
 }
@@ -23,6 +32,7 @@ interface PrologueConfig {
 const DEFAULT_PURSE = 300;
 const DEFAULT_MODULE_COST = 800;
 const DEFAULT_UPGRADE_COST = 200;
+const DEFAULT_REPAIR_COST = 100;
 
 /**
  * The new-pilot opening runs on the sandbox (the real screens over a fake server in the browser). A build can switch it
@@ -65,7 +75,9 @@ export function usePrologueMode(): PrologueMode {
  * away (and forgets everything the real screens cached from the fake server) as soon as the opening is over.
  */
 export function PrologueModeProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, reloadProfile } = useAuth();
+  const reloadProfileRef = useRef(reloadProfile);
+  reloadProfileRef.current = reloadProfile;
   const queryClient = useQueryClient();
   const wants =
     sandboxEnabled() && user != null && user.factionId == null && user.prologueOutcome === null;
@@ -75,7 +87,15 @@ export function PrologueModeProvider({ children }: { children: ReactNode }) {
   // the server could not be asked: the pilot goes on to the faction picker instead of waiting on a story that cannot start
   const [failed, setFailed] = useState(false);
   const profile =
-    user == null ? null : { id: user.id, name: user.name, locale: user.locale, role: user.role };
+    user == null
+      ? null
+      : {
+          id: user.id,
+          name: user.name,
+          locale: user.locale,
+          role: user.role,
+          isGuest: user.isGuest === true,
+        };
 
   useEffect(() => {
     if (!wants || profile === null) return undefined;
@@ -92,9 +112,11 @@ export function PrologueModeProvider({ children }: { children: ReactNode }) {
           engineWaits: true,
           payouts: config.payouts,
           purse: config.purse ?? DEFAULT_PURSE,
+          startCredits: config.startCredits,
           refuelCost: config.refuelCost,
           moduleCost: config.moduleCost ?? DEFAULT_MODULE_COST,
           upgradeCost: config.upgradeCost ?? DEFAULT_UPGRADE_COST,
+          repairCost: config.repairCost ?? DEFAULT_REPAIR_COST,
           profile,
         });
         // back where the pilot left the story (a closed tab): the ship, the money and the jobs as they were then
@@ -106,6 +128,9 @@ export function PrologueModeProvider({ children }: { children: ReactNode }) {
         setApiInterceptor(sandboxInterceptor(next));
         installed = true;
         setSandbox(next);
+        // the wallet the screens show is the profile's: it was read before the story's fake server was in place, so it
+        // still holds the real account's credits (zero, after a reload) until it is read again from the sandbox
+        void reloadProfileRef.current();
       })
       .catch(() => {
         if (!cancelled) setFailed(true);

@@ -16,12 +16,28 @@ import { usePrologueMode } from '../prologue-mode';
 import { forgetStep, usePrologueStep, writeKind, writeStep } from '../prologue-state';
 import { SkipWarning } from '../skip-warning';
 import { moduleKindOf } from '../sandbox/sandbox-offers';
+import { modulesFor } from '../sandbox/sandbox-world';
 import { previewOf } from '../sandbox/sandbox-ship';
 import { UPGRADE_SCRAP } from '../sandbox/sandbox-world';
 import type { Sandbox, SandboxEvent } from '../sandbox/sandbox-state';
-import { doneOf, enterOf, legOf, scenesFor, startNode, type Moment, type Spoken } from './lines';
+import {
+  doneOf,
+  enterOf,
+  finalLegOf,
+  radarOf,
+  legOf,
+  scenesFor,
+  startNode,
+  type Moment,
+  type Spoken,
+} from './lines';
 import { useOpeningLocks } from './locks';
-import { LossMoment, RescueMoment } from './moments';
+import {
+  holdForResultCard,
+  releaseUnlessCardShown,
+  useResultCardHeld,
+} from '../../report/result-card-gate';
+import { RescueMoment } from './moments';
 import { nextStep, stepDef, type StepDef, type StepId } from './steps';
 import './director.css';
 
@@ -44,7 +60,6 @@ const NO_ZONES: readonly string[] = [];
 const MS = 1000;
 /** How often the story looks at the clock. */
 const TICK_MS = 100;
-
 /** Did the pilot's save leave a ship the step is happy with (the engine fitted, the module fitted, nothing broken)? */
 function fitted(sandbox: Sandbox, step: StepId): boolean {
   const preview = previewOf(sandbox, sandbox.state.layout);
@@ -53,10 +68,22 @@ function fitted(sandbox: Sandbox, step: StepId): boolean {
   return step === 'fit-engine' || moduleKindOf(sandbox) !== null;
 }
 
+/** Has the pilot bought every part the job they chose needs? */
+function moduleBought(sandbox: Sandbox): boolean {
+  const kind = sandbox.state.chosen;
+  if (kind === null) return false;
+  const owned = new Set(sandbox.state.parts.map((entry) => entry.part.catalog.partType));
+  return modulesFor(kind).every((part) => owned.has(part.catalog.partType));
+}
+
 /** Does `event` finish the pilot's part of `def`? */
 function completes(def: StepDef, event: SandboxEvent, sandbox: Sandbox): boolean {
   if (def.until === null || event.type !== def.until) return false;
   if (def.until === 'layout_saved') return fitted(sandbox, def.id);
+  // a passenger job's modules are two parts (the cabin and its life support): the step is done when the last one is bought
+  if (def.until === 'bought') return moduleBought(sandbox);
+  // the workshop may be paid for a part of the parts: the step is done when nothing on the ship is worn any more
+  if (def.until === 'repaired') return sandbox.wornParts().length === 0;
   return true;
 }
 
@@ -115,6 +142,8 @@ export function Director() {
   const run = stored.step === step ? stored : fresh(step);
   const { phase, satisfied, momentReady, queue } = run;
   const [warning, setWarning] = useState(false);
+  // the mission's result card comes before the guide's lines
+  const resultCardHeld = useResultCardHeld();
 
   const queryClient = useQueryClient();
   const queryClientRef = useRef(queryClient);
@@ -169,7 +198,10 @@ export function Director() {
       void navigate(def.path, { replace: true });
     } else if (last !== undefined && !pathRef.current.startsWith('/report/')) {
       // a report step: the pilot reads the report of the flight they just made (or of the last one, coming back)
-      void navigate(`/report/${last.id}`, { replace: true });
+      // `fresh`: the result card opens for a flight that has just ended (once per mission)
+      holdForResultCard(true);
+      window.setTimeout(releaseUnlessCardShown, 8000);
+      void navigate(`/report/${last.id}`, { replace: true, state: { fresh: true } });
     }
     // only a new step starts a step; the guides and the nav setter do not change inside one
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -194,12 +226,18 @@ export function Director() {
       sandbox?.giveEngine();
       void queryClientRef.current.invalidateQueries();
     }
+    // done in a shop: the pilot is not kept there, the story walks them out and the menu opens on the ship
+    const leaveTo = defRef.current.leaveTo;
+    if (leaveTo !== undefined) {
+      setAllowedPaths([leaveTo]);
+      void navigateRef.current(leaveTo, { replace: true });
+    }
     update((current) => ({
       ...current,
       phase: 'leave',
       queue: [...current.queue, ...scenesFor(guides, doneOf(step))],
     }));
-  }, [guides, step, update, sandbox]);
+  }, [guides, step, update, sandbox, setAllowedPaths]);
 
   // the lines are spoken: the pilot's turn, or the next step
   useEffect(() => {
@@ -224,14 +262,24 @@ export function Director() {
 
   // The race waits for the pilot: at the end of a leg the world's clock stops while the friend speaks, and goes on when
   // the last line is read (so a slow reader never has lines piling up, nor a race running behind a popup).
-  const raceLegs = useRef<{ ends: number[]; next: number } | null>(null);
+  const raceLegs = useRef<{
+    ends: number[];
+    next: number;
+    strike: number;
+    /** The final run's radar line: halfway through the leg the pirates strike on (null once it has been said). */
+    radarAt: number | null;
+  } | null>(null);
   const holding = useRef(false);
+  /** What the held clock waits for: only the strike ends the flight when its line is read, the radar line does not. */
+  const holdingFor = useRef<'leg' | 'radar' | 'strike'>('leg');
   useEffect(() => {
     if (holding.current && queue.length === 0) {
       holding.current = false;
       resumeClock();
+      // the pirates have struck: once the friend's last line is read the flight is over, whatever legs were left
+      if (stepRef.current === 'final-run' && holdingFor.current === 'strike') sandbox?.settle(true);
     }
-  }, [queue.length]);
+  }, [queue.length, sandbox]);
   useEffect(
     () => () => {
       holding.current = false;
@@ -250,20 +298,42 @@ export function Director() {
         // the market sells the module of the chosen job only: what it showed before is out of date
         void queryClientRef.current.invalidateQueries();
       }
-      if (event.type === 'dispatched' && current.id === 'race') {
+      if (event.type === 'dispatched' && (current.id === 'race' || current.id === 'final-run')) {
         const flight = sandbox.state.mission;
         let end = flight?.startedAt ?? serverNow();
+        const ends = (flight?.legSeconds ?? []).map((seconds) => (end += seconds * MS));
         raceLegs.current = {
-          ends: (flight?.legSeconds ?? []).map((seconds) => (end += seconds * MS)),
+          ends,
           next: 0,
+          // the pirates strike on the second leg, but always BEFORE the route is complete: a two-leg route is hit after its first
+          strike: Math.max(1, Math.min(2, ends.length - 1)),
+          radarAt: null,
         };
+        const run = raceLegs.current;
+        if (current.id === 'final-run') {
+          // halfway through the leg the pirates strike on
+          const from =
+            run.strike >= 2 ? (ends[run.strike - 2] ?? 0) : (flight?.startedAt ?? serverNow());
+          const to = ends[run.strike - 1];
+          if (to !== undefined) run.radarAt = (from + to) / 2;
+        }
       }
       // a flight is over: the pilot reads its report (the game's own jump to it is off in the opening)
       if (event.type === 'arrived') {
         raceLegs.current = null;
         // the screens must know the ship is back in port before the pilot walks to the next one
         void queryClientRef.current.invalidateQueries();
-        void navigateRef.current(`/report/${event.missionId}`, { replace: true });
+        // the final run is not read as a report: the ship is lost, and the story goes straight to the loss
+        const lastResult = sandbox.state.history.at(-1);
+        if (lastResult?.job.kind !== 'final') {
+          // the guide waits for the result card (and never longer than a few seconds, in case the report does not open)
+          holdForResultCard(true);
+          window.setTimeout(releaseUnlessCardShown, 8000);
+          void navigateRef.current(`/report/${event.missionId}`, {
+            replace: true,
+            state: { fresh: true },
+          });
+        }
       }
       if (completes(current, event, sandbox)) update((state) => ({ ...state, satisfied: true }));
     });
@@ -271,17 +341,43 @@ export function Director() {
     const timer = window.setInterval(() => {
       const race = raceLegs.current;
       if (race !== null && !holding.current) {
+        // the final run: the friend sees something on the radar, halfway through the leg the pirates strike on
+        const radar = race.radarAt;
         const end = race.ends[race.next];
+        if (
+          radar !== null &&
+          serverNow() >= radar &&
+          (end === undefined || radar < end) &&
+          stepRef.current === 'final-run'
+        ) {
+          race.radarAt = null;
+          if (scenesFor(guides, radarOf()).length > 0) {
+            holdClock(radar);
+            holding.current = true;
+            holdingFor.current = 'radar';
+            speak(radarOf());
+          }
+          return;
+        }
         if (end !== undefined && serverNow() >= end) {
           race.next += 1;
           const leg = race.next;
-          if (scenesFor(guides, legOf(leg)).length > 0) {
+          // the race talks at the end of each leg; the final run only when the pirates strike
+          const moment =
+            stepRef.current === 'final-run'
+              ? leg === race.strike
+                ? finalLegOf(2)
+                : null
+              : legOf(leg);
+          if (moment !== null && scenesFor(guides, moment).length > 0) {
             // the last leg ends in the arrival and the report: only the earlier ones stop the clock
             if (leg < race.ends.length) {
               holdClock(end);
               holding.current = true;
+              holdingFor.current =
+                stepRef.current === 'final-run' && leg === race.strike ? 'strike' : 'leg';
             }
-            speak(legOf(leg));
+            speak(moment);
           }
         }
       }
@@ -304,7 +400,8 @@ export function Director() {
     () => update((current) => ({ ...current, momentReady: true })),
     [update],
   );
-  const spoken = queue[0];
+  // a step's picture (the black screen of the loss) plays before anyone speaks
+  const spoken = momentReady && !resultCardHeld ? queue[0] : undefined;
   const ready = phase === 'act' && queue.length === 0;
   const dropFirst = useCallback(
     () => update((current) => ({ ...current, queue: current.queue.slice(1) })),
@@ -313,24 +410,17 @@ export function Director() {
 
   return (
     <>
-      {def.moment === 'loss' && (
-        <LossMoment
+      {def.moment === 'rescue' && (
+        <RescueMoment
           onReady={readyMoment}
           friend={friendName}
-          settled={ready}
-          onContinue={beginLeave}
+          grant={Math.max(0, (sandbox?.config.startCredits ?? 0) - (sandbox?.state.credits ?? 0))}
         />
       )}
-      {def.moment === 'rescue' && <RescueMoment onReady={readyMoment} friend={friendName} />}
       {spoken !== undefined && <Speaker key={spoken.key} spoken={spoken} onDone={dropFirst} />}
-      {/* what to do now sits at the bottom, in the middle; a confirmation (take the engine, read on) is a card in the middle of the screen, like the guides' lines */}
-      {ready && !satisfied && def.moment === undefined && (
-        <p className="opening-hint" data-opening-free="" data-testid="opening-hint">
-          {t(`prologue.hint.${step}`)}
-        </p>
-      )}
+      {/* a confirmation (take the engine, read on) is a card in the middle of the screen, like the guides' lines */}
       {ready && satisfied && def.confirm && (
-        <div className="opening-confirm" data-opening-free="">
+        <div className="opening-confirm" data-opening-free="" data-step={step}>
           <button
             type="button"
             className="btn primary opening-continue"
@@ -350,6 +440,18 @@ export function Director() {
           disabled={finish.isPending}
         >
           {t('prologue.skip.link')}
+        </button>
+        {/* TEMP-DEBUG-RESET: remove this button (and the import of writeStep's use here) when the final run is done */}
+        <button
+          type="button"
+          className="btn tiny"
+          data-testid="debug-reset-final"
+          onClick={() => {
+            if (playerId !== undefined) writeStep(playerId, 'final-run');
+            window.location.reload();
+          }}
+        >
+          [temp] restart final run
         </button>
       </div>
       {finish.isError && (

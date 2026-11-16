@@ -871,8 +871,8 @@ const QUEST_GIVER_FIELDS: EntitySchemaField[] = [
     type: 'json-list',
     required: false,
     description: localeMap(
-      'Dialogue scenes the person speaks: [{id, title, trigger, order, start, nodes: [{id, text, position, anchor, blocking, next, choices}]}]',
-      'Cenas de diálogo que a pessoa fala: [{id, title, trigger, order, start, nodes: [{id, text, position, anchor, blocking, next, choices}]}]',
+      'Dialogue scenes the person speaks: [{id, title, trigger, order, start, nodes: [{id, text, position, anchor, blocking, openDelay (optional seconds before the popup opens), dimDelay (optional seconds before the screen dims), next, choices}]}]',
+      'Cenas de diálogo que a pessoa fala: [{id, title, trigger, order, start, nodes: [{id, text, position, anchor, blocking, openDelay (opcional: segundos até o popup abrir), dimDelay (opcional: segundos até a tela escurecer), next, choices}]}]',
     ),
   },
   {

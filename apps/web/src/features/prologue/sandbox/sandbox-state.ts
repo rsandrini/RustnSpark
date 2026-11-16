@@ -1,4 +1,9 @@
-import type { ConnectorCell, PartCatalogStats, Placement } from '../../../api/generated';
+import type {
+  ConnectorCell,
+  LocalizedText,
+  PartCatalogStats,
+  Placement,
+} from '../../../api/generated';
 import { serverNow } from '../../../api/client';
 import {
   PROLOGUE_BRIDGE,
@@ -15,12 +20,16 @@ export interface SandboxConfig {
   readonly payouts: readonly number[];
   /** The credits the pilot starts with. */
   readonly purse: number;
+  /** What a new pilot starts the game with: the part of it the opening has not paid out arrives after the rescue. */
+  readonly startCredits?: number;
   /** What the refuel costs. */
   readonly refuelCost: number;
   /** What the module for the job costs. */
   readonly moduleCost: number;
   /** What the hull upgrade costs (the friend gives the scrap). */
   readonly upgradeCost: number;
+  /** What the workshop charges to bring every worn part back to full (a part of it for a part of the parts). */
+  readonly repairCost: number;
   /** The friend's name, from the guide the admin edits (the race table and the reports use it). */
   readonly friendName?: string;
   /** The friend's engine is not in the hold yet: it arrives when the pilot takes it (`giveEngine`). */
@@ -34,6 +43,7 @@ export interface SandboxConfig {
     readonly locale: string;
     readonly role: 'PLAYER' | 'ADMIN' | 'SUPPORT';
     readonly publicId?: string;
+    readonly isGuest?: boolean;
   };
 }
 
@@ -51,6 +61,7 @@ export type SandboxEvent =
   | { type: 'part_removed'; partId: string }
   | { type: 'chosen'; kind: ModuleKind }
   | { type: 'upgraded'; partId: string }
+  | { type: 'repaired' }
   | { type: 'refuelled' }
   | { type: 'bought'; partType: string }
   | { type: 'accepted'; missionId: string }
@@ -74,6 +85,15 @@ export interface SandboxMission {
 }
 
 /** A finished run: what it paid and how it ended. */
+/** A part the pirates hurt during a run: its condition at dispatch and after. */
+export interface SandboxDamage {
+  readonly partId: string;
+  readonly partType: string;
+  readonly name: LocalizedText;
+  readonly before: number;
+  readonly after: number;
+}
+
 export interface SandboxResult {
   readonly id: string;
   readonly job: JobSpec;
@@ -82,6 +102,8 @@ export interface SandboxResult {
   readonly outcome: 'success' | 'failure';
   readonly finishedAt: number;
   readonly legSeconds: readonly number[];
+  /** The parts the run wore down (the second job crosses a lane the pirates hunt). */
+  readonly damage?: readonly SandboxDamage[];
 }
 
 export interface SandboxSnapshot {
@@ -106,11 +128,11 @@ export interface SandboxSnapshot {
 /** The tank starts almost empty: just enough for the first race (the owner's call; the trips burn a lot of fuel). */
 export const STARTING_FUEL = 45;
 export const SHIP_ID = 'prologue-ship';
-export const SHIP_NAME = 'Wayfarer';
+export const SHIP_NAME = 'RustNSpark';
 
 const MS = 1000;
-/** The final run's card shows twice what the two jobs pay together (it is never paid). */
-const FINAL_REWARD_FACTOR = 2;
+/** What the final run's card promises: a big payment next to the other jobs, and it is never paid (the ship is lost). */
+const FINAL_REWARD = 2500;
 
 type Listener = (event: SandboxEvent) => void;
 
@@ -222,10 +244,40 @@ export class Sandbox {
       credits: this.snapshot.credits - price,
       scrap: Math.max(0, this.snapshot.scrap - scrap),
       parts: this.snapshot.parts.map((entry) =>
-        entry.id === id ? { ...entry, part: upgraded } : entry,
+        entry.id === id
+          ? { ...entry, part: { ...upgraded, condition: entry.part.condition ?? 100 } }
+          : entry,
       ),
     };
     this.emit({ type: 'upgraded', partId: id });
+  }
+
+  /** Every part on the ship that is worn, with how worn it is. */
+  wornParts(): Array<{ id: string; condition: number }> {
+    return this.snapshot.parts.flatMap((entry) =>
+      entry.location === 'INSTALLED' && (entry.part.condition ?? 100) < 100
+        ? [{ id: entry.id, condition: entry.part.condition ?? 100 }]
+        : [],
+    );
+  }
+
+  /** The workshop brings parts up to the given condition: it costs `cost`, and the parts are as good as new at once. */
+  repair(
+    targets: ReadonlyArray<{ partInstanceId: string; toCondition: number }>,
+    cost: number,
+  ): void {
+    const to = new Map(targets.map((target) => [target.partInstanceId, target.toCondition]));
+    this.snapshot = {
+      ...this.snapshot,
+      credits: this.snapshot.credits - cost,
+      parts: this.snapshot.parts.map((entry) => {
+        const wanted = to.get(entry.id);
+        return wanted === undefined
+          ? entry
+          : { ...entry, part: { ...entry.part, condition: Math.min(100, wanted) } };
+      }),
+    };
+    this.emit({ type: 'repaired' });
   }
 
   /** The pilot picks the kind of job to take at the first stop. */
@@ -240,7 +292,7 @@ export class Sandbox {
     if (job.slot === 0) return race;
     if (job.slot === 1) return first;
     if (job.slot === 2) return second;
-    return (first + second) * FINAL_REWARD_FACTOR;
+    return FINAL_REWARD;
   }
 
   /** Takes a job (it is the pilot's current one until it is dispatched or given back). */
@@ -293,6 +345,8 @@ export class Sandbox {
     if (!force && this.now() < mission.arrivalAt) return;
     const lost = mission.job.kind === 'final';
     const paid = lost ? 0 : mission.reward;
+    // the second job crosses a lane the pirates are working: they hit the ship on the way, and every part pays for it
+    const damage = mission.job.slot === 2 && !lost ? this.pirateDamage() : [];
     const result: SandboxResult = {
       id: mission.id,
       job: mission.job,
@@ -301,6 +355,7 @@ export class Sandbox {
       outcome: lost ? 'failure' : 'success',
       finishedAt: Math.min(mission.arrivalAt, this.now()),
       legSeconds: mission.legSeconds,
+      damage,
     };
     this.snapshot = {
       ...this.snapshot,
@@ -313,6 +368,31 @@ export class Sandbox {
       shipLost: lost,
     };
     this.emit({ type: 'arrived', missionId: mission.id });
+  }
+
+  /** The pirates' fire on the second run: every part on the ship loses condition, the engine and the hull the most. */
+  private pirateDamage(): SandboxDamage[] {
+    const LOSS: Record<string, number> = { ENGINE: 32, DEFENSE: 28, TANK: 22, BRIDGE: 14 };
+    const FLOOR = 8;
+    const hurt: SandboxDamage[] = [];
+    this.snapshot = {
+      ...this.snapshot,
+      parts: this.snapshot.parts.map((entry) => {
+        if (entry.location !== 'INSTALLED') return entry;
+        const before = entry.part.condition ?? 100;
+        const after = Math.max(FLOOR, before - (LOSS[entry.part.catalog.partClass] ?? 18));
+        if (after >= before) return entry;
+        hurt.push({
+          partId: entry.id,
+          partType: entry.part.catalog.partType,
+          name: entry.part.name,
+          before,
+          after,
+        });
+        return { ...entry, part: { ...entry.part, condition: after } };
+      }),
+    };
+    return hurt;
   }
 
   /** Buys a part: it costs `price` and arrives loose in the hold. Returns its id. */

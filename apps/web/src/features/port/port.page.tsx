@@ -47,7 +47,7 @@ import { useDisplay } from '../../ui/display';
 import { readinessOf, upgradeNeeds, firstMissing, type UpgradeReadiness } from './upgrade-needs';
 import { useBridgeResize } from './bridge-resize-panel';
 import { usePrologueMode } from '../prologue/prologue-mode';
-import type { PartInfoData } from '../parts/part-detail';
+import { PartDetail, type PartInfoData } from '../parts/part-detail';
 
 // The seven tabs sit under three groups: what you buy, what the workshop does for the ship, and the
 // jobs the ship does at this port. The tab state stays one `PortTabId`; the group is derived from it.
@@ -79,6 +79,9 @@ interface UpgradeConfirm {
   cost: number;
   /** What the upgrade also asks for besides credits, against what the pilot holds. */
   materials: { materialId: string; name: string; have: number; needed: number }[];
+  /** The part as it is and as it becomes, so the popup shows the main differences before the pilot pays. */
+  current: PartInfoData;
+  next?: PartInfoData;
 }
 
 interface RepairTarget {
@@ -322,7 +325,6 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
   const wallet = user?.credits ?? 0;
   // Upgrade tab: by default only what the pilot can pay for right now.
-  const [onlyAffordable, setOnlyAffordable] = useState(false);
   const broke = wallet < 0;
   const afterTrade = () => {
     // Profile only (wallet): a session refresh per trade would rotate the refresh token.
@@ -911,7 +913,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       )}
 
       {tab === 'repair' && (
-        <section className="stack" data-testid="repair">
+        <section className="stack" data-testid="repair" data-opening="repair">
           {/* While repairs run the whole tab is locked (inert and dimmed) and the notice sits over the controls. */}
           <div className={`repair-lock${repairing ? ' on' : ''}`}>
             {repairing && (
@@ -1237,9 +1239,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             const upgradable = upgradeCandidates.filter(
               (item) => quotes?.get(item.id)?.eligible === true,
             );
-            const eligible = onlyAffordable
-              ? upgradable.filter((item) => (quotes?.get(item.id)?.cost ?? 0) <= wallet)
-              : upgradable;
+            const eligible = upgradable;
             if (quotes === undefined && upgradeCandidates.length > 0) {
               return <p className="sub">{t('loading')}</p>;
             }
@@ -1263,18 +1263,6 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                 ))}
               </p>
             );
-            const filterChips = upgradable.length > 0 && (
-              <div className="chips" role="group" aria-label={t('port.upgradeFilter')}>
-                <button
-                  type="button"
-                  className={`chip${onlyAffordable ? ' on' : ''}`}
-                  aria-pressed={onlyAffordable}
-                  onClick={() => setOnlyAffordable((current) => !current)}
-                >
-                  {t('port.upgradeOnlyAffordable')}
-                </button>
-              </div>
-            );
             // The bridge always has its card here (upgrade, expand or shrink live together on it),
             // even when it cannot be upgraded right now.
             const cards = [
@@ -1290,13 +1278,8 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               return (
                 <>
                   {haveStrip}
-                  {filterChips}
                   <p className="sub">
-                    {upgradable.length > 0
-                      ? t('port.upgradeNoneAffordable')
-                      : upgradeCandidates.length > 0
-                        ? t('port.upgradeNoneWhy')
-                        : t('port.upgradeNone')}
+                    {upgradeCandidates.length > 0 ? t('port.upgradeNoneWhy') : t('port.upgradeNone')}
                   </p>
                   {whyNot}
                 </>
@@ -1441,6 +1424,8 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                             rarity: item.rarity,
                             nextRarity: quote.nextRarity ?? item.rarity,
                             cost: quote.cost ?? 0,
+                            current: item,
+                            ...(nextPartInfo !== undefined ? { next: nextPartInfo } : {}),
                             materials: (quote.materials ?? []).map((need) => ({
                               materialId: need.materialId,
                               name: pickLocalized(need.displayName, i18n.language),
@@ -1473,21 +1458,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             return (
               <>
                 {haveStrip}
-                {filterChips}
                 {eligible.length === 0 && (
                   <p className="sub">
-                    {upgradable.length > 0
-                      ? t('port.upgradeNoneAffordable')
-                      : t('port.upgradeNoneWhy')}
-                  </p>
-                )}
-                {eligible.length > 0 && (
-                  <p className="sub" data-testid="upgrade-counts">
-                    {t('port.upgradeCounts', {
-                      ready: groups.ready.length,
-                      credits: groups.credits.length,
-                      materials: groups.materials.length,
-                    })}
+                    {t('port.upgradeNoneWhy')}
                   </p>
                 )}
                 {(['ready', 'credits', 'materials'] as const).map((group) =>
@@ -1828,7 +1801,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
         title={
           upgradeConfirm === null
             ? ''
-            : t('port.upgradeConfirmTitle', { cost: upgradeConfirm.cost })
+            : t('port.upgradeConfirmTitle', { name: upgradeConfirm.name })
         }
         onClose={() => setUpgradeConfirm(null)}
       >
@@ -1854,6 +1827,12 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                 }}
               />
             </p>
+            {/* the main differences, so a pilot who did not compare before can see them before paying */}
+            {upgradeConfirm.next !== undefined && (
+              <div className="upgrade-diff" data-testid="upgrade-confirm-diff">
+                <PartDetail part={upgradeConfirm.next} versus={upgradeConfirm.current} hideMeta />
+              </div>
+            )}
             <ul className="upgrade-price" data-testid="upgrade-price">
               <li className={wallet >= upgradeConfirm.cost ? 'req-met' : 'req-unmet'}>
                 {t('port.upgradePriceCredits', { cost: money(upgradeConfirm.cost) })}
@@ -1930,7 +1909,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
         {confirm !== null && (
           <div className="stack">
             {confirm.price !== null && (
-              <p>{t('port.balanceAfter', { balance: money(tradeBalance(confirm, wallet)) })}</p>
+              <p>{t('port.balanceAfter', { balance: new Intl.NumberFormat(i18n.language).format(tradeBalance(confirm, wallet)) })}</p>
             )}
             {confirm.hint !== undefined && <p className="sub">{confirm.hint}</p>}
             <button

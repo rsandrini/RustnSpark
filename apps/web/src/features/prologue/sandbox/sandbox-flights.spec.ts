@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { PROLOGUE_CARGO, PROLOGUE_ENGINE, PROLOGUE_START_PARTS } from '../prologue-fixtures';
 import { sandboxInterceptor } from './sandbox-api';
 import { createSandbox, type SandboxEvent } from './sandbox-state';
-import { PLACE, SANDBOX_PASSENGER_MODULE } from './sandbox-world';
+import { PLACE, SANDBOX_LIFE_SUPPORT, SANDBOX_PASSENGER_CABIN } from './sandbox-world';
 
 const T0 = 1_700_000_000_000;
 
@@ -22,6 +22,7 @@ function fresh() {
     refuelCost: 100,
     moduleCost: 800,
     upgradeCost: 200,
+    repairCost: 150,
     friendName: 'Kite',
     clock: () => now,
     profile: { id: 'player-1', name: 'Test Pilot', locale: 'en', role: 'PLAYER' },
@@ -100,11 +101,18 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     const env = fresh();
     await fitEngine(env);
     await env.call('POST', '/v1/missions/sandbox-race/accept');
-    expect((await board(env))[0]?.eligibility.eligible).toBe(true);
+    // the taken job is the active mission, pinned on its own: the board does not offer it a second time
+    expect(await board(env)).toHaveLength(0);
+    const active = async () =>
+      (
+        (await env.call('GET', '/v1/missions/active')) as Array<{
+          eligibility: { eligible: boolean };
+        }>
+      )[0];
+    expect((await active())?.eligibility.eligible).toBe(true);
     // the engine comes off: the same card must now say the ship no longer qualifies
     await env.call('POST', '/v1/ships/prologue-ship/assemble', { layout: layoutWith() });
-    const [race] = await board(env);
-    expect(race?.eligibility.eligible).toBe(false);
+    expect((await active())?.eligibility.eligible).toBe(false);
     await expect(
       env.call('POST', '/v1/ships/prologue-ship/dispatch', { missionId: 'sandbox-race' }),
     ).rejects.toMatchObject({ status: 409 });
@@ -185,11 +193,13 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     });
     const offers = await board(env);
     expect(offers).toHaveLength(2);
-    env.sandbox.addPart(SANDBOX_PASSENGER_MODULE, SANDBOX_PASSENGER_MODULE.id);
+    env.sandbox.addPart(SANDBOX_PASSENGER_CABIN, SANDBOX_PASSENGER_CABIN.id);
+    env.sandbox.addPart(SANDBOX_LIFE_SUPPORT, SANDBOX_LIFE_SUPPORT.id);
     await env.call('POST', '/v1/ships/prologue-ship/assemble', {
       layout: layoutWith(
         { id: PROLOGUE_ENGINE.id, gx: -4, gy: 0 },
-        { id: SANDBOX_PASSENGER_MODULE.id, gx: 1, gy: 0 },
+        { id: SANDBOX_PASSENGER_CABIN.id, gx: 1, gy: 0 },
+        { id: SANDBOX_LIFE_SUPPORT.id, gx: 2, gy: 0 },
       ),
     });
     await env.call('POST', `/v1/missions/${offers[0]?.id}/accept`);
@@ -261,13 +271,15 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     const [final] = await board(env);
     expect(final?.info.peakDanger).toBeGreaterThan(0);
     expect(final?.info.legCount).toBeGreaterThanOrEqual(1);
-    expect(final?.reward).toBe((494 + 2660) * 2);
+    expect(final?.reward).toBe(2500);
     // the final run needs the passenger module, so give the pilot one (the ship is rebuilt for the test)
-    env.sandbox.addPart(SANDBOX_PASSENGER_MODULE, SANDBOX_PASSENGER_MODULE.id);
+    env.sandbox.addPart(SANDBOX_PASSENGER_CABIN, SANDBOX_PASSENGER_CABIN.id);
+    env.sandbox.addPart(SANDBOX_LIFE_SUPPORT, SANDBOX_LIFE_SUPPORT.id);
     await env.call('POST', '/v1/ships/prologue-ship/assemble', {
       layout: layoutWith(
         { id: PROLOGUE_ENGINE.id, gx: -4, gy: 0 },
-        { id: SANDBOX_PASSENGER_MODULE.id, gx: 1, gy: 0 },
+        { id: SANDBOX_PASSENGER_CABIN.id, gx: 1, gy: 0 },
+        { id: SANDBOX_LIFE_SUPPORT.id, gx: 2, gy: 0 },
       ),
     });
     await env.call('POST', `/v1/missions/${final?.id}/accept`);

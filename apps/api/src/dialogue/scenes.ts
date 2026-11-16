@@ -23,6 +23,7 @@ export const PROLOGUE_STEP_IDS = [
   'fit-module',
   'dispatch-job',
   'job-report',
+  'repair',
   'upgrade',
   'stop-two',
   'final-run',
@@ -38,12 +39,17 @@ export const PROLOGUE_TRIGGERS = [
   'prologue_race_leg_1',
   'prologue_race_leg_2',
   'prologue_race_leg_3',
+  // the final run's second leg: the friend sees movement on the radar halfway through it, then the pirates strike
+  'prologue_final-run_radar',
+  'prologue_final-run_leg_2',
 ] as const;
 
 export type PrologueTrigger = (typeof PROLOGUE_TRIGGERS)[number];
 
 export const ANCHORS = [
   'ship_grid',
+  'parts_tray',
+  'part_engine',
   'auto_layout',
   'ship_tab',
   'port_tab',
@@ -101,6 +107,10 @@ export interface NodeData {
   readonly position: string;
   readonly anchor: string | null;
   readonly blocking: boolean;
+  /** Seconds the popup waits before it opens (absent = at once). */
+  readonly openDelay?: number;
+  /** Seconds after the popup opens before the screen dims (absent = with the popup). */
+  readonly dimDelay?: number;
   readonly next: string | null;
   readonly choices: readonly ChoiceData[];
 }
@@ -184,6 +194,18 @@ export function sceneProblems(raw: unknown): string[] {
         problems.push(`${where}.anchor: null or one of ${ANCHORS.join(', ')}`);
       }
       if (typeof node.blocking !== 'boolean') problems.push(`${where}.blocking: true or false`);
+      if (
+        node.openDelay !== undefined &&
+        !(typeof node.openDelay === 'number' && node.openDelay >= 0 && node.openDelay <= 30)
+      ) {
+        problems.push(`${where}.openDelay: absent, or seconds from 0 to 30`);
+      }
+      if (
+        node.dimDelay !== undefined &&
+        !(typeof node.dimDelay === 'number' && node.dimDelay >= 0 && node.dimDelay <= 30)
+      ) {
+        problems.push(`${where}.dimDelay: absent, or seconds from 0 to 30`);
+      }
       if (node.next !== null && !(typeof node.next === 'string' && nodeIds.has(node.next))) {
         problems.push(`${where}.next: null or an existing node`);
       }

@@ -62,6 +62,15 @@ describe('floating ship', () => {
     expect(out).toEqual({ baseId: 'marsa', distance: 200 + 800 });
   });
 
+  it('prefers a base of the pilot own faction over a nearer foreign one', () => {
+    const own = new Set(['hedus']);
+    const plan = towPlanFor({ routeId: 'drift-marsa', fromId: 'marsa', progress: 0.1 }, edges, bases, own);
+    expect(plan).toEqual({ baseId: 'hedus', distance: 80 + 400 });
+    // no own base reachable: fall back to the nearest base of any faction
+    const none = towPlanFor({ routeId: 'drift-marsa', fromId: 'marsa', progress: 0.1 }, edges, bases, new Set(['nowhere']));
+    expect(none).toEqual({ baseId: 'marsa', distance: 80 });
+  });
+
   it('prices waiting at half the reference tow and calling it now at that plus the distance', () => {
     const { rescue_cost: cost, rescue_distance_price: perUnit } = rules.economy;
     const wait = cost * rules.economy.rescue_wait_fraction;

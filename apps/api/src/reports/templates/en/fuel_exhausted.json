@@ -1,10 +1,10 @@
 {
   "variants": [
-    "The tank ran dry between burns — no thrust, no argument, just drift.",
-    "Fuel exhaustion: the last burn coughed out and the ship went cold.",
-    "The gauge touched zero and the drive went quiet. Out here, quiet means stranded.",
-    "No fuel left to burn — the ship coasted on momentum until even that ran out.",
-    "The engines sputtered once, twice, and stopped. The lane keeps going without you.",
-    "Empty tanks. The stars hold still and you wait for someone to find you."
+    "OUT OF FUEL: the tank held only {fuel} units, not enough to finish this leg. The drive went quiet and the ship is adrift.",
+    "Fuel exhausted — {fuel} units left, and this leg needed more. No thrust, no argument, just drift.",
+    "The gauge read {fuel} and the next stretch needed more than that. The engines stopped; the lane keeps going without you.",
+    "Dry tanks: only {fuel} units of fuel remained for a leg that burns more. The ship coasts to a halt, adrift.",
+    "Not enough fuel to complete the leg ({fuel} left). The ship stopped in space and waits for a rescue.",
+    "Empty tanks on this leg — {fuel} units were not enough. The stars hold still and you wait to be found."
   ]
 }

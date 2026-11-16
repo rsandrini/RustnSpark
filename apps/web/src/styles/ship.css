@@ -1240,3 +1240,154 @@ body.dragging-part .part-hover-card {
     animation: none;
   }
 }
+
+/* A part that has just landed in the list drops like something heavy: a fast, accelerating fall, a hard hit that squashes it,
+   one short bounce, sparks and a shock ring where it lands, and the whole list shudders. */
+.part-btn-wrap.arrived {
+  position: relative;
+  z-index: 2;
+  transform-origin: 50% 100%;
+  animation: part-drop 1.3s linear both;
+}
+.part-btn-wrap.arrived .part-btn {
+  animation: part-arrive-glow 2s ease-out both;
+}
+.part-btn-wrap.arrived::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  border: 3px solid rgba(255, 196, 77, 0.95);
+  opacity: 0;
+  pointer-events: none;
+  animation: part-land-ring 0.55s ease-out 0.4s both;
+}
+.part-btn-wrap.arrived::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: #ffc44d;
+  opacity: 0;
+  pointer-events: none;
+  animation: part-sparks 0.7s ease-out 0.4s both;
+}
+.hangar-side.impact {
+  animation: tray-shudder 0.45s linear 0.4s both;
+}
+@keyframes part-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-170px) scale(1, 1.08);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.5);
+  }
+  6% {
+    opacity: 1;
+  }
+  30% {
+    transform: translateY(0) scale(1, 1.04);
+    animation-timing-function: linear;
+  }
+  33% {
+    transform: translateY(0) scale(1.14, 0.78);
+    animation-timing-function: ease-out;
+  }
+  41% {
+    transform: translateY(-14px) scale(0.97, 1.05);
+    animation-timing-function: ease-in;
+  }
+  49% {
+    transform: translateY(0) scale(1.05, 0.93);
+    animation-timing-function: ease-out;
+  }
+  57% {
+    transform: translateY(0) scale(1, 1);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+@keyframes part-land-ring {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.35, 1.9);
+  }
+}
+@keyframes part-sparks {
+  0% {
+    opacity: 1;
+    box-shadow:
+      0 0 #ffc44d,
+      0 0 #ffc44d,
+      0 0 #ffc44d,
+      0 0 #ffc44d,
+      0 0 #ffe9b0,
+      0 0 #ffe9b0,
+      0 0 #ffe9b0;
+  }
+  100% {
+    opacity: 0;
+    box-shadow:
+      -70px -34px #ffc44d,
+      74px -30px #ffc44d,
+      -38px -58px #ffc44d,
+      42px -62px #ffc44d,
+      -96px 2px #ffe9b0,
+      100px 0 #ffe9b0,
+      4px -72px #ffe9b0;
+  }
+}
+@keyframes tray-shudder {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  15% {
+    transform: translate(-5px, 3px);
+  }
+  30% {
+    transform: translate(5px, -3px);
+  }
+  45% {
+    transform: translate(-4px, 2px);
+  }
+  60% {
+    transform: translate(3px, -2px);
+  }
+  80% {
+    transform: translate(-1px, 1px);
+  }
+}
+@keyframes part-arrive-glow {
+  0%,
+  45% {
+    box-shadow: 0 0 0 3px rgba(255, 196, 77, 0.85);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 196, 77, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .part-btn-wrap.arrived,
+  .part-btn-wrap.arrived .part-btn,
+  .part-btn-wrap.arrived::after,
+  .part-btn-wrap.arrived::before,
+  .hangar-side.impact {
+    animation: none;
+  }
+}
+
+/* The upgrade confirmation: today against the upgraded part, in the popup, before the pilot pays. */
+.upgrade-diff {
+  margin: 4px 0;
+  max-height: 46vh;
+  overflow-y: auto;
+  text-align: left;
+}

@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { SCENE_TRIGGERS, type SceneData } from './SceneEditor';
 import { inSequence } from './scene-edit';
+import { GiverThumb, useGiverPortraits } from './GiverThumb';
 import { tuningApi } from './tuning.api';
 
 interface Giver {
@@ -28,6 +29,7 @@ export function OpeningScript() {
     queryKey: ['tuning', 'entities', 'quest-givers'],
     queryFn: () => tuningApi.listEntities<Giver>('quest-givers'),
   });
+  const portraits = useGiverPortraits();
   const language = i18n.language === 'pt-BR' ? 'pt-BR' : 'en';
 
   const rows = useMemo(() => {
@@ -79,7 +81,9 @@ export function OpeningScript() {
             <tr key={`${guide.id}-${scene.id}-${scene.trigger}`}>
               <td>{rows.findIndex((row) => row.scene === scene) + 1}</td>
               <td>{t(`admin.dialogue.triggers.${scene.trigger}`)}</td>
-              <td>{guide.name}</td>
+              <td>
+                <GiverThumb url={portraits[guide.id]} name={guide.name} /> {guide.name}
+              </td>
               <td>
                 <ol className="opening-script-lines">
                   {scene.nodes.map((node) => (

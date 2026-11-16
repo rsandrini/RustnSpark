@@ -95,6 +95,29 @@
   height: 64px;
 }
 
+/* A speaking guide with a picture: a big face beside the name. */
+.giver-badge.dialogue {
+  gap: 16px;
+}
+.giver-badge.dialogue .giver-portrait {
+  width: 132px;
+  height: 132px;
+  border-radius: 14px;
+  border: 1px solid var(--brass);
+}
+.giver-badge.dialogue .giver-name {
+  font-size: var(--text-lg);
+}
+.giver-badge.dialogue .giver-title {
+  font-size: var(--text-sm);
+}
+@media (max-width: 860px) {
+  .giver-badge.dialogue .giver-portrait {
+    width: 88px;
+    height: 88px;
+  }
+}
+
 /* Where the screens mount the pieces (wired in phase 2 of the plan). */
 .mcard-giver {
   margin: 8px 0;

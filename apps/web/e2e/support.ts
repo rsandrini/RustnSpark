@@ -196,3 +196,15 @@ export async function openPortTab(page: Page, name: string): Promise<void> {
   if ((await groupTab.getAttribute('aria-selected')) !== 'true') await groupTab.click();
   await page.getByRole('tab', { name: name === 'Repair' ? /^Repair/ : name }).click();
 }
+
+/**
+ * A pilot who picked a faction has the "Getting started" checklist hidden; they bring it back from the account menu.
+ * Does nothing when it is already there (the card, or its small pill).
+ */
+export async function showChecklist(page: Page): Promise<void> {
+  const there = page.locator('.tutorial-card, .tutorial-pill');
+  if ((await there.count()) > 0) return;
+  await page.getByRole('button', { name: 'Account menu' }).click();
+  await page.getByRole('button', { name: /Getting started/ }).click();
+  await expect(there.first()).toBeVisible({ timeout: 15_000 });
+}

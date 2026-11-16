@@ -29,7 +29,19 @@ export interface DialogueBoxProps {
  * node is blocking, and rings the screen element it points at when that element is there. Screen readers get the
  * whole text at once; Escape asks to skip; Enter, Space or a click on the text finishes the typing.
  */
-export function DialogueBox({
+export function DialogueBox(props: DialogueBoxProps) {
+  const delay = props.preview ? 0 : (props.node.openDelay ?? 0);
+  const [opened, setOpened] = useState(delay <= 0);
+  useEffect(() => {
+    if (opened) return undefined;
+    const timer = window.setTimeout(() => setOpened(true), delay * 1000);
+    return () => window.clearTimeout(timer);
+  }, [opened, delay]);
+  // the pilot first sees the screen; the popup (and its dimming, its focus, its keys) begins when the delay is over
+  return opened ? <OpenDialogueBox {...props} /> : null;
+}
+
+function OpenDialogueBox({
   giver,
   node,
   confirmSkip = false,
@@ -94,7 +106,13 @@ export function DialogueBox({
       data-dialogue=""
       data-testid="dialogue"
     >
-      {node.blocking && <div className="dialogue-backdrop" aria-hidden="true" />}
+      {node.blocking && (
+        <div
+          className="dialogue-backdrop"
+          aria-hidden="true"
+          style={node.dimDelay ? { animationDelay: `${node.dimDelay}s` } : undefined}
+        />
+      )}
       {pointed && (
         <div
           className="dialogue-ring"
@@ -118,7 +136,11 @@ export function DialogueBox({
         data-position={position}
       >
         <div className="dialogue-head" id={nameId}>
-          <GiverBadge {...giverBadgeOf(giver, i18n.language)} size="tutorial" />
+          <GiverBadge
+            {...giverBadgeOf(giver, i18n.language)}
+            // a guide with a picture speaks with a big face; without one the small faction disc stays
+            size={giver.portraitUrl ? 'dialogue' : 'tutorial'}
+          />
         </div>
         {/* the whole text for screen readers; the typed copy below is only what the eye sees */}
         <p className="sr-only" id={textId}>

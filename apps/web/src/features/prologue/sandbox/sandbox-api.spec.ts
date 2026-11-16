@@ -27,6 +27,7 @@ const CONFIG = {
   refuelCost: 100,
   moduleCost: 800,
   upgradeCost: 200,
+  repairCost: 150,
   profile: { id: 'player-1', name: 'Test Pilot', locale: 'en', role: 'PLAYER' as const },
 };
 

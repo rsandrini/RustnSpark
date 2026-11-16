@@ -31,7 +31,7 @@ const PART_FAILURE_TYPES = new Set([
   'sensor',
 ]);
 
-type EffectKey = 'credits' | 'damage' | 'condition' | 'wear' | 'loot' | 'distance' | 'none';
+type EffectKey = 'credits' | 'damage' | 'condition' | 'wear' | 'loot' | 'distance' | 'fuel' | 'none';
 
 function effectFor(
   event: ParsedMissionEvent,
@@ -66,6 +66,9 @@ function effectFor(
   }
   if (event.type === 'leg_travel') {
     return { key: 'distance', values: { value: formatNumber(event.magnitude, locale) } };
+  }
+  if (event.type === 'fuel_exhausted') {
+    return { key: 'fuel', values: { value: formatNumber(event.magnitude, locale) } };
   }
   return { key: 'none', values: {} };
 }

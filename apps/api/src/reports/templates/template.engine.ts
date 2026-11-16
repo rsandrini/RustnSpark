@@ -329,6 +329,8 @@ function resolveToken(
       return numeric(event.magnitude);
     case 'distance':
       return numeric(event.magnitude);
+    case 'fuel':
+      return numeric(event.magnitude);
     case 'quantity':
       return numeric(event.magnitude);
     case 'conditionLost':

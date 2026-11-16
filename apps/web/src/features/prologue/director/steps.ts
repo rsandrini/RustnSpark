@@ -16,6 +16,7 @@ export const OPENING_STEPS = [
   'fit-module',
   'dispatch-job',
   'job-report',
+  'repair',
   'upgrade',
   'stop-two',
   'final-run',
@@ -49,8 +50,10 @@ export interface StepDef {
   readonly until: SandboxEvent['type'] | null;
   /** After the action, wait for the pilot to press Continue (a report to read) instead of moving on at once. */
   readonly confirm: boolean;
-  /** A full-screen moment shown on this step (the loss, the rescue). */
-  readonly moment?: 'loss' | 'rescue';
+  /** Once the pilot has done the step's thing, the story takes them here at once (out of the shop, say) and the menu opens on it. */
+  readonly leaveTo?: string;
+  /** A full-screen moment shown on this step (the rescue). */
+  readonly moment?: 'rescue';
 }
 
 const NONE: readonly string[] = [];
@@ -106,6 +109,7 @@ export const STEPS: readonly StepDef[] = [
     allow: ['[data-opening="market"]'],
     until: 'bought',
     confirm: false,
+    leaveTo: '/ship',
   },
   {
     id: 'fit-module',
@@ -119,11 +123,23 @@ export const STEPS: readonly StepDef[] = [
     id: 'dispatch-job',
     path: '/missions',
     nav: ['/missions', '/ship'],
-    allow: ['[data-tour="accept_button"]', '[data-tour="dispatch_button"]'],
+    allow: [
+      '[data-tour="accept_button"]',
+      '[data-tour="dispatch_button"]',
+      '[data-opening="open-ship"]',
+    ],
     until: 'arrived',
     confirm: false,
   },
   { id: 'job-report', path: null, nav: [], allow: NONE, until: null, confirm: true },
+  {
+    id: 'repair',
+    path: '/port?tab=repair',
+    nav: ['/port'],
+    allow: ['[data-opening="repair"]'],
+    until: 'repaired',
+    confirm: false,
+  },
   {
     id: 'upgrade',
     path: '/port?tab=upgrade',
@@ -136,7 +152,11 @@ export const STEPS: readonly StepDef[] = [
     id: 'stop-two',
     path: '/missions',
     nav: ['/missions', '/ship'],
-    allow: ['[data-tour="accept_button"]', '[data-tour="dispatch_button"]'],
+    allow: [
+      '[data-tour="accept_button"]',
+      '[data-tour="dispatch_button"]',
+      '[data-opening="open-ship"]',
+    ],
     until: 'arrived',
     confirm: false,
   },
@@ -144,11 +164,15 @@ export const STEPS: readonly StepDef[] = [
     id: 'final-run',
     path: '/missions',
     nav: ['/missions', '/ship'],
-    allow: ['[data-tour="accept_button"]', '[data-tour="dispatch_button"]'],
+    allow: [
+      '[data-tour="accept_button"]',
+      '[data-tour="dispatch_button"]',
+      '[data-opening="open-ship"]',
+    ],
     until: 'arrived',
     confirm: false,
   },
-  { id: 'loss', path: null, nav: [], allow: NONE, until: null, confirm: false, moment: 'loss' },
+  { id: 'loss', path: null, nav: [], allow: NONE, until: null, confirm: false },
   { id: 'rescue', path: null, nav: [], allow: NONE, until: null, confirm: true, moment: 'rescue' },
 ];
 

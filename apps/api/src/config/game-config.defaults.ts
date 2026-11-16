@@ -557,9 +557,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // A new ship starts with a quarter of its tank: enough for the first flight to the test pad, and the
     // tutorial's first step is to refuel (owner, 2026-10-19).
     start_fuel_fraction: 0.25,
-    // The opening pays out the starting credits in three steps (the race, then the two missions at the first
-    // stop), as whole percentages adding up to 100, so a pilot who skips it starts with the same money.
-    prologue_payout_shares: [17, 13, 70],
+    // The opening's missions (the race, then the two jobs) pay what the pilot spends in it (refuel, module, repair,
+    // upgrade), as whole percentages adding up to 100. The start credits' remainder arrives after the rescue.
+    prologue_payout_shares: [50, 25, 25],
     // The pilot starts the opening with this small purse; the engine is the friend's gift, so it costs nothing.
     prologue_purse: 300,
     // The refuel at the opening's first stop costs this; the payouts add up to the start credits plus this.
@@ -568,6 +568,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     prologue_module_cost: 800,
     // The hull upgrade at the second stop costs this (the friend gives the scrap); the payouts also cover it.
     prologue_upgrade_cost: 200,
+    // The repair at the port, before the hull upgrade, costs this; the payouts also cover it.
+    prologue_repair_cost: 100,
   },
   world: {
     seed: 'rust-and-spark-world-seed-v0.1',

@@ -86,51 +86,25 @@
       "play": "Play the opening",
       "confirm": "Skip anyway"
     },
-    "loss": {
-      "lostTitle": "Lost",
-      "savedTitle": "Saved",
-      "ship": "The ship",
-      "parts": "Its parts",
-      "player": "You",
-      "credits": "Your credits",
-      "friend": "{{friend}} (signal lost)"
-    },
     "port": {
-      "body": "Kite's gone, and he won't be the last. The three powers are all fighting the pirates now, each in its own way. Pick the flag you'll fly for, and they'll give you a ship."
+      "body": "Bob's gone, and she won't be the last. The three powers are all fighting the pirates now, each in its own way. Pick the flag you'll fly for, and they'll give you a ship."
     },
+    "shipClassNone": "Nothing",
     "director": {
       "continue": "Continue",
       "choose": "Choose this job"
     },
     "moment": {
-      "signalLost": "SIGNAL LOST",
-      "lossCaption": "Pirates ambushed you in the lane. Your ship is wrecked, and {{friend}} has stopped answering.",
       "rescueCaption": "A rescue cutter found your beacon.",
       "rescued": "You were pulled out alive.",
-      "friendLost": "{{friend}} was not found."
-    },
-    "hint": {
-      "gift": "Your friend is giving you an engine.",
-      "fit-engine": "Drag the engine onto your ship. It saves by itself.",
-      "race-board": "Accept the race.",
-      "race": "Press Dispatch to start the race.",
-      "race-report": "Read how the race went.",
-      "stop-port": "Fill your tank: press Buy.",
-      "choose-job": "Choose the job you want to fly.",
-      "buy-module": "Buy the module your job needs.",
-      "fit-module": "Drag the module onto your ship.",
-      "dispatch-job": "Accept your job, then press Dispatch.",
-      "job-report": "Read your report.",
-      "stop-two": "Take a job and fly it.",
-      "final-run": "Accept the big job, then press Dispatch.",
-      "rescue": "You were rescued.",
-      "upgrade": "Upgrade your hull: press Upgrade, then confirm."
+      "friendLost": "{{friend}} was not found.",
+      "rescueGrant": "+{{amount}} ¢ from the rescue, to start over."
     },
     "continueLabel": {
       "gift": "Take the engine",
       "race-report": "On to the port",
       "job-report": "Next stop",
-      "rescue": "Choose your faction"
+      "rescue": "Continue"
     }
   },
   "onboarding": {
@@ -806,6 +780,9 @@
     "loginLink": "Sign in",
     "registerLink": "Create an account",
     "logout": "Sign out",
+    "logoutConfirmTitle": "Sign out?",
+    "logoutConfirmText": "You can sign back in later and pick the story up where you left it.",
+    "logoutKeep": "Stay",
     "adminLink": "Admin"
   },
   "admin": {
@@ -978,6 +955,8 @@
       "anchor": "Points at",
       "noAnchor": "Nothing",
       "blocking": "Dims the screen and waits",
+      "openDelay": "Seconds before the popup opens (the pilot sees the screen first)",
+      "dimDelay": "Seconds after the popup opens before it dims (0 = with the popup)",
       "textEn": "Text (English)",
       "textPt": "Text (Portuguese)",
       "next": "Then",
@@ -1032,11 +1011,15 @@
         "prologue_dispatch-job_done": "Opening · Fly the job · when it is done",
         "prologue_job-report_enter": "Opening · Job report · when it starts",
         "prologue_job-report_done": "Opening · Job report · when it is done",
+        "prologue_repair_enter": "Opening · Repair at the port · when it starts",
+        "prologue_repair_done": "Opening · Repair at the port · when it is done",
         "prologue_upgrade_enter": "Opening · Upgrade the hull · when it starts",
         "prologue_upgrade_done": "Opening · Upgrade the hull · when it is done",
         "prologue_stop-two_enter": "Opening · Second job · when it starts",
         "prologue_stop-two_done": "Opening · Second job · when it is done",
         "prologue_final-run_enter": "Opening · The last run · when it starts",
+        "prologue_final-run_radar": "Opening · The last run · movement on the radar (halfway through leg 2)",
+        "prologue_final-run_leg_2": "Opening · The final run · after leg 2 (the pirates)",
         "prologue_final-run_done": "Opening · The last run · when it is done",
         "prologue_loss_enter": "Opening · The loss · when it starts",
         "prologue_loss_done": "Opening · The loss · when it is done",
@@ -1055,6 +1038,8 @@
       },
       "anchors": {
         "ship_grid": "The ship grid",
+        "parts_tray": "The parts list",
+        "part_engine": "The engine in the parts list",
         "auto_layout": "Auto layout button",
         "ship_tab": "Ship tab",
         "port_tab": "Port tab",
@@ -1606,11 +1591,11 @@
     "buy": "Buy",
     "notEnoughFunds": "Not enough funds",
     "sell": "Sell",
-    "buyConfirm": "Buy {{name}} for {{price}} ¢?",
+    "buyConfirm": "Buy {{name}} for {{price}} ¢?",
     "sellConfirm": "Sell {{name}}?",
-    "sellQuote": "Sell {{name}} for {{price}} ¢?",
+    "sellQuote": "Sell {{name}} for {{price}} ¢?",
     "balanceAfter": "Balance after: {{balance}} ¢",
-    "priceUpdated": "The price changed to {{price}} ¢ — confirm again.",
+    "priceUpdated": "The price changed to {{price}} ¢ — confirm again.",
     "insufficient": "Insufficient credits",
     "bought": "Bought {{name}} for {{price}} ¢.",
     "sold": "Sold {{name}} for {{price}} ¢.",
@@ -1641,7 +1626,7 @@
     "refueled": "Filled {{units}} units for {{cost}} ¢.",
     "scavenge": "Send the ship scavenging",
     "repairQuote": "Repair cost: {{cost}} ¢ · {{time}}",
-    "repairConfirmTitle": "Repair for {{cost}} ¢?",
+    "repairConfirmTitle": "Repair for {{cost}} ¢?",
     "repairConfirm": "Start repair",
     "noShip": "You have no ship.",
     "sellAll": "Sell all",
@@ -1745,13 +1730,10 @@
     "upgradeCost": "Upgrade cost",
     "upgradesTo": "Upgrades to {{name}}",
     "upgrade": "Upgrade",
-    "upgradeConfirmTitle": "Upgrade for {{cost}} ¢?",
-    "upgradeQuote": "Upgrade <from>{{name}}</from> to <to>{{nextName}}</to> for {{cost}} ¢?",
+    "upgradeConfirmTitle": "Upgrade {{name}}?",
+    "upgradeQuote": "<from>{{name}}</from> → <to>{{nextName}}</to>",
     "upgradeConfirm": "Upgrade",
     "upgraded": "Upgraded to {{name}}.",
-    "upgradeFilter": "Upgrade filter",
-    "upgradeOnlyAffordable": "Only what I can afford",
-    "upgradeNoneAffordable": "Nothing you can upgrade with your credits right now. Turn the filter off to see everything that can be upgraded.",
     "scavengeFoot": "Go scavenging on foot",
     "upgradeFromTo": "{{from}} → {{to}}",
     "upgradeMaterial": "{{name}}: {{needed}} (you have {{have}})",
@@ -1763,7 +1745,6 @@
     "upgradeGoWork": "Open Work",
     "upgradeYouHave": "You have",
     "upgradeHeld": "{{name}}: {{have}}",
-    "upgradeCounts": "{{ready}} ready · {{credits}} need credits · {{materials}} need materials",
     "upgradeGroup": {
       "ready": "Ready to upgrade",
       "credits": "Missing credits",
@@ -1974,7 +1955,8 @@
       "success": "Mission accomplished",
       "partial_failure": "Partial success",
       "failed": "Mission failed",
-      "adrift": "Ship adrift"
+      "adrift": "Ship adrift — out of fuel",
+      "adriftHint": "The tank ran dry before the route ended, so the ship stopped in space. Fill the tank before leaving, and remember that long routes, hostile zones and an overtuned engine burn more fuel."
     },
     "cascade": {
       "shield": "Shield absorbed",
@@ -2005,6 +1987,11 @@
     "refCategory": {
       "part": "Class",
       "loot": "Rarity"
+    },
+    "popup": {
+      "racePlace": "You finished #{{place}}",
+      "raceTime": "Time {{time}}",
+      "close": "See the report"
     },
     "glyph": {
       "ok": "✔",
@@ -2044,6 +2031,7 @@
       "raceLegsTitle": "Leg by leg",
       "raceLeg": "Leg {{leg}} — {{leader}} leads, you are {{place}}º",
       "raceLegLead": "Leg {{leg}} — you lead",
+      "raceLegTimes": " · your leg {{you}} (fastest {{leader}}), total {{total}}",
       "raceLegYouTrouble": " · your engines failed here and cost you time",
       "raceLegRivalTrouble": " · trouble for {{names}}",
       "damageCombat": "Fight damage",
@@ -2141,9 +2129,7 @@
       "rivalPushed": "{{name}} — speed {{mobility}}, pushing ×{{level}}",
       "projected": "The race so far (projected)",
       "projectedStart": "The race is under way over {{legs}} legs. The order shows up here as each leg is finished.",
-      "projectedAfter": "After leg {{leg}} of {{legs}}:",
-      "projectedTrouble": "engine trouble on a leg",
-      "projectedNote": "Projected: it holds unless an engine you pushed fails on the way. The report has the real result."
+      "projectedTrouble": "engine trouble on a leg"
     },
     "workingAt": {
       "scavenging": "Scavenging in {{place}}",
@@ -2316,6 +2302,8 @@
     "title": "Stuck? An escort can take you home",
     "body": "An escort will carry your ship to {{place}}, the nearest port of your faction. It is free and there are no fights, but it is slow: about {{time}}. You can call it once a week.",
     "accept": "Accept the escort",
+    "confirm": "Send your ship to {{place}} with the escort? The trip takes about {{time}}, you cannot fly meanwhile, and you can call it only once a week.",
+    "confirmAction": "Yes, send the escort",
     "failed": "The escort could not leave. Reload and try again.",
     "underwayTitle": "The escort is taking your ship to {{place}}",
     "underwayBody": "Arrives in",
@@ -2458,6 +2446,7 @@
     "INVALID_QUANTITY": "Invalid quantity.",
     "INVALID_REPAIR_TARGET": "That repair would go below the part’s current condition. Reload the repair tab and try again.",
     "LISTING_SOLD": "That used part was just sold.",
+    "LISTING_BLOCKED": "Not for this job.",
     "MAINTENANCE": "The game is down for maintenance. Try again shortly.",
     "MINER": "No mining rig installed.",
     "MIN_MOBILITY": "Mobility below the mission minimum.",
@@ -2534,8 +2523,8 @@
     "waiting": "Rescue on its way — arrives in",
     "wait": "Wait for the rescue — {{cost}} ¢ (about {{minutes}} min)",
     "now": "Rescue now — {{cost}} ¢",
-    "confirmWait": "Wait for the rescue? It arrives in about {{minutes}} minutes and tows the ship to {{base}}. You pay {{cost}} ¢ when it arrives.",
-    "confirmNow": "Call the rescue now? The ship is towed to {{base}} at once and you pay {{cost}} ¢.",
+    "confirmWait": "Wait for the rescue? It arrives in about {{minutes}} minutes and tows the ship to {{base}}. You pay {{cost}} ¢ when it arrives.",
+    "confirmNow": "Call the rescue now? The ship is towed to {{base}} at once and you pay {{cost}} ¢.",
     "waitAction": "Wait for the rescue",
     "nowAction": "Rescue now",
     "waitStarted": "The rescue is on its way. You pay when it arrives.",

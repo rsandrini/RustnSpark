@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MissionOffer, WorldLocation, WorldResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
@@ -11,9 +11,12 @@ import { RiskBadge } from '../../ui/RiskBadge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { fuelStatus } from './fuel-status';
 import { MissionCard } from './mission-card';
+import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
 import { usePrologueMode } from '../prologue/prologue-mode';
 
 const DOT = ' · ';
+const CROSS = '✗';
+const CHEVRON = '▸';
 
 export interface MissionRowProps {
   offer: MissionOffer;
@@ -63,113 +66,146 @@ export function MissionRow({
       unit === 'mobility' ? scaleSpeed(value, display) : value,
     );
 
+  const unmet = info.requirements.filter((req) => !req.met);
+  const fuel =
+    info.estimate !== null &&
+    burnsFuel &&
+    fuelHave !== undefined &&
+    fuelCap !== undefined &&
+    fuelCap > 0
+      ? fuelStatus(fuelHave, info.estimate.fuelNeeded, fuelCap)
+      : null;
+  // the card's edge says whether the offer can be taken: green, yellow (needs fuel) or red (blocked)
+  const state = taken
+    ? 'taken'
+    : blocked || fuel?.state === 'tank'
+      ? 'blocked'
+      : fuel?.state === 'short'
+        ? 'short'
+        : 'ok';
+  const [open, setOpen] = useState(false);
+
   return (
     <li
-      className={`mrow type-${offer.type.toLowerCase()}${blocked ? ' dim' : ''}${tag !== undefined ? ' pinned' : ''}`}
+      className={`mrow type-${offer.type.toLowerCase()} state-${state}${tag !== undefined ? ' pinned' : ''}`}
       data-testid={tag !== undefined ? 'board-active-mission' : undefined}
     >
       <div className="mrow-main">
-        <div className="mrow-type">
-          {tag !== undefined && <span className="mrow-tag">{tag}</span>}
-          <span className="mrow-pip" aria-hidden="true" />
-          {t(`board.type.${offer.type}`)}
-        </div>
-
-        <div className="mrow-job">
-          <h2 className="mrow-title">{pickLocalized(info.title, i18n.language)}</h2>
-          <p className="mrow-route">
-            {place(origin, offer.originId)}
-            <span aria-hidden="true"> {t('board.arrow')} </span>
-            {place(destination, offer.destinationId)}
-            <span className="mrow-dist">
-              {DOT}
-              {t('distanceValue', { n: info.totalDistance })}
-            </span>
-          </p>
-          <p className="mrow-badges">
-            {/* The face on the row (48 px, plan §1); none for offers from before givers. */}
-            {info.giver != null && <GiverBadge {...giverBadgeOf(info.giver, i18n.language)} />}
-            {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
-            {!opening && (!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
-              <span className="mrow-expires">
-                {expired ? (
-                  t('board.expiredLabel')
-                ) : (
-                  <>
-                    {t(taken ? 'board.startBefore' : 'board.expires')}{' '}
-                    <Countdown until={offer.expiresAt} />
-                  </>
-                )}
-              </span>
-            )}
-            {!taken && (
-              <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
-                {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
-              </span>
-            )}
-            {offer.privatePlayerId !== null && (
-              <span className="badge ok">{t('board.starterBadge')}</span>
-            )}
-            {offer.status !== 'AVAILABLE' && (
-              <span className="badge">{t(`board.status.${offer.status}`)}</span>
-            )}
-          </p>
-        </div>
-
-        <ul className="mrow-needs" aria-label={t('board.needsTitle')}>
-          {info.requirements.map((req) => (
-            <li key={req.code} className={req.met ? 'met' : 'unmet'}>
-              <span aria-hidden="true">{req.met ? '✓' : '✗'}</span>{' '}
-              {t(`board.requirements.${req.code}`, { defaultValue: req.message })}
-              {!req.met && req.needed !== undefined && req.actual !== undefined && (
-                <small>
-                  {' '}
-                  {t('board.requirementNumbers', {
-                    actual: number(req.actual, req.unit),
-                    needed: number(req.needed, req.unit),
-                  })}
-                </small>
+        <div className="mrow-body">
+          <div className="mrow-head">
+            <div className="mrow-type">
+              {tag !== undefined && <span className="mrow-tag">{tag}</span>}
+              <span className="mrow-pip" aria-hidden="true" />
+              {t(`board.type.${offer.type}`)}
+              {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
+              {offer.privatePlayerId !== null && (
+                <span className="badge ok">{t('board.starterBadge')}</span>
               )}
-            </li>
-          ))}
-        </ul>
-
-        <div className="mrow-trip">
-          <span>
-            {info.estimate === null ? '—' : formatDuration(info.estimate.durationSeconds, t)}
-          </span>
-          {info.estimate !== null && burnsFuel && (
-            <span>{t('board.fuelUses', { needed: Math.round(info.estimate.fuelNeeded) })}</span>
-          )}
-          {info.estimate !== null &&
-            burnsFuel &&
-            fuelHave !== undefined &&
-            fuelCap !== undefined &&
-            fuelCap > 0 &&
-            (() => {
-              const status = fuelStatus(fuelHave, info.estimate.fuelNeeded, fuelCap);
-              return (
-                <span
-                  className={`fuel-chip fuel-${status.state}`}
-                  data-testid="fuel-chip"
-                  data-state={status.state}
-                >
-                  {t(`board.fuel.chip.${status.state}`, { missing: status.missing })}
+              {offer.status !== 'AVAILABLE' && (
+                <span className="badge">{t(`board.status.${offer.status}`)}</span>
+              )}
+              {!opening && (!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
+                <span className="mrow-expires">
+                  {expired ? (
+                    t('board.expiredLabel')
+                  ) : (
+                    <>
+                      {t(taken ? 'board.startBefore' : 'board.expires')}{' '}
+                      <Countdown until={offer.expiresAt} />
+                    </>
+                  )}
                 </span>
-              );
-            })()}
-          {destination !== undefined && <RiskBadge band={destination.risk} />}
-        </div>
+              )}
+            </div>
+            <h2 className="mrow-title">{pickLocalized(info.title, i18n.language)}</h2>
+            <p className="mrow-route">
+              {place(origin, offer.originId)}
+              <span aria-hidden="true"> {t('board.arrow')} </span>
+              {place(destination, offer.destinationId)}
+              <span className="mrow-dist">
+                {DOT}
+                {t('distanceValue', { n: info.totalDistance })}
+              </span>
+            </p>
+            {/* The face on the row (plan §1); none for offers from before givers. */}
+            {info.giver != null && (
+              <p className="mrow-giver">
+                <GiverBadge {...giverBadgeOf(info.giver, i18n.language)} />
+              </p>
+            )}
+          </div>
 
-        <div className="mrow-pay">
-          <b className="mrow-reward">{money(offer.reward)}</b>
-          <div className="mrow-actions">{actions}</div>
+          {/* the decision: what it pays, how long, how much fuel */}
+          <div className="mrow-key">
+            <b className="mrow-reward">{money(offer.reward)}</b>
+            <span className="mrow-fig">
+              {info.estimate === null ? '—' : formatDuration(info.estimate.durationSeconds, t)}
+            </span>
+            {info.estimate !== null && burnsFuel && (
+              <span className={`mrow-fig${fuel !== null && fuel.state !== 'ok' ? ' warn' : ''}`}>
+                {t('board.fuelUses', { needed: Math.round(info.estimate.fuelNeeded) })}
+              </span>
+            )}
+            {destination !== undefined && destination.risk !== 'lo' && (
+              <RiskBadge band={destination.risk} />
+            )}
+          </div>
+
+          {/* what stops the pilot, said once */}
+          {!taken && unmet.length > 0 && (
+            <ul className="mrow-why bad" aria-label={t('board.needsTitle')}>
+              {unmet.map((req) => (
+                <li key={req.code}>
+                  <span aria-hidden="true">{CROSS}</span>{' '}
+                  {t(`board.requirements.${req.code}`, { defaultValue: req.message })}
+                  {req.needed !== undefined && req.actual !== undefined && (
+                    <small>
+                      {' '}
+                      {t('board.requirementNumbers', {
+                        actual: number(req.actual, req.unit),
+                        needed: number(req.needed, req.unit),
+                      })}
+                    </small>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {fuel !== null && fuel.state !== 'ok' && (
+            <p className="mrow-why warn">
+              <span
+                className={`fuel-chip fuel-${fuel.state}`}
+                data-testid="fuel-chip"
+                data-state={fuel.state}
+              >
+                {t(`board.fuel.chip.${fuel.state}`, { missing: fuel.missing })}
+              </span>
+            </p>
+          )}
+
+          <div className="mrow-foot">
+            <button
+              type="button"
+              className="mrow-toggle"
+              aria-expanded={open}
+              onClick={() => setOpen((was) => !was)}
+            >
+              <span className="mrow-chev" aria-hidden="true">
+                {CHEVRON}
+              </span>
+              {t('board.details')}
+            </button>
+            <div className="mrow-actions">{actions}</div>
+          </div>
+        </div>
+        {/* the route fills the right column of the card, top to bottom */}
+        <div className="mrow-map">
+          <RouteMap path={pathOfLegs(offer.legs, world, offer.originId)} world={world} />
         </div>
       </div>
 
       {/* in the opening the map and the numbers are shown at once: that is what the pilot weighs */}
-      <details className="mrow-details" open={opening}>
-        <summary>{t('board.details')}</summary>
+      <div className={`mrow-details${open ? ' open' : ''}`}>
         <MissionCard
           offer={offer}
           origin={origin}
@@ -177,6 +213,7 @@ export function MissionRow({
           mine={mine}
           actions={null}
           foldDetails={false}
+          hideMap
           taken={taken}
           {...(fuelHave !== undefined ? { fuelHave } : {})}
           {...(fuelCap !== undefined ? { fuelCap } : {})}
@@ -184,7 +221,7 @@ export function MissionRow({
           {...(world !== undefined ? { world } : {})}
           {...(engineLevels !== undefined ? { engineLevels } : {})}
         />
-      </details>
+      </div>
     </li>
   );
 }

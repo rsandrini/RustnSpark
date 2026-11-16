@@ -103,36 +103,6 @@
   opacity: 0;
   animation: moment-fade-in 1s ease-out 1.6s forwards;
 }
-.moment-columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 14px;
-  width: min(480px, 100%);
-  animation: moment-fade-in 0.8s ease-out both;
-}
-.moment-col {
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.07);
-  text-align: left;
-}
-.moment-col h2 {
-  margin: 0 0 6px;
-  font-size: 14px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.moment-col ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.moment-col.lost li {
-  color: #ff9e95;
-}
-.moment-col.saved li {
-  color: #9be6b0;
-}
 .moment-continue {
   animation: moment-fade-in 0.8s ease-out both;
 }
@@ -300,4 +270,9 @@
 }
 .moment-verdict .lost {
   color: #ff9a9a;
+}
+
+/* The black screen between the friend's last line and the rescue. */
+.moment-black {
+  background: #000;
 }

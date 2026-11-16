@@ -8,6 +8,8 @@ export interface ShipSheetPanelProps {
   /** Only the headline tiles: no "show all stats" (the new-pilot opening). */
   compact?: boolean;
   shipClass: string | undefined;
+  /** Shown instead of the class's own name (the opening's ship has no class yet). */
+  classLabel?: string | undefined;
   /** The ship's own name, shown at the top of the sheet with a Rename button (when `onRename` is given). */
   shipName?: string | undefined;
   onRename?: (() => void) | undefined;
@@ -108,6 +110,7 @@ export function defensePools(
 export function ShipSheetPanel({
   compact = false,
   shipClass,
+  classLabel,
   shipName,
   onRename,
   sheet,
@@ -149,7 +152,7 @@ export function ShipSheetPanel({
       )}
       <div className="statrow" title={t('hangar.statHelp.class')}>
         <span>{t('hangar.class')}</span>
-        <b>{shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : '—'}</b>
+        <b>{classLabel ?? (shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : '—')}</b>
       </div>
     </>
   );

@@ -84,6 +84,12 @@
   border-radius: 8px;
 }
 
+.leg .sub {
+  margin-left: auto;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .leg.done {
   opacity: 0.55;
 }
@@ -678,37 +684,61 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   margin: 16px 0;
 }
 
-/* ---- the rows ---- */
+/* ---- the rows: small cards, two side by side ---- */
 .mrow-list {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 10px;
   margin: 0 0 12px;
   padding: 0;
   list-style: none;
 }
+@media (max-width: 900px) {
+  .mrow-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .mrow {
+  --edge: var(--ok);
   background: var(--paper-2);
   border: 1px solid var(--rule);
+  border-left: 4px solid var(--edge);
   border-radius: var(--radius);
 }
-.mrow.pinned {
-  border-color: var(--brass);
+/* the edge says whether the offer can be taken */
+.mrow.state-short {
+  --edge: var(--risk-md);
 }
-.mrow.dim .mrow-main > :not(.mrow-pay) {
-  opacity: 0.6;
+.mrow.state-blocked {
+  --edge: var(--bad);
+}
+.mrow.state-taken,
+.mrow.pinned {
+  --edge: var(--brass);
 }
 .mrow-main {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1.4fr) minmax(0, 1.2fr) 112px auto;
-  gap: 16px;
-  align-items: center;
-  padding: 12px 16px;
+  /* the card's text on the left; the route takes the whole right column, top to bottom */
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 44%);
+  align-items: stretch;
+}
+.mrow-body {
+  display: grid;
+  gap: 8px;
+  align-content: space-between;
+  min-width: 0;
+  padding: 10px 12px 8px;
+}
+.mrow-head {
+  min-width: 0;
+  text-align: left;
 }
 .mrow-type {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px 8px;
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -716,8 +746,11 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   text-transform: uppercase;
 }
 .mrow-tag {
-  flex-basis: 100%;
   color: var(--brass);
+}
+.mrow-expires {
+  letter-spacing: 0;
+  text-transform: none;
 }
 .mrow-pip {
   width: 8px;
@@ -742,71 +775,115 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   background: var(--ok);
 }
 .mrow-title {
-  margin: 0;
+  margin: 6px 0 0;
   font-size: var(--text-md);
   font-weight: 600;
   color: var(--ink);
 }
-.mrow-badges {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
-}
-.mrow-route,
-.mrow-badges {
+.mrow-route {
   margin: 2px 0 0;
   color: var(--muted);
   font-size: var(--text-sm);
 }
+.mrow-giver {
+  margin: 6px 0 0;
+}
 .mrow-dist {
   font-family: var(--font-mono);
 }
-.mrow-needs {
+/* the route fills the right column of the card, edge to edge */
+.mrow-map {
+  position: relative;
+  min-height: 150px;
+  border-left: 1px solid var(--rule);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--paper);
+  overflow: hidden;
+}
+.mrow-map .route-map {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.mrow-map .route-map svg {
+  width: 100%;
+  height: 100%;
+}
+/* the decision: what it pays, how long, how much fuel */
+.mrow-key {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.mrow-needs li {
-  padding: 2px 8px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-pill);
-  font-size: var(--text-xs);
-  color: var(--muted);
-}
-.mrow-needs li.met > span:first-child {
-  color: var(--ok-hi);
-  font-weight: 700;
-}
-.mrow-needs li.unmet {
-  border-color: var(--coral);
-  color: var(--coral);
-}
-.mrow-needs small {
-  font-family: var(--font-mono);
-  font-size: inherit;
-}
-.mrow-trip {
-  display: grid;
-  gap: 2px;
-  justify-items: start;
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  color: var(--ink-2);
-}
-.mrow-pay {
-  display: grid;
-  gap: 8px;
-  justify-items: end;
+  align-items: baseline;
+  gap: 2px 16px;
 }
 .mrow-reward {
   color: var(--brass);
+  font-family: var(--font-display, var(--font-mono));
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.mrow-fig {
+  color: var(--ink);
   font-family: var(--font-mono);
-  font-size: var(--text-lg);
-  font-weight: 500;
+  font-size: var(--text-sm);
+}
+.mrow-fig.warn {
+  color: var(--risk-md);
+}
+/* what stops the pilot, said once */
+.mrow-why {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  text-align: left;
+}
+.mrow-why.bad {
+  color: var(--coral);
+}
+.mrow-why small {
+  font-family: var(--font-mono);
+  font-size: inherit;
+  opacity: 0.85;
+}
+.mrow-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--rule);
+  padding-top: 6px;
+}
+.mrow-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mrow-toggle:hover,
+.mrow-toggle[aria-expanded='true'] {
+  color: var(--ink);
+}
+.mrow-chev {
+  display: inline-block;
+  transition: transform 0.2s;
+}
+.mrow-toggle[aria-expanded='true'] .mrow-chev {
+  transform: rotate(90deg);
 }
 .mrow-actions {
   display: flex;
@@ -817,20 +894,16 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 .mrow-details {
   border-top: 1px solid var(--rule);
 }
-.mrow-details summary {
-  padding: 8px 16px;
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
+.mrow-details:not(.open) {
+  display: none;
 }
-.mrow-details[open] summary {
-  color: var(--ink);
+@media (prefers-reduced-motion: reduce) {
+  .mrow-chev {
+    transition: none;
+  }
 }
 .mrow-details .mcard {
-  margin: 0 16px 16px;
+  margin: 0 12px 12px;
 }
 /* the open card: map on the left, what it asks and the trip figures beside it, the rest below */
 .mrow-details .mcard-head,
@@ -841,74 +914,17 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 }
 .mrow-details .mcard-main {
   display: grid;
-  grid-template-columns: minmax(200px, 0.9fr) minmax(0, 1.4fr);
-  gap: 10px 16px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
   align-items: start;
-}
-.mrow-details .mcard-main > * {
-  grid-column: 1 / -1;
-}
-.mrow-details .mcard-main > .route-map {
-  grid-column: 1;
-  grid-row: 1 / span 4;
-  margin: 0;
-  max-width: none;
-}
-.mrow-details .mcard-main > .mcard-desc,
-.mrow-details .mcard-main > .mcard-material,
-.mrow-details .mcard-main > .mcard-facts,
-.mrow-details .mcard-main > .mcard-needs {
-  grid-column: 2;
+  text-align: left;
 }
 .mrow-details .mcard-requirements {
   display: grid;
+  justify-items: start;
   gap: 2px;
   margin: 4px 0 0;
-}
-@media (max-width: 700px) {
-  .mrow-details .mcard-main {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .mrow-details .mcard-main > .route-map,
-  .mrow-details .mcard-main > .mcard-desc,
-  .mrow-details .mcard-main > .mcard-material,
-  .mrow-details .mcard-main > .mcard-facts,
-  .mrow-details .mcard-main > .mcard-needs {
-    grid-column: 1;
-    grid-row: auto;
-  }
-}
-
-@media (max-width: 960px) {
-  .mrow-main {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .mrow-type,
-  .mrow-job,
-  .mrow-needs {
-    grid-column: 1 / -1;
-  }
-  .mrow-type {
-    flex-wrap: nowrap;
-  }
-  .mrow-tag {
-    flex-basis: auto;
-  }
-  .mrow-trip {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 2px 12px;
-  }
-  .mrow-pay {
-    grid-column: 1 / -1;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    justify-items: stretch;
-  }
-  .mrow-actions {
-    justify-content: flex-end;
-  }
+  text-align: left;
 }
 
 /* Fuel on a mission card: a sentence, a bar with the three amounts, the verdict, the one action. */

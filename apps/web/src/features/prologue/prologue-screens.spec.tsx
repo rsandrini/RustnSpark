@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { client } from '../../api/client';
 import { routes } from '../../app/router';
+import { clearPrologueSteps } from './prologue-state';
 import { PROLOGUE_ENGINE, PROLOGUE_START_PARTS } from './prologue-fixtures';
 import { server } from '../../test/msw/server';
 import { renderWithRouter } from '../../test/utils';
@@ -69,17 +70,82 @@ describe('the real Board and Port screens on the sandbox', () => {
     expect(document.querySelector('.route-map')).not.toBeNull();
   });
 
-  it('shows the market with the two modules and their price', async () => {
+  it('shows the market with every module and their price', async () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
 
-    expect(await screen.findByText(/passenger module/i)).toBeInTheDocument();
+    expect(await screen.findByText(/passenger cabin/i)).toBeInTheDocument();
+    expect(await screen.findByText(/life support/i)).toBeInTheDocument();
     expect((await screen.findAllByText(/800/)).length).toBeGreaterThan(0);
+  });
+
+  it('after a reload in the middle of the story the wallet shows the story\u2019s credits, not the account\u2019s', async () => {
+    window.localStorage.setItem(
+      'rs.prologue.player-1',
+      JSON.stringify({ step: 'repair', kind: 'passengers' }),
+    );
+    clearPrologueSteps();
+    // the real profile says 0 credits (it was read before the story's fake server was in place)
+    renderWithRouter(routes, { initialEntries: ['/port?tab=repair'] });
+    // 300 + 646 (race) - 100 (refuel) - 800 (module) + 494 (first job)
+    expect((await screen.findAllByText(/540\s¢/)).length).toBeGreaterThan(0);
+  });
+
+  it('in the opening the account menu is only the language and Sign out', async () => {
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Account menu' }));
+    const menu = await screen.findByRole('button', { name: 'Sign out' });
+    expect(menu).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Profile' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Rankings' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Report a problem|Bug/i })).toBeNull();
+    expect(document.querySelector('.shell-menu-lang')).not.toBeNull();
+    // Sign out asks first, even in the story
+    fireEvent.click(menu);
+    // (a guest is asked about losing the pilot; anyone else gets a plain "Sign out?")
+    // the menu closes; what is left saying "Sign out" is the confirmation
+    await waitFor(() => expect(screen.getAllByText(/Sign out/).length).toBeGreaterThan(0));
+  });
+
+  it('a bought module leaves the shelf', async () => {
+    window.localStorage.setItem(
+      'rs.prologue.player-1',
+      JSON.stringify({ step: 'buy-module', kind: 'passengers' }),
+    );
+    clearPrologueSteps();
+    // the wallet the market reads is the profile's: give it enough for the module
+    server.use(
+      http.get('/v1/players/me', () =>
+        HttpResponse.json({
+          id: 'player-1',
+          name: 'Test Pilot',
+          credits: 5000,
+          role: 'PLAYER',
+          locale: 'en',
+          factionId: null,
+          tutorialDone: true,
+          prologueOutcome: null,
+        }),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/port?tab=market'] });
+    expect(await screen.findByText('Passenger Cabin')).toBeInTheDocument();
+    await screen.findByText('Life Support');
+    const buy = (await screen.findAllByRole('button', { name: /^Buy$/ }))[0] as HTMLElement;
+    fireEvent.click(buy);
+    const popup = await screen.findByRole('dialog');
+    fireEvent.click(within(popup).getByRole('button', { name: /^Buy$/ }));
+    await waitFor(() => expect(screen.queryByText('Passenger Cabin')).not.toBeInTheDocument());
+    expect(await screen.findByText('Life Support')).toBeInTheDocument();
   });
 
   it('shows the real Ship screen with the sandbox ship and its parts', async () => {
     renderWithRouter(routes, { initialEntries: ['/ship'] });
 
-    expect((await screen.findAllByText(/wayfarer/i)).length).toBeGreaterThan(0);
-    expect(await screen.findByText(/small chemical engine/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/rustnspark/i)).length).toBeGreaterThan(0);
+    // the opening's ship has no class and no Rename button
+    await waitFor(() => expect(screen.getByText('Nothing')).toBeInTheDocument());
+    expect(screen.queryByTestId('rename-ship')).toBeNull();
+    // the profile is read again from the story's fake server once it is in place: the screen may redraw once
+    await waitFor(() => expect(screen.getByText(/small chemical engine/i)).toBeInTheDocument());
   });
 });
