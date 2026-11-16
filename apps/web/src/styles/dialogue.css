@@ -25,6 +25,10 @@
   pointer-events: auto;
   animation: dialogue-dim 0.45s ease-out both;
 }
+/* handed over from the line before: already dark, no fading in again */
+.dialogue-backdrop.held {
+  animation: none;
+}
 @keyframes dialogue-dim {
   from {
     opacity: 0;

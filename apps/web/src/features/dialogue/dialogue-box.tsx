@@ -9,6 +9,16 @@ import { useTypewriter } from './typewriter';
 /** Space left around the element a popup points at. */
 const RING_PAD = 6;
 
+/**
+ * The dimmed screen is handed from one blocking line to the next: a box that opens right after another blocking one
+ * (the next line of a scene, or the next scene) keeps the screen as dark as it was, instead of letting the light back in
+ * and fading to dark again. `dimmedBoxes` counts the blocking boxes on screen; `dimmedGoneAt` is when the last left.
+ */
+const HANDOFF_MS = 600;
+let dimmedBoxes = 0;
+let dimmedGoneAt = 0;
+const dimIsHeld = () => dimmedBoxes > 0 || Date.now() - dimmedGoneAt < HANDOFF_MS;
+
 export interface DialogueBoxProps {
   giver: GiverRef;
   node: DialogueNode;
@@ -32,16 +42,34 @@ export interface DialogueBoxProps {
 export function DialogueBox(props: DialogueBoxProps) {
   const delay = props.preview ? 0 : (props.node.openDelay ?? 0);
   const [opened, setOpened] = useState(delay <= 0);
+  // read while rendering, before the box this one replaces has cleaned up
+  const [held] = useState(() => !props.preview && props.node.blocking && dimIsHeld());
+  const dims = !props.preview && props.node.blocking;
+  useEffect(() => {
+    if (!dims) return undefined;
+    dimmedBoxes += 1;
+    return () => {
+      dimmedBoxes -= 1;
+      dimmedGoneAt = Date.now();
+    };
+  }, [dims]);
   useEffect(() => {
     if (opened) return undefined;
     const timer = window.setTimeout(() => setOpened(true), delay * 1000);
     return () => window.clearTimeout(timer);
   }, [opened, delay]);
   // the pilot first sees the screen; the popup (and its dimming, its focus, its keys) begins when the delay is over
-  return opened ? <OpenDialogueBox {...props} /> : null;
+  if (opened) return <OpenDialogueBox {...props} held={held} />;
+  // waiting to open after a blocking line: the screen stays dark meanwhile
+  return held ? (
+    <div className="dialogue-layer blocking" data-dialogue="">
+      <div className="dialogue-backdrop held" aria-hidden="true" />
+    </div>
+  ) : null;
 }
 
 function OpenDialogueBox({
+  held = false,
   giver,
   node,
   confirmSkip = false,
@@ -50,7 +78,7 @@ function OpenDialogueBox({
   onContinue,
   onChoose,
   onSkip,
-}: DialogueBoxProps) {
+}: DialogueBoxProps & { held?: boolean }) {
   const { t, i18n } = useTranslation();
   const nameId = useId();
   const textId = useId();
@@ -108,9 +136,9 @@ function OpenDialogueBox({
     >
       {node.blocking && (
         <div
-          className="dialogue-backdrop"
+          className={`dialogue-backdrop${held ? ' held' : ''}`}
           aria-hidden="true"
-          style={node.dimDelay ? { animationDelay: `${node.dimDelay}s` } : undefined}
+          style={node.dimDelay && !held ? { animationDelay: `${node.dimDelay}s` } : undefined}
         />
       )}
       {pointed && (
