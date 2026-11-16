@@ -7,6 +7,9 @@ const RESCUE_BEAT_MS = 4200;
 const LOST_GLYPH = '✕';
 const SAVED_GLYPH = '✓';
 
+/** How long the card holds before the story hands the pilot over to the faction choice. */
+const LATER_BEAT_MS = 3600;
+
 const SHARDS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
 export interface MomentProps {
@@ -63,6 +66,23 @@ export function RescueMoment({
           </li>
         )}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * The time skip after the rescue: a black card, "Some months later", then the story hands over (`onDone`)
+ * to the faction choice.
+ */
+export function LaterMoment({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation();
+  useEffect(() => {
+    const timer = window.setTimeout(onDone, LATER_BEAT_MS);
+    return () => window.clearTimeout(timer);
+  }, [onDone]);
+  return (
+    <div className="moment moment-later" data-testid="later-moment" data-opening-free="">
+      <p className="moment-later-text">{t('prologue.moment.later')}</p>
     </div>
   );
 }

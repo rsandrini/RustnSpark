@@ -37,7 +37,7 @@ import {
   releaseUnlessCardShown,
   useResultCardHeld,
 } from '../../report/result-card-gate';
-import { RescueMoment } from './moments';
+import { LaterMoment, RescueMoment } from './moments';
 import { nextStep, stepDef, type StepDef, type StepId } from './steps';
 import './director.css';
 
@@ -142,6 +142,8 @@ export function Director() {
   const run = stored.step === step ? stored : fresh(step);
   const { phase, satisfied, momentReady, queue } = run;
   const [warning, setWarning] = useState(false);
+  // the story is over: a black card says time has passed, then the pilot goes on to choose a faction
+  const [later, setLater] = useState(false);
   // the mission's result card comes before the guide's lines
   const resultCardHeld = useResultCardHeld();
 
@@ -178,6 +180,9 @@ export function Director() {
       await reloadProfile();
     },
   });
+
+  const finishRef = useRef(finish);
+  finishRef.current = finish;
 
   const speak = useCallback(
     (moment: Moment) =>
@@ -216,9 +221,12 @@ export function Director() {
   const advance = useCallback(() => {
     if (playerId === undefined) return;
     const next = nextStep(step);
-    if (next === null) finish.mutate('played');
+    if (next === null) setLater(true);
     else writeStep(playerId, next);
-  }, [playerId, step, finish]);
+  }, [playerId, step]);
+
+  // stable, so the card's timer is not restarted by every render
+  const playedOut = useCallback(() => finishRef.current.mutate('played'), []);
 
   const beginLeave = useCallback(() => {
     // taking the gift: the engine lands in the pilot's hold now, not before
@@ -417,6 +425,7 @@ export function Director() {
           grant={Math.max(0, (sandbox?.config.startCredits ?? 0) - (sandbox?.state.credits ?? 0))}
         />
       )}
+      {later && <LaterMoment onDone={playedOut} />}
       {spoken !== undefined && <Speaker key={spoken.key} spoken={spoken} onDone={dropFirst} />}
       {/* a confirmation (take the engine, read on) is a card in the middle of the screen, like the guides' lines */}
       {ready && satisfied && def.confirm && (

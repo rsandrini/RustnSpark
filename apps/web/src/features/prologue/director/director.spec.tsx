@@ -403,8 +403,11 @@ describe('the director: the story on the real screens', () => {
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     expect(await screen.findByTestId('rescue-moment')).toBeInTheDocument();
     fireEvent.click(await screen.findByTestId('opening-continue', undefined, { timeout: 8000 }));
-    await waitFor(() => expect(saved).toEqual({ outcome: 'played' }));
-  }, 15000);
+    // time passes first, then the pilot is handed over to the faction choice
+    expect(await screen.findByTestId('later-moment')).toHaveTextContent('Some months later');
+    expect(saved).toBeNull();
+    await waitFor(() => expect(saved).toEqual({ outcome: 'played' }), { timeout: 6000 });
+  }, 20000);
 
   it('has a step for every moment the Admin can hang a line on', () => {
     expect(OPENING_STEPS).toHaveLength(17);

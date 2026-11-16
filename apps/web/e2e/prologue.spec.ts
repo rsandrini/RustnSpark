@@ -146,6 +146,7 @@ async function playOpening(page: Page): Promise<void> {
   await read(page);
   await next(page);
   await read(page);
+  await expect(page.getByTestId('later-moment')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Choose your faction' })).toBeVisible({
     timeout: 20_000,
   });
