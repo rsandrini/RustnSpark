@@ -35,6 +35,7 @@ describe('ReportTextEditor (admin)', () => {
     fireEvent.click(screen.getByTestId('report-add-pt-BR'));
     expect(onChange).toHaveBeenLastCalledWith({ ...value, 'pt-BR': [...value['pt-BR'], ''] });
     fireEvent.click(screen.getByTestId('report-remove-en-0'));
+    fireEvent.click(screen.getByTestId('report-remove-en-0-yes'));
     expect(onChange).toHaveBeenLastCalledWith({ ...value, en: [] });
   });
 

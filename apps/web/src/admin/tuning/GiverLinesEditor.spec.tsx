@@ -63,6 +63,8 @@ describe('GiverLinesEditor (admin, plan §4/§5)', () => {
       />,
     );
     fireEvent.click(screen.getByTestId('giver-remove-first_flight-0'));
+    expect(onChange).not.toHaveBeenCalled(); // it asks first
+    fireEvent.click(screen.getByTestId('giver-remove-first_flight-0-yes'));
     expect(onChange).toHaveBeenCalledWith({});
   });
 });

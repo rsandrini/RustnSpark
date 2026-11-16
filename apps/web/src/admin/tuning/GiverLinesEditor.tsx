@@ -1,3 +1,4 @@
+import { ConfirmButton } from './ConfirmButton';
 import { useTranslation } from 'react-i18next';
 import { MentorStepSchema, MissionTypeSchema } from '@rustandspark/contract';
 
@@ -95,10 +96,10 @@ export function GiverLinesEditor({ value, onChange }: GiverLinesEditorProps) {
                     )
                   }
                 />
-                <button
-                  type="button"
-                  data-testid={`giver-remove-${key}-${index}`}
-                  onClick={() =>
+                <ConfirmButton
+                  testId={`giver-remove-${key}-${index}`}
+                  message={t('admin.confirm.line')}
+                  onConfirm={() =>
                     setPool(
                       key,
                       lines.filter((_, i) => i !== index),
@@ -106,7 +107,7 @@ export function GiverLinesEditor({ value, onChange }: GiverLinesEditorProps) {
                   }
                 >
                   {t('admin.givers.removeLine')}
-                </button>
+                </ConfirmButton>
               </div>
             ))}
             <button

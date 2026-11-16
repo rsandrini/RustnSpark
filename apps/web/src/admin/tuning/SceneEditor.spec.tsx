@@ -115,12 +115,20 @@ describe('Admin scene editor', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Add choice' })[0]!);
     expect((onChange.mock.calls.at(-1)![0] as SceneData[])[0]!.nodes[0]!.choices).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: 'Remove choice' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove' }));
     expect((onChange.mock.calls.at(-1)![0] as SceneData[])[0]!.nodes[1]!.choices).toHaveLength(0);
+    // asking first: cancelling leaves the node where it was
+    const callsBefore = onChange.mock.calls.length;
     fireEvent.click(screen.getAllByRole('button', { name: 'Remove node' })[0]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onChange.mock.calls).toHaveLength(callsBefore);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remove node' })[0]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove' }));
     const afterRemove = onChange.mock.calls.at(-1)![0] as SceneData[];
     expect(afterRemove[0]!.nodes.map((node) => node.id)).toEqual(['w2']);
     expect(afterRemove[0]!.start).toBe('w2');
     fireEvent.click(screen.getByRole('button', { name: 'Remove scene' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove' }));
     expect(onChange.mock.calls.at(-1)![0] as SceneData[]).toHaveLength(0);
     fireEvent.click(screen.getByRole('button', { name: 'Add scene' }));
     expect(onChange.mock.calls.at(-1)![0] as SceneData[]).toHaveLength(2);

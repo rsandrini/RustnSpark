@@ -63,6 +63,7 @@ describe('ArtEditor (factions)', () => {
     await within(banner).findByText('Custom image');
     expect(within(banner).getByRole('img')).toHaveAttribute('src', '/v1/art/luna-banner-1.png');
     fireEvent.click(within(banner).getByRole('button', { name: 'Reset to default' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove' }));
     await waitFor(() => expect(deleted).toBe('banner'));
   });
 

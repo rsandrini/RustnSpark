@@ -787,6 +787,17 @@
     "adminLink": "Admin"
   },
   "admin": {
+    "confirm": {
+      "title": "Are you sure?",
+      "yes": "Yes, remove",
+      "no": "Cancel",
+      "scene": "Remove this whole scene, with its {{count}} line(s) of dialogue? It is gone as soon as it is saved.",
+      "node": "Remove this line of the scene?",
+      "choice": "Remove this choice?",
+      "line": "Remove this line from the giver?",
+      "variant": "Remove this wording?",
+      "art": "Go back to the default picture? The uploaded one is removed."
+    },
     "title": "Admin",
     "logout": "Sign out",
     "placeholder": "Admin dashboard placeholder",

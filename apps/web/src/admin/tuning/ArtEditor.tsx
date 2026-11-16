@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { ConfirmButton } from './ConfirmButton';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { defaultFactionBannerUrl, useFactionArt } from '../../ui/factionArt';
@@ -120,9 +121,12 @@ export function ArtEditor({ kind, id }: { kind: ArtKind; id: string }) {
                   {t('tuning.art.upload')}
                 </button>
                 {custom !== null && (
-                  <button type="button" onClick={() => reset.mutate(slot)}>
+                  <ConfirmButton
+                    message={t('admin.confirm.art')}
+                    onConfirm={() => reset.mutate(slot)}
+                  >
                     {t('tuning.art.reset')}
-                  </button>
+                  </ConfirmButton>
                 )}
               </div>
             </div>

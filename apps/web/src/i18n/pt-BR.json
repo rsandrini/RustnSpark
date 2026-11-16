@@ -787,6 +787,17 @@
     "adminLink": "Admin"
   },
   "admin": {
+    "confirm": {
+      "title": "Tem certeza?",
+      "yes": "Sim, remover",
+      "no": "Cancelar",
+      "scene": "Remover esta cena inteira, com suas {{count}} fala(s)? Ela some assim que for salva.",
+      "node": "Remover esta fala da cena?",
+      "choice": "Remover esta escolha?",
+      "line": "Remover esta frase do personagem?",
+      "variant": "Remover este texto?",
+      "art": "Voltar para a imagem padrão? A imagem enviada é removida."
+    },
     "title": "Admin",
     "logout": "Sair",
     "placeholder": "Painel de administração provisório",

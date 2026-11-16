@@ -7,6 +7,7 @@ import {
 } from '@rustandspark/contract';
 import type { DialogueNode, GiverRef } from '../../api/generated';
 import { firstWords, inSequence, withoutNode } from './scene-edit';
+import { ConfirmButton } from './ConfirmButton';
 import { DialogueBox } from '../../features/dialogue/dialogue-box';
 
 // Admin editor for a mentor's dialogue scenes (docs/design/mentor-dialogue-plan.md §4): scenes with a trigger and an
@@ -514,17 +515,17 @@ export function SceneEditor({ value, onChange, giver = PLACEHOLDER_GIVER }: Scen
                             </option>
                           ))}
                         </select>
-                        <button
-                          type="button"
+                        <ConfirmButton
                           className="btn tiny"
-                          onClick={() =>
+                          message={t('admin.confirm.choice')}
+                          onConfirm={() =>
                             setNode(index, nodeIndex, {
                               choices: node.choices.filter((_, at) => at !== choiceIndex),
                             })
                           }
                         >
                           {t('admin.dialogue.removeChoice')}
-                        </button>
+                        </ConfirmButton>
                       </div>
                     ))}
                     <div className="scene-row">
@@ -556,11 +557,11 @@ export function SceneEditor({ value, onChange, giver = PLACEHOLDER_GIVER }: Scen
                       >
                         {t('admin.dialogue.preview')}
                       </button>
-                      <button
-                        type="button"
+                      <ConfirmButton
                         className="btn tiny"
                         disabled={scene.nodes.length <= 1}
-                        onClick={() =>
+                        message={t('admin.confirm.node')}
+                        onConfirm={() =>
                           onChange(
                             scenes.map((entry, at) =>
                               at === index ? withoutNode(entry, node.id) : entry,
@@ -569,7 +570,7 @@ export function SceneEditor({ value, onChange, giver = PLACEHOLDER_GIVER }: Scen
                         }
                       >
                         {t('admin.dialogue.removeNode')}
-                      </button>
+                      </ConfirmButton>
                     </div>
                     {previewing?.scene === scene.id && previewing.node === node.id && (
                       <DialogueBox
@@ -595,13 +596,13 @@ export function SceneEditor({ value, onChange, giver = PLACEHOLDER_GIVER }: Scen
                   >
                     {t('admin.dialogue.addNode')}
                   </button>
-                  <button
-                    type="button"
+                  <ConfirmButton
                     className="btn tiny"
-                    onClick={() => onChange(scenes.filter((_, at) => at !== index))}
+                    message={t('admin.confirm.scene', { count: scene.nodes.length })}
+                    onConfirm={() => onChange(scenes.filter((_, at) => at !== index))}
                   >
                     {t('admin.dialogue.removeScene')}
-                  </button>
+                  </ConfirmButton>
                 </div>
               </div>
             )}

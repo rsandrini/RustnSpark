@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { ConfirmButton } from './ConfirmButton';
 import { useTranslation } from 'react-i18next';
 import { tuningApi } from './tuning.api';
 import type { StructuredEditorProps } from './StructuredEditors';
@@ -153,10 +154,10 @@ export function ReportTextEditor({
                     >
                       {DOWN}
                     </button>
-                    <button
-                      type="button"
-                      data-testid={`report-remove-${locale}-${index}`}
-                      onClick={() =>
+                    <ConfirmButton
+                      testId={`report-remove-${locale}-${index}`}
+                      message={t('admin.confirm.variant')}
+                      onConfirm={() =>
                         set(
                           locale,
                           lines.filter((_, i) => i !== index),
@@ -164,7 +165,7 @@ export function ReportTextEditor({
                       }
                     >
                       {t('admin.reportTexts.remove')}
-                    </button>
+                    </ConfirmButton>
                   </div>
                   {bad.length > 0 ? (
                     <p className="error" role="alert">
