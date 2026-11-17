@@ -95,10 +95,6 @@
       "choose": "Choose this job"
     },
     "moment": {
-      "rescueCaption": "A rescue cutter found your beacon.",
-      "rescued": "You were pulled out alive.",
-      "friendLost": "{{friend}} was not found.",
-      "rescueGrant": "+{{amount}} ¢ from the rescue, to start over.",
       "later": "Some months later…"
     },
     "continueLabel": {

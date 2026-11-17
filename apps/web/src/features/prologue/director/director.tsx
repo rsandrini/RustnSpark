@@ -118,7 +118,7 @@ function Speaker({ spoken, onDone }: { spoken: Spoken; onDone: () => void }) {
 export function Director() {
   const { t } = useTranslation();
   const opening = usePrologueMode();
-  const { sandbox, guides, friendName, setAllowedPaths } = opening;
+  const { sandbox, guides, setAllowedPaths } = opening;
   const { user, reloadProfile } = useAuth();
   const playerId = user?.id;
   const navigate = useNavigate();
@@ -419,11 +419,7 @@ export function Director() {
   return (
     <>
       {def.moment === 'rescue' && (
-        <RescueMoment
-          onReady={readyMoment}
-          friend={friendName}
-          grant={Math.max(0, (sandbox?.config.startCredits ?? 0) - (sandbox?.state.credits ?? 0))}
-        />
+        <RescueMoment onReady={readyMoment} />
       )}
       {later && <LaterMoment onDone={playedOut} />}
       {spoken !== undefined && <Speaker key={spoken.key} spoken={spoken} onDone={dropFirst} />}

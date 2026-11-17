@@ -96,13 +96,6 @@
   color: #ff6b5f;
   animation: moment-blink 1s steps(2, start) 0.4s 4 both;
 }
-.moment-caption {
-  margin: 0;
-  max-width: 34ch;
-  color: #e9d6d3;
-  opacity: 0;
-  animation: moment-fade-in 1s ease-out 1.6s forwards;
-}
 .moment-continue {
   animation: moment-fade-in 0.8s ease-out both;
 }
@@ -162,12 +155,6 @@
   transform-origin: 100% 50%;
   opacity: 0;
   animation: moment-fade-in 1.2s ease-out 2.6s forwards;
-}
-.moment-caption.rescue {
-  position: absolute;
-  bottom: 16%;
-  animation-delay: 1.4s;
-  color: #d9e6ff;
 }
 
 @keyframes moment-fade-in {
@@ -249,27 +236,6 @@
     animation-duration: 0.01s !important;
     animation-delay: 0s !important;
   }
-}
-
-/* After the rescue: who was pulled out and who was not. */
-.moment-verdict {
-  position: absolute;
-  bottom: 6%;
-  opacity: 0;
-  animation: moment-fade-in 1s ease-out 3.2s forwards;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-  text-align: center;
-  font-size: 1.05rem;
-}
-.moment-verdict .saved {
-  color: #8fe3a7;
-}
-.moment-verdict .lost {
-  color: #ff9a9a;
 }
 
 /* The black screen between the friend's last line and the rescue. */

@@ -95,10 +95,6 @@
       "choose": "Escolher este trabalho"
     },
     "moment": {
-      "rescueCaption": "O resgate recebeu seu sinal e te resgatou.",
-      "rescued": "Você sobreviveu: o resgate chegou a tempo.",
-      "friendLost": "{{friend}} não foi encontrada.",
-      "rescueGrant": "+{{amount}} ¢ do resgate, para recomeçar.",
       "later": "Alguns meses depois…"
     },
     "continueLabel": {
