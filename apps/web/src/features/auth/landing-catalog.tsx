@@ -5,7 +5,6 @@ export function ShipClasses() {
   const { t } = useTranslation();
   return (
     <section className="landing-section" aria-labelledby="landing-classes-title">
-      <p className="landing-kicker">{t('landing.classes.kicker')}</p>
       <h2 id="landing-classes-title">{t('landing.classes.title')}</h2>
       <p className="landing-lede">{t('landing.classes.lede')}</p>
       <ul className="landing-classes">
@@ -24,7 +23,6 @@ export function MissionKinds() {
   const { t } = useTranslation();
   return (
     <section className="landing-section" aria-labelledby="landing-missions-title">
-      <p className="landing-kicker">{t('landing.missions.kicker')}</p>
       <h2 id="landing-missions-title">{t('landing.missions.title')}</h2>
       <p className="landing-lede">{t('landing.missions.lede')}</p>
       <ul className="landing-missions">

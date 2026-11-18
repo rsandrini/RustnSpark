@@ -39,7 +39,6 @@ export function ShowcaseBlock({ id, flip }: { readonly id: 'build' | 'race'; rea
         ))}
       </div>
       <div>
-        <p className="landing-kicker">{t(`landing.${id}.kicker`)}</p>
         <h2 id={titleId}>{t(`landing.${id}.title`)}</h2>
         <ol className="landing-legend">
           {pointKeys.map((key, index) => (
