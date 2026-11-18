@@ -1562,7 +1562,7 @@
     "guide": "Guia",
     "gettingStarted": "Primeiros passos",
     "label": "Navegação do jogo",
-    "busy": "Não enquanto a nave viaja ou trabalha: espere ela chegar.",
+    "busy": "Não dá enquanto a nave está viajando ou trabalhando: espere ela chegar.",
     "hangar": "Nave",
     "map": "Mapa",
     "board": "Missões",
@@ -1573,8 +1573,11 @@
     "profile": "Perfil",
     "admin": "Admin",
     "logout": "Sair",
-    "transitDisabled": "Nada para acompanhar: aceite uma missão ou comece uma viagem primeiro.",
-    "status": "Estado da nave"
+    "logoutConfirmTitle": "Sair?",
+    "logoutConfirmText": "Você pode entrar de novo depois e continuar a história de onde parou.",
+    "logoutKeep": "Ficar",
+    "transitDisabled": "Nada para ver: aceite uma missão ou comece uma viagem primeiro.",
+    "status": "Status da nave"
   },
   "port": {
     "title": "Porto",
@@ -2804,56 +2807,145 @@
   "landing": {
     "kicker": "Um jogo de estratégia espacial de logística e montagem de naves",
     "title": "Rust and Spark",
-    "pitch": "Monte sua nave com peças, planeje a viagem, mande-a em missões num relógio em tempo real e leia o que aconteceu. Um mundo compartilhado de pilotos, facções e uma economia viva.",
+    "pitch": "Monte uma nave com peças, escolha os trabalhos para que ela é feita, mande-a em missões num relógio em tempo real e leia a corrida como uma história. Um mundo compartilhado de pilotos e uma economia viva.",
     "facts": {
       "parts": "{{count}} peça para montar",
       "parts_other": "{{count}} peças para montar",
       "places": "{{count}} lugar no mapa",
       "places_other": "{{count}} lugares no mapa",
-      "factions": "{{count}} poder",
-      "factions_other": "{{count}} poderes"
+      "shipClasses": "{{count}} classe de nave",
+      "shipClasses_other": "{{count}} classes de nave",
+      "missionKinds": "{{count}} tipo de missão",
+      "missionKinds_other": "{{count}} tipos de missão"
     },
-    "how": {
-      "title": "Como é uma viagem",
-      "build": {
-        "title": "Monte",
-        "text": "Monte uma nave com peças em cinco raridades e vários tamanhos. Cada peça tem peso, energia e um lugar na grade."
+    "build": {
+      "kicker": "1 · Montar",
+      "title": "Sua nave é um quebra-cabeça de peças",
+      "imageAlt": "O construtor de naves: uma nave disposta numa grade de peças, com a ficha à direita",
+      "points": {
+        "grid": {
+          "title": "Encaixe cada peça na grade",
+          "text": "Motores, tanques, escudos, canhões, compartimentos de carga e uma plataforma de mineração, cada um com peso, energia e um lugar."
+        },
+        "class": {
+          "title": "A nave vira uma classe",
+          "text": "Esta é uma Mineradora. O que você encaixar decide isso, e muda quando você reencaixar."
+        },
+        "stats": {
+          "title": "Leia numa olhada",
+          "text": "Poder de fogo, defesa, carga, mobilidade e alcance, ao vivo abaixo da grade."
+        }
+      }
+    },
+    "classes": {
+      "kicker": "2 · Especializar",
+      "title": "Naves diferentes, trabalhos diferentes",
+      "lede": "Você não escolhe uma classe num menu. Você constrói em direção a uma, e a nave pega o formato do que você encaixou.",
+      "hauler": {
+        "name": "Cargueiro",
+        "text": "Quase só compartimentos de carga. Feita para carregar peso."
       },
-      "plan": {
-        "title": "Planeje",
-        "text": "Ajuste os motores e a bateria, carregue a carga, escolha uma missão e uma rota. Combustível, perigo e tempo decidem o que paga."
+      "transport": {
+        "name": "Transporte",
+        "text": "Cabines pressurizadas e suporte de vida, para passageiros."
       },
-      "fly": {
-        "title": "Voe",
-        "text": "As missões rodam no servidor em tempo real. Volte quando quiser: o relógio continua sem você."
+      "warship": {
+        "name": "Guerra",
+        "text": "Armas e defesa em primeiro lugar."
       },
-      "read": {
-        "title": "Leia",
-        "text": "Cada viagem é contada como um RPG de texto: lutas, desgaste, saque e o que custou. Repare, melhore e saia de novo."
+      "miner": {
+        "name": "Mineradora",
+        "text": "Uma plataforma de mineração a bordo, e espaço para o minério."
+      },
+      "multirole": {
+        "name": "Multifunção",
+        "text": "Nenhuma especialidade única. Um pouco de tudo."
+      }
+    },
+    "race": {
+      "kicker": "3 · Corrida",
+      "title": "Escolha um trabalho. Vença o pelotão.",
+      "imageAlt": "Uma missão de corrida: o pelotão de rivais, a rota no mapa e a nave em voo",
+      "points": {
+        "field": {
+          "title": "Conheça o pelotão",
+          "text": "Rivais, suas velocidades e tempos esperados, e um prêmio para os primeiros lugares."
+        },
+        "fuel": {
+          "title": "Confira o combustível",
+          "text": "A viagem precisa de 378 e você carrega 900. O cartão diz isso antes de você partir."
+        },
+        "fly": {
+          "title": "Veja ela voar",
+          "text": "O relógio continua correndo se você sair. Volte para o relatório."
+        }
+      }
+    },
+    "missions": {
+      "kicker": "4 · Escolher",
+      "title": "Uma missão para cada nave",
+      "lede": "Cada trabalho diz o que exige da sua nave antes de você aceitar. Se a nave não qualifica, ele diz por quê.",
+      "needsLabel": "Precisa",
+      "ownLabel": "Você começa",
+      "delivery": {
+        "name": "Entrega",
+        "text": "Leve carga de porto a porto.",
+        "needs": "Espaço de carga para a carga."
+      },
+      "transport": {
+        "name": "Transporte",
+        "text": "Leve passageiros para onde eles vão.",
+        "needs": "Uma Cabine de Passageiros mais um módulo de Suporte de Vida."
+      },
+      "escort": {
+        "name": "Escolta",
+        "text": "Mantenha a nave de um cliente viva pelo espaço perigoso.",
+        "needs": "Pelo menos uma arma e boa mobilidade para acompanhar."
+      },
+      "mining": {
+        "name": "Mineração",
+        "text": "Extraia minério num lugar e depois venda.",
+        "needs": "Uma Plataforma de Mineração e espaço de carga para o minério."
+      },
+      "rescue": {
+        "name": "Resgate",
+        "text": "Alcance sobreviventes e leve-os para casa.",
+        "needs": "Uma nave rápida e espaço para os sobreviventes."
+      },
+      "race": {
+        "name": "Corrida",
+        "text": "Vença três a cinco rivais. O prêmio depende de onde você terminar.",
+        "needs": "Velocidade igual ou acima do mínimo de entrada da corrida."
+      },
+      "scavenge": {
+        "name": "Recuperar sucata",
+        "text": "Vasculhe os destroços ao redor de um porto por peças usadas e sucata.",
+        "needs": "A qualquer hora, no porto."
+      },
+      "travel": {
+        "name": "Viagem",
+        "text": "Leve sua nave para algum lugar por conta própria. Custa só combustível.",
+        "needs": "A qualquer hora, sem trabalho."
       }
     },
     "more": {
       "title": "Não é um jogo para deixar rodando sozinho",
-      "missions": {
-        "title": "Muitos jeitos de ganhar",
-        "text": "Entregas, passageiros, mineração, vasculhar destroços, escoltas e corridas. Carga aberta paga por unidade; cargas fixas enchem o porão."
-      },
       "economy": {
         "title": "Uma economia viva",
-        "text": "Melhorias pedem dinheiro mais sucata, cristais e núcleos raros achados em lugares perigosos. O minério que você extrai é seu para vender."
+        "text": "Melhorias pedem dinheiro mais sucata, cristais e núcleos raros de lugares perigosos. O minério que você extrai é seu para vender."
       },
       "risk": {
         "title": "Tudo tem custo",
         "text": "Piratas, desgaste e ficar sem combustível. Um reboque custa créditos e a missão. Peças sobressalentes e carga disputam espaço."
+      },
+      "read": {
+        "title": "Leia cada corrida",
+        "text": "Cada viagem é contada como um RPG de texto: lutas, desgaste, saque e o que custou. Repare, melhore e saia de novo."
       }
-    },
-    "factions": {
-      "title": "Quatro poderes, um setor",
-      "intro": "Cada facção tem seus portos, contratos e preços, e nenhuma gosta das outras do mesmo jeito."
     },
     "cta": {
       "title": "Pronto para voar?",
-      "text": "Crie um piloto, escolha uma facção e pegue seu primeiro trabalho.",
+      "text": "Crie um piloto e pegue seu primeiro trabalho.",
       "button": "Criar seu piloto"
     },
     "authTabs": "Entrar ou criar uma conta"

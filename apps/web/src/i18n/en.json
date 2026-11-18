@@ -1573,6 +1573,9 @@
     "profile": "Profile",
     "admin": "Admin",
     "logout": "Sign out",
+    "logoutConfirmTitle": "Sign out?",
+    "logoutConfirmText": "You can sign back in later and pick the story up where you left it.",
+    "logoutKeep": "Stay",
     "transitDisabled": "Nothing to watch: accept a mission or start a trip first.",
     "status": "Ship status"
   },
@@ -2804,56 +2807,145 @@
   "landing": {
     "kicker": "A space logistics and ship-building strategy game",
     "title": "Rust and Spark",
-    "pitch": "Build your ship from parts, plan the run, send it out on a real-time clock, and read what happened. A shared world of pilots, factions and a living economy.",
+    "pitch": "Assemble a ship from parts, pick the jobs it is built for, send it out on a real-time clock and read the run like a story. A shared world of pilots and a living economy.",
     "facts": {
       "parts": "{{count}} part to build with",
       "parts_other": "{{count}} parts to build with",
       "places": "{{count}} place on the map",
       "places_other": "{{count}} places on the map",
-      "factions": "{{count}} power",
-      "factions_other": "{{count}} powers"
+      "shipClasses": "{{count}} ship class",
+      "shipClasses_other": "{{count}} ship classes",
+      "missionKinds": "{{count}} kind of mission",
+      "missionKinds_other": "{{count}} kinds of mission"
     },
-    "how": {
-      "title": "How a run goes",
-      "build": {
-        "title": "Build",
-        "text": "Assemble a ship from parts in five rarities and several sizes. Every part has weight, power and a place on the grid."
+    "build": {
+      "kicker": "1 · Build",
+      "title": "Your ship is a puzzle of parts",
+      "imageAlt": "The ship builder: a ship laid out on a grid of parts, with its sheet on the right",
+      "points": {
+        "grid": {
+          "title": "Fit every part on the grid",
+          "text": "Engines, tanks, shields, cannons, cargo holds and a mining rig, each with weight, power and a place."
+        },
+        "class": {
+          "title": "The ship becomes a class",
+          "text": "This one is a Miner. What you fit decides it, and it changes when you refit."
+        },
+        "stats": {
+          "title": "Read it at a glance",
+          "text": "Firepower, defense, cargo, mobility and range, live under the grid."
+        }
+      }
+    },
+    "classes": {
+      "kicker": "2 · Specialise",
+      "title": "Different ships, different jobs",
+      "lede": "You do not pick a class from a menu. You build toward one, and the ship takes the shape of what you fitted.",
+      "hauler": {
+        "name": "Hauler",
+        "text": "Mostly cargo holds. Built to carry loads."
       },
-      "plan": {
-        "title": "Plan",
-        "text": "Tune the engines and the battery, load your cargo, pick a mission and a route. Fuel, danger and time decide what pays."
+      "transport": {
+        "name": "Transport",
+        "text": "Pressurized cabins and life support, for passengers."
       },
-      "fly": {
-        "title": "Fly",
-        "text": "Missions run on the server in real time. Come back when you like: the clock keeps going without you."
+      "warship": {
+        "name": "Warship",
+        "text": "Weapons and defense first."
       },
-      "read": {
-        "title": "Read",
-        "text": "Every run is told like a text RPG: fights, wear, loot and what it cost. Repair, upgrade and go again."
+      "miner": {
+        "name": "Miner",
+        "text": "A mining rig on board, and room for the ore."
+      },
+      "multirole": {
+        "name": "Multirole",
+        "text": "No single specialty. A bit of everything."
+      }
+    },
+    "race": {
+      "kicker": "3 · Race",
+      "title": "Pick a job. Beat the field.",
+      "imageAlt": "A race mission: the field of rivals, the route on a map and the ship in flight",
+      "points": {
+        "field": {
+          "title": "Know the field",
+          "text": "Rivals, their speed and expected times, and a prize for the first places."
+        },
+        "fuel": {
+          "title": "Check the fuel",
+          "text": "The trip needs 378 and you carry 900. The card says so before you go."
+        },
+        "fly": {
+          "title": "Watch it fly",
+          "text": "The clock keeps running if you leave. Come back to the report."
+        }
+      }
+    },
+    "missions": {
+      "kicker": "4 · Choose",
+      "title": "A mission for every ship",
+      "lede": "Each job tells you what it asks of your ship before you accept. If your ship does not qualify, it says why.",
+      "needsLabel": "Needs",
+      "ownLabel": "You start it",
+      "delivery": {
+        "name": "Delivery",
+        "text": "Carry cargo from port to port.",
+        "needs": "Cargo space for the load."
+      },
+      "transport": {
+        "name": "Transport",
+        "text": "Fly passengers where they are going.",
+        "needs": "A Passenger Cabin plus a Life Support module."
+      },
+      "escort": {
+        "name": "Escort",
+        "text": "Keep a client's ship alive through dangerous space.",
+        "needs": "At least one weapon and good mobility to keep up."
+      },
+      "mining": {
+        "name": "Mining",
+        "text": "Dig ore at a place, then sell it.",
+        "needs": "A Mining Rig and cargo space for the ore."
+      },
+      "rescue": {
+        "name": "Rescue",
+        "text": "Reach survivors and bring them home.",
+        "needs": "A fast ship and room for the survivors."
+      },
+      "race": {
+        "name": "Race",
+        "text": "Beat three to five rivals. The prize depends on where you finish.",
+        "needs": "Speed at or above the race's entry minimum."
+      },
+      "scavenge": {
+        "name": "Scavenge",
+        "text": "Search the wreckage around a port for used parts and scrap.",
+        "needs": "Any time, from the port."
+      },
+      "travel": {
+        "name": "Travel",
+        "text": "Take your ship somewhere on your own. It costs only fuel.",
+        "needs": "Any time, no job needed."
       }
     },
     "more": {
       "title": "Not a game you can just leave running",
-      "missions": {
-        "title": "Many ways to earn",
-        "text": "Deliveries, passengers, mining, scavenging, escorts and races. Open cargo pays by the unit; fixed loads fill your hold."
-      },
       "economy": {
         "title": "A living economy",
-        "text": "Upgrades need money plus scrap, crystals and rare cores found in dangerous places. Ore you dig up is yours to sell."
+        "text": "Upgrades need money plus scrap, crystals and rare cores from dangerous places. Ore you dig up is yours to sell."
       },
       "risk": {
         "title": "Everything costs",
         "text": "Pirates, wear and running dry. A tow costs credits and the mission. Spare parts and cargo compete for space."
+      },
+      "read": {
+        "title": "Read every run",
+        "text": "Each trip is told like a text RPG: fights, wear, loot and what it cost. Repair, upgrade and go again."
       }
-    },
-    "factions": {
-      "title": "Four powers, one sector",
-      "intro": "Each faction runs its own ports, contracts and prices, and none of them likes the others the same way."
     },
     "cta": {
       "title": "Ready to fly?",
-      "text": "Create a pilot, pick a faction and take your first job.",
+      "text": "Create a pilot and take your first job.",
       "button": "Create your pilot"
     },
     "authTabs": "Sign in or create an account"
