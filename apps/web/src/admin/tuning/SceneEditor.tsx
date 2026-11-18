@@ -66,6 +66,7 @@ const PROLOGUE_STEP_IDS = [
   'final-run',
   'loss',
   'rescue',
+  'later',
 ] as const;
 
 /** The moments a scene can start at (the server's `TRIGGERS`). */

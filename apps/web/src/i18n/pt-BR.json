@@ -1033,6 +1033,8 @@
         "prologue_loss_done": "Abertura · A perda · quando termina",
         "prologue_rescue_enter": "Abertura · O resgate · quando começa",
         "prologue_rescue_done": "Abertura · O resgate · quando termina",
+        "prologue_later_enter": "Abertura · Alguns meses depois · quando começa",
+        "prologue_later_done": "Abertura · Alguns meses depois · quando termina",
         "prologue_race_leg_1": "Abertura · A corrida · fim do trecho 1",
         "prologue_race_leg_2": "Abertura · A corrida · fim do trecho 2",
         "prologue_race_leg_3": "Abertura · A corrida · fim do trecho 3"

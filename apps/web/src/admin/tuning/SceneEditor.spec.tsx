@@ -193,6 +193,8 @@ describe('Admin scene editor', () => {
       'prologue_loss_done',
       'prologue_rescue_enter',
       'prologue_rescue_done',
+      'prologue_later_enter',
+      'prologue_later_done',
     ]);
     expect(options('Where it sits')).toEqual(['center', 'bottom', 'left', 'right', 'top']);
     expect(options('Points at')).toContain('port_refuel');

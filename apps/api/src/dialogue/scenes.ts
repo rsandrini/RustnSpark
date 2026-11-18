@@ -29,6 +29,7 @@ export const PROLOGUE_STEP_IDS = [
   'final-run',
   'loss',
   'rescue',
+  'later',
 ] as const;
 
 export type PrologueStepId = (typeof PROLOGUE_STEP_IDS)[number];

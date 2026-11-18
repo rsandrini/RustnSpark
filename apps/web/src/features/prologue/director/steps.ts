@@ -22,6 +22,7 @@ export const OPENING_STEPS = [
   'final-run',
   'loss',
   'rescue',
+  'later',
 ] as const;
 
 export type StepId = (typeof OPENING_STEPS)[number];
@@ -52,8 +53,8 @@ export interface StepDef {
   readonly confirm: boolean;
   /** Once the pilot has done the step's thing, the story takes them here at once (out of the shop, say) and the menu opens on it. */
   readonly leaveTo?: string;
-  /** A full-screen moment shown on this step (the rescue). */
-  readonly moment?: 'rescue';
+  /** A full-screen moment shown on this step: the black after the loss, the rescue picture, the time skip. */
+  readonly moment?: 'dark' | 'rescue' | 'later';
 }
 
 const NONE: readonly string[] = [];
@@ -172,8 +173,9 @@ export const STEPS: readonly StepDef[] = [
     until: 'arrived',
     confirm: false,
   },
-  { id: 'loss', path: null, nav: [], allow: NONE, until: null, confirm: false },
-  { id: 'rescue', path: null, nav: [], allow: NONE, until: null, confirm: true, moment: 'rescue' },
+  { id: 'loss', path: null, nav: [], allow: NONE, until: null, confirm: false, moment: 'dark' },
+  { id: 'rescue', path: null, nav: [], allow: NONE, until: null, confirm: false, moment: 'rescue' },
+  { id: 'later', path: null, nav: [], allow: NONE, until: null, confirm: false, moment: 'later' },
 ];
 
 export function stepDef(id: StepId): StepDef {

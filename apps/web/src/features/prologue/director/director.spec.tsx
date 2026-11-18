@@ -390,8 +390,41 @@ describe('the director: the story on the real screens', () => {
     });
   });
 
-  it('plays the whole story down to the rescue and saves "played"', async () => {
+  it('goes black after the loss (no failed report), speaks over the black, and never opens the report', async () => {
+    server.use(
+      story([
+        scene('bob-dark', 'prologue_loss_enter', 30, 'Missiles no'),
+        scene('dara-first', 'prologue_loss_enter', 31, 'Guys, a survivor'),
+      ]),
+    );
+    saveStep('loss');
+    const view = renderWithRouter(routes, { initialEntries: ['/ship'] });
+    expect(await screen.findByTestId('dark-moment')).toBeInTheDocument();
+    // nobody speaks until the screen is dark
+    expect(screen.queryByText('Missiles no')).not.toBeInTheDocument();
+    const next = await screen.findByRole('button', { name: 'Continue' }, { timeout: 4000 });
+    fireEvent.click(next);
+    fireEvent.click(next);
+    expect(await screen.findByText('Guys, a survivor')).toBeInTheDocument();
+    expect(view.router.state.location.pathname).not.toMatch(/^\/report\//);
+    expect(screen.queryByTestId('mission-result')).not.toBeInTheDocument();
+  }, 15000);
+
+  it('keeps the black under the rescue picture, so the game screen never shows between them', async () => {
     server.use(story([]));
+    saveStep('rescue');
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    expect(await screen.findByTestId('rescue-moment')).toBeInTheDocument();
+    expect(screen.getByTestId('dark-moment')).toBeInTheDocument();
+  });
+
+  it('plays the ending: the rescuer, a black card with "Some months later", the Marshal, then saves "played"', async () => {
+    server.use(
+      story([
+        scene('dara-last', 'prologue_rescue_done', 34, 'Come aboard'),
+        scene('marshal', 'prologue_later_enter', 35, 'Choose who you fight with'),
+      ]),
+    );
     let saved: unknown = null;
     server.use(
       http.post('/v1/players/me/prologue', async ({ request }) => {
@@ -402,14 +435,26 @@ describe('the director: the story on the real screens', () => {
     saveStep('rescue');
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     expect(await screen.findByTestId('rescue-moment')).toBeInTheDocument();
-    fireEvent.click(await screen.findByTestId('opening-continue', undefined, { timeout: 8000 }));
-    // time passes first, then the pilot is handed over to the faction choice
+    // the rescuer's last line is read; the Marshal does not speak with it
+    expect(await screen.findByText('Come aboard', undefined, { timeout: 8000 })).toBeInTheDocument();
+    expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
+    const read = screen.getByRole('button', { name: 'Continue' });
+    fireEvent.click(read);
+    fireEvent.click(read);
+    // time passes first, THEN the Marshal speaks
     expect(await screen.findByTestId('later-moment')).toHaveTextContent('Some months later');
+    expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('Choose who you fight with', undefined, { timeout: 6000 }),
+    ).toBeInTheDocument();
     expect(saved).toBeNull();
-    await waitFor(() => expect(saved).toEqual({ outcome: 'played' }), { timeout: 6000 });
-  }, 20000);
+    const last = screen.getByRole('button', { name: 'Continue' });
+    fireEvent.click(last);
+    fireEvent.click(last);
+    await waitFor(() => expect(saved).toEqual({ outcome: 'played' }));
+  }, 25000);
 
   it('has a step for every moment the Admin can hang a line on', () => {
-    expect(OPENING_STEPS).toHaveLength(17);
+    expect(OPENING_STEPS).toHaveLength(18);
   });
 });

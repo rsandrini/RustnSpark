@@ -37,7 +37,8 @@ import {
   releaseUnlessCardShown,
   useResultCardHeld,
 } from '../../report/result-card-gate';
-import { LaterMoment, RescueMoment } from './moments';
+import { DarkMoment, LaterMoment, RescueMoment } from './moments';
+import { raiseCurtain } from '../curtain';
 import { nextStep, stepDef, type StepDef, type StepId } from './steps';
 import './director.css';
 
@@ -57,6 +58,8 @@ interface Run {
 type Outcome = 'played' | 'skipped';
 
 const NO_ZONES: readonly string[] = [];
+const DARK_STEPS: readonly StepId[] = ['loss', 'rescue', 'later'];
+const noop = () => undefined;
 const MS = 1000;
 /** How often the story looks at the clock. */
 const TICK_MS = 100;
@@ -142,8 +145,6 @@ export function Director() {
   const run = stored.step === step ? stored : fresh(step);
   const { phase, satisfied, momentReady, queue } = run;
   const [warning, setWarning] = useState(false);
-  // the story is over: a black card says time has passed, then the pilot goes on to choose a faction
-  const [later, setLater] = useState(false);
   // the mission's result card comes before the guide's lines
   const resultCardHeld = useResultCardHeld();
 
@@ -201,7 +202,11 @@ export function Director() {
     const last = sandbox?.state.history.at(-1);
     if (def.path !== null) {
       void navigate(def.path, { replace: true });
-    } else if (last !== undefined && !pathRef.current.startsWith('/report/')) {
+    } else if (
+      def.moment === undefined &&
+      last !== undefined &&
+      !pathRef.current.startsWith('/report/')
+    ) {
       // a report step: the pilot reads the report of the flight they just made (or of the last one, coming back)
       // `fresh`: the result card opens for a flight that has just ended (once per mission)
       holdForResultCard(true);
@@ -221,12 +226,12 @@ export function Director() {
   const advance = useCallback(() => {
     if (playerId === undefined) return;
     const next = nextStep(step);
-    if (next === null) setLater(true);
-    else writeStep(playerId, next);
+    if (next === null) {
+      // the faction page fades in from black, like the card the pilot has just read
+      raiseCurtain();
+      finishRef.current.mutate('played');
+    } else writeStep(playerId, next);
   }, [playerId, step]);
-
-  // stable, so the card's timer is not restarted by every render
-  const playedOut = useCallback(() => finishRef.current.mutate('played'), []);
 
   const beginLeave = useCallback(() => {
     // taking the gift: the engine lands in the pilot's hold now, not before
@@ -261,12 +266,12 @@ export function Director() {
       phase === 'act' &&
       satisfied &&
       !def.confirm &&
-      def.moment === undefined &&
+      momentReady &&
       queue.length === 0
     ) {
       beginLeave();
     }
-  }, [stored.step, step, phase, satisfied, def, queue, beginLeave]);
+  }, [stored.step, step, phase, satisfied, def, queue, momentReady, beginLeave]);
 
   // The race waits for the pilot: at the end of a leg the world's clock stops while the friend speaks, and goes on when
   // the last line is read (so a slow reader never has lines piling up, nor a race running behind a popup).
@@ -418,10 +423,10 @@ export function Director() {
 
   return (
     <>
-      {def.moment === 'rescue' && (
-        <RescueMoment onReady={readyMoment} />
-      )}
-      {later && <LaterMoment onDone={playedOut} />}
+      {/* black from the loss to the faction page: each picture is laid over it, so no gap shows the game screen */}
+      {DARK_STEPS.includes(def.id) && <DarkMoment onReady={def.id === 'loss' ? readyMoment : noop} />}
+      {def.moment === 'rescue' && <RescueMoment onReady={readyMoment} />}
+      {def.moment === 'later' && <LaterMoment onReady={readyMoment} />}
       {spoken !== undefined && <Speaker key={spoken.key} spoken={spoken} onDone={dropFirst} />}
       {/* a confirmation (take the engine, read on) is a card in the middle of the screen, like the guides' lines */}
       {ready && satisfied && def.confirm && (

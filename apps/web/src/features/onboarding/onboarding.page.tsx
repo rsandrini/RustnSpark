@@ -11,6 +11,7 @@ import { useAuthContext } from '../auth/auth.context';
 import { useAuth } from '../auth/auth.hooks';
 import { PageTitle } from '../../ui/PageTitle';
 import { usePrologueMode } from '../prologue/prologue-mode';
+import { takeCurtain } from '../prologue/curtain';
 
 // The playable factions are the keys of the admin-editable `onboarding.home_locations`
 // config; these three are the factory defaults (GDD §10). The server re-validates.
@@ -44,6 +45,8 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const { refresh, user } = useAuthContext();
   const [selected, setSelected] = useState<string | null>(null);
+  // the opening ends on black: the page fades in from it (once)
+  const [curtain, setCurtain] = useState(() => takeCurtain());
   const factionArt = useFactionArt();
   const queryClient = useQueryClient();
   // The picker lists the factions the admin marks playable (database); the built-in three only
@@ -81,6 +84,14 @@ export function OnboardingPage() {
           : undefined
       }
     >
+      {curtain && (
+        <div
+          className="faction-curtain"
+          aria-hidden="true"
+          data-testid="faction-curtain"
+          onAnimationEnd={() => setCurtain(false)}
+        />
+      )}
       <PageTitle title={t('onboarding.title')} line={t('onboarding.subtitle')} />
       {user?.prologueOutcome === 'played' && (
         // After the opening's loss: the harbour office says why the pilot is choosing a flag at all.

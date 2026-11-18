@@ -81,3 +81,26 @@
   font-style: italic;
   color: var(--ink);
 }
+
+/* The opening ends on a black screen: the faction page comes out of it instead of cutting in. */
+.faction-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: #000;
+  pointer-events: none;
+  animation: faction-curtain-out 1.8s ease-in-out both;
+}
+@keyframes faction-curtain-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .faction-curtain {
+    animation-duration: 0.01s;
+  }
+}

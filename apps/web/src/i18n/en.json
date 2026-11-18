@@ -1033,6 +1033,8 @@
         "prologue_loss_done": "Opening · The loss · when it is done",
         "prologue_rescue_enter": "Opening · The rescue · when it starts",
         "prologue_rescue_done": "Opening · The rescue · when it is done",
+        "prologue_later_enter": "Opening · Some months later · when it starts",
+        "prologue_later_done": "Opening · Some months later · when it is done",
         "prologue_race_leg_1": "Opening · The race · end of leg 1",
         "prologue_race_leg_2": "Opening · The race · end of leg 2",
         "prologue_race_leg_3": "Opening · The race · end of leg 3"

@@ -4,6 +4,9 @@ import './moments.css';
 
 const RESCUE_BEAT_MS = 4200;
 
+/** How long the screen takes to go black (Bob's last lines are spoken over it once it has). */
+const DARK_BEAT_MS = 1800;
+
 /** How long the card holds before the story hands the pilot over to the faction choice. */
 const LATER_BEAT_MS = 3600;
 
@@ -42,16 +45,25 @@ export function RescueMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
   );
 }
 
+/** The screen fades to black by itself (no click); `onReady` says it is dark, so the guides may speak over it. */
+export function DarkMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
+  useEffect(() => {
+    const timer = window.setTimeout(onReady, DARK_BEAT_MS);
+    return () => window.clearTimeout(timer);
+  }, [onReady]);
+  return <div className="moment moment-black moment-dark" data-testid="dark-moment" data-opening-free="" />;
+}
+
 /**
- * The time skip after the rescue: a black card, "Some months later", then the story hands over (`onDone`)
- * to the faction choice.
+ * The time skip after the rescue: a black card, "Some months later". `onReady` says it has been read, so the Marshal
+ * may speak (the story ends after his lines).
  */
-export function LaterMoment({ onDone }: { onDone: () => void }) {
+export function LaterMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
   const { t } = useTranslation();
   useEffect(() => {
-    const timer = window.setTimeout(onDone, LATER_BEAT_MS);
+    const timer = window.setTimeout(onReady, LATER_BEAT_MS);
     return () => window.clearTimeout(timer);
-  }, [onDone]);
+  }, [onReady]);
   return (
     <div className="moment moment-later" data-testid="later-moment" data-opening-free="">
       <p className="moment-later-text">{t('prologue.moment.later')}</p>

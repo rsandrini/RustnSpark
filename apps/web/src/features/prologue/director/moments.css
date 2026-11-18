@@ -242,6 +242,9 @@
 .moment-black {
   background: #000;
 }
+.moment-dark {
+  animation: moment-fade-in 1.6s ease-in-out both;
+}
 
 /* ------------------------------------------------------------------ some months later */
 .moment-later {

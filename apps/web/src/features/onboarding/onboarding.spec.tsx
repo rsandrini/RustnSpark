@@ -5,6 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
+import { raiseCurtain } from '../prologue/curtain';
 
 function profileHandler(getFaction: () => string | null) {
   return http.get('/v1/players/me', () =>
@@ -23,6 +24,19 @@ function profileHandler(getFaction: () => string | null) {
 }
 
 describe('onboarding (S10.2)', () => {
+  it('fades in from black only after the opening has played out', async () => {
+    renderWithRouter(routes, { initialEntries: ['/onboarding'] });
+    await screen.findByRole('heading', { name: /choose your faction/i });
+    expect(screen.queryByTestId('faction-curtain')).not.toBeInTheDocument();
+  });
+
+  it('shows the black curtain when the opening has just ended', async () => {
+    raiseCurtain();
+    renderWithRouter(routes, { initialEntries: ['/onboarding'] });
+    await screen.findByRole('heading', { name: /choose your faction/i });
+    expect(screen.getByTestId('faction-curtain')).toBeInTheDocument();
+  });
+
   it('shows all playable factions with the launch button disabled until one is picked', async () => {
     renderWithRouter(routes, { initialEntries: ['/onboarding'] });
 
