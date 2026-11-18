@@ -27,6 +27,7 @@ export const PROLOGUE_STEPS = [
   'final-run',
   'loss',
   'rescue',
+  'later',
 ] as const;
 
 /**

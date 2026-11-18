@@ -48,4 +48,22 @@ describe('prologue guide scenes', () => {
       expect(matched.length).toBeGreaterThan(0);
     }
   });
+
+  it('tells the ending in order: Bob over the black, Dara after a pause, the Marshal after the time skip', () => {
+    const scenes = Object.values(PROLOGUE_SCENES).flat();
+    const on = (trigger: string) =>
+      scenes.filter((scene) => scene.trigger === trigger).sort((a, b) => a.order - b.order);
+    // Bob's last two lines are their own scene, before Dara's first popup, and that popup waits in the black
+    const loss = on('prologue_loss_enter');
+    expect(loss.map((scene) => scene.id)).toEqual(['loss_dark', 'final_run_done']);
+    expect(loss[0]?.nodes.map((node) => node.id)).toEqual(['n3', 'n4']);
+    expect(loss[1]?.nodes[0]?.openDelay).toBeGreaterThanOrEqual(3);
+    // Bob's strike scene keeps only the first two lines
+    const strike = on('prologue_final-run_leg_2');
+    expect(strike[0]?.nodes.map((node) => node.id)).toEqual(['k_loss_1', 'k_loss_2']);
+    expect(strike[0]?.nodes[1]?.next).toBeNull();
+    // the Marshal speaks after "Some months later", not with Dara's last line
+    expect(on('prologue_later_enter').map((scene) => scene.id)).toEqual(['choose_faction']);
+    expect(on('prologue_rescue_done').map((scene) => scene.id)).toEqual(['rescue_done']);
+  });
 });

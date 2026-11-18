@@ -91,6 +91,7 @@ export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>
           choices: [],
           blocking: true,
           position: 'center',
+          openDelay: 4,
         },
       ],
       order: 31,
@@ -665,7 +666,7 @@ export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>
         },
         {
           id: 'k_loss_2',
-          next: 'n3',
+          next: null,
           text: {
             en: '...they hit me... my engines are gone... I am losing...',
             'pt-BR': '...me acertaram... meus motores pararam... estou perdendo...',
@@ -677,6 +678,18 @@ export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>
           position: 'center',
           openDelay: 2,
         },
+      ],
+      order: 30,
+      start: 'k_loss_1',
+      title: {
+        en: 'Kite!',
+        'pt-BR': 'Kite!',
+      },
+      trigger: 'prologue_final-run_leg_2',
+    },
+    {
+      id: 'loss_dark',
+      nodes: [
         {
           id: 'n3',
           next: 'n4',
@@ -688,7 +701,7 @@ export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>
           choices: [],
           blocking: true,
           position: 'center',
-          openDelay: 3,
+          openDelay: 1,
         },
         {
           id: 'n4',
@@ -705,12 +718,12 @@ export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>
         },
       ],
       order: 30,
-      start: 'k_loss_1',
+      start: 'n3',
       title: {
-        en: 'Kite!',
-        'pt-BR': 'Kite!',
+        en: 'Gone dark',
+        'pt-BR': 'Sinal perdido',
       },
-      trigger: 'prologue_final-run_leg_2',
+      trigger: 'prologue_loss_enter',
     },
     {
       id: 'upgrade',
@@ -1056,7 +1069,7 @@ export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>
         en: 'Choose who you fight with',
         'pt-BR': 'Escolha com quem lutar',
       },
-      trigger: 'prologue_rescue_done',
+      trigger: 'prologue_later_enter',
     },
   ],
 } as unknown as Record<string, readonly SceneData[]>;
