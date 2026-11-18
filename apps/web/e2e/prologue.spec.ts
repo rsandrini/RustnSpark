@@ -18,6 +18,18 @@ import {
  * (or skipped) it never shows again.
  */
 
+/** Reads the step's lines (some wait seconds in the black between popups) until the story leaves the step. */
+async function readWhile(page: Page, step: string): Promise<void> {
+  for (let guard = 0; guard < 40; guard += 1) {
+    await read(page);
+    const now = await bar(page)
+      .getAttribute('data-step', { timeout: 1000 })
+      .catch(() => null);
+    if (now !== step) return;
+    await page.waitForTimeout(1000);
+  }
+}
+
 /** Plays the whole opening up to the faction picker. */
 async function playOpening(page: Page): Promise<void> {
   await onStep(page, 'gift');
@@ -133,20 +145,21 @@ async function playOpening(page: Page): Promise<void> {
     await page.waitForTimeout(2000);
   }
 
-  // the pirates strike BEFORE the route is complete: the friend's last lines come in flight, then the ship is lost
+  // the pirates strike BEFORE the route is complete: the friend's first lines come in flight, the rest over black
   await onStep(page, 'loss');
-  // no picture takes over: the failed flight stays on the screen while the rescuer speaks over it
-  await page.getByTestId('dialogue').waitFor({ timeout: 10_000 });
-  await read(page);
+  // no failed-flight report: the screen goes black, and Bob's last lines are spoken over it
+  await expect(page.getByTestId('dark-moment')).toBeVisible();
+  await expect(page).not.toHaveURL(/\/report\//);
+  await readWhile(page, 'loss');
 
   await onStep(page, 'rescue');
   await expect(page.getByTestId('rescue-moment')).toBeVisible();
   // the cutter comes in first; the rescuer speaks after the picture has played
-  await page.getByTestId('dialogue').waitFor({ timeout: 12_000 });
-  await read(page);
-  await next(page);
-  await read(page);
+  await readWhile(page, 'rescue');
+  // then the time skip, and only after it the Marshal; then the faction page comes out of the black
+  await onStep(page, 'later');
   await expect(page.getByTestId('later-moment')).toBeVisible();
+  await readWhile(page, 'later');
   await expect(page.getByRole('heading', { name: 'Choose your faction' })).toBeVisible({
     timeout: 20_000,
   });
@@ -224,6 +237,38 @@ test('the opening resumes where the pilot left it', async ({ page }) => {
   await onStep(page, 'fit-engine');
   await page.reload();
   await onStep(page, 'fit-engine');
+});
+
+test('the ending: black instead of a failed report, the rescue, "Some months later", the Marshal, the faction page', async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  await register(page);
+  await read(page);
+  await next(page);
+  await onStep(page, 'fit-engine');
+  // the opening remembers the step in the browser: jump to the loss
+  await page.evaluate(() => {
+    const key = Object.keys(window.localStorage).find((name) => name.startsWith('rs.prologue.'));
+    if (key === undefined) throw new Error('no saved step');
+    window.localStorage.setItem(key, JSON.stringify({ step: 'loss', kind: 'crates' }));
+  });
+  await page.reload();
+  await onStep(page, 'loss');
+  await expect(page.getByTestId('dark-moment')).toBeVisible();
+  await expect(page).not.toHaveURL(/\/report\//);
+  await expect(page.getByTestId('mission-result')).toHaveCount(0);
+  await readWhile(page, 'loss');
+  await onStep(page, 'rescue');
+  await expect(page.getByTestId('dark-moment')).toBeVisible();
+  await expect(page.getByTestId('rescue-moment')).toBeVisible();
+  await readWhile(page, 'rescue');
+  await onStep(page, 'later');
+  await expect(page.getByTestId('later-moment')).toBeVisible();
+  await readWhile(page, 'later');
+  await expect(page.getByRole('heading', { name: 'Choose your faction' })).toBeVisible({
+    timeout: 20_000,
+  });
 });
 
 test('a played opening and a skipped one end with the same credits', async ({ page, browser }) => {

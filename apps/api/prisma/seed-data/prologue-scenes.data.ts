@@ -9,51 +9,6 @@ import type { SceneData } from '../../src/dialogue/scenes.js';
 export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>> = {
   free_mentor_dara: [
     {
-      id: 'rescue',
-      nodes: [
-        {
-          id: 'd_rescue_1',
-          next: 'd_rescue_2',
-          text: {
-            en: 'My name is Dara Voss. I’m with the rescue team. We’re bringing you aboard.',
-            'pt-BR': 'Meu nome é Dara Voss, Sou do resgate. Estamos puxando você para bordo. ',
-          },
-          anchor: null,
-          choices: [
-            {
-              next: 'd_rescue_2',
-              label: {
-                en: 'Bob?',
-                'pt-BR': 'Bob?',
-              },
-              action: 'end',
-            },
-          ],
-          blocking: true,
-          position: 'center',
-        },
-        {
-          id: 'd_rescue_2',
-          next: null,
-          text: {
-            en: 'I’m sorry, nothing is left of her ship.',
-            'pt-BR': 'Me desculpe, não sobrou nada da nave dela',
-          },
-          anchor: null,
-          choices: [],
-          blocking: true,
-          position: 'center',
-        },
-      ],
-      order: 33,
-      start: 'd_rescue_1',
-      title: {
-        en: 'Found you',
-        'pt-BR': 'Encontramos você',
-      },
-      trigger: 'prologue_rescue_enter',
-    },
-    {
       id: 'rescue_done',
       nodes: [
         {
@@ -123,7 +78,7 @@ export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>
           text: {
             en: 'The pirates hit you both. Your ship is wrecked and drifting, at least we got here quickly.',
             'pt-BR':
-              'Os piratas atingiram vocês dois. Sua nave está destruída e à deriva, ainda bem que chegamos a tempo.',
+              'Os piratas pegaram vocês. Sua nave está quase toda destruída e à deriva, ainda bem que chegamos a tempo.',
           },
           anchor: null,
           choices: [],
@@ -157,7 +112,7 @@ export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>
           text: {
             en: "Bob's signal has stopped answering. There is nothing there any remove; I'm sorry.",
             'pt-BR':
-              'O sinal da Bob parou de responder. A gente só chegou por causa do sinal dela, mas só encontramos os destroços de sua nave, me desculpe.',
+              'O sinal da Bob parou de responder. A gente só chegou por causa do sinal dela, mas quando chegamos, só havia os destroços. Sua ponte era a única coisa que restou.',
           },
           anchor: null,
           choices: [],
@@ -416,7 +371,7 @@ export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>
           },
           anchor: null,
           choices: [],
-          blocking: false,
+          blocking: true,
           position: 'center',
         },
       ],
