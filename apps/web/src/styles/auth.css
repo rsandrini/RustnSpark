@@ -164,26 +164,13 @@
   color: var(--muted);
 }
 
-.landing-steps,
-.landing-features,
-.landing-factions {
+.landing-features {
   display: grid;
   gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.landing-steps {
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-}
-
-.landing-features {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-}
-
-.landing-factions {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .landing-card {
@@ -194,44 +181,16 @@
   background: var(--paper-2);
 }
 
-.landing-card h3,
-.landing-faction h3 {
+.landing-card h3 {
   margin: 0 0 6px;
   font-size: 17px;
 }
 
-.landing-card p,
-.landing-faction p {
+.landing-card p {
   margin: 0;
   color: var(--muted);
   font-size: 14px;
   line-height: 1.5;
-}
-
-.landing-step-no {
-  display: inline-grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  margin-bottom: 8px;
-  border-radius: 50%;
-  background: var(--brass);
-  color: var(--brass-ink);
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.landing-faction {
-  min-height: 150px;
-  padding: 16px;
-  border: 1px solid var(--rule-3);
-  border-radius: var(--radius);
-  background-size: cover;
-  background-position: center;
-}
-
-.landing-faction p {
-  color: var(--ink);
 }
 
 .landing-cta {
@@ -297,12 +256,8 @@
 .landing-section h2 {
   font-size: 32px;
 }
-.landing-card h3,
-.landing-faction h3 {
+.landing-card h3 {
   font-weight: 600;
-}
-.landing-step-no {
-  font-family: var(--font-mono);
 }
 .landing-facts li {
   font-family: var(--font-mono);

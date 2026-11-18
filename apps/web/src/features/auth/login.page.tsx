@@ -5,6 +5,7 @@ import { ApiError } from '../../api/client';
 import { useAuth, useLogin } from './auth.hooks';
 import { GuestButton } from './guest-button';
 import { HeroShip, LandingStory, useLanding } from './landing';
+import { MISSION_KINDS, SHIP_CLASSES } from './landing-content';
 import { RegisterForm } from './register-form';
 import { tablistKeys } from '../../ui/tablist';
 
@@ -46,11 +47,18 @@ export function LoginPage() {
               <em>{heroTitle.last}</em>
             </h1>
             <p className="landing-pitch">{t('landing.pitch')}</p>
-            {landing !== undefined && (
+            {((landing !== undefined && landing.counts.parts > 0) ||
+              SHIP_CLASSES.length > 0 ||
+              MISSION_KINDS.length > 0) && (
               <ul className="landing-facts" data-testid="landing-facts">
-                <li>{t('landing.facts.parts', { count: landing.counts.parts })}</li>
-                <li>{t('landing.facts.places', { count: landing.counts.places })}</li>
-                <li>{t('landing.facts.factions', { count: landing.counts.factions })}</li>
+                {landing !== undefined && landing.counts.parts > 0 && (
+                  <li>{t('landing.facts.parts', { count: landing.counts.parts })}</li>
+                )}
+                {landing !== undefined && landing.counts.places > 0 && (
+                  <li>{t('landing.facts.places', { count: landing.counts.places })}</li>
+                )}
+                <li>{t('landing.facts.shipClasses', { count: SHIP_CLASSES.length })}</li>
+                <li>{t('landing.facts.missionKinds', { count: MISSION_KINDS.length })}</li>
               </ul>
             )}
           </div>
@@ -140,7 +148,7 @@ export function LoginPage() {
           </section>
         </div>
       </header>
-      <LandingStory landing={landing} />
+      <LandingStory />
     </main>
   );
 }

@@ -110,7 +110,7 @@ describe('auth flow', () => {
     expect(await screen.findByText(/passwords do not match/i)).toBeInTheDocument();
   });
 
-  it('the sign-in page tells what the game is, how a run goes and who is out there', async () => {
+  it('the sign-in page shows the game: screens, classes, missions and costs', async () => {
     renderWithRouter(routes, { initialEntries: ['/login'] });
 
     expect(
@@ -121,11 +121,29 @@ describe('auth flow', () => {
     ).toBeInTheDocument();
     // not an idle game: the page never calls it that
     expect(screen.queryByText(/idle/i)).toBeNull();
-    // the four steps, the facts from the server and the factions as the admin has them
-    expect(screen.getByRole('heading', { name: 'How a run goes' })).toBeInTheDocument();
+    // two real screens, the ship classes and every kind of mission
+    expect(
+      screen.getByRole('heading', { name: 'Your ship is a puzzle of parts' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Different ships, different jobs' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pick a job. Beat the field.' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'A mission for every ship' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Not a game you can just leave running' }),
+    ).toBeInTheDocument();
+    // facts from the server plus the constant counts
     expect(await screen.findByTestId('landing-facts')).toHaveTextContent('220 parts to build with');
-    expect(await screen.findByRole('heading', { name: 'Luna Authority' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Pirates' })).toBeInTheDocument();
+    expect(screen.getByTestId('landing-facts')).toHaveTextContent('5 ship classes');
+    expect(screen.getByTestId('landing-facts')).toHaveTextContent('8 kinds of mission');
+    // no mention of the old powers section, factions or free pilots
+    expect(screen.queryByRole('heading', { name: 'Four powers, one sector' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Luna Authority' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Pirates' })).toBeNull();
+    expect(screen.getByRole('main')).not.toHaveTextContent(/powers|free pilot/i);
     // the way in is still right there
     expect(screen.getByRole('tab', { name: 'Create account' })).toHaveAttribute(
       'href',
@@ -148,7 +166,25 @@ describe('auth flow', () => {
       await screen.findByRole('heading', { level: 1, name: 'Rust and Spark' }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.queryByTestId('landing-facts')).toBeNull();
+    // server facts are gone, but the constant counts still show
+    const facts = screen.getByTestId('landing-facts');
+    expect(facts).toHaveTextContent('5 ship classes');
+    expect(facts).toHaveTextContent('8 kinds of mission');
+    expect(facts).not.toHaveTextContent('parts to build with');
+    // every showcase block still renders without the server
+    expect(
+      screen.getByRole('heading', { name: 'Your ship is a puzzle of parts' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Different ships, different jobs' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pick a job. Beat the field.' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'A mission for every ship' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Not a game you can just leave running' }),
+    ).toBeInTheDocument();
   });
 
   it('sign up lives on the same page: /register is the landing with the Create account tab open', async () => {
@@ -157,7 +193,9 @@ describe('auth flow', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Rust and Spark' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'How a run goes' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Your ship is a puzzle of parts' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Create account' })).toHaveAttribute(
       'aria-selected',
       'true',
