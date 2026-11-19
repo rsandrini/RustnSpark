@@ -1,3 +1,4 @@
+import { CurtainLayer } from '../features/prologue/curtain-layer';
 import { createBrowserRouter, Navigate, Outlet, useLocation, useParams } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { lazy, Suspense, useEffect } from 'react';
@@ -85,6 +86,7 @@ function AppChrome() {
   const inGame = user?.factionId != null || opening.active;
   return (
     <FeedbackProvider>
+      <CurtainLayer />
       {inGame ? <InGameChrome /> : <LanguageSwitcher />}
       <Outlet />
     </FeedbackProvider>

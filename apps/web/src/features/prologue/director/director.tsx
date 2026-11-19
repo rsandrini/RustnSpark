@@ -38,7 +38,7 @@ import {
   useResultCardHeld,
 } from '../../report/result-card-gate';
 import { DarkMoment, LaterMoment, RescueMoment } from './moments';
-import { raiseCurtain } from '../curtain';
+import { liftCurtain, raiseCurtain } from '../curtain';
 import { nextStep, stepDef, type StepDef, type StepId } from './steps';
 import './director.css';
 
@@ -178,6 +178,8 @@ export function Director() {
 
   const finish = useMutation({
     mutationFn: (outcome: Outcome) => client.post('/v1/players/me/prologue', { outcome }),
+    // the story could not be saved: the curtain the ending raised must not hold the screen black
+    onError: () => liftCurtain(),
     onSuccess: async () => {
       if (playerId !== undefined) forgetStep(playerId);
       setWarning(false);

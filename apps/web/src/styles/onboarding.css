@@ -82,14 +82,16 @@
   color: var(--ink);
 }
 
-/* The opening ends on a black screen: the faction page comes out of it instead of cutting in. */
+/* The opening ends on a black curtain above the whole app (see curtain.ts); it fades away on the faction page. */
 .faction-curtain {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 200;
   background: #000;
   pointer-events: none;
-  animation: faction-curtain-out 1.8s ease-in-out both;
+}
+.faction-curtain.lifting {
+  animation: faction-curtain-out 1.8s ease-in-out forwards;
 }
 @keyframes faction-curtain-out {
   from {
@@ -100,7 +102,7 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .faction-curtain {
+  .faction-curtain.lifting {
     animation-duration: 0.01s;
   }
 }
