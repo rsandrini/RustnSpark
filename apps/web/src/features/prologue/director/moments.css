@@ -268,11 +268,23 @@
   line-height: 1;
   text-transform: lowercase;
   opacity: 0;
-  animation: moment-fade-through 3.8s ease-in-out both;
+  animation: moment-fade-hold 6s ease-in-out both;
 }
 .moment-title b {
   color: var(--brass);
   font-weight: 400;
+}
+@keyframes moment-fade-hold {
+  0% {
+    opacity: 0;
+  }
+  20%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 @keyframes moment-fade-through {
   0% {
@@ -284,5 +296,77 @@
   }
   100% {
     opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ a ping in the dark */
+.moment-ping {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  animation: moment-fade-in 1.2s ease-out both;
+}
+/* the popups own the screen while they are open */
+body:has([data-testid='dialogue']) .moment-ping {
+  visibility: hidden;
+}
+.moment-ping-dot,
+.moment-ping-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  translate: -50% -50%;
+}
+.moment-ping-dot {
+  width: 6px;
+  height: 6px;
+  background: #9fd0ff;
+  box-shadow: 0 0 14px 3px rgba(159, 208, 255, 0.6);
+  animation: moment-ping-blink 3s ease-out infinite;
+}
+.moment-ping-ring {
+  width: 220px;
+  height: 220px;
+  border: 1px solid rgba(159, 208, 255, 0.7);
+  opacity: 0;
+  scale: 0.05;
+  animation: moment-ping-ring 3s ease-out infinite;
+}
+.moment-ping-ring.late {
+  animation-delay: 0.45s;
+}
+@keyframes moment-ping-ring {
+  0% {
+    opacity: 0.8;
+    scale: 0.05;
+  }
+  100% {
+    opacity: 0;
+    scale: 1;
+  }
+}
+@keyframes moment-ping-blink {
+  0% {
+    opacity: 1;
+  }
+  35%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* the pilot is aboard: the cutter flies on the way it was heading, faster and faster, out of the picture */
+.moment-cutter.departing {
+  animation: moment-cutter-out 3.2s cubic-bezier(0.55, 0, 0.9, 0.6) forwards;
+}
+@keyframes moment-cutter-out {
+  from {
+    left: 52%;
+  }
+  to {
+    left: -40%;
   }
 }

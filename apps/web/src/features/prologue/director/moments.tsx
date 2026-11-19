@@ -10,8 +10,11 @@ const DARK_BEAT_MS = 1800;
 /** How long "Some months later" holds before the game's name. */
 const LATER_BEAT_MS = 3400;
 
-/** How long the game's name stays on the black before the Marshal speaks. */
-const TITLE_BEAT_MS = 3800;
+/** How long the game's name stays on the black before the Marshal speaks (it is fully shown for about four seconds of it). */
+const TITLE_BEAT_MS = 6000;
+
+/** How long the cutter takes to fly off once the pilot is aboard. */
+const DEPART_BEAT_MS = 3200;
 
 const SHARDS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
@@ -27,11 +30,21 @@ export interface MomentProps {
  * The rescue: stars, a cutter coming in out of the dark with its light on the wreck. Quiet after the loss, and warm.
  * A picture only: no caption, no verdict; whatever is said is the rescuer's own line.
  */
-export function RescueMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
+export function RescueMoment({
+  onReady,
+  departing = false,
+  onDeparted,
+}: Pick<MomentProps, 'onReady'> & { departing?: boolean; onDeparted?: () => void }) {
   useEffect(() => {
     const timer = window.setTimeout(onReady, RESCUE_BEAT_MS);
     return () => window.clearTimeout(timer);
   }, [onReady]);
+  // the pilot is aboard: the cutter flies on, and the story goes on when it is gone
+  useEffect(() => {
+    if (!departing) return undefined;
+    const timer = window.setTimeout(() => onDeparted?.(), DEPART_BEAT_MS);
+    return () => window.clearTimeout(timer);
+  }, [departing, onDeparted]);
   return (
     <div className="moment moment-rescue" data-testid="rescue-moment" data-opening-free="">
       <div className="moment-stars" aria-hidden="true" />
@@ -40,7 +53,7 @@ export function RescueMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
           <span key={shard} className={`moment-shard drift s${shard}`} />
         ))}
       </div>
-      <div className="moment-cutter" aria-hidden="true">
+      <div className={`moment-cutter${departing ? ' departing' : ''}`} aria-hidden="true">
         <div className="moment-beam" />
         <div className="moment-cutter-body" />
       </div>
@@ -52,17 +65,23 @@ export function RescueMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
 export function DarkMoment({
   onReady,
   beatMs = DARK_BEAT_MS,
-}: Pick<MomentProps, 'onReady'> & { beatMs?: number }) {
+  ping = false,
+}: Pick<MomentProps, 'onReady'> & { beatMs?: number; ping?: boolean }) {
   useEffect(() => {
     const timer = window.setTimeout(onReady, beatMs);
     return () => window.clearTimeout(timer);
   }, [onReady, beatMs]);
   return (
-    <div
-      className="moment moment-black moment-dark"
-      data-testid="dark-moment"
-      data-opening-free=""
-    />
+    <div className="moment moment-black moment-dark" data-testid="dark-moment" data-opening-free="">
+      {ping && (
+        // a signal in the dark: rings that swell and vanish, over and over (hidden while a popup is open)
+        <div className="moment-ping" data-testid="moment-ping" aria-hidden="true">
+          <span className="moment-ping-dot" />
+          <span className="moment-ping-ring" />
+          <span className="moment-ping-ring late" />
+        </div>
+      )}
+    </div>
   );
 }
 

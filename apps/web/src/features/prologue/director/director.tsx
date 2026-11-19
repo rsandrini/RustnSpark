@@ -147,6 +147,9 @@ export function Director() {
   const [warning, setWarning] = useState(false);
   // the pirates have struck: the screen starts going black with Bob's first line, and stays black through the loss
   const [struck, setStruck] = useState(false);
+  // the rescue cutter has flown off
+  const [departed, setDeparted] = useState(false);
+  const cutterGone = useCallback(() => setDeparted(true), []);
   // the mission's result card comes before the guide's lines
   const resultCardHeld = useResultCardHeld();
 
@@ -258,8 +261,9 @@ export function Director() {
   useEffect(() => {
     if (stored.step !== step || queue.length > 0 || !momentReady) return;
     if (phase === 'enter') update((current) => ({ ...current, phase: 'act' }));
-    else if (phase === 'leave') advance();
-  }, [stored.step, step, queue, phase, momentReady, advance, update]);
+    // the rescue cutter flies off first, then the story goes on
+    else if (phase === 'leave' && (def.moment !== 'rescue' || departed)) advance();
+  }, [stored.step, step, queue, phase, momentReady, advance, update, def.moment, departed]);
 
   // the pilot did the step's thing (and has nothing left to read): move on
   useEffect(() => {
@@ -418,6 +422,11 @@ export function Director() {
   );
   // a step's picture (the black screen of the loss) plays before anyone speaks
   const spoken = momentReady && !resultCardHeld ? queue[0] : undefined;
+  // Bob's last lines are said: until the next voice opens, a ping goes out in the dark and fades into it
+  const pinging =
+    def.id === 'loss' &&
+    spoken !== undefined &&
+    spoken.key !== scenesFor(guides, enterOf('loss'))[0]?.key;
   const ready = phase === 'act' && queue.length === 0;
   const dropFirst = useCallback(
     () => update((current) => ({ ...current, queue: current.queue.slice(1) })),
@@ -431,9 +440,16 @@ export function Director() {
         <DarkMoment
           onReady={def.id === 'loss' ? readyMoment : noop}
           beatMs={struck ? 0 : undefined}
+          ping={pinging}
         />
       )}
-      {def.moment === 'rescue' && <RescueMoment onReady={readyMoment} />}
+      {def.moment === 'rescue' && (
+        <RescueMoment
+          onReady={readyMoment}
+          departing={phase === 'leave' && queue.length === 0}
+          onDeparted={cutterGone}
+        />
+      )}
       {def.moment === 'later' && <LaterMoment onReady={readyMoment} />}
       {spoken !== undefined && <Speaker key={spoken.key} spoken={spoken} onDone={dropFirst} />}
       {/* a confirmation (take the engine, read on) is a card in the middle of the screen, like the guides' lines */}

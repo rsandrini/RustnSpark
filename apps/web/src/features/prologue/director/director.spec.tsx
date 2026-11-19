@@ -402,10 +402,13 @@ describe('the director: the story on the real screens', () => {
     expect(await screen.findByTestId('dark-moment')).toBeInTheDocument();
     // nobody speaks until the screen is dark
     expect(screen.queryByText('Missiles no')).not.toBeInTheDocument();
+    // while Bob speaks there is no ping; it goes out once the next voice is due
+    expect(screen.queryByTestId('moment-ping')).not.toBeInTheDocument();
     const next = await screen.findByRole('button', { name: 'Continue' }, { timeout: 4000 });
     fireEvent.click(next);
     fireEvent.click(next);
     expect(await screen.findByText('Guys, a survivor')).toBeInTheDocument();
+    expect(screen.getByTestId('moment-ping')).toBeInTheDocument();
     expect(view.router.state.location.pathname).not.toMatch(/^\/report\//);
     expect(screen.queryByTestId('mission-result')).not.toBeInTheDocument();
   }, 15000);
@@ -444,7 +447,10 @@ describe('the director: the story on the real screens', () => {
     fireEvent.click(read);
     fireEvent.click(read);
     // time passes first, THEN the Marshal speaks
-    expect(await screen.findByTestId('later-moment')).toHaveTextContent('Some months later');
+    // the cutter flies off first
+    expect(
+      await screen.findByTestId('later-moment', undefined, { timeout: 6000 }),
+    ).toHaveTextContent('Some months later');
     expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
     // then the game's name, still before the Marshal
     expect(
@@ -452,14 +458,14 @@ describe('the director: the story on the real screens', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
     expect(
-      await screen.findByText('Choose who you fight with', undefined, { timeout: 8000 }),
+      await screen.findByText('Choose who you fight with', undefined, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(saved).toBeNull();
     const last = screen.getByRole('button', { name: 'Continue' });
     fireEvent.click(last);
     fireEvent.click(last);
     await waitFor(() => expect(saved).toEqual({ outcome: 'played' }));
-  }, 30000);
+  }, 40000);
 
   it('has a step for every moment the Admin can hang a line on', () => {
     expect(OPENING_STEPS).toHaveLength(18);
