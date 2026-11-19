@@ -446,15 +446,20 @@ describe('the director: the story on the real screens', () => {
     // time passes first, THEN the Marshal speaks
     expect(await screen.findByTestId('later-moment')).toHaveTextContent('Some months later');
     expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
+    // then the game's name, still before the Marshal
     expect(
-      await screen.findByText('Choose who you fight with', undefined, { timeout: 6000 }),
+      await screen.findByTestId('title-moment', undefined, { timeout: 6000 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('Choose who you fight with', undefined, { timeout: 8000 }),
     ).toBeInTheDocument();
     expect(saved).toBeNull();
     const last = screen.getByRole('button', { name: 'Continue' });
     fireEvent.click(last);
     fireEvent.click(last);
     await waitFor(() => expect(saved).toEqual({ outcome: 'played' }));
-  }, 25000);
+  }, 30000);
 
   it('has a step for every moment the Admin can hang a line on', () => {
     expect(OPENING_STEPS).toHaveLength(18);

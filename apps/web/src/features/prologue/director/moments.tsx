@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './moments.css';
 
@@ -7,8 +7,11 @@ const RESCUE_BEAT_MS = 4200;
 /** How long the screen takes to go black (Bob's last lines are spoken over it once it has). */
 const DARK_BEAT_MS = 1800;
 
-/** How long the card holds before the story hands the pilot over to the faction choice. */
-const LATER_BEAT_MS = 3600;
+/** How long "Some months later" holds before the game's name. */
+const LATER_BEAT_MS = 3400;
+
+/** How long the game's name stays on the black before the Marshal speaks. */
+const TITLE_BEAT_MS = 3800;
 
 const SHARDS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
@@ -63,19 +66,34 @@ export function DarkMoment({
   );
 }
 
+/** The wordmark, split so the "n" takes the accent colour (a brand, not a translation; same as the top bar's). */
+const BRAND = ['rust', 'n', 'spark'] as const;
+
 /**
- * The time skip after the rescue: a black card, "Some months later". `onReady` says it has been read, so the Marshal
- * may speak (the story ends after his lines).
+ * The time skip after the rescue: a black card, "Some months later", then the game's name on black. `onReady` says both
+ * have been seen, so the Marshal may speak (the story ends after his lines).
  */
 export function LaterMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
   const { t } = useTranslation();
+  const [title, setTitle] = useState(false);
   useEffect(() => {
-    const timer = window.setTimeout(onReady, LATER_BEAT_MS);
+    const timer = window.setTimeout(
+      () => (title ? onReady() : setTitle(true)),
+      title ? TITLE_BEAT_MS : LATER_BEAT_MS,
+    );
     return () => window.clearTimeout(timer);
-  }, [onReady]);
+  }, [title, onReady]);
   return (
     <div className="moment moment-later" data-testid="later-moment" data-opening-free="">
-      <p className="moment-later-text">{t('prologue.moment.later')}</p>
+      {title ? (
+        <p className="moment-title" data-testid="title-moment" aria-label="rustnspark">
+          {BRAND[0]}
+          <b>{BRAND[1]}</b>
+          {BRAND[2]}
+        </p>
+      ) : (
+        <p className="moment-later-text">{t('prologue.moment.later')}</p>
+      )}
     </div>
   );
 }

@@ -126,7 +126,7 @@
 }
 .moment-shard.drift {
   opacity: 0.85;
-  animation: moment-drift 9s ease-in-out infinite alternate;
+  animation: moment-drift 12s ease-out both;
 }
 .moment-cutter {
   position: absolute;
@@ -213,10 +213,12 @@
 }
 @keyframes moment-drift {
   from {
-    transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(0deg);
+    opacity: 0.85;
+    transform: translate(0, 0) rotate(0deg);
   }
   to {
-    transform: translate(calc(var(--dx, 0px) / 2), calc(var(--dy, 0px) / 3)) rotate(var(--r, 40deg));
+    opacity: 0.35;
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(var(--r, 40deg));
   }
 }
 @keyframes moment-twinkle {
@@ -257,5 +259,30 @@
   letter-spacing: 0.08em;
   font-style: italic;
   opacity: 0;
-  animation: moment-fade-in 1.4s ease-out 0.6s forwards;
+  animation: moment-fade-through 3.2s ease-in-out 0.4s both;
+}
+.moment-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(52px, 11vw, 120px);
+  line-height: 1;
+  text-transform: lowercase;
+  opacity: 0;
+  animation: moment-fade-through 3.8s ease-in-out both;
+}
+.moment-title b {
+  color: var(--brass);
+  font-weight: 400;
+}
+@keyframes moment-fade-through {
+  0% {
+    opacity: 0;
+  }
+  25%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
