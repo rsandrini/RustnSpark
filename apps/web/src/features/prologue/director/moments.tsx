@@ -78,6 +78,7 @@ export function DarkMoment({
       data-testid="dark-moment"
       data-opening-free=""
     >
+      {ping && <div className="moment-stars-field" aria-hidden="true" />}
       {ping && (
         // a signal in the dark: rings that swell and vanish, over and over (hidden while a popup is open)
         <div className="moment-ping" data-testid="moment-ping" aria-hidden="true">
