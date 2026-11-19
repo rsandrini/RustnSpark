@@ -2004,7 +2004,8 @@
     "popup": {
       "racePlace": "You finished #{{place}}",
       "raceTime": "Time {{time}}",
-      "close": "See the report"
+      "close": "See the report",
+      "dismiss": "Close"
     },
     "glyph": {
       "ok": "✔",

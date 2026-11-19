@@ -308,7 +308,9 @@ describe('the director: the story on the real screens', () => {
     expect(within(card).getByTestId('mission-result-race')).toBeInTheDocument();
     // the guide waits for it
     expect(screen.queryByText('I crossed first.')).not.toBeInTheDocument();
-    fireEvent.click(within(card).getByTestId('mission-result-close'));
+    // the opening's report steps are about reading the report: the card has only the way to it
+    expect(within(card).queryByTestId('mission-result-close')).not.toBeInTheDocument();
+    fireEvent.click(within(card).getByTestId('mission-result-report'));
     expect(await screen.findByText('I crossed first.')).toBeInTheDocument();
   });
 

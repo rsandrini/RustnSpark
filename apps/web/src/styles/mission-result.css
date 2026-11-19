@@ -10,7 +10,9 @@
 .mresult-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(8, 10, 16, 0.55);
+  /* nearly opaque: the card is a popup on its own, not a card laid over the busy report behind it */
+  background: rgba(6, 8, 13, 0.94);
+  backdrop-filter: blur(8px);
   animation: mresult-fade 0.35s ease-out both;
 }
 .mresult {
@@ -79,7 +81,11 @@
   font-weight: 700;
   animation: mresult-up 0.4s ease-out 0.85s both;
 }
-.mresult-close {
+.mresult-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
   margin-top: 10px;
   animation: mresult-up 0.4s ease-out 1s both;
 }
@@ -124,7 +130,7 @@
   .mresult-mission,
   .mresult-race,
   .mresult-credits,
-  .mresult-close {
+  .mresult-actions {
     animation: none;
   }
 }

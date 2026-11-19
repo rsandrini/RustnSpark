@@ -2004,7 +2004,8 @@
     "popup": {
       "racePlace": "Você chegou em {{place}}º",
       "raceTime": "Tempo {{time}}",
-      "close": "Ver o relatório"
+      "close": "Ver o relatório",
+      "dismiss": "Fechar"
     },
     "glyph": {
       "ok": "✔",

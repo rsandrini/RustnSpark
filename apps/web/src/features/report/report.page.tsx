@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
@@ -29,6 +29,7 @@ import { placeArtUrl, usePlaceArt } from '../../ui/PlaceArt';
 import { Popup } from '../../ui/Popup';
 import { MissionResultPopup } from './mission-result-popup';
 import { holdForResultCard } from './result-card-gate';
+import { usePrologueMode } from '../prologue/prologue-mode';
 
 const infoGlyph = 'i';
 
@@ -495,10 +496,17 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
   const { user } = useAuthContext();
   const seenKey = `rs.report.card.${user?.id ?? ''}.${missionId}`;
   const [cardOpen, setCardOpen] = useState(() => fresh && !hasSeen(seenKey));
+  const navigate = useNavigate();
+  // the opening's report steps are about reading the report: there the card only leads to it
+  const inOpening = usePrologueMode().active;
   const closeCard = () => {
     markSeen(seenKey);
     setCardOpen(false);
     holdForResultCard(false);
+  };
+  const dismissCard = () => {
+    closeCard();
+    void navigate('/ship');
   };
   // no card to show (an old report, or one already seen): nothing holds the story's guide back
   useEffect(() => {
@@ -562,7 +570,8 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
                   time: formatDuration(you.seconds * stats.race.timeScale, t),
                 }
           }
-          onClose={closeCard}
+          onReport={closeCard}
+          onDismiss={inOpening ? undefined : dismissCard}
         />
       )}
       {mission !== undefined && (

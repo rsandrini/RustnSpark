@@ -510,14 +510,17 @@ describe('report (S10.8)', () => {
         ),
       ),
     );
-    renderWithRouter(routes, {
+    const view = renderWithRouter(routes, {
       initialEntries: [{ pathname: '/report/m-race', state: { fresh: true } }],
     });
     const card = await screen.findByTestId('mission-result');
     expect(within(card).getByTestId('mission-result-race')).toHaveTextContent('You finished #2');
     expect(within(card).getByTestId('mission-result-race')).toHaveTextContent('Time 10m');
+    // two choices: read the report, or close the card and go to My Ship
+    expect(within(card).getByTestId('mission-result-report')).toHaveTextContent('See the report');
     fireEvent.click(within(card).getByTestId('mission-result-close'));
     await waitFor(() => expect(screen.queryByTestId('mission-result')).not.toBeInTheDocument());
+    await waitFor(() => expect(view.router.state.location.pathname).toBe('/ship'));
   });
 
   it('does not open the result card when an old report is opened from the history', async () => {

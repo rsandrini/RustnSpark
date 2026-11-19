@@ -42,7 +42,7 @@ export async function read(page: Page): Promise<void> {
 
 /** A finished mission opens its short result card first; the guide's lines wait until it is closed. */
 export async function closeResult(page: Page): Promise<void> {
-  const close = page.getByTestId('mission-result-close');
+  const close = page.getByTestId('mission-result-report');
   await close.waitFor({ timeout: 8000 }).catch(() => undefined);
   if (await close.isVisible().catch(() => false)) await close.click();
 }

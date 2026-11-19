@@ -15,7 +15,10 @@ export interface MissionResultProps {
   credits: string;
   /** A race: the place the pilot finished and the time they took (already formatted). */
   race: { place: number; time: string } | null;
-  onClose: () => void;
+  /** Show the full report (the card goes away, the report is behind it). */
+  onReport: () => void;
+  /** Leave the report and go to My Ship; absent = the card has only the report button (the opening's report steps need the report). */
+  onDismiss?: () => void;
 }
 
 /**
@@ -29,7 +32,8 @@ export function MissionResultPopup({
   route,
   credits,
   race,
-  onClose,
+  onReport,
+  onDismiss,
 }: MissionResultProps) {
   const { t } = useTranslation();
   const button = useRef<HTMLButtonElement>(null);
@@ -37,14 +41,14 @@ export function MissionResultPopup({
     noteResultCardShown();
     button.current?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') (onDismiss ?? onReport)();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onReport, onDismiss]);
   return (
     <div className="mresult-layer" data-testid="mission-result" data-dialogue-free="">
-      <div className="mresult-backdrop" aria-hidden="true" onClick={onClose} />
+      <div className="mresult-backdrop" aria-hidden="true" />
       <div className={`mresult ${tone}`} role="alertdialog" aria-label={outcome}>
         <div className="mresult-glyph" aria-hidden="true">
           <span>{t(`report.glyph.${tone}`)}</span>
@@ -62,15 +66,27 @@ export function MissionResultPopup({
           </p>
         )}
         <p className="mresult-credits">{credits}</p>
-        <button
-          ref={button}
-          type="button"
-          className="btn primary mresult-close"
-          data-testid="mission-result-close"
-          onClick={onClose}
-        >
-          {t('report.popup.close')}
-        </button>
+        <div className="mresult-actions">
+          <button
+            ref={button}
+            type="button"
+            className="btn primary mresult-close"
+            data-testid="mission-result-report"
+            onClick={onReport}
+          >
+            {t('report.popup.close')}
+          </button>
+          {onDismiss !== undefined && (
+            <button
+              type="button"
+              className="btn mresult-close"
+              data-testid="mission-result-close"
+              onClick={onDismiss}
+            >
+              {t('report.popup.dismiss')}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
