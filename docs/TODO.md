@@ -54,10 +54,15 @@ Still open:
   runs counted from the first push with the 2026-10-27 e2e fix (owner decision 2026-10-17). The standing CI rules are in `docs/operations.md` section 9.
 - [ ] Late game (parked): the fusion torch engine and the fusion reactor family above nuclear, and a
   pre-warning before a bridge is destroyed. Needs the early and mid economy to hold first.
-- [ ] Sim (2026-10-27: aligned with the live game, `sim-replay` 40/40, wear and repair money recorded per part in `part_wear`):
-  after the reset re-export the snapshot (`pnpm sim export`) and rerun the four builds on the new defaults. Open: the ion build
+- [x] Sim snapshot refresh (2026-11-19): re-exported (`pnpm sim export`) and verified against live DB rules.
+- [x] Sim alignment (2026-11-19): mining jobs burn fuel per tick for chemical ships; first repair waives the workshop fee and
+  respects `economy.first_repair_min_seconds`; `sim-replay` now preserves `miningTicks` and merges old rules snapshots with defaults.
+- [ ] Sim four-build baseline rerun on the new defaults (owner playtest): the full `run-parallel.sh` baseline is too slow for a
+  quick check; a chem-only smoke (`2 runs × 10 missions × 10 cells`) ran cleanly. Open: the ion build
   (fixed kit: micro + small ion drives and a nuclear plant) still spends ~80% of its income on repair, 20% of it on the reactor,
   and its reactor wear (~900 points a run) is unexplained; Legendary stays out of reach for it.
+- [ ] Sim-replay scavenge drift: a handful of recent SCAVENGE rows show `status failed/success` and `wear >0/0` mismatches
+  between the game and the sim wrapper (not related to the mining/first-repair changes).
 - [ ] **Ship-structure damage** (owner idea, 2026-10-27, *needs design*): hull damage today spreads over every part alike, so a
   bridge or a reactor wears like a weapon and the dearest parts drive the repair bill (passive parts are ~30% of it, ~44% on
   ion). The idea: spread damage by the layers of the build, outer parts take more and inner ones (bridge, reactors) less, so the

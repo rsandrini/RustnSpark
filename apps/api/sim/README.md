@@ -109,6 +109,19 @@ layout grid abstracted (connectivity assumed); empty-board viability repair targ
 fuel-holders first; experiment runs are in-process. The market keeps real shelf stock — the
 board and the prices are the live ones, per listing id.
 
+Aligned with the live game as of 2026-11-19:
+
+- Mining jobs run in whole ticks of `mining.job_duration_seconds` and burn
+  `mining.job_fuel_per_tick` per tick for chemical ships; ion-only ships dig for free.
+- A pilot's first repair waives the workshop fee (`economy.first_repair_fee_share`) and
+  takes at least `economy.first_repair_min_seconds`.
+
+Known abstractions (the sim does not model these, so experiments won't reflect them):
+
+- Board mining contracts: only free (uncontracted) independent mining jobs are implemented.
+- Fuel stored in removed tanks: tanks hold no fuel when taken off the ship.
+- Escort for stuck pilots: the bot uses the paid rescue path instead.
+
 ## Fast experiments
 
 - `sim/run-parallel.sh <name> <edit.json> [flags]` plays the edited matrix with one process per build
