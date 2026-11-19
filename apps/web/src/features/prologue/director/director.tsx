@@ -147,6 +147,8 @@ export function Director() {
   const [warning, setWarning] = useState(false);
   // the pirates have struck: the screen starts going black with Bob's first line, and stays black through the loss
   const [struck, setStruck] = useState(false);
+  // opened (or reloaded) already inside the black ending: the black is there at once, the game's screen never shows
+  const [bootInDark] = useState(() => DARK_STEPS.includes(step));
   // the rescue cutter has flown off
   const [departed, setDeparted] = useState(false);
   const cutterGone = useCallback(() => setDeparted(true), []);
@@ -443,6 +445,7 @@ export function Director() {
           onReady={def.id === 'loss' ? readyMoment : noop}
           beatMs={struck ? 0 : undefined}
           ping={pinging}
+          instant={bootInDark}
         />
       )}
       {def.moment === 'rescue' && (

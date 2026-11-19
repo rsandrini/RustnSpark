@@ -413,6 +413,13 @@ describe('the director: the story on the real screens', () => {
     expect(screen.queryByTestId('mission-result')).not.toBeInTheDocument();
   }, 15000);
 
+  it('comes back into the ending already black (no fade over the game screen)', async () => {
+    server.use(story([]));
+    saveStep('later');
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    expect(await screen.findByTestId('dark-moment')).toHaveClass('instant');
+  });
+
   it('keeps the black under the rescue picture, so the game screen never shows between them', async () => {
     server.use(story([]));
     saveStep('rescue');
@@ -453,7 +460,7 @@ describe('the director: the story on the real screens', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
     expect(
-      await screen.findByText(/Some months later/, undefined, { timeout: 8000 }),
+      await screen.findByText(/Some months later/, undefined, { timeout: 11000 }),
     ).toBeInTheDocument();
     expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
     expect(
@@ -464,7 +471,7 @@ describe('the director: the story on the real screens', () => {
     fireEvent.click(last);
     fireEvent.click(last);
     await waitFor(() => expect(saved).toEqual({ outcome: 'played' }));
-  }, 40000);
+  }, 50000);
 
   it('has a step for every moment the Admin can hang a line on', () => {
     expect(OPENING_STEPS).toHaveLength(18);

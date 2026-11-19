@@ -247,11 +247,15 @@
 .moment-dark {
   animation: moment-fade-in 1.6s ease-in-out both;
 }
+/* coming back into the ending (a reload): the screen is black at once, the game never shows */
+.moment-dark.instant {
+  animation: none;
+}
 
 /* ------------------------------------------------------------------ some months later */
 .moment-later {
   background: #000;
-  animation: moment-fade-in 1.2s ease-out both;
+  animation: moment-fade-in 1.6s ease-in-out both;
 }
 .moment-later-text {
   margin: 0;
@@ -268,7 +272,8 @@
   line-height: 1;
   text-transform: lowercase;
   opacity: 0;
-  animation: moment-fade-hold 6s ease-in-out both;
+  /* after the black has fully come down */
+  animation: moment-fade-hold 6s ease-in-out 1.8s both;
 }
 .moment-title b {
   color: var(--brass);

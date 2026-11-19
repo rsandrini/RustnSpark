@@ -10,8 +10,8 @@ const DARK_BEAT_MS = 1800;
 /** How long "Some months later" holds before the Marshal speaks. */
 const LATER_BEAT_MS = 3400;
 
-/** How long the game's name stays on the black before "Some months later" (it is fully shown for about four seconds of it). */
-const TITLE_BEAT_MS = 6000;
+/** How long the game's name stays on the black before "Some months later" (the black fades down first, then the name fades in and is fully shown for about four seconds). */
+const TITLE_BEAT_MS = 7800;
 
 /** How long the cutter takes to fly off once the pilot is aboard. */
 const DEPART_BEAT_MS = 3200;
@@ -66,13 +66,18 @@ export function DarkMoment({
   onReady,
   beatMs = DARK_BEAT_MS,
   ping = false,
-}: Pick<MomentProps, 'onReady'> & { beatMs?: number; ping?: boolean }) {
+  instant = false,
+}: Pick<MomentProps, 'onReady'> & { beatMs?: number; ping?: boolean; instant?: boolean }) {
   useEffect(() => {
     const timer = window.setTimeout(onReady, beatMs);
     return () => window.clearTimeout(timer);
   }, [onReady, beatMs]);
   return (
-    <div className="moment moment-black moment-dark" data-testid="dark-moment" data-opening-free="">
+    <div
+      className={`moment moment-black moment-dark${instant ? ' instant' : ''}`}
+      data-testid="dark-moment"
+      data-opening-free=""
+    >
       {ping && (
         // a signal in the dark: rings that swell and vanish, over and over (hidden while a popup is open)
         <div className="moment-ping" data-testid="moment-ping" aria-hidden="true">
