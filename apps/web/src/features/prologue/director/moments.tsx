@@ -46,12 +46,21 @@ export function RescueMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
 }
 
 /** The screen fades to black by itself (no click); `onReady` says it is dark, so the guides may speak over it. */
-export function DarkMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
+export function DarkMoment({
+  onReady,
+  beatMs = DARK_BEAT_MS,
+}: Pick<MomentProps, 'onReady'> & { beatMs?: number }) {
   useEffect(() => {
-    const timer = window.setTimeout(onReady, DARK_BEAT_MS);
+    const timer = window.setTimeout(onReady, beatMs);
     return () => window.clearTimeout(timer);
-  }, [onReady]);
-  return <div className="moment moment-black moment-dark" data-testid="dark-moment" data-opening-free="" />;
+  }, [onReady, beatMs]);
+  return (
+    <div
+      className="moment moment-black moment-dark"
+      data-testid="dark-moment"
+      data-opening-free=""
+    />
+  );
 }
 
 /**

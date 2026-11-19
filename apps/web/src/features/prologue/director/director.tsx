@@ -145,6 +145,8 @@ export function Director() {
   const run = stored.step === step ? stored : fresh(step);
   const { phase, satisfied, momentReady, queue } = run;
   const [warning, setWarning] = useState(false);
+  // the pirates have struck: the screen starts going black with Bob's first line, and stays black through the loss
+  const [struck, setStruck] = useState(false);
   // the mission's result card comes before the guide's lines
   const resultCardHeld = useResultCardHeld();
 
@@ -390,6 +392,7 @@ export function Director() {
               holdingFor.current =
                 stepRef.current === 'final-run' && leg === race.strike ? 'strike' : 'leg';
             }
+            if (stepRef.current === 'final-run' && leg === race.strike) setStruck(true);
             speak(moment);
           }
         }
@@ -424,7 +427,12 @@ export function Director() {
   return (
     <>
       {/* black from the loss to the faction page: each picture is laid over it, so no gap shows the game screen */}
-      {DARK_STEPS.includes(def.id) && <DarkMoment onReady={def.id === 'loss' ? readyMoment : noop} />}
+      {(struck || DARK_STEPS.includes(def.id)) && (
+        <DarkMoment
+          onReady={def.id === 'loss' ? readyMoment : noop}
+          beatMs={struck ? 0 : undefined}
+        />
+      )}
       {def.moment === 'rescue' && <RescueMoment onReady={readyMoment} />}
       {def.moment === 'later' && <LaterMoment onReady={readyMoment} />}
       {spoken !== undefined && <Speaker key={spoken.key} spoken={spoken} onDone={dropFirst} />}

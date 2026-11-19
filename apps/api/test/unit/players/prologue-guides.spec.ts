@@ -57,7 +57,7 @@ describe('prologue guide scenes', () => {
     const loss = on('prologue_loss_enter');
     expect(loss.map((scene) => scene.id)).toEqual(['loss_dark', 'final_run_done']);
     expect(loss[0]?.nodes.map((node) => node.id)).toEqual(['n3', 'n4']);
-    expect(loss[1]?.nodes[0]?.openDelay).toBeGreaterThanOrEqual(3);
+    expect(loss[1]?.nodes[0]?.openDelay).toBe(5);
     // Bob's strike scene keeps only the first two lines
     const strike = on('prologue_final-run_leg_2');
     expect(strike[0]?.nodes.map((node) => node.id)).toEqual(['k_loss_1', 'k_loss_2']);

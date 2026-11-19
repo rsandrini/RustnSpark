@@ -436,7 +436,9 @@ describe('the director: the story on the real screens', () => {
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     expect(await screen.findByTestId('rescue-moment')).toBeInTheDocument();
     // the rescuer's last line is read; the Marshal does not speak with it
-    expect(await screen.findByText('Come aboard', undefined, { timeout: 8000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText('Come aboard', undefined, { timeout: 8000 }),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
     const read = screen.getByRole('button', { name: 'Continue' });
     fireEvent.click(read);
