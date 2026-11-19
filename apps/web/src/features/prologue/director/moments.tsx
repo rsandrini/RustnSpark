@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import './moments.css';
 
-const RESCUE_BEAT_MS = 4200;
+/** The cutter is already there when the rescue step starts: only a beat before the rescuer's last lines. */
+const RESCUE_BEAT_MS = 800;
 
 /** How long the screen takes to go black (Bob's last lines are spoken over it once it has). */
 const DARK_BEAT_MS = 1800;
@@ -27,14 +28,21 @@ export interface MomentProps {
 }
 
 /**
- * The rescue: stars, a cutter coming in out of the dark with its light on the wreck. Quiet after the loss, and warm.
- * A picture only: no caption, no verdict; whatever is said is the rescuer's own line.
+ * The rescue: a cutter comes in out of the dark, with its light on the wreck, while the ping goes out and just before the
+ * rescuer speaks; it stays through the rescuer's lines and, once the pilot is aboard, flies on (its light goes off first).
+ * A picture only, over the black: no caption, no verdict; whatever is said is the rescuer's own line.
  */
 export function RescueMoment({
   onReady,
   departing = false,
   onDeparted,
-}: Pick<MomentProps, 'onReady'> & { departing?: boolean; onDeparted?: () => void }) {
+  arrived = false,
+}: Pick<MomentProps, 'onReady'> & {
+  departing?: boolean;
+  onDeparted?: () => void;
+  /** Back into the story after it came in (a reload): the cutter is already there, no arrival. */
+  arrived?: boolean;
+}) {
   useEffect(() => {
     const timer = window.setTimeout(onReady, RESCUE_BEAT_MS);
     return () => window.clearTimeout(timer);
@@ -47,13 +55,15 @@ export function RescueMoment({
   }, [departing, onDeparted]);
   return (
     <div className="moment moment-rescue" data-testid="rescue-moment" data-opening-free="">
-      <div className="moment-stars" aria-hidden="true" />
       <div className="moment-wreck" aria-hidden="true">
         {SHARDS.slice(0, 4).map((shard) => (
           <span key={shard} className={`moment-shard drift s${shard}`} />
         ))}
       </div>
-      <div className={`moment-cutter${departing ? ' departing' : ''}`} aria-hidden="true">
+      <div
+        className={`moment-cutter${arrived ? ' instant' : ''}${departing ? ' departing' : ''}`}
+        aria-hidden="true"
+      >
         <div className="moment-beam" />
         <div className="moment-cutter-body" />
       </div>
@@ -67,7 +77,14 @@ export function DarkMoment({
   beatMs = DARK_BEAT_MS,
   ping = false,
   instant = false,
-}: Pick<MomentProps, 'onReady'> & { beatMs?: number; ping?: boolean; instant?: boolean }) {
+  stars = false,
+}: Pick<MomentProps, 'onReady'> & {
+  beatMs?: number;
+  ping?: boolean;
+  instant?: boolean;
+  /** The field of stars (it comes up with the ping and stays through the rescue). */
+  stars?: boolean;
+}) {
   useEffect(() => {
     const timer = window.setTimeout(onReady, beatMs);
     return () => window.clearTimeout(timer);
@@ -78,7 +95,9 @@ export function DarkMoment({
       data-testid="dark-moment"
       data-opening-free=""
     >
-      {ping && <div className="moment-stars-field" aria-hidden="true" />}
+      {(ping || stars) && (
+        <div className={`moment-stars-field${instant ? ' instant' : ''}`} aria-hidden="true" />
+      )}
       {ping && (
         // a signal in the dark: rings that swell and vanish, over and over (hidden while a popup is open)
         <div className="moment-ping" data-testid="moment-ping" aria-hidden="true">

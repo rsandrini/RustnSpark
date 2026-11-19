@@ -404,11 +404,14 @@ describe('the director: the story on the real screens', () => {
     expect(screen.queryByText('Missiles no')).not.toBeInTheDocument();
     // while Bob speaks there is no ping; it goes out once the next voice is due
     expect(screen.queryByTestId('moment-ping')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('rescue-moment')).not.toBeInTheDocument();
     const next = await screen.findByRole('button', { name: 'Continue' }, { timeout: 4000 });
     fireEvent.click(next);
     fireEvent.click(next);
     expect(await screen.findByText('Guys, a survivor')).toBeInTheDocument();
     expect(screen.getByTestId('moment-ping')).toBeInTheDocument();
+    // the cutter comes in during the ping, before the rescuer's first popup
+    expect(screen.getByTestId('rescue-moment')).toBeInTheDocument();
     expect(view.router.state.location.pathname).not.toMatch(/^\/report\//);
     expect(screen.queryByTestId('mission-result')).not.toBeInTheDocument();
   }, 15000);

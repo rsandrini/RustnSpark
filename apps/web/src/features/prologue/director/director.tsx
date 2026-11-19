@@ -149,6 +149,10 @@ export function Director() {
   const [struck, setStruck] = useState(false);
   // opened (or reloaded) already inside the black ending: the black is there at once, the game's screen never shows
   const [bootInDark] = useState(() => DARK_STEPS.includes(step));
+  // the rescue cutter (and the stars it comes in under): from the ping, through the rescuer's lines, to its flying off
+  const [cutterOn, setCutterOn] = useState(() => step === 'rescue' || step === 'later');
+  // it came in during the story: after a reload it is there already
+  const cutterBoot = useRef(step === 'rescue').current;
   // the rescue cutter has flown off
   const [departed, setDeparted] = useState(false);
   const cutterGone = useCallback(() => setDeparted(true), []);
@@ -432,6 +436,9 @@ export function Director() {
     spoken !== undefined &&
     spoken.key !== scenesFor(guides, enterOf('loss'))[0]?.key;
   const ready = phase === 'act' && queue.length === 0;
+  useEffect(() => {
+    if (pinging) setCutterOn(true);
+  }, [pinging]);
   const dropFirst = useCallback(
     () => update((current) => ({ ...current, queue: current.queue.slice(1) })),
     [update],
@@ -445,13 +452,15 @@ export function Director() {
           onReady={def.id === 'loss' ? readyMoment : noop}
           beatMs={struck ? 0 : undefined}
           ping={pinging}
+          stars={cutterOn}
           instant={bootInDark}
         />
       )}
-      {def.moment === 'rescue' && (
+      {cutterOn && (def.id === 'loss' || def.id === 'rescue') && (
         <RescueMoment
-          onReady={readyMoment}
-          departing={phase === 'leave' && queue.length === 0}
+          onReady={def.id === 'rescue' ? readyMoment : noop}
+          arrived={cutterBoot}
+          departing={def.id === 'rescue' && phase === 'leave' && queue.length === 0}
           onDeparted={cutterGone}
         />
       )}

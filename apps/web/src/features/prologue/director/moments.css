@@ -102,8 +102,8 @@
 
 /* ------------------------------------------------------------------ the rescue */
 .moment-rescue {
-  background: radial-gradient(circle at 70% 40%, #14233a 0%, #080d18 70%);
-  animation: moment-fade-in 1s ease-out both;
+  /* laid over the black (and its stars): the cutter is all there is to this picture */
+  background: transparent;
 }
 .moment-stars {
   position: absolute;
@@ -134,7 +134,8 @@
   left: 100%;
   width: 150px;
   height: 46px;
-  animation: moment-cutter-in 3.8s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s forwards;
+  /* it comes in while the ping goes out (about five seconds into it), and has landed when the rescuer speaks */
+  animation: moment-cutter-in 3.8s cubic-bezier(0.2, 0.7, 0.2, 1) 4.8s forwards;
 }
 .moment-cutter-body {
   position: absolute;
@@ -154,7 +155,16 @@
   transform: scaleX(-1);
   transform-origin: 100% 50%;
   opacity: 0;
-  animation: moment-fade-in 1.2s ease-out 2.6s forwards;
+  animation: moment-fade-in 1.2s ease-out 7.4s forwards;
+}
+/* back in the story after it came in: the cutter is there already, light on */
+.moment-cutter.instant {
+  left: 52%;
+  animation: none;
+}
+.moment-cutter.instant .moment-beam {
+  opacity: 1;
+  animation: none;
 }
 
 @keyframes moment-fade-in {
@@ -376,6 +386,18 @@ body:has([data-testid='dialogue']) .moment-ping {
 .moment-cutter.departing {
   animation: moment-cutter-out 3.2s cubic-bezier(0.55, 0, 0.9, 0.6) forwards;
 }
+/* ...with its light off: the rescue is done, nothing is scanned any more */
+.moment-cutter.departing .moment-beam {
+  animation: moment-beam-off 0.5s ease-out forwards;
+}
+@keyframes moment-beam-off {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
 @keyframes moment-cutter-out {
   from {
     left: 52%;
@@ -419,4 +441,7 @@ body:has([data-testid='dialogue']) .moment-ping {
   50% {
     opacity: 0.8;
   }
+}
+.moment-stars-field.instant {
+  animation: moment-star-twinkle 3.5s ease-in-out infinite;
 }
