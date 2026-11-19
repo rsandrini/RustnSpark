@@ -46,7 +46,7 @@ export const PROLOGUE_SCENES_DATA: Readonly<Record<string, readonly SceneData[]>
           choices: [],
           blocking: true,
           position: 'center',
-          openDelay: 5,
+          openDelay: 9,
         },
       ],
       order: 31,

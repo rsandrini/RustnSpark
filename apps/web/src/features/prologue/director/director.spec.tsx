@@ -447,18 +447,17 @@ describe('the director: the story on the real screens', () => {
     fireEvent.click(read);
     fireEvent.click(read);
     // time passes first, THEN the Marshal speaks
-    // the cutter flies off first
-    expect(
-      await screen.findByTestId('later-moment', undefined, { timeout: 6000 }),
-    ).toHaveTextContent('Some months later');
-    expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
-    // then the game's name, still before the Marshal
+    // the cutter flies off first, then the game's name, then the time skip, and only then the Marshal
     expect(
       await screen.findByTestId('title-moment', undefined, { timeout: 6000 }),
     ).toBeInTheDocument();
     expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
     expect(
-      await screen.findByText('Choose who you fight with', undefined, { timeout: 10000 }),
+      await screen.findByText(/Some months later/, undefined, { timeout: 8000 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Choose who you fight with')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('Choose who you fight with', undefined, { timeout: 8000 }),
     ).toBeInTheDocument();
     expect(saved).toBeNull();
     const last = screen.getByRole('button', { name: 'Continue' });

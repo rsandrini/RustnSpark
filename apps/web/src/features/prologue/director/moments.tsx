@@ -7,10 +7,10 @@ const RESCUE_BEAT_MS = 4200;
 /** How long the screen takes to go black (Bob's last lines are spoken over it once it has). */
 const DARK_BEAT_MS = 1800;
 
-/** How long "Some months later" holds before the game's name. */
+/** How long "Some months later" holds before the Marshal speaks. */
 const LATER_BEAT_MS = 3400;
 
-/** How long the game's name stays on the black before the Marshal speaks (it is fully shown for about four seconds of it). */
+/** How long the game's name stays on the black before "Some months later" (it is fully shown for about four seconds of it). */
 const TITLE_BEAT_MS = 6000;
 
 /** How long the cutter takes to fly off once the pilot is aboard. */
@@ -89,15 +89,16 @@ export function DarkMoment({
 const BRAND = ['rust', 'n', 'spark'] as const;
 
 /**
- * The time skip after the rescue: a black card, "Some months later", then the game's name on black. `onReady` says both
+ * The time skip after the rescue: the game's name on black, then "Some months later". `onReady` says both
  * have been seen, so the Marshal may speak (the story ends after his lines).
  */
 export function LaterMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
   const { t } = useTranslation();
-  const [title, setTitle] = useState(false);
+  // the game's name first, then the time skip
+  const [title, setTitle] = useState(true);
   useEffect(() => {
     const timer = window.setTimeout(
-      () => (title ? onReady() : setTitle(true)),
+      () => (title ? setTitle(false) : onReady()),
       title ? TITLE_BEAT_MS : LATER_BEAT_MS,
     );
     return () => window.clearTimeout(timer);

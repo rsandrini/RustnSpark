@@ -325,7 +325,7 @@ body:has([data-testid='dialogue']) .moment-ping {
   height: 6px;
   background: #9fd0ff;
   box-shadow: 0 0 14px 3px rgba(159, 208, 255, 0.6);
-  animation: moment-ping-blink 3s ease-out infinite;
+  animation: moment-ping-blink 2.5s ease-out infinite;
 }
 .moment-ping-ring {
   width: 220px;
@@ -333,10 +333,10 @@ body:has([data-testid='dialogue']) .moment-ping {
   border: 1px solid rgba(159, 208, 255, 0.7);
   opacity: 0;
   scale: 0.05;
-  animation: moment-ping-ring 3s ease-out infinite;
+  animation: moment-ping-ring 2.5s ease-out infinite;
 }
 .moment-ping-ring.late {
-  animation-delay: 0.45s;
+  animation-delay: 0.4s;
 }
 @keyframes moment-ping-ring {
   0% {
