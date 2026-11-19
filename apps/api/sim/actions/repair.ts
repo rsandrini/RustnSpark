@@ -42,6 +42,7 @@ export function repairQuote(
   shares: { partId: string; points: number; cost: number }[];
   maintenanceCost: number;
 } {
+  const firstRepair = state.repairActions === 0;
   const facts = portFactsOf(snapshot, locationId, state.factionId);
   const parts = state.ship.parts;
   const byId = new Map(parts.map((part) => [part.id, part]));
@@ -52,6 +53,19 @@ export function repairQuote(
           const part = byId.get(target.partId);
           return part === undefined ? [] : [part];
         });
+
+  // A pilot's very first repair pays only a share of the workshop fee (economy.first_repair_fee_share).
+  const effectiveRules: GameRules = firstRepair
+    ? {
+        ...rules,
+        economy: {
+          ...rules.economy,
+          maintenance_per_tier: Math.round(
+            rules.economy.maintenance_per_tier * rules.economy.first_repair_fee_share,
+          ),
+        },
+      }
+    : rules;
 
   let points = 0;
   const costInput: { basePrice: number; fromCondition: number; toCondition: number }[] = [];
@@ -75,16 +89,21 @@ export function repairQuote(
 
   const tier = shipTier(
     installedParts(state.ship, catalogByType).map((part) => ({ basePrice: part.catalog.basePrice })),
-    rules,
+    effectiveRules,
   );
-  const raw = repairCost(costInput, tier, facts.isolation, facts.factionRelation, rules);
+  const raw = repairCost(costInput, tier, facts.isolation, facts.factionRelation, effectiveRules);
   const cost = points <= 0 ? 0 : Math.max(1, Math.round(raw));
-  const seconds = points * repairSecondsAt(snapshot, rules, locationId);
+  const secondsPerPoint = repairSecondsAt(snapshot, effectiveRules, locationId);
+  const seconds = Math.max(
+    points * secondsPerPoint,
+    firstRepair ? effectiveRules.economy.first_repair_min_seconds : 0,
+  );
   // The bill split: the parts' own share (the same formula with no maintenance fee), the rest is the fee.
-  const partsOnly = points <= 0 ? 0 : repairCost(costInput, 0, facts.isolation, facts.factionRelation, rules);
+  const partsOnly =
+    points <= 0 ? 0 : repairCost(costInput, 0, facts.isolation, facts.factionRelation, effectiveRules);
   const weights = costInput.map(
     (input) =>
-      Math.max(input.basePrice, rules.economy.repair_min_base_price) *
+      Math.max(input.basePrice, effectiveRules.economy.repair_min_base_price) *
       Math.max(0, input.toCondition - input.fromCondition),
   );
   const weightSum = weights.reduce((sum, weight) => sum + weight, 0);

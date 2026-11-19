@@ -12,6 +12,7 @@
  */
 import { PrismaClient } from '@prisma/client';
 import { validateGameRules } from '../../src/config/game-rules.schema.js';
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
 import type { GameRules } from '../../src/config/game-config.types.js';
 import { buildResolveInput, contextFromLive } from '../../src/missions/resolution-input.js';
 import { resolveMission } from '../../src/resolution/mission/mission.resolver.js';
@@ -43,6 +44,26 @@ interface ReplayRow {
     readonly cargo: unknown;
     readonly template: { readonly encounterPolicy: unknown };
   };
+}
+
+/** Old rules snapshots may lack keys added by newer migrations; fill them from defaults. */
+function mergeWithDefaults(stored: unknown): GameRules {
+  const base = structuredClone(GAME_CONFIG_DEFAULTS) as Record<string, unknown>;
+  if (typeof stored === 'object' && stored !== null) {
+    for (const [topKey, topValue] of Object.entries(stored)) {
+      if (
+        typeof topValue === 'object' &&
+        topValue !== null &&
+        typeof base[topKey] === 'object' &&
+        base[topKey] !== null
+      ) {
+        base[topKey] = { ...(base[topKey] as Record<string, unknown>), ...topValue };
+      } else {
+        base[topKey] = topValue;
+      }
+    }
+  }
+  return validateGameRules(base);
 }
 
 function flagValue(args: readonly string[], name: string): string | null {
@@ -128,6 +149,7 @@ function offerFromLog(row: ReplayRow, legs: DispatchSnapshot['legs']): Offer {
       danger: leg.danger,
       zone: leg.zone,
       env: leg.env,
+      ...(typeof leg.miningTicks === 'number' ? { miningTicks: leg.miningTicks } : {}),
     })),
     // The real payload: cargo drives mining rarity / escort client / race rivals, the template
     // policy drives the combat preset and the flee flag, and the reward drives minimumYield
@@ -199,21 +221,20 @@ async function main(): Promise<void> {
           process.stdout.write(`skip ${row.id}: rules snapshot ${row.rulesHash} missing\n`);
           continue;
         }
-        rules = validateGameRules(snapshotRow.rules);
+        rules = mergeWithDefaults(snapshotRow.rules);
         rulesByHash.set(row.rulesHash, rules);
       }
 
       // Game side: the frozen replay the worker and ReplayService run.
-      const gameOutcome = resolveMission(
-        buildResolveInput({
-          missionId: row.mission.id,
-          missionType: row.mission.type,
-          seed: row.seed,
-          snapshot: dispatch,
-          context,
-          rules,
-        }),
-      );
+      const gameInput = buildResolveInput({
+        missionId: row.mission.id,
+        missionType: row.mission.type,
+        seed: row.seed,
+        snapshot: dispatch,
+        context,
+        rules,
+      });
+      const gameOutcome = resolveMission(gameInput);
       const gameFuel = Math.max(0, dispatch.fuel - gameOutcome.fuel);
       const preCondition = new Map(dispatch.parts.map((part) => [part.id, part.condition]));
       const gameWear = gameOutcome.parts.reduce((sum, part) => {

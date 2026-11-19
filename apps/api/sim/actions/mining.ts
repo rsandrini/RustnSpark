@@ -9,6 +9,10 @@
  */
 import type { FillerWorld } from '../../src/missions/generator/template.filler.js';
 import { isMiningEligible, legForRoute } from '../../src/missions/generator/template.filler.js';
+import {
+  findsPerTick,
+  oreSpace,
+} from '../../src/resolution/mining/mining-yield.js';
 import { createRng } from '../core/rng.js';
 import { catalogIndex, installedParts, type PlayerState } from '../core/state.js';
 import type { Snapshot } from '../snapshot/types.js';
@@ -79,24 +83,35 @@ export function miningOffer(input: MiningOfferInput): Offer | null {
   const route = routes[0];
   if (route === undefined) return null;
   const danger = routes.reduce((peak, entry) => Math.max(peak, entry.danger), 0);
-  // A distance that makes the dig last `job_duration_seconds` for THIS ship (mission time).
   const sheet = deriveSheet(installedParts(state.ship, catalogIndex(snapshot)), snapshot.rules);
+  const locationsById = new Map(world.locations.map((entry) => [entry.id, entry]));
+  const base = legForRoute(route, locationsById, world);
+  // The dig runs in whole ticks of job_duration_seconds. A chemical ship pays fuel for every
+  // tick the resolver actually runs; an ion-only ship burns none (the resolver checks
+  // ship.sheet.fuelUse > 0). The bot digs until the ore space is full, capped by job_max_ticks.
+  const richness = snapshot.rules.mining.richness[base.env.id] ?? 0;
+  const perTick = findsPerTick({ min: sheet.min, condition: sheet.condition }, richness, snapshot.rules);
+  const space = oreSpace(sheet.crg, snapshot.rules);
+  const ticks =
+    perTick > 0
+      ? Math.min(snapshot.rules.mining.job_max_ticks, Math.ceil(space / perTick))
+      : snapshot.rules.mining.job_max_ticks;
+  // A distance that makes the dig last `ticks × job_duration_seconds` for THIS ship (mission time).
   const distance = Math.max(
     1,
     Math.round(
-      (snapshot.rules.mining.job_duration_seconds /
+      ((ticks * snapshot.rules.mining.job_duration_seconds) /
         (snapshot.rules.missions.duration_k * snapshot.rules.missions.time_scale)) *
         sheet.mob,
     ),
   );
-  const locationsById = new Map(world.locations.map((entry) => [entry.id, entry]));
-  const base = legForRoute(route, locationsById, world);
   const leg = {
     routeId: base.routeId ?? route.id,
     distance,
     danger,
     zone: location.zone,
     env: { ...base.env, fuelMult: MINING_FUEL_MULT },
+    miningTicks: ticks,
   };
   const seed = `mining|${SIM_PLAYER_ID}|${locationId}|${nowMs}`;
   const ores = oresOf(snapshot);

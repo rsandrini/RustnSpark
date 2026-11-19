@@ -291,7 +291,7 @@ describe('mining job', () => {
     });
   });
 
-  it('digs a free job that lasts the job duration, does not count as a mission, and yields ore', () => {
+  it('digs a free job that lasts multiple ticks, does not count as a mission, and yields ore', () => {
     const snapshot = econSnapshot();
     const ctx = missionContext(snapshot);
     const world = buildFillerWorld(snapshot);
@@ -306,6 +306,7 @@ describe('mining job', () => {
     if (offer === null) throw new Error('expected a mining offer');
     expect(offer.type).toBe('MINING');
     expect(offer.cargo).toMatchObject({ materialId: 'ore_iron', contracted: false });
+    expect(offer.legs[0]?.miningTicks).toBeGreaterThanOrEqual(1);
     const sheet = deriveSheet(installedParts(state.ship, ctx.catalogByType), ctx.rules);
     const { durationSeconds } = missionDuration({
       totalDistance: offer.legs[0]?.distance ?? 0,
@@ -320,9 +321,9 @@ describe('mining job', () => {
     if (!out.ok) return;
     expect(out.materialId).toBe('ore_iron');
     expect(out.durationSeconds).toBe(durationSeconds);
-    expect(
-      Math.abs(out.durationSeconds - ctx.rules.mining.job_duration_seconds),
-    ).toBeLessThanOrEqual(2);
+    // The bot digs until the ore space is full, capped by job_max_ticks, so the duration is a
+    // whole multiple of job_duration_seconds (not just one tick).
+    expect(out.durationSeconds % ctx.rules.mining.job_duration_seconds).toBe(0);
     expect(state.missionsDone).toBe(0);
     expect(state.miningDone).toBe(1);
     expect(state.ledger.total('reward')).toBe(0);

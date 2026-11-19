@@ -233,6 +233,7 @@ export function takeMission(
     danger: leg.danger,
     zone: leg.zone,
     env: leg.env,
+    ...(leg.miningTicks === undefined ? {} : { miningTicks: leg.miningTicks }),
   }));
   const totalDistance = legs.reduce((sum, leg) => sum + leg.distance, 0);
   const { durationSeconds } = missionDuration({

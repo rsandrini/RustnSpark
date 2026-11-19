@@ -128,6 +128,7 @@ describe('repair', () => {
     state.wallet = 10_000;
     const walletBefore = state.wallet;
     const clockBefore = state.clock.now();
+    // A new pilot's first repair waives the workshop fee and has a minimum duration.
     const expected = repairQuote(state, snapshot, rules, catalogByType, CHEAP_PORT);
     const result = repair(state, snapshot, rules, catalogByType, CHEAP_PORT);
     const points = state.ship.parts.length * 50;
@@ -135,8 +136,23 @@ describe('repair', () => {
     expect(result.cost).toBe(expected.cost);
     expect(state.wallet).toBe(walletBefore - expected.cost);
     expect(state.ledger.total('repair')).toBe(-expected.cost);
-    expect(state.clock.now() - clockBefore).toBe(points * repairSecondsAt(snapshot, rules, CHEAP_PORT));
+    expect(state.clock.now() - clockBefore).toBe(expected.seconds);
     expect(state.ship.parts.every((part) => part.condition === 100)).toBe(true);
+  });
+
+  it('waives the workshop fee on the first repair and applies the minimum duration', () => {
+    const state = starterPlayer(snapshot, 'luna');
+    for (const part of state.ship.parts) part.condition = 50;
+    state.wallet = 10_000;
+    const first = repairQuote(state, snapshot, rules, catalogByType, CHEAP_PORT);
+    // Simulate a prior repair: now the fee is no longer waived.
+    state.repairActions = 1;
+    const second = repairQuote(state, snapshot, rules, catalogByType, CHEAP_PORT);
+    // first_repair_fee_share is 0 in the fixture, so the maintenance fee is waived.
+    expect(first.cost).toBeLessThan(second.cost);
+    expect(first.maintenanceCost).toBe(0);
+    expect(second.maintenanceCost).toBeGreaterThan(0);
+    expect(first.seconds).toBeGreaterThanOrEqual(rules.economy.first_repair_min_seconds);
   });
 
   it('logs each part’s share of the bill: the shares and the maintenance fee add up to the cost', () => {
