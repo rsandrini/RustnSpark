@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import '../../styles/mission-result.css';
 import { noteResultCardShown } from './result-card-gate';
@@ -53,7 +54,8 @@ export function MissionResultPopup({
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onReport, onDismiss]);
-  return (
+  // on the page body: the report's own panels would otherwise box a fixed layer inside them
+  return createPortal(
     <div className="mresult-layer" data-testid="mission-result" data-dialogue-free="">
       <div className="mresult-backdrop" aria-hidden="true" />
       <div className={`mresult ${tone}`} role="alertdialog" aria-label={outcome}>
@@ -102,6 +104,7 @@ export function MissionResultPopup({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
