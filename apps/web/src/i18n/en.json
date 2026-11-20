@@ -562,6 +562,7 @@
       "shield": "Shield",
       "armor": "Armor",
       "tuneEngines": "Engine tuning",
+      "pushedBadge": "▲ {{value}}%",
       "pushed": "Engines over their listed power: chemical {{chem}}% · ion {{ion}}%"
     },
     "summary": {

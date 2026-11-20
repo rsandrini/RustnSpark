@@ -44,7 +44,6 @@ type Tone = 'ok' | 'warn' | 'bad';
 
 // The icon glyphs on the headline tiles; their meaning is in the buttons' aria-labels.
 const GEAR_GLYPH = '\u2699';
-const PUSH_GLYPH = '\u25B2';
 const WARN_GLYPH = '\u26A0';
 
 const GROUP_ORDER = ['combat', 'power', 'propulsion', 'cargo', 'hull'] as const;
@@ -347,7 +346,12 @@ export function ShipSheetPanel({
                     ion: enginePercent(engineLevels.ion, i18n.language),
                   })}
                 >
-                  {`${PUSH_GLYPH} ${enginePercent(Math.max(engineLevels.chem, engineLevels.ion), i18n.language)}%`}
+                  {t('hangar.headline.pushedBadge', {
+                    value: enginePercent(
+                      Math.max(engineLevels.chem, engineLevels.ion),
+                      i18n.language,
+                    ),
+                  })}
                 </span>
               )}
               {onTuneEngines !== undefined && (
