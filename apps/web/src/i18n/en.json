@@ -2128,14 +2128,15 @@
       "noDamage": "none",
       "damageValue": "Shield {{shield}} · armor {{armor}} · hull {{hull}}",
       "note": "Damage counts fights and the journey itself. The planned burn comes from the distance and the terrain; a failing tank pump wastes more on top.",
-      "planned": "planned {{fuel}}",
+      "planned": "planned burn {{fuel}}",
       "pump": "pump waste {{fuel}}",
       "leak": "leak {{fuel}}",
       "needed": "needed {{needed}}, had {{had}}",
-      "tankMove": "tank {{before}} → {{after}}",
+      "tankMove": "Started the leg with {{before}} in the tank, {{after}} left.",
       "key": "Bar: planned burn, pump waste, leak.",
       "unit": "{{value}} units",
-      "used": "Fuel used: {{fuel}}"
+      "used": "Fuel used: {{fuel}}",
+      "madeOf": "Made up of:"
     }
   },
   "transit": {

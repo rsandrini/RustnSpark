@@ -2128,14 +2128,15 @@
       "noDamage": "nenhum",
       "damageValue": "Escudo {{shield}} · blindagem {{armor}} · casco {{hull}}",
       "note": "O dano conta combates e a própria viagem. O gasto previsto vem da distância e do terreno; uma bomba do tanque falhando desperdiça mais além disso.",
-      "planned": "previsto {{fuel}}",
-      "pump": "bomba {{fuel}}",
+      "planned": "gasto previsto {{fuel}}",
+      "pump": "desperdício da bomba {{fuel}}",
       "leak": "vazamento {{fuel}}",
       "needed": "precisou de {{needed}}, tinha {{had}}",
-      "tankMove": "tanque {{before}} → {{after}}",
+      "tankMove": "Começou o trecho com {{before}} no tanque, restaram {{after}}.",
       "key": "Barra: gasto previsto, desperdício da bomba, vazamento.",
       "unit": "{{value}} unidades",
-      "used": "Combustível utilizado: {{fuel}}"
+      "used": "Combustível utilizado: {{fuel}}",
+      "madeOf": "Composto por:"
     }
   },
   "transit": {

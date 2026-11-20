@@ -285,8 +285,8 @@ describe('report (S10.8)', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'By leg' }));
     const table = await screen.findByTestId('report-legs');
     expect(table).toHaveTextContent('600 units in the tank');
-    expect(table).toHaveTextContent('tank 600 units → 450 units');
-    expect(table).toHaveTextContent('planned 102 units');
+    expect(table).toHaveTextContent('Started the leg with 600 units in the tank, 450 units left');
+    expect(table).toHaveTextContent('planned burn 102 units');
     expect(table).toHaveTextContent('Fuel used: 150 units');
     expect(table).toHaveTextContent('pump waste 48 units');
     expect(table).toHaveTextContent('Shield 5 · armor 2 · hull 1');

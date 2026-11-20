@@ -51,28 +51,35 @@ export function ReportLegs({ stats }: { stats: ReportStats }) {
                     <span className="legs-seg pump" style={{ width: share(pump) }} />
                     <span className="legs-seg leak" style={{ width: share(leak) }} />
                   </div>
-                  <div className="legs-line">
-                    {row.fuelBefore !== null && row.fuelBefore !== undefined && (
+                  {dry ? (
+                    <div className="legs-line">
                       <span>
-                        {dry
-                          ? t('report.legs.needed', {
-                              needed: fuel(row.fuelNeeded ?? base + pump),
-                              had: fuel(row.fuelBefore),
-                            })
-                          : t('report.legs.tankMove', {
-                              before: fuel(row.fuelBefore),
-                              after: fuel(row.fuelAfter ?? 0),
-                            })}
+                        {t('report.legs.needed', {
+                          needed: fuel(row.fuelNeeded ?? base + pump),
+                          had: fuel(row.fuelBefore ?? 0),
+                        })}
                       </span>
-                    )}
-                    {dry && <b className="legs-ran-dry">{t('report.legs.ranDry')}</b>}
-                  </div>
-                  {!dry && row.fuelBase != null && (
-                    <div className="legs-used">
-                      {t('report.legs.used', { fuel: fuel(base + pump + leak) })}
+                      <b className="legs-ran-dry">{t('report.legs.ranDry')}</b>
                     </div>
+                  ) : (
+                    <>
+                      {row.fuelBase != null && (
+                        <div className="legs-used">
+                          {t('report.legs.used', { fuel: fuel(base + pump + leak) })}
+                        </div>
+                      )}
+                      {row.fuelBefore != null && (
+                        <div className="sub">
+                          {t('report.legs.tankMove', {
+                            before: fuel(row.fuelBefore),
+                            after: fuel(row.fuelAfter ?? 0),
+                          })}
+                        </div>
+                      )}
+                    </>
                   )}
                   <div className="legs-parts">
+                    <span>{t('report.legs.madeOf')}</span>
                     {row.fuelBase != null && (
                       <span className="legs-part base">
                         {t('report.legs.planned', { fuel: fuel(row.fuelBase) })}
