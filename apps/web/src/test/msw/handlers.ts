@@ -305,6 +305,7 @@ export const ship = (): ShipResponse => ({
           dueAt: rescueDueAt,
           baseId: 'ceres',
           baseDistance: 300,
+          cause: { leg: 3, leakLost: 182, pumpWasted: 0 },
         }
       : null,
   layout: starterLayout(),

@@ -28,6 +28,7 @@ const onboarded = () =>
 
 describe('rescue (S8.6 / S10.9)', () => {
   beforeEach(() => {
+    window.sessionStorage.clear();
     resetEconomyState();
     server.use(onboarded());
   });
@@ -37,18 +38,21 @@ describe('rescue (S8.6 / S10.9)', () => {
     setShipStatus('ADRIFT');
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
 
-    const banner = await screen.findByTestId('rescue-banner');
-    expect(banner).toHaveTextContent('Floating in space');
-    expect(banner).toHaveTextContent('Nearest base: Porto Ceres, 300 away');
+    // a floating ship opens its own big popup: why it ran dry, and the two ways out
+    const popup = await screen.findByRole('dialog', { name: 'Floating in space' });
+    expect(popup).toHaveTextContent('Nearest base: Porto Ceres, 300 away');
+    expect(within(popup).getByTestId('floating-why')).toHaveTextContent(
+      'A leaking tank lost 182 fuel',
+    );
+    expect(within(popup).getByTestId('floating-why')).toHaveTextContent('ran dry on leg 3');
     // the top bar says where the ship is, not "docked"
     expect(screen.getAllByText('Floating in space').length).toBeGreaterThan(1);
-    expect(
-      within(banner).getByRole('button', { name: /Wait for the rescue — 400 ¢/ }),
-    ).toBeInTheDocument();
-    fireEvent.click(within(banner).getByRole('button', { name: 'Rescue now — 700 ¢' }));
+    expect(within(popup).getByRole('button', { name: /Wait for the rescue/ })).toHaveTextContent(
+      '400 ¢',
+    );
+    fireEvent.click(within(popup).getByRole('button', { name: /Rescue now/ }));
 
     // Nothing is charged until the confirmation is accepted.
-    const popup = await screen.findByRole('dialog', { name: 'Floating in space' });
     expect(popup).toHaveTextContent('you pay 700 ¢');
     expect(economyState.wallet).toBe(4820);
     fireEvent.click(within(popup).getByRole('button', { name: 'Rescue now' }));
@@ -65,18 +69,15 @@ describe('rescue (S8.6 / S10.9)', () => {
     setRescueWaitMs(1500);
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
 
-    const banner = await screen.findByTestId('rescue-banner');
-    fireEvent.click(within(banner).getByRole('button', { name: /Wait for the rescue — 400 ¢/ }));
     const popup = await screen.findByRole('dialog', { name: 'Floating in space' });
+    fireEvent.click(within(popup).getByRole('button', { name: /Wait for the rescue/ }));
     expect(popup).toHaveTextContent('You pay 400 ¢ when it arrives');
     fireEvent.click(within(popup).getByRole('button', { name: 'Wait for the rescue' }));
 
-    expect(await screen.findByTestId('rescue-waiting')).toHaveTextContent('Rescue on its way');
+    expect((await screen.findAllByTestId('rescue-waiting'))[0]).toHaveTextContent(
+      'Rescue on its way',
+    );
     expect(economyState.wallet).toBe(4820);
-    // waiting once is enough: the button is off while the timer runs
-    expect(
-      within(banner).getByRole('button', { name: /Wait for the rescue — 400 ¢/ }),
-    ).toBeDisabled();
 
     // the time is up: the top bar asks the server to let the rescue arrive
     await waitFor(() => expect(screen.queryByTestId('rescue-banner')).toBeNull(), {
@@ -98,6 +99,21 @@ describe('rescue (S8.6 / S10.9)', () => {
     expect(await screen.findByTestId('rescue-banner')).toBeInTheDocument();
   });
 
+  it('closing the popup leaves a compact bar that opens it again', async () => {
+    window.sessionStorage.clear();
+    setShipStatus('ADRIFT');
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const popup = await screen.findByRole('dialog', { name: 'Floating in space' });
+    fireEvent.click(within(popup).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    fireEvent.click(
+      within(await screen.findByTestId('rescue-banner')).getByRole('button', {
+        name: 'Rescue options',
+      }),
+    );
+    expect(await screen.findByRole('dialog', { name: 'Floating in space' })).toBeInTheDocument();
+  });
+
   it('translates a rescue failure instead of showing the generic message', async () => {
     setShipStatus('ADRIFT');
     server.use(
@@ -109,8 +125,8 @@ describe('rescue (S8.6 / S10.9)', () => {
       ),
     );
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    fireEvent.click(await screen.findByRole('button', { name: 'Rescue now — 700 ¢' }));
     const popup = await screen.findByRole('dialog');
+    fireEvent.click(within(popup).getByRole('button', { name: /Rescue now/ }));
     fireEvent.click(within(popup).getByRole('button', { name: 'Rescue now' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('The ship is on a mission.');
   });

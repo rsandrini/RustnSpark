@@ -608,16 +608,18 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
               {t('report.outcome.adriftHint')}
             </p>
           )}
-          {outcome === 'adrift' && stats.dry != null && (
+          {outcome === 'adrift' && (stats.dry != null || stats.fuelLost > 0) && (
             <ul className="debrief-why" data-testid="adrift-why">
-              <li>
-                {t('report.outcome.adriftWhy.short', {
-                  leg: stats.dry.leg,
-                  needed: number(stats.dry.needed),
-                  had: number(stats.dry.had),
-                })}
-              </li>
-              {stats.dry.wasted > 0 && (
+              {stats.dry != null && (
+                <li>
+                  {t('report.outcome.adriftWhy.short', {
+                    leg: stats.dry.leg,
+                    needed: number(stats.dry.needed),
+                    had: number(stats.dry.had),
+                  })}
+                </li>
+              )}
+              {stats.dry != null && stats.dry.wasted > 0 && (
                 <li>{t('report.outcome.adriftWhy.pump', { wasted: number(stats.dry.wasted) })}</li>
               )}
               {stats.fuelLost > 0 && (

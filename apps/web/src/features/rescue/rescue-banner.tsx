@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
@@ -7,13 +7,11 @@ import { useIntentKey } from '../../api/intent-key';
 import type { RescueResponse, ShipResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { Countdown } from '../../ui/Countdown';
-import { Popup } from '../../ui/Popup';
+import { FloatingPopup } from './floating-popup';
 import { useAuthContext } from '../auth/auth.context';
 import { useWorld } from '../ship/use-world';
 
 type Mode = 'now' | 'wait';
-
-const SECONDS_PER_MINUTE = 60;
 
 /**
  * S8.6 in the UI: a ship that ran out of fuel floats in space and can do nothing until it is
@@ -48,6 +46,7 @@ export function RescueBanner() {
     onSuccess: (response) => {
       intent.clear();
       setConfirming(null);
+      setPopupOpen(false);
       setError(null);
       setNotice(
         response.mode === 'wait'
@@ -60,6 +59,7 @@ export function RescueBanner() {
     },
     onError: (failure) => {
       setConfirming(null);
+      setPopupOpen(false);
       setError(errorText(t, failure, t('error.unexpected')));
     },
   });
@@ -70,6 +70,29 @@ export function RescueBanner() {
   const baseName =
     base === undefined ? (options?.baseId ?? '') : pickLocalized(base.displayName, i18n.language);
   const waiting = options?.dueAt != null;
+
+  // The big popup opens by itself the first time a floating ship is seen in this session; closing it leaves the bar.
+  const seenKey = `rs.floating.seen.${ship?.id ?? ''}`;
+  const [popupOpen, setPopupOpen] = useState(false);
+  useEffect(() => {
+    if (!adrift || ship === undefined) return;
+    try {
+      if (window.sessionStorage.getItem(seenKey) === null) setPopupOpen(true);
+    } catch {
+      setPopupOpen(true);
+    }
+    // only when the ship turns up adrift
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adrift, ship?.id]);
+  const closePopup = () => {
+    setPopupOpen(false);
+    setConfirming(null);
+    try {
+      window.sessionStorage.setItem(seenKey, '1');
+    } catch {
+      // the popup just opens again next time
+    }
+  };
 
   return (
     <>
@@ -84,72 +107,36 @@ export function RescueBanner() {
         </p>
       )}
       {adrift && ship !== undefined && (
-        <section className="stack rescue" data-testid="rescue-banner">
-          <h2>{t('rescue.title')}</h2>
-          <p>{t('rescue.body')}</p>
-          {options !== null && (
-            <p className="sub">
-              {t('rescue.nearestBase', { base: baseName, distance: options.baseDistance })}
-            </p>
-          )}
+        <section className="floatbar" data-testid="rescue-banner">
+          <span>
+            <b>{t('rescue.title')}</b> {t('rescue.bar')}
+          </span>
           {waiting && options?.dueAt != null && (
-            <p className="notice" role="status" data-testid="rescue-waiting">
+            <span className="notice" role="status" data-testid="rescue-waiting">
               {t('rescue.waiting')}{' '}
               <Countdown
                 until={options.dueAt}
                 onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
               />
-            </p>
+            </span>
           )}
-          <div className="actions">
-            <button
-              type="button"
-              className="btn"
-              disabled={rescue.isPending || waiting || options === null}
-              onClick={() => setConfirming('wait')}
-            >
-              {t('rescue.wait', {
-                cost: options?.waitCost ?? 0,
-                minutes: Math.max(1, Math.round((options?.waitSeconds ?? 0) / SECONDS_PER_MINUTE)),
-              })}
-            </button>
-            <button
-              type="button"
-              className="btn primary"
-              disabled={rescue.isPending || options === null}
-              onClick={() => setConfirming('now')}
-            >
-              {t('rescue.now', { cost: options?.nowCost ?? 0 })}
-            </button>
-          </div>
-          <Popup
-            open={confirming !== null}
-            title={t('rescue.title')}
-            onClose={() => setConfirming(null)}
-          >
-            {confirming !== null && options !== null && (
-              <div className="stack">
-                <p>
-                  {confirming === 'wait'
-                    ? t('rescue.confirmWait', {
-                        cost: options.waitCost,
-                        base: baseName,
-                        minutes: Math.max(1, Math.round(options.waitSeconds / SECONDS_PER_MINUTE)),
-                      })
-                    : t('rescue.confirmNow', { cost: options.nowCost, base: baseName })}
-                </p>
-                <button
-                  type="button"
-                  className="btn primary"
-                  disabled={rescue.isPending}
-                  onClick={() => rescue.mutate({ shipId: ship.id, mode: confirming })}
-                >
-                  {confirming === 'wait' ? t('rescue.waitAction') : t('rescue.nowAction')}
-                </button>
-              </div>
-            )}
-          </Popup>
+          <button type="button" className="btn primary" onClick={() => setPopupOpen(true)}>
+            {t('rescue.popup.open')}
+          </button>
         </section>
+      )}
+      {adrift && ship !== undefined && options !== null && (
+        <FloatingPopup
+          open={popupOpen}
+          onClose={closePopup}
+          rescue={options}
+          baseName={baseName}
+          confirming={confirming}
+          onPick={setConfirming}
+          onConfirm={(mode) => rescue.mutate({ shipId: ship.id, mode })}
+          busy={rescue.isPending}
+          onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
+        />
       )}
     </>
   );

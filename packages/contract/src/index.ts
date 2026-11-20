@@ -597,6 +597,11 @@ export const ShipResponseSchema = z.object({
       /** The base the ship is towed to, and how far it is from where the ship floats. */
       baseId: z.string(),
       baseDistance: z.number(),
+      /** Why the tank ran dry (read from the run that left the ship adrift); null when unknown. */
+      cause: z
+        .object({ leg: z.number(), leakLost: z.number(), pumpWasted: z.number() })
+        .nullable()
+        .optional(),
     })
     .nullable(),
   /** What the ship is doing now: drives the animated ship stage. */

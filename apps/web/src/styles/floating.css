@@ -1,0 +1,166 @@
+/* The floating ship's popup: a ship drifting dark among the stars, what happened, the two ways out. */
+.modal.floatpop {
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+.floatpop-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 150px;
+  margin: 4px 0 8px;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 60%, #0e1420, #05070b 75%);
+  overflow: hidden;
+}
+.floatpop-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20px 30px, #fff 60%, transparent 62%),
+    radial-gradient(1px 1px at 90px 100px, #cfd6e4 60%, transparent 62%),
+    radial-gradient(2px 2px at 170px 50px, #f3d9a0 60%, transparent 62%),
+    radial-gradient(1px 1px at 240px 120px, #fff 60%, transparent 62%),
+    radial-gradient(1.5px 1.5px at 330px 40px, #cfd6e4 60%, transparent 62%);
+  background-size: 360px 150px;
+  opacity: 0.8;
+  animation: floatpop-twinkle 4s ease-in-out infinite alternate;
+}
+.floatpop-ship {
+  position: relative;
+  width: 220px;
+  height: 110px;
+}
+.floatpop-hull {
+  fill: #2a3242;
+  stroke: #5b6a85;
+  stroke-width: 2;
+}
+.floatpop-fin {
+  fill: #232b39;
+  stroke: #46526b;
+  stroke-width: 2;
+}
+.floatpop-glass {
+  fill: #151a24;
+  stroke: #5b6a85;
+  stroke-width: 2;
+}
+.floatpop-nozzle {
+  fill: #11141b;
+  stroke: #46526b;
+  stroke-width: 1.5;
+}
+.floatpop-beacon {
+  fill: #e5594f;
+  animation: floatpop-beacon 1.6s ease-in-out infinite;
+}
+.floatpop-drift {
+  transform-origin: 110px 55px;
+  animation: floatpop-drift 9s ease-in-out infinite alternate;
+}
+.floatpop-lead {
+  margin: 4px 0;
+}
+.floatpop-why {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--bad, #e5594f) 10%, transparent);
+}
+.floatpop-why h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+.floatpop-why p {
+  margin: 4px 0;
+}
+.floatpop-why ul {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+.floatpop-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.floatpop-option {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  min-height: 44px;
+  padding: 12px 10px;
+  border: 1px solid var(--rule-3, #2a3140);
+  border-radius: 12px;
+  background: var(--paper-2, #151a23);
+  color: var(--ink, #f3f4f6);
+  font: inherit;
+  cursor: pointer;
+}
+.floatpop-option.primary {
+  border-color: var(--brass, #d4a24c);
+}
+.floatpop-option:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.floatpop-price {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.floatpop-option small {
+  color: var(--muted, #9aa3b2);
+}
+.floatpop-confirm {
+  margin-top: 8px;
+}
+@media (max-width: 480px) {
+  .floatpop-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@keyframes floatpop-drift {
+  from {
+    transform: translate(-10px, 4px) rotate(-5deg);
+  }
+  to {
+    transform: translate(10px, -6px) rotate(4deg);
+  }
+}
+@keyframes floatpop-beacon {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes floatpop-twinkle {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0.9;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .floatpop-drift,
+  .floatpop-beacon,
+  .floatpop-stars {
+    animation: none;
+  }
+}
+/* the compact bar left behind once the popup is closed */
+.floatbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--bad, #e5594f);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--bad, #e5594f) 10%, transparent);
+}

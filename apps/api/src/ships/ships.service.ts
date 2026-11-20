@@ -123,6 +123,17 @@ export interface RescueOptions {
   /** The base the ship is towed to and how far it is from where the ship floats. */
   baseId: string;
   baseDistance: number;
+  /** Why the tank ran dry, read from the run that left the ship adrift; null when that run is not found. */
+  cause: DryCause | null;
+}
+
+export interface DryCause {
+  /** The leg (1-based) where the fuel ran out. */
+  leg: number;
+  /** Fuel the tank leaked away on the run (tank failures). */
+  leakLost: number;
+  /** Fuel a failing tank pump wasted on the leg that ran dry. */
+  pumpWasted: number;
 }
 
 /** What the ship is doing now (flying, scavenging, repairing or idle). */
@@ -810,6 +821,7 @@ export class ShipsService implements OnModuleInit {
   /** Where an adrift ship floats and what its rescue would cost (shared with the rescue itself). */
   async adriftOf(
     ship: {
+      readonly id: string;
       readonly ownerPlayerId: string;
       readonly currentLocationId: string;
       readonly floatRouteId: string | null;
@@ -862,8 +874,36 @@ export class ShipsService implements OnModuleInit {
         dueAt: ship.rescueAt === null ? null : ship.rescueAt.toISOString(),
         baseId: plan.baseId,
         baseDistance: Math.round(plan.distance),
+        cause: await this.dryCauseOf(ship.id),
       },
       plan,
+    };
+  }
+
+  /** Why the ship ran dry: read back from the stored run of the mission that left it adrift. */
+  private async dryCauseOf(shipId: string): Promise<DryCause | null> {
+    const row = await this.prisma.missionLog.findFirst({
+      where: { outcome: 'adrift', mission: { shipId } },
+      orderBy: { createdAt: 'desc' },
+      select: { legs: true },
+    });
+    const events = ((row?.legs ?? {}) as { events?: unknown }).events;
+    if (!Array.isArray(events)) return null;
+    const rows = events as Array<{
+      type?: string;
+      leg?: number;
+      fuelLost?: number;
+      dry?: { wasted?: number };
+    }>;
+    const dry = rows.find((event) => event.type === 'fuel_exhausted');
+    if (dry === undefined) return null;
+    return {
+      leg: (dry.leg ?? 0) + 1,
+      leakLost: rows.reduce(
+        (sum, event) => sum + (event.type === 'tank' ? (event.fuelLost ?? 0) : 0),
+        0,
+      ),
+      pumpWasted: dry.dry?.wasted ?? 0,
     };
   }
 
