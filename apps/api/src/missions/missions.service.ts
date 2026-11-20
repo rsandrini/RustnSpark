@@ -31,6 +31,7 @@ import { rawMobility } from '../ships/sheet.deriver.js';
 import { raceWindow } from '../resolution/race/race.resolver.js';
 import { BoardService, type BoardMission } from './board.service.js';
 import { rebuildDispatchData, type DispatchJobData } from './dispatch.service.js';
+import { JOB_TEMPLATE_IDS } from './waiting-mission.js';
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { bridgeRarityOf } from '../economy/reward.calculator.js';
@@ -363,8 +364,10 @@ export class MissionsService implements OnModuleInit {
       orderBy: [{ expiresAt: 'asc' }, { id: 'asc' }],
     });
     if (rows.length === 0) return [];
-    // a search on foot can run beside a flight: the flight (or any other mission) comes first, as the screens expect
-    rows.sort((a, b) => Number(a.type === 'SCAVENGE') - Number(b.type === 'SCAVENGE'));
+    // A search or a mining job can run while a mission waits to start: the mission comes first (as the screens
+    // expect), the job after it.
+    const isJob = (row: { templateId: string }) => JOB_TEMPLATE_IDS.includes(row.templateId);
+    rows.sort((a, b) => Number(isJob(a)) - Number(isJob(b)));
     const [windows, templates] = await Promise.all([
       this.legWindows(rows.map((row) => row.id)),
       this.prisma.missionTemplate.findMany({
@@ -388,6 +391,7 @@ export class MissionsService implements OnModuleInit {
       return {
         ...row,
         info: infoById.get(row.id)!,
+        isJob: isJob(row),
         legWindows: windows.get(row.id) ?? [],
         giver: infoById.get(row.id)?.giver ?? null,
         brief: {

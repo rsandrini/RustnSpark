@@ -256,25 +256,32 @@ describe('missions data model (S6.1)', () => {
     expect(inTransit).toContain('WHERE');
     expect(inTransit).toContain('IN_TRANSIT');
 
-    const oneActive = defs.get('MissionInstance_one_active_player_idx') ?? '';
-    expect(oneActive).not.toBe('');
-    expect(oneActive).toContain('CREATE UNIQUE INDEX');
-    expect(oneActive).toContain('(playerId)');
-    expect(oneActive).toContain('WHERE');
-    expect(oneActive).toContain('ACCEPTED');
-    expect(oneActive).toContain('IN_TRANSIT');
-    expect(oneActive).toContain('RESOLVING');
-    expect(oneActive).not.toContain('HELD');
+    const inProgress = defs.get('MissionInstance_one_in_progress_idx') ?? '';
+    expect(inProgress).toContain('CREATE UNIQUE INDEX');
+    expect(inProgress).toContain('(playerId)');
+    expect(inProgress).toContain('IN_TRANSIT');
+    expect(inProgress).toContain('RESOLVING');
+    expect(inProgress).not.toContain('ACCEPTED');
+    expect(inProgress).not.toContain('HELD');
+
+    const waiting = defs.get('MissionInstance_one_waiting_idx') ?? '';
+    expect(waiting).toContain('CREATE UNIQUE INDEX');
+    expect(waiting).toContain('(playerId)');
+    expect(waiting).toContain('ACCEPTED');
+    expect(waiting).not.toContain('IN_TRANSIT');
   });
 
-  it('allows at most one active mission per player while history, holds, and the board stay free', async () => {
+  it('allows at most one mission in progress and one waiting per player while history, holds, and the board stay free', async () => {
     const p = await seedPrerequisites();
 
+    // one waiting (accepted) mission, and a second one is refused
     await createMission(p, { playerId: p.playerId, status: 'ACCEPTED' });
-
     await expect(createMission(p, { playerId: p.playerId, status: 'ACCEPTED' })).rejects.toThrow(
       /unique constraint/i,
     );
+    // a mission in progress can run beside the waiting one (a search while a mission waits)...
+    await createMission(p, { playerId: p.playerId, status: 'IN_TRANSIT' });
+    // ...but only one in progress at a time
     await expect(createMission(p, { playerId: p.playerId, status: 'IN_TRANSIT' })).rejects.toThrow(
       /unique constraint/i,
     );

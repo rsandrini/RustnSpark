@@ -76,8 +76,6 @@ export interface ShipActivity {
   readonly repairUntil: string | null;
   /** A mining contract flies out and then digs: when the flight ends (the dig follows until `until`); null otherwise. */
   readonly flightUntil?: string | null;
-  /** A search on foot under way beside the flight: when it ends; null otherwise. */
-  readonly footUntil?: string | null;
 }
 
 export interface ShipResponse {
@@ -166,8 +164,6 @@ export interface ShipActivity {
   readonly repairUntil: string | null;
   /** A mining contract flies out and then digs: when the flight ends (the dig follows until `until`); null otherwise. */
   readonly flightUntil?: string | null;
-  /** A search on foot under way beside the flight: when it ends; null otherwise. */
-  readonly footUntil?: string | null;
 }
 
 export interface PreviewResponse {
@@ -1017,8 +1013,8 @@ export class ShipsService implements OnModuleInit {
    * mission and repair rows, so it can never disagree with them.
    */
   private async activityOf(ship: Ship): Promise<ShipActivity> {
-    const [missions, repair] = await Promise.all([
-      this.prisma.missionInstance.findMany({
+    const [mission, repair] = await Promise.all([
+      this.prisma.missionInstance.findFirst({
         where: { shipId: ship.id, status: { in: ['IN_TRANSIT', 'RESOLVING'] } },
         select: { id: true, type: true, arrivalAt: true, cargo: true, legs: true },
       }),
@@ -1027,13 +1023,7 @@ export class ShipsService implements OnModuleInit {
         select: { completesAt: true },
       }),
     ]);
-    // A search on foot can run beside a flight: the flight is what the ship is doing, the search is the pilot's own
-    const mission = missions.find((entry) => (entry.type as string) !== 'SCAVENGE') ?? missions[0];
-    const footJob =
-      mission !== undefined && (mission.type as string) !== 'SCAVENGE'
-        ? missions.find((entry) => (entry.type as string) === 'SCAVENGE')
-        : undefined;
-    if (mission !== undefined) {
+    if (mission !== null) {
       // A free mining job (cargo.contracted === false) digs where the ship already is, like
       // scavenging; a contracted mining mission flies out to the field and stays 'flying'.
       const cargo = mission.cargo as { contracted?: unknown; digSeconds?: unknown } | null;
@@ -1059,7 +1049,6 @@ export class ShipsService implements OnModuleInit {
         until: mission.arrivalAt?.toISOString() ?? null,
         missionId: mission.id,
         repairUntil: repair?.completesAt.toISOString() ?? null,
-        footUntil: footJob?.arrivalAt?.toISOString() ?? null,
         flightUntil:
           digSeconds === null || mission.arrivalAt === null
             ? null

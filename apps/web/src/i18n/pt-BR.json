@@ -1702,8 +1702,7 @@
         "fuelNone": "Nenhum"
       },
       "noFuel": "Combustível insuficiente para vasculhar com a nave: precisa de {{units}} unidades e o tanque tem {{have}}. Reabasteça antes, ou vasculhe a pé.",
-      "shipAway": "Sua nave está em missão, mas você ainda pode vasculhar o lugar a pé.",
-      "footRunning": "Vasculhando a pé — termina em"
+      "pastDeadline": "Esta busca terminaria depois de a sua missão em espera precisar começar."
     },
     "mine": {
       "title": "Minerar o campo",
@@ -1721,7 +1720,8 @@
         "fillValue": "{{time}}",
         "fuel": "Combustível",
         "fuelValue": "até {{units}}"
-      }
+      },
+      "pastDeadline": "Esta mineração terminaria depois de a sua missão em espera precisar começar: escolha menos ticks."
     },
     "repairHelp": "Mova um controle para escolher até onde consertar cada peça. Nada é consertado até você mexer.",
     "repairNoChange": "Sem mudança",
@@ -2193,7 +2193,9 @@
     "workingAt": {
       "scavenging": "Vasculhando em {{place}}",
       "mining": "Minerando em {{place}}"
-    }
+    },
+    "jobRunning": "Uma busca ou mineração está em andamento — termina em",
+    "jobRunningHint": "A missão pode começar quando ela terminar."
   },
   "board": {
     "details": "Detalhes",
@@ -2578,7 +2580,8 @@
     "REPORT_LIMIT": "Você já enviou denúncias suficientes por hoje. Obrigado.",
     "REPORT_ALREADY_REVIEWED": "Esta denúncia já foi analisada.",
     "MINING_TICKS_INVALID": "Essa duração de mineração não é permitida.",
-    "PART_IN_REPAIR": "Essa peça ainda está em reparo: espere a oficina terminar."
+    "PART_IN_REPAIR": "Essa peça ainda está em reparo: espere a oficina terminar.",
+    "JOB_PAST_START_DEADLINE": "Isso terminaria depois de a sua missão em espera precisar começar. Comece a missão antes, ou escolha algo mais curto."
   },
   "language": {
     "label": "Idioma",
@@ -3094,5 +3097,13 @@
     "nextShip": "Nave",
     "doneRefuel": "Abastecido",
     "doneSave": "Salvo"
+  },
+  "pending": {
+    "waiting": "Missão esperando: {{title}}",
+    "startBefore": "comece antes de",
+    "open": "Abrir",
+    "searching": "Vasculhando — termina em",
+    "mining": "Minerando — termina em",
+    "missionWaits": "Sua missão espera e pode começar depois."
   }
 }

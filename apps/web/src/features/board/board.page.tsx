@@ -20,6 +20,7 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
 import { RescueBanner } from '../rescue/rescue-banner';
+import { PendingStrip } from '../ship/pending-strip';
 import { usePrologueMode } from '../prologue/prologue-mode';
 
 const BOARD_REFETCH_MS = 15000;
@@ -235,6 +236,8 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
       )}
 
       <RescueBanner />
+
+      <PendingStrip />
 
       {/* Filter chips, same layout as the Parts/Store side panel's filters (owner request) —
           small pill buttons instead of a tab strip, which these never really were (picking one

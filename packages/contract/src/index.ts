@@ -613,8 +613,6 @@ export const ShipResponseSchema = z.object({
     repairUntil: IsoDate.nullable(),
     /** A mining contract flies out and then digs: when the flight ends (the dig follows until `until`). */
     flightUntil: IsoDate.nullable().optional(),
-    /** A search on foot under way beside the flight: when it ends. */
-    footUntil: IsoDate.nullable().optional(),
   }),
   routeCoverage: RouteCoverageSchema.nullable(),
 });
@@ -973,6 +971,8 @@ export const ActiveMissionSchema = MissionInstanceDataSchema.extend({
   giver: GiverRefSchema.nullable().optional(),
   /** The board card's figures for this mission (time, fuel, requirements, material, race). */
   info: OfferInfoSchema.optional(),
+  /** A search or a free mining job started at a port (not a mission from the board). */
+  isJob: z.boolean().optional(),
 });
 export type ActiveMission = z.infer<typeof ActiveMissionSchema>;
 

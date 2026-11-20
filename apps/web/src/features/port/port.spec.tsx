@@ -11,7 +11,6 @@ import {
   setWallet,
   resetEconomyState,
   setShipActivity,
-  setShipStatus,
   repairShop,
   ionShip,
   ship,
@@ -323,33 +322,6 @@ describe('port (S10.9)', () => {
     // The mode fell back to on foot, which needs no usable ship.
     expect(screen.getByRole('radio', { name: /On foot/i })).toBeChecked();
     expect(screen.getByRole('button', { name: /Go scavenging on foot/i })).toBeEnabled();
-  });
-
-  it('with the ship out on a mission the port is only for a search on foot, with the foot search countdown', async () => {
-    setShipStatus('ON_MISSION');
-    setShipActivity({
-      kind: 'flying',
-      until: new Date(Date.now() + 3_600_000).toISOString(),
-      missionId: 'm-1',
-      repairUntil: null,
-      footUntil: new Date(Date.now() + 120_000).toISOString(),
-    });
-    try {
-      renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
-      await screen.findByRole('heading', { name: 'My Ship' });
-      // no shop tabs: only the search on foot
-      expect(await screen.findByTestId('scavenging')).toBeInTheDocument();
-      expect(screen.queryByRole('tab', { name: 'Market' })).not.toBeInTheDocument();
-      expect(screen.getByTestId('scavenge-no-ship')).toHaveTextContent(/out on a mission/i);
-      expect(screen.getByRole('radio', { name: /With the ship/i })).toBeDisabled();
-      expect(screen.getByRole('radio', { name: /On foot/i })).toBeChecked();
-      // a search on foot is already running: the button waits for it
-      expect(screen.getByTestId('scavenge-foot-running')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Go scavenging on foot/i })).toBeDisabled();
-    } finally {
-      setShipActivity(null);
-      setShipStatus('IN_PORT');
-    }
   });
 
   it('the wait between searches is for the ship only: on foot the button is open at once', async () => {

@@ -37,7 +37,7 @@ import {
   type FillerLocation,
   type FillerWorld,
 } from './generator/template.filler.js';
-import { ACTIVE_STATUSES } from './missions.service.js';
+import { assertJobFitsWaitingMission, IN_PROGRESS_STATUSES } from './waiting-mission.js';
 import { shipFormatChangePending } from '../ships/bridge-format.js';
 
 export interface MiningJobInfo {
@@ -61,6 +61,7 @@ export interface MiningOreInfo {
   readonly rarity: string;
 }
 
+const MS_PER_SECOND = 1000;
 export const MINING_JOB_TEMPLATE_ID = 'mining_job_generic';
 const MS_PER_HOUR = 3_600_000;
 // A dig around the ship's own location burns no route fuel (it never leaves): the ticks it runs
@@ -238,7 +239,8 @@ export class MiningJobService {
 
     const [active, repairing] = await Promise.all([
       this.prisma.missionInstance.count({
-        where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
+        // a mission that is only accepted (waiting to start) does not get in the way; one under way does
+        where: { playerId, status: { in: [...IN_PROGRESS_STATUSES] } },
       }),
       this.prisma.repairJob.count({ where: { shipId: ship.id, status: 'PENDING' } }),
     ]);
@@ -247,6 +249,15 @@ export class MiningJobService {
     if (await shipFormatChangePending(this.prisma, ship.id)) {
       throw new ConflictException({ error: 'FORMAT_CHANGE_REQUIRED' });
     }
+
+    // the dig must end before the waiting mission's start-before time
+    await assertJobFitsWaitingMission(
+      this.prisma,
+      playerId,
+      new Date(
+        this.clock.now().getTime() + ticks * rules.mining.job_duration_seconds * MS_PER_SECOND,
+      ),
+    );
 
     const rows = await this.parts.findPlayerParts(playerId);
     const installedRows = rows.filter(

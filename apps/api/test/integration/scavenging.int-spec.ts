@@ -413,47 +413,94 @@ describe('scavenging job (W8)', () => {
     expect((info.body as { retryAfterSeconds: number }).retryAfterSeconds).toBe(0);
   });
 
-  it('a search on foot can run while the ship is out on a mission, and it leaves the flight alone', async () => {
-    await freshSeededApp();
-    const player = await onboardPlayer();
-    const playerId = player.seeded.player.id;
-    const template = await prisma.missionTemplate.findFirstOrThrow({ where: { type: 'DELIVERY' } });
-    // the ship is out on a flight
-    await prisma.ship.update({ where: { id: player.shipId }, data: { status: 'ON_MISSION' } });
-    const flight = await prisma.missionInstance.create({
-      data: {
-        templateId: template.id,
-        type: 'DELIVERY',
-        factionId: 'luna',
-        originId: 'ceres',
-        destinationId: 'hedus',
-        legs: [],
-        cargo: {},
-        reward: 100,
-        expiresAt: new Date(Date.now() + 3_600_000),
-        status: 'IN_TRANSIT',
-        playerId,
-        shipId: player.shipId,
-        seed: 'flight-seed',
-        arrivalAt: new Date(Date.now() + 3_600_000),
-      },
+  describe('beside a mission that is accepted but not started', () => {
+    const waitingMission = async (
+      playerId: string,
+      shipId: string,
+      deadlineInSeconds: number | null,
+    ) => {
+      const template = await prisma.missionTemplate.findFirstOrThrow({
+        where: { type: 'DELIVERY' },
+      });
+      return prisma.missionInstance.create({
+        data: {
+          templateId: template.id,
+          type: 'DELIVERY',
+          factionId: 'luna',
+          originId: 'ceres',
+          destinationId: 'hedus',
+          legs: [],
+          cargo: {},
+          reward: 100,
+          expiresAt: new Date(Date.now() + 3 * 3_600_000),
+          deadlineAt:
+            deadlineInSeconds === null ? null : new Date(Date.now() + deadlineInSeconds * 1000),
+          status: 'ACCEPTED',
+          playerId,
+          shipId,
+          acceptedAt: new Date(),
+          seed: 'waiting-seed',
+        },
+      });
+    };
+
+    it('a search (with the ship or on foot) can run, and the mission stays waiting; it cannot start until the search ends', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const playerId = player.seeded.player.id;
+      const waiting = await waitingMission(playerId, player.shipId, null);
+      const first = await start(player.token, 'ceres').send({ mode: 'ship' });
+      expect(first.status).toBe(200);
+      const still = await prisma.missionInstance.findUniqueOrThrow({ where: { id: waiting.id } });
+      expect(still.status).toBe('ACCEPTED');
+      // the waiting mission cannot be dispatched while the search runs
+      const dispatch = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${player.shipId}/dispatch`)
+        .set(auth(player.token))
+        .send({ missionId: waiting.id });
+      expect(dispatch.status).toBe(409);
     });
-    // with the ship: no (it is away)
-    const withShip = await start(player.token, 'ceres').send({ mode: 'ship' });
-    expect(withShip.status).toBe(409);
-    // on foot: yes
-    const onFoot = await start(player.token, 'ceres').send({ mode: 'foot' });
-    expect(onFoot.status).toBe(200);
-    const job = (await queue.getJob(
-      (onFoot.body as { missionId: string }).missionId,
-    )) as Job<DispatchJobData>;
-    await processor.process(job);
-    // the flight and the ship are as they were
-    const after = await prisma.missionInstance.findUniqueOrThrow({ where: { id: flight.id } });
-    expect(after.status).toBe('IN_TRANSIT');
-    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
-    expect(ship.status).toBe('ON_MISSION');
-    expect(ship.currentLocationId).toBe('ceres');
+
+    it('a mission under way blocks every search, on foot too', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const playerId = player.seeded.player.id;
+      const template = await prisma.missionTemplate.findFirstOrThrow({
+        where: { type: 'DELIVERY' },
+      });
+      await prisma.ship.update({ where: { id: player.shipId }, data: { status: 'ON_MISSION' } });
+      await prisma.missionInstance.create({
+        data: {
+          templateId: template.id,
+          type: 'DELIVERY',
+          factionId: 'luna',
+          originId: 'ceres',
+          destinationId: 'hedus',
+          legs: [],
+          cargo: {},
+          reward: 100,
+          expiresAt: new Date(Date.now() + 3_600_000),
+          status: 'IN_TRANSIT',
+          playerId,
+          shipId: player.shipId,
+          seed: 'flight-seed',
+          arrivalAt: new Date(Date.now() + 3_600_000),
+        },
+      });
+      expect((await start(player.token, 'ceres').send({ mode: 'ship' })).status).toBe(409);
+      expect((await start(player.token, 'ceres').send({ mode: 'foot' })).status).toBe(409);
+    });
+
+    it('a search that would end after the waiting mission must start is refused', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const playerId = player.seeded.player.id;
+      // the mission must start within 60 seconds; a search takes minutes
+      await waitingMission(playerId, player.shipId, 60);
+      const late = await start(player.token, 'ceres').send({ mode: 'foot' });
+      expect(late.status).toBe(409);
+      expect(late.body).toMatchObject({ message: { error: 'JOB_PAST_START_DEADLINE' } });
+    });
   });
 
   it('scrap has a fixed price: the same everywhere, whatever the port or the mood', async () => {

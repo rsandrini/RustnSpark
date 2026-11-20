@@ -1702,8 +1702,7 @@
         "fuelNone": "None"
       },
       "noFuel": "Not enough fuel to search with the ship: it needs {{units}} units and the tank has {{have}}. Refuel first, or search on foot.",
-      "shipAway": "Your ship is out on a mission, but you can still search the place on foot.",
-      "footRunning": "Searching on foot — done in"
+      "pastDeadline": "This search would end after your waiting mission has to start."
     },
     "mine": {
       "title": "Mine the field",
@@ -1721,7 +1720,8 @@
         "fillValue": "{{time}}",
         "fuel": "Fuel",
         "fuelValue": "up to {{units}}"
-      }
+      },
+      "pastDeadline": "This dig would end after your waiting mission has to start: pick fewer ticks."
     },
     "repairHelp": "Move a slider to choose how far to repair each part. Nothing is repaired until you do.",
     "repairNoChange": "No change",
@@ -2193,7 +2193,9 @@
     "workingAt": {
       "scavenging": "Scavenging in {{place}}",
       "mining": "Mining in {{place}}"
-    }
+    },
+    "jobRunning": "A search or a dig is under way — done in",
+    "jobRunningHint": "The mission can start when it ends."
   },
   "board": {
     "details": "Details",
@@ -2578,7 +2580,8 @@
     "REPORT_LIMIT": "You have sent enough reports for today. Thank you.",
     "REPORT_ALREADY_REVIEWED": "This report was already reviewed.",
     "MINING_TICKS_INVALID": "That mining length is not allowed.",
-    "PART_IN_REPAIR": "That part is still being repaired: wait for the workshop to finish."
+    "PART_IN_REPAIR": "That part is still being repaired: wait for the workshop to finish.",
+    "JOB_PAST_START_DEADLINE": "That would end after your waiting mission has to start. Start the mission first, or pick something shorter."
   },
   "language": {
     "label": "Language",
@@ -3094,5 +3097,13 @@
     "nextShip": "Ship",
     "doneRefuel": "Filled",
     "doneSave": "Saved"
+  },
+  "pending": {
+    "waiting": "Mission waiting: {{title}}",
+    "startBefore": "start before",
+    "open": "Open",
+    "searching": "Searching — done in",
+    "mining": "Mining — done in",
+    "missionWaits": "Your mission waits and can start after it."
   }
 }

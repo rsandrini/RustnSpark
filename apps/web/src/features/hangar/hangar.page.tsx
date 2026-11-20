@@ -237,12 +237,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // Dispatching (or a job starting) while on the Board/Port tab must not strand the pilot on a
   // now-disabled tab.
   useEffect(() => {
-    if (
-      ship !== undefined &&
-      ship.status !== 'IN_PORT' &&
-      pageTab !== 'ship' &&
-      !(ship.status === 'ON_MISSION' && pageTab === 'port')
-    ) {
+    if (ship !== undefined && ship.status !== 'IN_PORT' && pageTab !== 'ship') {
       void navigate('/ship', { replace: true });
     }
   }, [ship, pageTab, navigate]);

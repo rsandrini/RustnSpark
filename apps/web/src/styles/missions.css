@@ -1096,3 +1096,16 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 .mcard-order b {
   font-size: 1.25rem;
 }
+
+/* the mission waiting to start and the search or mining job under way, side by side */
+.pending-strip {
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--brass);
+  border-radius: var(--radius, 12px);
+  background: color-mix(in oklab, var(--brass) 8%, transparent);
+}
+.pending-line {
+  margin: 0;
+}

@@ -36,6 +36,7 @@ import { jobDelayMs } from '../config/debug-timing.js';
 import { missionDuration, type DurationClass } from './duration.calculator.js';
 import { missionStatusAfter } from './mission.state-machine.js';
 import { shipFormatChangePending } from '../ships/bridge-format.js';
+import { IN_PROGRESS_STATUSES } from './waiting-mission.js';
 
 export interface DispatchLeg {
   readonly routeId: string;
@@ -306,6 +307,12 @@ export class DispatchService {
       if (!ship || ship.ownerPlayerId !== playerId) {
         throw new NotFoundException('ship not found');
       }
+      // Nothing starts while a search, a mining job or a flight of this pilot is under way: a waiting mission waits
+      // for it to end.
+      const underWay = await tx.missionInstance.count({
+        where: { playerId, status: { in: [...IN_PROGRESS_STATUSES] }, id: { not: mission.id } },
+      });
+      if (underWay > 0) throw new ConflictException({ error: 'ACTIVE_MISSION_EXISTS' });
       // A scavenging job done on foot is manual work at the place: no ship flies, so a ship that
       // is mid-refit, not in port, or not where the job was scoped still leaves the pilot free to
       // search on their own. Every ship-state gate below is a ship-quality gate, and foot replaces

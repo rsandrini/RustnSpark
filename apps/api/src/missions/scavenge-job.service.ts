@@ -21,7 +21,7 @@ import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
 import { legForRoute, type FillerWorld } from './generator/template.filler.js';
-import { ACTIVE_STATUSES } from './missions.service.js';
+import { assertJobFitsWaitingMission, IN_PROGRESS_STATUSES } from './waiting-mission.js';
 import { shipFormatChangePending } from '../ships/bridge-format.js';
 
 export type ScavengeMode = 'ship' | 'foot';
@@ -64,22 +64,15 @@ export class ScavengeJobService {
     // involved — the pilot searches on their own — so those ship-state gates fall away. The one
     // thing still needed either way is a ship to blame: the job is scoped to one location, the
     // player owns exactly one, and the mission record carries its id.
-    // (the pilot can search on foot while the ship is out on a mission: the ship is not involved)
-    if (!onFoot && ship.status === 'ON_MISSION') {
-      throw new ConflictException({ error: 'SHIP_ON_MISSION' });
-    }
+    if (ship.status === 'ON_MISSION') throw new ConflictException({ error: 'SHIP_ON_MISSION' });
     if (!onFoot && ship.status !== 'IN_PORT') {
       throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
     }
 
     const [active, repairing] = await Promise.all([
       this.prisma.missionInstance.count({
-        // on foot, only another search on foot is in the way; a flight under way is not
-        where: {
-          playerId,
-          status: { in: [...ACTIVE_STATUSES] },
-          ...(onFoot ? { type: 'SCAVENGE' as const } : {}),
-        },
+        // a mission that is only accepted (waiting to start) does not get in the way; one under way does
+        where: { playerId, status: { in: [...IN_PROGRESS_STATUSES] } },
       }),
       this.prisma.repairJob.count({ where: { shipId: ship.id, status: 'PENDING' } }),
     ]);
@@ -89,6 +82,17 @@ export class ScavengeJobService {
     if (!onFoot && (await shipFormatChangePending(this.prisma, ship.id))) {
       throw new ConflictException({ error: 'FORMAT_CHANGE_REQUIRED' });
     }
+
+    // the search must end before the waiting mission's start-before time
+    await assertJobFitsWaitingMission(
+      this.prisma,
+      playerId,
+      new Date(
+        this.clock.now().getTime() +
+          (onFoot ? rules.scavenging.foot_duration_seconds : rules.scavenging.duration_seconds) *
+            MS_PER_SECOND,
+      ),
+    );
 
     const rows = await this.parts.findPlayerParts(playerId);
     const installedRows = rows.filter(

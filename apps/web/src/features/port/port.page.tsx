@@ -41,6 +41,8 @@ import { PartThumb } from '../../ui/PartThumb';
 import { PlaceBanner } from '../../ui/PlaceArt';
 import { PortTabs } from '../../ui/PortTabs';
 import { ActiveShipStage } from '../ship/active-ship-stage';
+import { jobFitsWaitingMission, PendingStrip } from '../ship/pending-strip';
+import { useActiveMissions } from '../transit/use-active-mission';
 import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
 import { useDisplay } from '../../ui/display';
@@ -170,6 +172,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     queryFn: () => client.get<ShipResponse[]>('/v1/ships'),
   });
   const ship = shipsQuery.data?.[0];
+  const activeMissions = useActiveMissions().data;
   // The port is wherever the ship is docked: the market answers 409 for any other place.
   const locationId = ship?.currentLocationId;
 
@@ -230,15 +233,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   // "With the ship" needs a ship that can actually fly and is free of a refit (the same two gates
   // the API applies to ship-mode); while the preview is loading, assume usable so the card does
   // not flash disabled. On foot needs neither, so it stays selectable either way.
-  // The ship out on a mission leaves the pilot at the port: only a search on foot is open then.
-  const awayOnMission = ship?.status === 'ON_MISSION';
   const shipUsable =
     (readinessQuery.data === undefined || readinessQuery.data.viability.viable) &&
-    ship?.activity.kind !== 'repairing' &&
-    !awayOnMission;
-  // A search on foot under way (beside a flight, or alone): the button waits for it.
-  const footSearchUntil =
-    ship?.activity.footUntil ?? (ship?.activity.kind === 'scavenging' ? ship.activity.until : null);
+    ship?.activity.kind !== 'repairing';
   // repairs under way: the Repair tab is locked and says for how long
   const repairUntil = ship?.activity.repairUntil ?? null;
   const repairing = repairUntil !== null;
@@ -536,10 +533,6 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   // to the Transit screen, where the report arrives when it ends.
   const navigate = useNavigate();
   const [scavengeMode, setScavengeMode] = useState<'ship' | 'foot'>('ship');
-  // While the ship is away, the only thing to do at the port is the search on foot.
-  useEffect(() => {
-    if (awayOnMission && tab !== 'scavenging') setTab('scavenging');
-  }, [awayOnMission, tab]);
   // No usable ship: the ship card is disabled, so make sure the mode is not left on "ship".
   useEffect(() => {
     if (!shipUsable && scavengeMode === 'ship') setScavengeMode('foot');
@@ -563,8 +556,6 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       void queryClient.invalidateQueries({ queryKey: ['active'] });
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       void queryClient.invalidateQueries({ queryKey: ['scavenge'] });
-      // A search on foot beside a flight stays here: the countdown shows on this screen.
-      if (awayOnMission) return;
       // Embedded, /hangar already IS the current route (a navigate() there would be a no-op),
       // so switch the host's own tab instead — same reason the "Install" link above does.
       if (embedded && onGoToShip !== undefined) {
@@ -679,6 +670,13 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const scavengeRetryAt = new Date(
     serverNow() + (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) * 1000,
   ).toISOString();
+  // a search or a dig must end before a waiting mission has to start
+  const scavengeSeconds =
+    (scavengeMode === 'foot'
+      ? scavengeInfoQuery.data?.footDurationSeconds
+      : scavengeInfoQuery.data?.durationSeconds) ?? 0;
+  const scavengeFits = jobFitsWaitingMission(activeMissions, scavengeSeconds);
+  const mineFits = jobFitsWaitingMission(activeMissions, mineTicks * mineTickSeconds);
   // The wait between searches is for the ship's search only: on foot, a pilot can go again at once.
   const scavengeWaitSeconds =
     scavengeMode === 'ship' ? (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) : 0;
@@ -772,7 +770,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
       <RescueBanner />
 
-      {!awayOnMission && portTabsRow}
+      {!embedded && <PendingStrip />}
+
+      {portTabsRow}
 
       {notice !== null && (
         <p className="notice" role="status">
@@ -1600,11 +1600,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
           {!shipUsable && (
             <p className="notice warn" data-testid="scavenge-no-ship">
               {t(
-                awayOnMission
-                  ? 'port.scav.shipAway'
-                  : ship?.activity.kind === 'repairing'
-                    ? 'port.scav.shipRepairing'
-                    : 'port.scav.noShip',
+                ship?.activity.kind === 'repairing'
+                  ? 'port.scav.shipRepairing'
+                  : 'port.scav.noShip',
               )}
             </p>
           )}
@@ -1643,15 +1641,6 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               </ul>
             </details>
           )}
-          {footSearchUntil !== null && footSearchUntil !== undefined && (
-            <p className="notice" role="status" data-testid="scavenge-foot-running">
-              {t('port.scav.footRunning')}{' '}
-              <Countdown
-                until={footSearchUntil}
-                onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
-              />
-            </p>
-          )}
           {scavengeInfoQuery.data !== undefined && scavengeWaitSeconds > 0 ? (
             <p className="notice" role="status">
               {t('port.scav.nextAttempt')}{' '}
@@ -1663,6 +1652,11 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
           ) : (
             <p className="sub">{t('port.scav.ready')}</p>
           )}
+          {!scavengeFits && (
+            <p className="notice warn" data-testid="scavenge-past-deadline">
+              {t('port.scav.pastDeadline')}
+            </p>
+          )}
           <div className="action-cta">
             <button
               type="button"
@@ -1670,7 +1664,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               disabled={
                 scavenge.isPending ||
                 scavengeWaitSeconds > 0 ||
-                (footSearchUntil !== null && footSearchUntil !== undefined) ||
+                !scavengeFits ||
                 (scavengeMode === 'ship' && !shipUsable) ||
                 lacksScavengeFuel
               }
@@ -1760,6 +1754,11 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               cap={ship.sheet.fuelCap}
             />
           )}
+          {!mineFits && (
+            <p className="notice warn" data-testid="mine-past-deadline">
+              {t('port.mine.pastDeadline')}
+            </p>
+          )}
           <div className="action-cta">
             {/* What is dug is kept in the cargo hold: with none, the run would come back empty. */}
             {ship.sheet.crg < 1 && (
@@ -1770,7 +1769,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             <button
               type="button"
               className="btn primary"
-              disabled={mine.isPending || ship.sheet.crg < 1}
+              disabled={mine.isPending || ship.sheet.crg < 1 || !mineFits}
               onClick={() => mine.mutate()}
             >
               {t('port.mine.action')}

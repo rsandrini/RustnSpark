@@ -16,6 +16,7 @@ import type {
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { RescueBanner } from '../rescue/rescue-banner';
+import { runningJobOf } from '../ship/pending-strip';
 import { journeyNodeIds } from './journey';
 import { watchFlight } from './flight-watcher';
 import { transitPollInterval } from './poll';
@@ -80,6 +81,9 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
 
   const missions = activeQuery.data ?? [];
   const mission = missions[0] ?? null;
+  // a search or a mining job under way beside a mission that waits to start: the mission cannot start until it ends
+  const runningJob =
+    mission !== null && mission.status === 'ACCEPTED' ? runningJobOf(missions) : undefined;
   // The trip bar and the ship on the map must advance on their own (owner report: they only
   // moved after a click — the poll's identical payload never re-rendered the page). The ticker
   // re-reads the server clock while a flight is under way, and while an accepted mission is
@@ -302,11 +306,22 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
           type="button"
           className="btn primary"
           data-tour="dispatch_button"
-          disabled={dispatch.isPending || ship === undefined || startDeadlinePassed}
+          disabled={
+            dispatch.isPending ||
+            ship === undefined ||
+            startDeadlinePassed ||
+            runningJob !== undefined
+          }
           onClick={() => dispatch.mutate()}
         >
           {t('transit.dispatch')}
         </button>
+        {runningJob !== undefined && runningJob.arrivalAt != null && (
+          <p className="notice" role="status" data-testid="transit-job-running">
+            {t('transit.jobRunning')} <Countdown until={runningJob.arrivalAt} />{' '}
+            <span className="sub">{t('transit.jobRunningHint')}</span>
+          </p>
+        )}
         {startDeadlinePassed && (
           <p className="sub" data-testid="transit-start-deadline-passed">
             {t('transit.startDeadlinePassed')}
