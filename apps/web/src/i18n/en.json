@@ -2314,11 +2314,14 @@
       "RACE": "a fast ship: it must beat the entry speed, and the faster the better."
     },
     "mining": {
-      "contracted": "Contract: mine {{quantity}} × {{material}}. Pay is full for 100% delivered, partial below, nothing for zero.",
-      "free": "Mine {{material}}: you keep what you dig up and sell it at a port.",
+      "free": "Open dig: {{material}}. No order: you keep what you dig and sell it at a port.",
       "odds": "about {{time}}, {{chance}}% chance",
       "space": "Ore space: {{units}} units",
-      "cargoWarning": "needs more cargo ({{required}} > {{space}} space)"
+      "cargoWarning": "needs more cargo ({{required}} > {{space}} space)",
+      "orderLabel": "The order",
+      "orderValue": "{{quantity}} × {{material}}",
+      "orderHint": "Dig it and deliver it to the client: full pay at 100%, partial below, nothing at zero.",
+      "phases": "Flight {{flight}}, then mining about {{dig}} · {{chance}}% to reach the amount"
     },
     "race": {
       "title": "The field",
@@ -2840,7 +2843,8 @@
     "docked": "Docked at {{place}}",
     "pilotsDocked": "{{count}} pilots docked",
     "repairingAt": "in the workshop at {{place}}",
-    "floating": "Floating in space"
+    "floating": "Floating in space",
+    "thenMining": "then mining {{time}}"
   },
   "routeMap": {
     "label": "Route from {{from}} to {{to}}",

@@ -611,6 +611,8 @@ export const ShipResponseSchema = z.object({
     missionId: z.string().nullable(),
     /** When the repair now under way is done, even while a job on foot hides it behind `kind`. */
     repairUntil: IsoDate.nullable(),
+    /** A mining contract flies out and then digs: when the flight ends (the dig follows until `until`). */
+    flightUntil: IsoDate.nullable().optional(),
   }),
   routeCoverage: RouteCoverageSchema.nullable(),
 });
@@ -858,7 +860,15 @@ export const OfferInfoSchema = z.object({
   peakDanger: z.number(),
   peakZone: z.number(),
   /** Time and fuel for the viewer's own ship; null when they have no flyable ship. */
-  estimate: z.object({ durationSeconds: z.number(), fuelNeeded: z.number() }).nullable(),
+  estimate: z
+    .object({
+      durationSeconds: z.number(),
+      fuelNeeded: z.number(),
+      /** A mining contract: how much of the total is the flight and how much the dig. */
+      flightSeconds: z.number().optional(),
+      digSeconds: z.number().optional(),
+    })
+    .nullable(),
   /** Mining offers: what to dig for. */
   material: z
     .object({ name: LocalizedTextSchema, contracted: z.boolean(), quantity: z.number().nullable() })

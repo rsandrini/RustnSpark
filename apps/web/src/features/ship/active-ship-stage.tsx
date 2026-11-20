@@ -4,6 +4,8 @@ import { client } from '../../api/client';
 import type { ShipResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipStage } from '../../ui/ShipStage';
+import { formatDuration } from '../../ui/duration';
+import { useNow } from '../../ui/useNow';
 import { useWorld } from './use-world';
 
 const ACTIVITY_REFRESH_MS = 15_000;
@@ -31,23 +33,41 @@ export function ActiveShipStage({
   });
   const world = useWorld();
   const ship = shipsQuery.data?.[0];
+  // A mining contract flies out and then digs: the scene is flying until `flightUntil`, then mining until the arrival.
+  const flightUntil = ship?.activity.flightUntil ?? null;
+  const now = useNow(flightUntil !== null);
   if (ship === undefined) return null;
 
   const place = world.data?.locations.find((entry) => entry.id === ship.currentLocationId);
   const placeName =
     place === undefined ? ship.currentLocationId : pickLocalized(place.displayName, i18n.language);
-  const { kind, until } = ship.activity;
+  const { kind: activityKind, until: activityUntil } = ship.activity;
+  const digging =
+    activityKind === 'flying' && flightUntil !== null && now >= Date.parse(flightUntil);
+  const kind = digging ? 'mining' : activityKind;
+  const flightLeg = activityKind === 'flying' && flightUntil !== null && !digging;
+  const until = flightLeg ? flightUntil : activityUntil;
   const detail =
     kind === 'idle'
       ? t('stage.docked', { place: placeName })
       : kind === 'repairing'
         ? t('stage.repairingAt', { place: placeName })
-        : undefined;
+        : flightLeg && activityUntil !== null
+          ? t('stage.thenMining', {
+              time: formatDuration(
+                Math.max(
+                  0,
+                  Math.round((Date.parse(activityUntil) - Date.parse(flightUntil)) / 1000),
+                ),
+                t,
+              ),
+            })
+          : undefined;
 
   return (
     <ShipStage
       mode={kind}
-      placeId={ship.currentLocationId}
+      placeId={digging ? undefined : ship.currentLocationId}
       until={until}
       size={size}
       detail={detail}

@@ -265,37 +265,56 @@ export function MissionCard({
           <RouteMap path={pathOfLegs(offer.legs, world, offer.originId)} world={world} compact />
         )}
 
-        {info.material !== null && (
-          <p className="mcard-material">
-            {info.material.contracted && info.material.quantity !== null
-              ? t('board.mining.contracted', {
-                  quantity: info.material.quantity,
-                  material: pickLocalized(info.material.name, i18n.language),
-                })
-              : t('board.mining.free', {
+        {(info.material !== null || info.mining != null) && (
+          <section className="mcard-mining" data-testid="mcard-mining">
+            {info.material === null ? null : info.material.contracted &&
+              info.material.quantity !== null ? (
+              <>
+                <p className="mcard-order" data-testid="mcard-order">
+                  <span className="k">{t('board.mining.orderLabel')}</span>
+                  <b>
+                    {t('board.mining.orderValue', {
+                      quantity: info.material.quantity,
+                      material: pickLocalized(info.material.name, i18n.language),
+                    })}
+                  </b>
+                </p>
+                <p className="sub">{t('board.mining.orderHint')}</p>
+              </>
+            ) : (
+              <p className="mcard-material">
+                {t('board.mining.free', {
                   material: pickLocalized(info.material.name, i18n.language),
                 })}
-          </p>
-        )}
-
-        {info.mining != null && (
-          <p className="mcard-mining-odds sub" data-testid="mcard-mining-odds">
-            {info.mining.required > 0
-              ? t('board.mining.odds', {
-                  time: formatDuration(info.mining.expectedSeconds, t),
-                  chance: Math.round(info.mining.successChance * 100),
-                })
-              : t('board.mining.space', { units: info.mining.spaceUnits })}
-            {info.mining.required > 0 && info.mining.required > info.mining.spaceUnits && (
-              <span className="warn-text" data-testid="mcard-mining-cargo-warning">
-                {' '}
-                {t('board.mining.cargoWarning', {
-                  required: info.mining.required,
-                  space: info.mining.spaceUnits,
-                })}
-              </span>
+              </p>
             )}
-          </p>
+            {info.mining != null && (
+              <p className="mcard-mining-odds sub" data-testid="mcard-mining-odds">
+                {info.mining.required > 0
+                  ? info.estimate?.flightSeconds !== undefined &&
+                    info.estimate.digSeconds !== undefined
+                    ? t('board.mining.phases', {
+                        flight: formatDuration(info.estimate.flightSeconds, t),
+                        dig: formatDuration(info.estimate.digSeconds, t),
+                        chance: Math.round(info.mining.successChance * 100),
+                      })
+                    : t('board.mining.odds', {
+                        time: formatDuration(info.mining.expectedSeconds, t),
+                        chance: Math.round(info.mining.successChance * 100),
+                      })
+                  : t('board.mining.space', { units: info.mining.spaceUnits })}
+                {info.mining.required > 0 && info.mining.required > info.mining.spaceUnits && (
+                  <span className="warn-text" data-testid="mcard-mining-cargo-warning">
+                    {' '}
+                    {t('board.mining.cargoWarning', {
+                      required: info.mining.required,
+                      space: info.mining.spaceUnits,
+                    })}
+                  </span>
+                )}
+              </p>
+            )}
+          </section>
         )}
 
         {!opening && info.race !== null && (

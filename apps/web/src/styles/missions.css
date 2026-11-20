@@ -1082,3 +1082,17 @@ main:has(.transit-aside) .ship-stage-overlay-host {
     opacity: 0.8;
   }
 }
+
+/* a mining offer: the order is the headline of the block */
+.mcard-mining {
+  display: grid;
+  gap: 4px;
+}
+.mcard-order {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+.mcard-order b {
+  font-size: 1.25rem;
+}

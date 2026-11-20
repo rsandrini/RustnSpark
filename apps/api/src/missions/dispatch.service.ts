@@ -538,6 +538,7 @@ export class DispatchService {
       // A contract adds the dig to the flight: the dry run of the very same seeded run says how many
       // ticks this ship needs for the amount (it stops once it is reached), and a chemical ship pays
       // fuel for them on top of the trip.
+      let digSecondsPlanned = 0;
       if (contractedDig) {
         const ran = await this.miningTicksRun(tx, mission, snapshot, rules);
         const digFuel = sheet.fuelUse > 0 ? ran * rules.mining.job_fuel_per_tick : 0;
@@ -548,7 +549,8 @@ export class DispatchService {
             have: Math.floor(ship.fuel),
           });
         }
-        durationSeconds += ran * rules.mining.job_duration_seconds;
+        digSecondsPlanned = ran * rules.mining.job_duration_seconds;
+        durationSeconds += digSecondsPlanned;
       }
       const arrivalAt = new Date(serverTime.getTime() + durationSeconds * MS_PER_SECOND);
 
@@ -559,8 +561,15 @@ export class DispatchService {
           arrivalAt,
           ...(contractedDig ? { legs: legs as unknown as Prisma.InputJsonValue } : {}),
           // what the delivery loaded, kept on the row so a rebuilt job pays the same
-          ...(snapshot.cargo !== undefined
-            ? { cargo: { ...((mission.cargo as object) ?? {}), load: snapshot.cargo } }
+          ...(snapshot.cargo !== undefined || digSecondsPlanned > 0
+            ? {
+                cargo: {
+                  ...((mission.cargo as object) ?? {}),
+                  ...(snapshot.cargo !== undefined ? { load: snapshot.cargo } : {}),
+                  // the dig that follows the flight: the stage switches from flying to mining when it starts
+                  ...(digSecondsPlanned > 0 ? { digSeconds: digSecondsPlanned } : {}),
+                },
+              }
             : {}),
         },
       });

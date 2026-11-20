@@ -131,6 +131,51 @@ describe('board (S10.6)', () => {
     );
   });
 
+  it('a mining order says what is asked (the amount and the ore) and splits the time into flight and mining', async () => {
+    const offers = (await (await fetch('/v1/locations/ceres/missions')).json()) as Array<{
+      id: string;
+      info: Record<string, unknown>;
+    }>;
+    server.use(
+      http.get('/v1/locations/:id/missions', () =>
+        HttpResponse.json(
+          offers.map((offer) =>
+            offer.id === 'b-3'
+              ? {
+                  ...offer,
+                  info: {
+                    ...offer.info,
+                    material: {
+                      name: { en: 'Iron', 'pt-BR': 'Ferro' },
+                      contracted: true,
+                      quantity: 25,
+                    },
+                    estimate: {
+                      durationSeconds: 3000,
+                      fuelNeeded: 10,
+                      flightSeconds: 600,
+                      digSeconds: 2400,
+                    },
+                  },
+                }
+              : offer,
+          ),
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
+    const miningCard = (await screen.findAllByText('Mobility too low'))
+      .map((node) => node.closest('article'))
+      .find((article) => article !== null);
+    const card = within(miningCard!);
+    expect(card.getByTestId('mcard-order')).toHaveTextContent('The order25 × Iron');
+    expect(card.getByTestId('mcard-mining-odds')).toHaveTextContent(
+      'Flight 10m 0s, then mining about 40m 0s · 42% to reach the amount',
+    );
+  });
+
   it('an open-cargo delivery says what the extra units pay', async () => {
     await renderBoard();
     const line = await screen.findByTestId('mcard-cargo');

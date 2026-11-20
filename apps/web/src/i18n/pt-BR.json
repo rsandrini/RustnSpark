@@ -2314,11 +2314,14 @@
       "RACE": "uma nave rápida: precisa superar a velocidade de entrada, e quanto mais rápida melhor."
     },
     "mining": {
-      "contracted": "Contrato: minere {{quantity}} × {{material}}. Pagamento integral por 100% entregue, proporcional abaixo, nada por zero.",
-      "free": "Minerar {{material}}: você fica com o que cavar e vende em um porto.",
+      "free": "Mineração livre: {{material}}. Sem pedido: você fica com o que cavar e vende em um porto.",
       "odds": "cerca de {{time}}, {{chance}}% de chance",
       "space": "Espaço de minério: {{units}} unidades",
-      "cargoWarning": "precisa de mais carga ({{required}} > {{space}} de espaço)"
+      "cargoWarning": "precisa de mais carga ({{required}} > {{space}} de espaço)",
+      "orderLabel": "O pedido",
+      "orderValue": "{{quantity}} × {{material}}",
+      "orderHint": "Cave e entregue ao cliente: pagamento integral com 100%, proporcional abaixo, nada com zero.",
+      "phases": "Voo de {{flight}}, depois mineração de cerca de {{dig}} · {{chance}}% de chance de chegar à quantidade"
     },
     "race": {
       "title": "O grid",
@@ -2840,7 +2843,8 @@
     "docked": "Atracada em {{place}}",
     "pilotsDocked": "{{count}} pilotos atracados",
     "repairingAt": "na oficina de {{place}}",
-    "floating": "Flutuando no espaço"
+    "floating": "Flutuando no espaço",
+    "thenMining": "depois mineração de {{time}}"
   },
   "routeMap": {
     "label": "Rota de {{from}} para {{to}}",

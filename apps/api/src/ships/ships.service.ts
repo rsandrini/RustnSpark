@@ -74,6 +74,8 @@ export interface ShipActivity {
   readonly missionId: string | null;
   /** When the repair under way is done (a job on foot can run beside it); null with no repair. */
   readonly repairUntil: string | null;
+  /** A mining contract flies out and then digs: when the flight ends (the dig follows until `until`); null otherwise. */
+  readonly flightUntil?: string | null;
 }
 
 export interface ShipResponse {
@@ -160,6 +162,8 @@ export interface ShipActivity {
   readonly missionId: string | null;
   /** When the repair under way is done (a job on foot can run beside it); null with no repair. */
   readonly repairUntil: string | null;
+  /** A mining contract flies out and then digs: when the flight ends (the dig follows until `until`); null otherwise. */
+  readonly flightUntil?: string | null;
 }
 
 export interface PreviewResponse {
@@ -1022,14 +1026,27 @@ export class ShipsService implements OnModuleInit {
     if (mission !== null) {
       // A free mining job (cargo.contracted === false) digs where the ship already is, like
       // scavenging; a contracted mining mission flies out to the field and stays 'flying'.
-      const cargo = mission.cargo as { contracted?: unknown } | null;
+      const cargo = mission.cargo as { contracted?: unknown; digSeconds?: unknown } | null;
       const freeMining = (mission.type as string) === 'MINING' && cargo?.contracted === false;
+      // a mining contract flies out, then digs: the flight ends `digSeconds` before the arrival
+      const digSeconds =
+        (mission.type as string) === 'MINING' &&
+        cargo?.contracted === true &&
+        typeof cargo.digSeconds === 'number' &&
+        cargo.digSeconds > 0 &&
+        mission.arrivalAt !== null
+          ? cargo.digSeconds
+          : null;
       return {
         kind:
           (mission.type as string) === 'SCAVENGE' ? 'scavenging' : freeMining ? 'mining' : 'flying',
         until: mission.arrivalAt?.toISOString() ?? null,
         missionId: mission.id,
         repairUntil: repair?.completesAt.toISOString() ?? null,
+        flightUntil:
+          digSeconds === null || mission.arrivalAt === null
+            ? null
+            : new Date(mission.arrivalAt.getTime() - digSeconds * 1000).toISOString(),
       };
     }
     if (repair !== null) {

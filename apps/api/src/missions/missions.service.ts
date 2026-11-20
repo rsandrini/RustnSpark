@@ -95,7 +95,13 @@ export interface OfferInfo {
   readonly peakDanger: number;
   readonly peakZone: number;
   /** Time and fuel for the viewer's ship; null when they have no flyable ship. */
-  readonly estimate: { readonly durationSeconds: number; readonly fuelNeeded: number } | null;
+  readonly estimate: {
+    readonly durationSeconds: number;
+    readonly fuelNeeded: number;
+    /** A mining contract: the flight and the dig that make up `durationSeconds`. */
+    readonly flightSeconds?: number;
+    readonly digSeconds?: number;
+  } | null;
   readonly material: {
     readonly name: { readonly en: string; readonly 'pt-BR': string };
     readonly contracted: boolean;
@@ -990,6 +996,8 @@ function offerInfo(
     estimate = {
       durationSeconds: estimate.durationSeconds + dig.seconds,
       fuelNeeded: estimate.fuelNeeded + dig.fuel,
+      flightSeconds: estimate.durationSeconds,
+      digSeconds: dig.seconds,
     };
   }
 
