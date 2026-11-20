@@ -142,7 +142,17 @@ export function MapPage({ guided = false }: MapPageProps) {
     const nodeIds = journeyNodeIds(flight.originId, flight.legWindows, world.routes);
     return { nodeIds, stops: journeyStops(nodeIds, world.locations) };
   }, [flight, world]);
-  // Opening the map centres and zooms on the port the ship is stopped at; with a trip under way it centres
+  // An out-of-fuel ship floats between two places, not on the place it left from.
+  const floatPoint = (() => {
+    if (ship?.status !== 'ADRIFT' || ship.float == null) return null;
+    const from = byId.get(ship.float.fromId);
+    const to = byId.get(ship.float.toId);
+    if (from === undefined || to === undefined) return null;
+    const { progress } = ship.float;
+    return { x: from.x + (to.x - from.x) * progress, y: from.y + (to.y - from.y) * progress };
+  })();
+
+  // Opening the map centres and zooms on the port the ship is stopped at (or the spot where it floats); with a trip under way it centres
   // on the trip and zooms to fit it (a place named in the address keeps the whole-map view). Once: "Fit
   // map" and the pilot's own panning stay.
   const focusedOnShip = useRef(false);
@@ -171,11 +181,24 @@ export function MapPage({ guided = false }: MapPageProps) {
       );
       return;
     }
-    if (shipPlace === undefined) return;
+    // a floating ship is between two places: centre on where it floats, not on the port it left
+    const target = floatPoint ?? shipPlace;
+    if (target === undefined) return;
     focusedOnShip.current = true;
     if (selectedId !== null) return;
-    focusOn(shipPlace, SHIP_FOCUS_SCALE);
-  }, [bounds, queryReady, shipPlace, tripUnderWay, journey, selectedId, focusOn]);
+    focusOn(target, SHIP_FOCUS_SCALE);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    bounds,
+    queryReady,
+    shipPlace,
+    floatPoint?.x,
+    floatPoint?.y,
+    tripUnderWay,
+    journey,
+    selectedId,
+    focusOn,
+  ]);
 
   // The trip of each accepted (not yet dispatched) mission, drawn as a highlighted path with a small flag
   // on it: hover or focus the flag for the quest's short description and a link to its details.
@@ -250,15 +273,6 @@ export function MapPage({ guided = false }: MapPageProps) {
     camera.scale >= DETAIL_MIN_SCALE[location.detail] || alwaysShown.has(location.id);
   const nodeScale = 1 / Math.sqrt(camera.scale);
   const hiddenCount = (world?.locations ?? []).filter((location) => !shownAtZoom(location)).length;
-  // An out-of-fuel ship floats between two places, not on the place it left from.
-  const floatPoint = (() => {
-    if (ship?.status !== 'ADRIFT' || ship.float == null) return null;
-    const from = byId.get(ship.float.fromId);
-    const to = byId.get(ship.float.toId);
-    if (from === undefined || to === undefined) return null;
-    const { progress } = ship.float;
-    return { x: from.x + (to.x - from.x) * progress, y: from.y + (to.y - from.y) * progress };
-  })();
 
   // The map is always the first thing on this screen.
   useEffect(() => {

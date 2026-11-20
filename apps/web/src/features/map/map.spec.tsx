@@ -75,6 +75,22 @@ describe('map (S10.5)', () => {
       // the tag that would say "you are here" on the port is gone (the legend still names it)
       expect(svg.querySelectorAll('.you-tag text')).toHaveLength(1);
       expect(svg.querySelector('.you-tag text')?.textContent).toBe('Floating in space');
+      // the map opens centred on the spot where the ship floats, not on the port it left
+      const [fx, fy] = (marker.getAttribute('transform') ?? '')
+        .replace(/[^\d.\s-]/g, '')
+        .trim()
+        .split(/\s+/)
+        .map(Number) as [number, number];
+      await waitFor(() => {
+        const [x, y, w, h] = (svg.getAttribute('viewBox') ?? '').split(' ').map(Number) as [
+          number,
+          number,
+          number,
+          number,
+        ];
+        expect(Math.abs(fx - (x + w / 2))).toBeLessThan(1);
+        expect(Math.abs(fy - (y + h / 2))).toBeLessThan(1);
+      });
     } finally {
       setShipStatus('IN_PORT');
     }
