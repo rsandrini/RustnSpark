@@ -110,6 +110,7 @@ const AUTO_SAVE_MS = 900;
 // A carried part is drawn this many pixels per cell when the yard has not been measured yet.
 const FALLBACK_CELL_PX = 40;
 const STAGE_COLLAPSE_KEY = 'rs.hangar.stageCollapsed';
+const SIDE_HIDDEN_KEY = 'rs.hangar.sideHidden';
 
 export interface HangarPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -197,6 +198,24 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         // the choice still applies for this session
       }
       return next;
+    });
+  };
+  // Desktop: the Parts / Store column can be hidden to give the ship's blocks the whole width (remembered).
+  const [sideHidden, setSideHidden] = useState(() => {
+    try {
+      return window.localStorage.getItem(SIDE_HIDDEN_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleSide = () => {
+    setSideHidden((was) => {
+      try {
+        window.localStorage.setItem(SIDE_HIDDEN_KEY, was ? '0' : '1');
+      } catch {
+        // the choice still applies for this session
+      }
+      return !was;
     });
   };
   // Phones: Parts and Store are a sheet opened from the action bar, not a list under the yard.
@@ -470,7 +489,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     onError: (error) => setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) }),
   });
 
-  const modifyBlocked = ship?.status === 'ON_MISSION';
+  // Out on a mission, or floating in space: the ship cannot be changed (a floating one waits for its rescue).
+  const onMission = ship?.status === 'ON_MISSION';
+  const modifyBlocked = onMission || ship?.status === 'ADRIFT';
   // Parts with a cell off the ship's format: parked beside the hull, doing nothing, grounding the ship.
   const outsideCount = effectiveLayout.filter((placement) => {
     const catalog = catalogById.get(placement.partInstanceId);
@@ -838,7 +859,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       {pageTab === 'ship' && (
         <>
           {modifyBlocked && !phone && !opening && (
-            <p className="error-text">{t('hangar.errors.SHIP_ON_MISSION')}</p>
+            <p className="error-text">
+              {t(onMission ? 'hangar.errors.SHIP_ON_MISSION' : 'hangar.errors.SHIP_ADRIFT')}
+            </p>
           )}
           {pendingPartId !== null && (
             <p className="sub" aria-live="polite">
@@ -849,7 +872,23 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           )}
 
           {/* On a phone a ship that is out on a mission shows only its flight: the yard cannot be edited then. */}
-          <div className="hangar-layout" hidden={phone && modifyBlocked}>
+          {!phone && !opening && (
+            <div className="hangar-side-toggle">
+              <button
+                type="button"
+                className="btn"
+                data-testid="toggle-side"
+                aria-pressed={sideHidden}
+                onClick={toggleSide}
+              >
+                {t(sideHidden ? 'hangar.side.show' : 'hangar.side.hide')}
+              </button>
+            </div>
+          )}
+          <div
+            className={`hangar-layout${sideHidden && !phone && !opening ? ' side-hidden' : ''}`}
+            hidden={phone && onMission}
+          >
             {phone && partsOpen && (
               <div
                 className="phone-sheet-backdrop"

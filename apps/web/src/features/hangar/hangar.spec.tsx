@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { classicSquareCells } from '../../test/msw/handlers';
+import { classicSquareCells, setShipStatus } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import type { Placement, ShipSheet } from '../../api/generated';
 
@@ -1491,6 +1491,35 @@ describe('hangar (S10.4)', () => {
     expect(
       await screen.findByText(/Engines are pushed above their listed power/),
     ).toBeInTheDocument();
+  });
+
+  it('a floating ship cannot be changed: the yard is locked and says why', async () => {
+    server.use(onboarded());
+    setShipStatus('ADRIFT');
+    try {
+      renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      expect(
+        await screen.findByText(/floating in space: it cannot be changed/i),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Save layout' })).toBeDisabled();
+    } finally {
+      setShipStatus('IN_PORT');
+    }
+  });
+
+  it('the Parts / Store column can be hidden to give the ship the whole width, and the choice is kept', async () => {
+    server.use(onboarded());
+    window.localStorage.removeItem('rs.hangar.sideHidden');
+    const view = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const toggle = await screen.findByTestId('toggle-side');
+    const layout = () => view.container.querySelector('.hangar-layout');
+    expect(layout()).not.toHaveClass('side-hidden');
+    fireEvent.click(toggle);
+    expect(layout()).toHaveClass('side-hidden');
+    expect(window.localStorage.getItem('rs.hangar.sideHidden')).toBe('1');
+    expect(toggle).toHaveTextContent('Show parts and store');
+    fireEvent.click(toggle);
+    expect(layout()).not.toHaveClass('side-hidden');
   });
 
   it('Auto layout takes the new bridge along when the ship has none aboard (a just-expanded bridge is loose)', async () => {

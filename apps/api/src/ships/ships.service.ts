@@ -613,6 +613,10 @@ export class ShipsService implements OnModuleInit {
     if (ship.status === 'ON_MISSION') {
       throw new ConflictException({ error: 'SHIP_ON_MISSION' });
     }
+    // a floating ship waits for its rescue: no changes until it is towed back
+    if (ship.status === 'ADRIFT') {
+      throw new ConflictException({ error: 'SHIP_ADRIFT' });
+    }
   }
 
   /**

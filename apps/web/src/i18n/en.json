@@ -644,6 +644,7 @@
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
+      "SHIP_ADRIFT": "The ship is floating in space: it cannot be changed until it is rescued.",
       "generic": "Could not save the layout."
     },
     "yardLabel": "Assembly yard",
@@ -659,6 +660,8 @@
     "side": {
       "parts": "Parts",
       "store": "Store",
+      "hide": "Hide parts and store",
+      "show": "Show parts and store",
       "storeUnavailable": "The store is only available while the ship is docked."
     },
     "kit": {
@@ -2515,6 +2518,7 @@
     "ROUTE_REQUIRED": "Pick a race route first.",
     "PLAYER_NOT_FOUND": "That pilot was not found.",
     "SHIP_ON_MISSION": "The ship is on a mission.",
+    "SHIP_ADRIFT": "The ship is floating in space: it cannot be changed until it is rescued.",
     "SHIP_REPAIRING": "The ship is being repaired.",
     "ESCORT_NOT_AVAILABLE": "The escort cannot be called right now.",
     "FORMAT_CHANGE_REQUIRED": "Your bridge changed: pick a ship format in the Hangar before leaving.",

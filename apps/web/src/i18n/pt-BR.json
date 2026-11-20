@@ -644,6 +644,7 @@
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
+      "SHIP_ADRIFT": "A nave está flutuando no espaço: ela não pode ser alterada até ser resgatada.",
       "generic": "Não foi possível salvar o layout."
     },
     "yardLabel": "Área de montagem",
@@ -659,6 +660,8 @@
     "side": {
       "parts": "Peças",
       "store": "Loja",
+      "hide": "Ocultar peças e loja",
+      "show": "Mostrar peças e loja",
       "storeUnavailable": "A loja só está disponível com a nave atracada."
     },
     "kit": {
@@ -2515,6 +2518,7 @@
     "ROUTE_REQUIRED": "Escolha uma rota de corrida primeiro.",
     "PLAYER_NOT_FOUND": "Esse piloto não foi encontrado.",
     "SHIP_ON_MISSION": "A nave está em missão.",
+    "SHIP_ADRIFT": "A nave está flutuando no espaço: ela não pode ser alterada até ser resgatada.",
     "SHIP_REPAIRING": "A nave está em reparo.",
     "ESCORT_NOT_AVAILABLE": "A escolta não pode ser chamada agora.",
     "FORMAT_CHANGE_REQUIRED": "Sua ponte mudou: escolha um formato de nave no Hangar antes de partir.",
