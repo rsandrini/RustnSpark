@@ -42,7 +42,7 @@ describe('rescue (S8.6 / S10.9)', () => {
     const popup = await screen.findByRole('dialog', { name: 'Floating in space' });
     expect(popup).toHaveTextContent('Nearest base: Porto Ceres, 300 away');
     expect(within(popup).getByTestId('floating-why')).toHaveTextContent(
-      'A leaking tank lost 182 fuel',
+      'A failing tank pump wasted 182 fuel',
     );
     expect(within(popup).getByTestId('floating-why')).toHaveTextContent('ran dry on leg 3');
     // a small map shows where the ship floats and where it would be towed; the full map is a link away

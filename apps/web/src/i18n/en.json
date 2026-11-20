@@ -1976,7 +1976,7 @@
       "adrift": "Ship adrift — out of fuel",
       "adriftWhy": {
         "short": "On leg {{leg}} the ship needed {{needed}} fuel to go on, but only {{had}} was left in the tank.",
-        "pump": "A failing tank pump wasted {{wasted}} of that.",
+        "pump": "A failing tank pump wasted {{wasted}} fuel along the way (it fails when it lacks power or is worn).",
         "leak": "A leaking tank lost {{lost}} fuel on the way.",
         "pushed": "{{group}} ran at {{level}}% of their listed power, which burns far more fuel."
       },
@@ -2564,10 +2564,10 @@
       "whyTitle": "What happened",
       "whyEnough": "You left port with enough fuel for the planned route, but it did not last:",
       "whyLeak": "A leaking tank lost {{lost}} fuel on the way.",
-      "whyPump": "A failing tank pump wasted {{wasted}} fuel.",
+      "whyPump": "A failing tank pump wasted {{wasted}} fuel along the way (it fails when it lacks power or is worn).",
       "whyDry": "The tank ran dry on leg {{leg}}.",
       "whyUnknown": "The tank ran dry before the route ended.",
-      "tip": "A worn tank leaks and a worn pump wastes fuel: repair them before the next run, and keep a margin in the tank.",
+      "tip": "A pump that lacks power or is worn wastes fuel, and so does a worn tank: check the power balance, repair them before the next run and keep a margin in the tank.",
       "waitTitle": "Wait for the rescue",
       "waitSub": "arrives in about {{minutes}} min, you pay then",
       "nowTitle": "Rescue now",

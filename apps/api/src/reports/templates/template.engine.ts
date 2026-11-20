@@ -356,6 +356,10 @@ function resolveToken(
     case 'find':
       return { t: 'text', value: findLine(event, locale, names) };
     case 'part': {
+      // a failing tank pump wastes fuel without hurting any part: that tank event names the pump, not a part
+      if (event.type === 'tank' && Object.keys(event.effects.condByPart).length === 0) {
+        return { t: 'text', value: locale === 'pt-BR' ? 'a bomba do tanque' : 'the tank pump' };
+      }
       const id = requirePartId(event);
       const entry = names.parts[id];
       return { t: 'ref', kind: 'part', id: entry?.partType ?? id, value: entry?.name ?? id };

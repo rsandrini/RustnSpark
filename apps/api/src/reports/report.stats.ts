@@ -32,6 +32,8 @@ export interface ReportStats {
   /** Parts that failed (motor, battery, tank, shield, weapon, sensor). */
   readonly partFailures: number;
   readonly fuelLost: number;
+  /** Of `fuelLost`, what a failing tank pump wasted (no part is hurt); the rest is a leaking tank part. */
+  readonly pumpWasted: number;
   /** What pirates took: parts from storage, or the cargo / the ground (`motive`). */
   /** What a scavenging job turned up. */
   readonly found: readonly {
@@ -122,6 +124,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
   let distance = 0;
   let partFailures = 0;
   let fuelLost = 0;
+  let pumpWasted = 0;
   let stolenParts = 0;
   let motive: string | null = null;
   let race: ReportStats['race'] = null;
@@ -150,7 +153,10 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     if (event.type === 'combat_draw') drawn += 1;
     if (event.type === 'pvp_encounter') pvp += 1;
     if (PART_FAILURE_TYPES.has(event.type)) partFailures += 1;
-    if (event.fuelLost !== undefined) fuelLost += event.fuelLost;
+    if (event.fuelLost !== undefined) {
+      fuelLost += event.fuelLost;
+      if (Object.keys(event.effects.condByPart).length === 0) pumpWasted += event.fuelLost;
+    }
     if (event.type === 'scavenge_find' && event.found !== undefined) {
       found.push({
         kind: event.found.kind,
@@ -238,6 +244,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     partsDamage,
     partFailures,
     fuelLost,
+    pumpWasted,
     found,
     pirates: { stolenParts, motive },
     race,

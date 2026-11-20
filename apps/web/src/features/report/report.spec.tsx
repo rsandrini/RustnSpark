@@ -532,6 +532,8 @@ describe('report (S10.8)', () => {
             outcome: 'adrift',
             stats: {
               ...STATS,
+              fuelLost: 9,
+              pumpWasted: 9,
               dry: { leg: 2, had: 28, needed: 41, wasted: 9 },
               engines: [
                 {
@@ -556,7 +558,7 @@ describe('report (S10.8)', () => {
     expect(why).toHaveTextContent(
       'On leg 2 the ship needed 41 fuel to go on, but only 28 was left',
     );
-    expect(why).toHaveTextContent('wasted 9');
+    expect(why).toHaveTextContent('pump wasted 9 fuel');
     expect(why).toHaveTextContent('ran at 145% of their listed power');
   });
 

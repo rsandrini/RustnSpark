@@ -249,4 +249,21 @@ describe('computeReportStats', () => {
     expect(dry).toEqual({ leg: 2, had: 28, needed: 41, wasted: 9 });
     expect(computeReportStats(log([]), names).dry).toBeNull();
   });
+
+  it('tells a failing pump (a tank event that hurts no part) from a leaking tank part', () => {
+    const stats = computeReportStats(
+      log([
+        event({ type: 'tank', category: 'failure', fuelLost: 48 }),
+        event({
+          type: 'tank',
+          category: 'failure',
+          fuelLost: 10,
+          effects: { hp: 0, condByPart: { 'tank-1': 40 }, credits: 0, loot: [] },
+        }),
+      ]),
+      { parts: {}, materials: {} },
+    );
+    expect(stats.fuelLost).toBe(58);
+    expect(stats.pumpWasted).toBe(48);
+  });
 });

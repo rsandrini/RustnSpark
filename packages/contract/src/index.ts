@@ -1118,6 +1118,8 @@ export const ReportStatsSchema = z.object({
   ),
   partFailures: z.number(),
   fuelLost: z.number(),
+  /** Of `fuelLost`, what a failing tank pump wasted; the rest is a leaking tank part. */
+  pumpWasted: z.number().optional(),
   found: z.array(
     z.object({
       kind: z.enum(['part', 'scrap']),

@@ -619,11 +619,17 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
                   })}
                 </li>
               )}
-              {stats.dry != null && stats.dry.wasted > 0 && (
-                <li>{t('report.outcome.adriftWhy.pump', { wasted: number(stats.dry.wasted) })}</li>
+              {(stats.pumpWasted ?? 0) > 0 && (
+                <li>
+                  {t('report.outcome.adriftWhy.pump', { wasted: number(stats.pumpWasted ?? 0) })}
+                </li>
               )}
-              {stats.fuelLost > 0 && (
-                <li>{t('report.outcome.adriftWhy.leak', { lost: number(stats.fuelLost) })}</li>
+              {stats.fuelLost - (stats.pumpWasted ?? 0) > 0 && (
+                <li>
+                  {t('report.outcome.adriftWhy.leak', {
+                    lost: number(stats.fuelLost - (stats.pumpWasted ?? 0)),
+                  })}
+                </li>
               )}
               {(stats.engines ?? [])
                 .filter((run) => run.levelPct > 100 && run.pushedLegs > 0)

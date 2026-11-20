@@ -1976,7 +1976,7 @@
       "adrift": "Nave à deriva — sem combustível",
       "adriftWhy": {
         "short": "No trecho {{leg}} a nave precisava de {{needed}} de combustível para seguir, mas só restavam {{had}} no tanque.",
-        "pump": "Uma bomba do tanque falhando desperdiçou {{wasted}} disso.",
+        "pump": "Uma bomba do tanque falhando desperdiçou {{wasted}} de combustível no caminho (ela falha quando falta energia ou está gasta).",
         "leak": "Um vazamento no tanque perdeu {{lost}} de combustível no caminho.",
         "pushed": "{{group}} rodaram a {{level}}% da potência listada, o que queima muito mais combustível."
       },
@@ -2564,10 +2564,10 @@
       "whyTitle": "O que aconteceu",
       "whyEnough": "Você saiu do porto com combustível suficiente para a rota planejada, mas ele não durou:",
       "whyLeak": "Um vazamento no tanque perdeu {{lost}} de combustível no caminho.",
-      "whyPump": "Uma bomba do tanque falhando desperdiçou {{wasted}} de combustível.",
+      "whyPump": "Uma bomba do tanque falhando desperdiçou {{wasted}} de combustível no caminho (ela falha quando falta energia ou está gasta).",
       "whyDry": "O tanque secou no trecho {{leg}}.",
       "whyUnknown": "O tanque secou antes do fim da rota.",
-      "tip": "Um tanque gasto vaza e uma bomba gasta desperdiça combustível: conserte-os antes da próxima viagem e deixe uma folga no tanque.",
+      "tip": "Uma bomba sem energia ou gasta desperdiça combustível, e um tanque gasto também: confira o balanço de energia, conserte-os antes da próxima viagem e deixe uma folga no tanque.",
       "waitTitle": "Esperar o resgate",
       "waitSub": "Aguarde {{minutes}} minutos para ser rebocado, pague somente no final do tempo",
       "nowTitle": "Resgate agora",

@@ -127,6 +127,22 @@ export interface RescueOptions {
   cause: DryCause | null;
 }
 
+/** The fuel the run's tank events cost: those that hurt a part (a leak) or those that did not (the pump). */
+function sumTankFuel(
+  rows: ReadonlyArray<{
+    type?: string;
+    fuelLost?: number;
+    effects?: { condByPart?: Record<string, unknown> };
+  }>,
+  withPart: boolean,
+): number {
+  return rows.reduce((sum, event) => {
+    if (event.type !== 'tank') return sum;
+    const hasPart = Object.keys(event.effects?.condByPart ?? {}).length > 0;
+    return hasPart === withPart ? sum + (event.fuelLost ?? 0) : sum;
+  }, 0);
+}
+
 export interface DryCause {
   /** The leg (1-based) where the fuel ran out. */
   leg: number;
@@ -897,17 +913,16 @@ export class ShipsService implements OnModuleInit {
       type?: string;
       leg?: number;
       fuelLost?: number;
+      effects?: { condByPart?: Record<string, unknown> };
       dry?: { wasted?: number };
     }>;
     const dry = rows.find((event) => event.type === 'fuel_exhausted');
     if (dry === undefined) return null;
     return {
       leg: (dry.leg ?? 0) + 1,
-      leakLost: rows.reduce(
-        (sum, event) => sum + (event.type === 'tank' ? (event.fuelLost ?? 0) : 0),
-        0,
-      ),
-      pumpWasted: dry.dry?.wasted ?? 0,
+      // a tank event that names a part is a leak; one that names none is the pump wasting fuel
+      leakLost: sumTankFuel(rows, true),
+      pumpWasted: sumTankFuel(rows, false),
     };
   }
 
