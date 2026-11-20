@@ -128,6 +128,7 @@ export function RescueBanner() {
       {adrift && ship !== undefined && options !== null && (
         <FloatingPopup
           open={popupOpen}
+          ship={ship}
           onClose={closePopup}
           rescue={options}
           baseName={baseName}

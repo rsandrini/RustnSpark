@@ -45,6 +45,9 @@ describe('rescue (S8.6 / S10.9)', () => {
       'A leaking tank lost 182 fuel',
     );
     expect(within(popup).getByTestId('floating-why')).toHaveTextContent('ran dry on leg 3');
+    // a small map shows where the ship floats and where it would be towed; the full map is a link away
+    expect(await within(popup).findByTestId('tow-minimap')).toBeInTheDocument();
+    expect(within(popup).getByTestId('floating-map-link')).toHaveAttribute('href', '/map');
     // the top bar says where the ship is, not "docked"
     expect(screen.getAllByText('Floating in space').length).toBeGreaterThan(1);
     expect(within(popup).getByRole('button', { name: /Wait for the rescue/ })).toHaveTextContent(

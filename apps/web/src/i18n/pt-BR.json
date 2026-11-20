@@ -2343,6 +2343,9 @@
     "title": "Mapa do setor",
     "hint": "Selecione um lugar para ver as missões.",
     "youAreHere": "Você está aqui",
+    "destination": "Destino",
+    "missionsHere": "{{count}} missão aqui",
+    "missionsHere_other": "{{count}} missões aqui",
     "pilotsDocked": "Pilotos atracados aqui: {{count}}",
     "quest": {
       "flag": "Viagem planejada: {{title}}",
@@ -2551,7 +2554,10 @@
     "popup": {
       "open": "Opções de resgate",
       "choose": "Escolher ›",
-      "seeOnMap": "Ver no mapa",
+      "seeOnMap": "Abrir o mapa completo",
+      "mapAlt": "Mapa: sua nave flutua longe de {{base}}, para onde o resgate a rebocaria",
+      "mapShip": "Sua nave",
+      "mapBase": "Rebocada para {{base}}",
       "lead": "Sua nave ficou sem combustível e flutua onde parou, com os motores apagados. Nada pode ser feito com ela até ser rebocada para uma base.",
       "whyTitle": "O que aconteceu",
       "whyEnough": "Você saiu do porto com combustível suficiente para a rota planejada, mas ele não durou:",

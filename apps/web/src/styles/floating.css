@@ -60,6 +60,50 @@
   transform-origin: 110px 55px;
   animation: floatpop-drift 9s ease-in-out infinite alternate;
 }
+.floatpop-minimap {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  background: #070a10;
+  border: 1px solid var(--rule-3, #2a3140);
+}
+.mm-route {
+  stroke: #2a3346;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+.mm-place {
+  fill: #46526b;
+}
+.mm-tow {
+  stroke: var(--brass, #d4a24c);
+  stroke-dasharray: 7 6;
+}
+.mm-base {
+  fill: color-mix(in oklab, var(--brass, #d4a24c) 25%, transparent);
+  stroke: var(--brass, #d4a24c);
+  stroke-width: 2;
+}
+.mm-ship {
+  fill: var(--bad, #e5594f);
+}
+.mm-ship-halo {
+  fill: color-mix(in oklab, var(--bad, #e5594f) 20%, transparent);
+  stroke: var(--bad, #e5594f);
+  stroke-width: 1.5;
+}
+.mm-label {
+  font-family: var(--font-body, sans-serif);
+  font-weight: 700;
+  text-anchor: middle;
+}
+.mm-base-label {
+  fill: var(--brass, #d4a24c);
+}
+.mm-ship-label {
+  fill: #ff8a80;
+}
 .floatpop-lead {
   margin: 4px 0;
 }

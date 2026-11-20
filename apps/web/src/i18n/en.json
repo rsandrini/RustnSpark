@@ -2343,6 +2343,9 @@
     "title": "Sector map",
     "hint": "Select a place to see its missions.",
     "youAreHere": "You are here",
+    "destination": "Destination",
+    "missionsHere": "{{count}} mission here",
+    "missionsHere_other": "{{count}} missions here",
     "pilotsDocked": "Pilots docked here: {{count}}",
     "quest": {
       "flag": "Planned trip: {{title}}",
@@ -2551,7 +2554,10 @@
     "popup": {
       "open": "Rescue options",
       "choose": "Choose ›",
-      "seeOnMap": "See it on the map",
+      "seeOnMap": "Open the full map",
+      "mapAlt": "Map: your ship floats away from {{base}}, where the rescue would tow it",
+      "mapShip": "Your ship",
+      "mapBase": "Towed to {{base}}",
       "lead": "Your ship ran out of fuel and drifts where it stopped, engines dark. Nothing can be done with it until it is towed to a base.",
       "whyTitle": "What happened",
       "whyEnough": "You left port with enough fuel for the planned route, but it did not last:",

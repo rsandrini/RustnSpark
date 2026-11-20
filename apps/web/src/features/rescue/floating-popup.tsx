@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { ShipResponse } from '../../api/generated';
 import { Countdown } from '../../ui/Countdown';
 import { Popup } from '../../ui/Popup';
+import { TowMiniMap } from './tow-minimap';
 import '../../styles/floating.css';
 
 type Mode = 'now' | 'wait';
@@ -12,6 +13,7 @@ const SECONDS_PER_MINUTE = 60;
 
 export interface FloatingPopupProps {
   open: boolean;
+  ship: ShipResponse;
   onClose: () => void;
   rescue: Rescue;
   baseName: string;
@@ -44,6 +46,7 @@ function DriftingShip() {
  */
 export function FloatingPopup({
   open,
+  ship,
   onClose,
   rescue,
   baseName,
@@ -85,6 +88,7 @@ export function FloatingPopup({
           </>
         )}
       </section>
+      <TowMiniMap ship={ship} />
       <p className="sub">
         {t('rescue.nearestBase', { base: baseName, distance: rescue.baseDistance })}{' '}
         <Link to="/map" className="floatpop-maplink" data-testid="floating-map-link">

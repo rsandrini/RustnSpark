@@ -38,6 +38,7 @@ const HINT_RADIUS = 3;
 
 /** How far the map zooms in on the port the ship is stopped at when it opens. */
 const SHIP_FOCUS_SCALE = 5;
+const NODE_SHRINK = 0.9;
 
 /** Room kept around a trip under way when the map opens centred on it. */
 const TRIP_FOCUS_MARGIN = 140;
@@ -271,7 +272,8 @@ export function MapPage({ guided = false }: MapPageProps) {
   );
   const shownAtZoom = (location: WorldLocation): boolean =>
     camera.scale >= DETAIL_MIN_SCALE[location.detail] || alwaysShown.has(location.id);
-  const nodeScale = 1 / Math.sqrt(camera.scale);
+  // Places and labels shrink as the map zooms in so they stay readable: nearly constant on screen (1.3x at the closest zoom).
+  const nodeScale = 1 / camera.scale ** NODE_SHRINK;
   const hiddenCount = (world?.locations ?? []).filter((location) => !shownAtZoom(location)).length;
 
   // Where a rescue would tow the floating ship: the nearest base, marked on the map.
@@ -553,12 +555,23 @@ export function MapPage({ guided = false }: MapPageProps) {
                     </>
                   )}
                   {isDestination && (
-                    <circle
-                      className="dest-ring"
-                      cx={location.x}
-                      cy={location.y}
-                      r={NODE_RADIUS + 8}
-                    />
+                    <>
+                      <circle
+                        className="dest-ring"
+                        cx={location.x}
+                        cy={location.y}
+                        r={NODE_RADIUS + 8}
+                      />
+                      <g
+                        className="dest-tag"
+                        data-testid="dest-tag"
+                        transform={`translate(${location.x} ${location.y - 34})`}
+                      >
+                        <rect x={-50} y={-11} width={100} height={18} rx={9} />
+                        <text y={2}>{t('map.destination')}</text>
+                        <path d="M-5,7 L0,13 L5,7 Z" />
+                      </g>
+                    </>
                   )}
                   <text className="nlabel" x={location.x} y={location.y + 24}>
                     {nameOf(location)}
@@ -567,9 +580,15 @@ export function MapPage({ guided = false }: MapPageProps) {
                     {t(`map.types.${location.type}`, { defaultValue: location.type })}
                   </text>
                   {location.missionCount > 0 && (
-                    <text className="miss-count" x={location.x} y={location.y - 16}>
-                      {location.missionCount}
-                    </text>
+                    // a badge on the place: the number of missions on offer there
+                    <g
+                      className="miss-badge"
+                      transform={`translate(${location.x + 13} ${location.y - 13})`}
+                    >
+                      <title>{t('map.missionsHere', { count: location.missionCount })}</title>
+                      <circle r={7.5} />
+                      <text y={3.5}>{location.missionCount}</text>
+                    </g>
                   )}
                 </g>
               );

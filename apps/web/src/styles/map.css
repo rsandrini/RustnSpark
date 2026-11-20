@@ -245,6 +245,37 @@
   stroke: var(--brass);
   opacity: 1;
 }
+.miss-badge circle {
+  fill: var(--brass);
+  stroke: var(--paper);
+  stroke-width: 1.5;
+}
+.miss-badge text {
+  fill: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.dest-tag {
+  pointer-events: none;
+}
+.dest-tag rect,
+.dest-tag path {
+  fill: var(--ok, #4cc38a);
+}
+.dest-tag text {
+  fill: var(--paper);
+  font-size: 10px;
+  font-weight: 800;
+  text-anchor: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.dest-ring {
+  stroke: var(--ok, #4cc38a);
+}
 .miss-count {
   fill: var(--brass);
   font-family: var(--font-mono);
