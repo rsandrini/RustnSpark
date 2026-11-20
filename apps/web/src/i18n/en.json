@@ -1975,12 +1975,12 @@
       "failed": "Mission failed",
       "adrift": "Ship adrift — out of fuel",
       "adriftWhy": {
-        "short": "On leg {{leg}} the ship needed {{needed}} fuel to go on, but only {{had}} was left in the tank.",
-        "pump": "A failing tank pump wasted {{wasted}} fuel along the way (it fails when it lacks power or is worn).",
-        "leak": "A leaking tank lost {{lost}} fuel on the way.",
+        "short": "On leg {{leg}} the ship needed {{needed}} of fuel to go on, but only {{had}} was left in the tank.",
+        "pump": "A failing tank pump wasted {{wasted}} of fuel along the way (it fails when it lacks power or is worn).",
+        "leak": "A leaking tank lost {{lost}} of fuel on the way.",
         "pushed": "{{group}} ran at {{level}}% of their listed power, which burns far more fuel.",
         "dryLeg": "The tank ran dry on leg {{leg}}.",
-        "plan": "Leg {{leg}} was planned to burn {{base}} fuel and the tank held {{had}}: enough on paper.",
+        "plan": "Leg {{leg}} was planned to burn {{base}} of fuel and the tank held {{had}}: enough on paper.",
         "pumpFail": "The tank pump failed and wasted {{wasted}} more, so the leg needed {{needed}}.",
         "pumpChance": "With the power it gets, the pump works only {{chance}}% of the time."
       },
@@ -2133,7 +2133,9 @@
       "leak": "leak {{fuel}}",
       "needed": "needed {{needed}}, had {{had}}",
       "tankMove": "tank {{before}} → {{after}}",
-      "key": "Bar: planned burn, pump waste, leak."
+      "key": "Bar: planned burn, pump waste, leak.",
+      "unit": "{{value}} units",
+      "used": "Fuel used: {{fuel}}"
     }
   },
   "transit": {

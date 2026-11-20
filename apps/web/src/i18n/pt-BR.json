@@ -2133,7 +2133,9 @@
       "leak": "vazamento {{fuel}}",
       "needed": "precisou de {{needed}}, tinha {{had}}",
       "tankMove": "tanque {{before}} → {{after}}",
-      "key": "Barra: gasto previsto, desperdício da bomba, vazamento."
+      "key": "Barra: gasto previsto, desperdício da bomba, vazamento.",
+      "unit": "{{value}} unidades",
+      "used": "Combustível utilizado: {{fuel}}"
     }
   },
   "transit": {

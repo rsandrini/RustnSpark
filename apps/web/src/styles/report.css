@@ -659,3 +659,8 @@ tr.ev-transit td:first-child {
   color: var(--bad);
   font-weight: 600;
 }
+
+.legs-used {
+  margin-top: 2px;
+  font-weight: 600;
+}

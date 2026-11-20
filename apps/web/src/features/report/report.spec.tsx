@@ -284,18 +284,21 @@ describe('report (S10.8)', () => {
     renderWithRouter(routes, { initialEntries: ['/report/m-legs'] });
     fireEvent.click(await screen.findByRole('tab', { name: 'By leg' }));
     const table = await screen.findByTestId('report-legs');
-    expect(table).toHaveTextContent('600 in the tank');
-    expect(table).toHaveTextContent('tank 600 → 450');
-    expect(table).toHaveTextContent('planned 102');
-    expect(table).toHaveTextContent('pump waste 48');
+    expect(table).toHaveTextContent('600 units in the tank');
+    expect(table).toHaveTextContent('tank 600 units → 450 units');
+    expect(table).toHaveTextContent('planned 102 units');
+    expect(table).toHaveTextContent('Fuel used: 150 units');
+    expect(table).toHaveTextContent('pump waste 48 units');
     expect(table).toHaveTextContent('Shield 5 · armor 2 · hull 1');
-    expect(table).toHaveTextContent('needed 540, had 450');
+    expect(table).toHaveTextContent('needed 540 units, had 450 units');
     expect(table).toHaveTextContent('ran dry');
     expect(table).toHaveTextContent('works only 40% of the time');
     // the report says it in words too: planned, then the pump
     const why = screen.getByTestId('adrift-why');
-    expect(why).toHaveTextContent('planned to burn 450 fuel and the tank held 450');
-    expect(why).toHaveTextContent('pump failed and wasted 90 more, so the leg needed 540');
+    expect(why).toHaveTextContent('planned to burn 450 units of fuel and the tank held 450 units');
+    expect(why).toHaveTextContent(
+      'pump failed and wasted 90 units more, so the leg needed 540 units',
+    );
   });
 
   it('opens a detail popup for a loot reference', async () => {
@@ -611,8 +614,12 @@ describe('report (S10.8)', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/report/m-dry'] });
     const why = await screen.findByTestId('adrift-why');
-    expect(why).toHaveTextContent('Leg 2 was planned to burn 32 fuel and the tank held 28');
-    expect(why).toHaveTextContent('pump failed and wasted 9 more, so the leg needed 41');
+    expect(why).toHaveTextContent(
+      'Leg 2 was planned to burn 32 units of fuel and the tank held 28 units',
+    );
+    expect(why).toHaveTextContent(
+      'pump failed and wasted 9 units more, so the leg needed 41 units',
+    );
     expect(why).toHaveTextContent('ran at 145% of their listed power');
   });
 

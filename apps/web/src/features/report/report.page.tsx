@@ -489,6 +489,7 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
   const display = useDisplay();
   const tone = outcomeTone(outcome);
   const number = (value: number) => new Intl.NumberFormat(i18n.language).format(value);
+  const fuel = (value: number) => t('report.legs.unit', { value: number(value) });
   const place = (id: string) => {
     const found = world?.locations.find((entry) => entry.id === id);
     return found === undefined ? id : pickLocalized(found.displayName, i18n.language);
@@ -587,14 +588,14 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
                   <li>
                     {t('report.outcome.adriftWhy.plan', {
                       leg: stats.dry.leg,
-                      base: number(stats.dry.needed - stats.dry.wasted),
-                      had: number(stats.dry.had),
+                      base: fuel(stats.dry.needed - stats.dry.wasted),
+                      had: fuel(stats.dry.had),
                     })}
                   </li>
                   <li>
                     {t('report.outcome.adriftWhy.pumpFail', {
-                      wasted: number(stats.dry.wasted),
-                      needed: number(stats.dry.needed),
+                      wasted: fuel(stats.dry.wasted),
+                      needed: fuel(stats.dry.needed),
                     })}
                     {stats.dry.chancePct !== undefined &&
                       ` ${t('report.outcome.adriftWhy.pumpChance', { chance: stats.dry.chancePct })}`}
@@ -605,14 +606,14 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
                 <li>
                   {t('report.outcome.adriftWhy.short', {
                     leg: stats.dry.leg,
-                    needed: number(stats.dry.needed),
-                    had: number(stats.dry.had),
+                    needed: fuel(stats.dry.needed),
+                    had: fuel(stats.dry.had),
                   })}
                 </li>
               )}
               {(stats.pumpWasted ?? 0) > 0 && stats.dry == null && (
                 <li>
-                  {t('report.outcome.adriftWhy.pump', { wasted: number(stats.pumpWasted ?? 0) })}
+                  {t('report.outcome.adriftWhy.pump', { wasted: fuel(stats.pumpWasted ?? 0) })}
                 </li>
               )}
               {(stats.leakLost ?? Math.max(0, stats.fuelLost - (stats.pumpWasted ?? 0))) > 0 && (

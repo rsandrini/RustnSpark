@@ -11,6 +11,7 @@ const FULL = 100;
 export function ReportLegs({ stats }: { stats: ReportStats }) {
   const { t, i18n } = useTranslation();
   const number = (value: number) => new Intl.NumberFormat(i18n.language).format(Math.round(value));
+  const fuel = (value: number) => t('report.legs.unit', { value: number(value) });
   const legs = stats.byLeg ?? [];
   const start = stats.startFuel ?? null;
   if (legs.length === 0) {
@@ -23,7 +24,7 @@ export function ReportLegs({ stats }: { stats: ReportStats }) {
     <section className="report-legs" data-testid="report-legs">
       {start !== null && (
         <p className="legs-start">
-          <b>{t('report.legs.start')}</b> {t('report.legs.inTank', { fuel: number(start) })}
+          <b>{t('report.legs.start')}</b> {t('report.legs.inTank', { fuel: fuel(start) })}
         </p>
       )}
       <table className="legs-table">
@@ -55,31 +56,36 @@ export function ReportLegs({ stats }: { stats: ReportStats }) {
                       <span>
                         {dry
                           ? t('report.legs.needed', {
-                              needed: number(row.fuelNeeded ?? base + pump),
-                              had: number(row.fuelBefore),
+                              needed: fuel(row.fuelNeeded ?? base + pump),
+                              had: fuel(row.fuelBefore),
                             })
                           : t('report.legs.tankMove', {
-                              before: number(row.fuelBefore),
-                              after: number(row.fuelAfter ?? 0),
+                              before: fuel(row.fuelBefore),
+                              after: fuel(row.fuelAfter ?? 0),
                             })}
                       </span>
                     )}
                     {dry && <b className="legs-ran-dry">{t('report.legs.ranDry')}</b>}
                   </div>
+                  {!dry && row.fuelBase != null && (
+                    <div className="legs-used">
+                      {t('report.legs.used', { fuel: fuel(base + pump + leak) })}
+                    </div>
+                  )}
                   <div className="legs-parts">
                     {row.fuelBase != null && (
                       <span className="legs-part base">
-                        {t('report.legs.planned', { fuel: number(row.fuelBase) })}
+                        {t('report.legs.planned', { fuel: fuel(row.fuelBase) })}
                       </span>
                     )}
                     {pump > 0 && (
                       <span className="legs-part pump">
-                        {t('report.legs.pump', { fuel: number(pump) })}
+                        {t('report.legs.pump', { fuel: fuel(pump) })}
                       </span>
                     )}
                     {leak > 0 && (
                       <span className="legs-part leak">
-                        {t('report.legs.leak', { fuel: number(leak) })}
+                        {t('report.legs.leak', { fuel: fuel(leak) })}
                       </span>
                     )}
                   </div>
