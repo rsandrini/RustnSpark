@@ -52,7 +52,8 @@ export function FloatingPopup({
   busy,
   onElapsed,
 }: FloatingPopupProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const money = (value: number) => new Intl.NumberFormat(i18n.language).format(value);
   const waiting = rescue.dueAt != null;
   const minutes = Math.max(1, Math.round(rescue.waitSeconds / SECONDS_PER_MINUTE));
   const cause = rescue.cause ?? null;
@@ -101,7 +102,7 @@ export function FloatingPopup({
           >
             <b>{t('rescue.popup.waitTitle')}</b>
             <span className="floatpop-price">
-              {t('rescue.popup.price', { cost: rescue.waitCost })}
+              {t('rescue.popup.price', { cost: money(rescue.waitCost) })}
             </span>
             <small>{t('rescue.popup.waitSub', { minutes })}</small>
           </button>
@@ -113,7 +114,7 @@ export function FloatingPopup({
           >
             <b>{t('rescue.popup.nowTitle')}</b>
             <span className="floatpop-price">
-              {t('rescue.popup.price', { cost: rescue.nowCost })}
+              {t('rescue.popup.price', { cost: money(rescue.nowCost) })}
             </span>
             <small>{t('rescue.popup.nowSub')}</small>
           </button>
