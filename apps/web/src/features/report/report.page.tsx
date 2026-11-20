@@ -53,7 +53,7 @@ export function ReportPage({ guided = false }: ReportPageProps) {
   // "Overview" is a client-only tab: everything it shows is `report.stats`, which comes back on
   // every server view alike, so it never needs a view of its own — it rides along on whichever
   // real view was last fetched (cheapest: 'summary').
-  type ReportTab = 'overview' | 'legs' | 'narrative' | 'log';
+  type ReportTab = 'overview' | 'legs' | 'narrative';
   // A #combat link (from the mission history) goes straight to the story, where the fight is.
   const [tab, setTab] = useState<ReportTab>(location.hash === '#combat' ? 'narrative' : 'overview');
   const view: ReportViewName = tab === 'overview' || tab === 'legs' ? 'summary' : tab;
@@ -120,7 +120,7 @@ export function ReportPage({ guided = false }: ReportPageProps) {
     </span>
   );
 
-  const tabs: readonly ReportTab[] = ['overview', 'legs', 'narrative', 'log'];
+  const tabs: readonly ReportTab[] = ['overview', 'legs', 'narrative'];
   const placeName = (id: string) => {
     const found = worldQuery.data?.locations.find((entry) => entry.id === id);
     return found === undefined ? id : pickLocalized(found.displayName, i18n.language);
@@ -178,42 +178,6 @@ export function ReportPage({ guided = false }: ReportPageProps) {
 
           {tab === 'overview' && <ReportOverview stats={report.stats} />}
           {tab === 'legs' && <ReportLegs stats={report.stats} />}
-
-          {tab !== 'overview' && tab !== 'legs' && report.view === 'log' && (
-            <div
-              className="log-table-wrap"
-              role="region"
-              aria-label={t('report.eventDetails')}
-              tabIndex={0}
-            >
-              <table className="log-table" data-testid="log-table">
-                <thead>
-                  <tr>
-                    <th>{t('report.logTable.leg')}</th>
-                    <th>{t('report.logTable.kind')}</th>
-                    <th>{t('report.logTable.what')}</th>
-                    <th>{t('report.logTable.effect')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.lines.map((line, index) => (
-                    <tr key={index} className={`ev ev-${line.category ?? 'other'}`}>
-                      <td>{line.leg === undefined ? '' : line.leg + 1}</td>
-                      <td>
-                        <span className={`ev-tag ev-${line.category ?? 'other'}`}>
-                          {line.categoryLabel ?? ''}
-                        </span>
-                      </td>
-                      <td>{renderLine(line.description ?? line, `d${index}`)}</td>
-                      <td className="log-effect">
-                        {line.effect === undefined ? '' : renderLine(line.effect, `e${index}`)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
 
           {tab !== 'overview' && tab !== 'legs' && report.view === 'narrative' && (
             <section className="stack report-story">
@@ -618,7 +582,26 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
               {stats.dry == null && dryLeg !== undefined && (
                 <li>{t('report.outcome.adriftWhy.dryLeg', { leg: dryLeg.leg })}</li>
               )}
-              {stats.dry != null && (
+              {stats.dry != null && stats.dry.wasted > 0 && (
+                <>
+                  <li>
+                    {t('report.outcome.adriftWhy.plan', {
+                      leg: stats.dry.leg,
+                      base: number(stats.dry.needed - stats.dry.wasted),
+                      had: number(stats.dry.had),
+                    })}
+                  </li>
+                  <li>
+                    {t('report.outcome.adriftWhy.pumpFail', {
+                      wasted: number(stats.dry.wasted),
+                      needed: number(stats.dry.needed),
+                    })}
+                    {stats.dry.chancePct !== undefined &&
+                      ` ${t('report.outcome.adriftWhy.pumpChance', { chance: stats.dry.chancePct })}`}
+                  </li>
+                </>
+              )}
+              {stats.dry != null && stats.dry.wasted <= 0 && (
                 <li>
                   {t('report.outcome.adriftWhy.short', {
                     leg: stats.dry.leg,
@@ -627,15 +610,17 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
                   })}
                 </li>
               )}
-              {(stats.pumpWasted ?? 0) > 0 && (
+              {(stats.pumpWasted ?? 0) > 0 && stats.dry == null && (
                 <li>
                   {t('report.outcome.adriftWhy.pump', { wasted: number(stats.pumpWasted ?? 0) })}
                 </li>
               )}
-              {stats.fuelLost - (stats.pumpWasted ?? 0) > 0 && (
+              {(stats.leakLost ?? Math.max(0, stats.fuelLost - (stats.pumpWasted ?? 0))) > 0 && (
                 <li>
                   {t('report.outcome.adriftWhy.leak', {
-                    lost: number(stats.fuelLost - (stats.pumpWasted ?? 0)),
+                    lost: number(
+                      stats.leakLost ?? Math.max(0, stats.fuelLost - (stats.pumpWasted ?? 0)),
+                    ),
                   })}
                 </li>
               )}

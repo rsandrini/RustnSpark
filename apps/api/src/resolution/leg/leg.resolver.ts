@@ -349,9 +349,12 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   const powerSituation = input.context.mining !== null ? 'mining' : 'cruise';
   let engineFactor = 1;
   let wastedFuel = 0;
+  // the chance the tank pump worked on this leg, when the ship has one (a failed roll wastes fuel)
+  let pumpChancePct: number | undefined;
   let cruisePower = layeredPower ? allocatePower(powerParts, powerSituation, rules) : null;
   if (cruisePower !== null && powerParts.some((part) => part.kind === 'pump')) {
     const chance = successChance(cruisePower.byKind.pump, rules);
+    pumpChancePct = chance * PERCENT;
     if (chance < 1 && powerRng.float() >= chance) {
       engineFactor = rules.power.pump_engine_factor;
       cruisePower = allocatePower(powerParts, powerSituation, rules, engineFactor);
@@ -369,7 +372,12 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
         type: 'fuel_exhausted',
         actors,
         magnitude: input.ship.fuel,
-        dry: { had: input.ship.fuel, needed: fuelBurned, wasted: wastedFuel },
+        dry: {
+          had: input.ship.fuel,
+          needed: fuelBurned,
+          wasted: wastedFuel,
+          ...(pumpChancePct !== undefined ? { chancePct: pumpChancePct } : {}),
+        },
         credits: 0,
       }),
     );

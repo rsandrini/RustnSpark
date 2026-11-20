@@ -104,8 +104,8 @@ test('the game screens and their states', async ({ page }, info) => {
   await audit(page, `${width} report overview`);
   await page.getByRole('tab', { name: 'The story' }).click();
   await audit(page, `${width} report story`);
-  await page.getByRole('tab', { name: 'Log' }).click();
-  await audit(page, `${width} report log`);
+  await page.getByRole('tab', { name: 'By leg' }).click();
+  await audit(page, `${width} report by leg`);
   await page.goto('/profile');
   await audit(page, `${width} /profile`);
 });

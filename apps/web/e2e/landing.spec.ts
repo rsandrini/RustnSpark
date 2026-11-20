@@ -20,10 +20,9 @@ for (const path of ['/login', '/register']) {
     await expect(page.getByText(/Assemble a ship from parts/i)).toBeVisible();
     await expect(page.getByTestId('landing-facts')).toBeVisible();
 
-    await expect(page.getByRole('tab', { name: path === '/login' ? /Sign in/i : /Create account/i })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    await expect(
+      page.getByRole('tab', { name: path === '/login' ? /Sign in/i : /Create account/i }),
+    ).toHaveAttribute('aria-selected', 'true');
 
     if (path === '/login') {
       await expect(page.getByLabel('Email')).toBeVisible();
@@ -38,7 +37,11 @@ for (const path of ['/login', '/register']) {
 
     for (const section of LANDING_SECTIONS) {
       await expect(page.getByRole('heading', { name: section.title })).toBeVisible();
-      await expect(page.locator(`section:has(> div .landing-shot)[aria-labelledby="landing-${section.id}-title"]`)).toBeVisible();
+      await expect(
+        page.locator(
+          `section:has(> div .landing-shot)[aria-labelledby="landing-${section.id}-title"]`,
+        ),
+      ).toBeVisible();
     }
 
     await assertClean(page, path);
@@ -52,7 +55,10 @@ test('the auth tabs switch between sign-in and create-account', async ({ page })
 
   await page.getByRole('tab', { name: 'Create account' }).click();
   await expect(page).toHaveURL(/\/register$/);
-  await expect(page.getByRole('tab', { name: 'Create account' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Create account' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
   await expect(page.getByLabel('Name')).toBeVisible();
 
   await page.getByRole('tab', { name: 'Sign in' }).click();
@@ -65,7 +71,9 @@ test('the landing page renders in Brazilian Portuguese', async ({ page }) => {
   await page.getByLabel(/language/i).selectOption('pt-BR');
   await expect(page.getByRole('heading', { name: /Rust and Spark/i, level: 1 })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Entrar' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /Sua nave é um quebra-cabeça de peças/i })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: /Sua nave é um quebra-cabeça de peças/i }),
+  ).toBeVisible();
   await assertClean(page, '/login pt-BR');
 });
 

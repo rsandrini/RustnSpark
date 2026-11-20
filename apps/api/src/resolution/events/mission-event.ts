@@ -209,7 +209,13 @@ export interface MissionEvent {
   /** v2, `engine_tuning` only: how an engine group was run this leg (see `MissionEngineTuning`). */
   readonly tuning?: MissionEngineTuning;
   /** v2, `fuel_exhausted` only: the fuel in the tank, what the leg needed, and how much of that a failed pump wasted. */
-  readonly dry?: { readonly had: number; readonly needed: number; readonly wasted: number };
+  readonly dry?: {
+    readonly had: number;
+    readonly needed: number;
+    readonly wasted: number;
+    /** The chance the tank pump worked that leg (percent), when the ship has a pump. */
+    readonly chancePct?: number;
+  };
   /** v2, `scavenge_find` only: what the search turned up. */
   readonly found?: {
     readonly kind: 'part' | 'scrap';
@@ -260,7 +266,7 @@ export function missionEvent(input: {
   found?: { kind: 'part' | 'scrap'; partType: string; condition: number };
   race?: MissionEvent['race'];
   tuning?: MissionEngineTuning;
-  dry?: { had: number; needed: number; wasted: number };
+  dry?: { had: number; needed: number; wasted: number; chancePct?: number };
 }): MissionEvent {
   return {
     leg: input.leg,
@@ -351,6 +357,9 @@ export function missionEvent(input: {
             had: roundInt(input.dry.had),
             needed: roundInt(input.dry.needed),
             wasted: roundInt(input.dry.wasted),
+            ...(input.dry.chancePct !== undefined
+              ? { chancePct: roundInt(input.dry.chancePct) }
+              : {}),
           },
         }
       : {}),

@@ -210,7 +210,12 @@ function eventMembers(
           });
         }
         if (type === 'fuel_exhausted') {
-          extras['dry'] = object({ had: num, needed: num, wasted: num }).optional();
+          extras['dry'] = object({
+            had: num,
+            needed: num,
+            wasted: num,
+            chancePct: num.optional(),
+          }).optional();
         }
         if (type === 'engine_tuning') {
           extras['tuning'] = object({

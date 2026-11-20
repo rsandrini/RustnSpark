@@ -156,16 +156,6 @@ describe('report (S10.8)', () => {
     expect(screen.queryByRole('dialog', { name: 'Event details' })).not.toBeInTheDocument();
   });
 
-  it('renders the raw log view', async () => {
-    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
-
-    fireEvent.click(await screen.findByRole('tab', { name: 'Log' }));
-
-    expect(await screen.findByTestId('log-table')).toBeInTheDocument();
-    expect(await screen.findByText('[00:42] combat pirate')).toBeInTheDocument();
-    expect(screen.getByText('[00:00] depart ceres')).toBeInTheDocument();
-  });
-
   it('shows a placeholder when the mission has no report yet', async () => {
     server.use(
       http.get('/v1/reports', () => HttpResponse.json({ items: [] }, { status: 200 })),
@@ -202,17 +192,16 @@ describe('report (S10.8)', () => {
   it('keeps the tab bar on screen while the next view loads', async () => {
     server.use(
       http.get('/v1/reports/:missionId', async ({ request }) => {
-        const view = new URL(request.url).searchParams.get('view') ?? 'narrative';
-        if (view === 'log') await delay(200);
+        const view = new URL(request.url).searchParams.get('view') ?? 'summary';
+        if (view === 'summary') await delay(200);
         return HttpResponse.json(
           {
             locale: 'en',
             outcome: 'success',
             stats: STATS,
-            view: view === 'log' ? 'log' : 'narrative',
-            ...(view === 'log'
-              ? { lines: [{ text: 'Log line', segments: [{ t: 'text', value: 'Log line' }] }] }
-              : {
+            view: view === 'narrative' ? 'narrative' : 'summary',
+            ...(view === 'narrative'
+              ? {
                   chapters: [
                     {
                       leg: 1,
@@ -223,7 +212,8 @@ describe('report (S10.8)', () => {
                       lines: [],
                     },
                   ],
-                }),
+                }
+              : { lines: [] }),
           },
           { status: 200 },
         );
@@ -233,16 +223,18 @@ describe('report (S10.8)', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'The story' }));
     await screen.findByText('Story line');
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Log' }));
-    // Mid-load: still the previous view, still the tabs — no full-page "Loading".
+    fireEvent.click(screen.getByRole('tab', { name: 'Overview' }));
+    // Mid-load: still the tabs — no full-page "Loading".
     expect(screen.getByRole('tab', { name: 'Overview' })).toBeInTheDocument();
-    expect(screen.getByText('Story line')).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByRole('tab', { name: 'Log' })).toHaveAttribute('aria-selected', 'true'),
+      expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
     );
   });
 
-  it('the By leg tab shows the fuel left after each leg and the damage each leg cost', async () => {
+  it('the By leg tab says where the fuel went on each leg and what the leg that ran dry needed', async () => {
     server.use(
       http.get('/v1/reports/:missionId', () =>
         HttpResponse.json(
@@ -252,19 +244,32 @@ describe('report (S10.8)', () => {
             stats: {
               ...STATS,
               startFuel: 600,
+              dry: { leg: 2, had: 450, needed: 540, wasted: 90, chancePct: 40 },
               byLeg: [
                 {
                   leg: 1,
                   status: 'completed',
+                  fuelBefore: 600,
                   fuelAfter: 450,
+                  fuelBase: 102,
+                  fuelPump: 48,
+                  fuelLeak: 0,
+                  fuelNeeded: null,
+                  pumpChancePct: null,
                   fuelWasted: 48,
                   damage: { shield: 5, armor: 2, hull: 1 },
                 },
                 {
                   leg: 2,
                   status: 'adrift',
+                  fuelBefore: 450,
                   fuelAfter: 0,
-                  fuelWasted: 0,
+                  fuelBase: 450,
+                  fuelPump: 90,
+                  fuelLeak: 0,
+                  fuelNeeded: 540,
+                  pumpChancePct: 40,
+                  fuelWasted: 90,
                   damage: { shield: 0, armor: 0, hull: 0 },
                 },
               ],
@@ -280,12 +285,17 @@ describe('report (S10.8)', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'By leg' }));
     const table = await screen.findByTestId('report-legs');
     expect(table).toHaveTextContent('600 in the tank');
-    expect(table).toHaveTextContent('450 left');
-    expect(table).toHaveTextContent('pump wasted 48');
+    expect(table).toHaveTextContent('tank 600 → 450');
+    expect(table).toHaveTextContent('planned 102');
+    expect(table).toHaveTextContent('pump waste 48');
     expect(table).toHaveTextContent('Shield 5 · armor 2 · hull 1');
+    expect(table).toHaveTextContent('needed 540, had 450');
     expect(table).toHaveTextContent('ran dry');
-    // an adrift run with no stored cause still says where it ran dry
-    expect(screen.getByTestId('adrift-why')).toHaveTextContent('ran dry on leg 2');
+    expect(table).toHaveTextContent('works only 40% of the time');
+    // the report says it in words too: planned, then the pump
+    const why = screen.getByTestId('adrift-why');
+    expect(why).toHaveTextContent('planned to burn 450 fuel and the tank held 450');
+    expect(why).toHaveTextContent('pump failed and wasted 90 more, so the leg needed 540');
   });
 
   it('opens a detail popup for a loot reference', async () => {
@@ -601,10 +611,8 @@ describe('report (S10.8)', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/report/m-dry'] });
     const why = await screen.findByTestId('adrift-why');
-    expect(why).toHaveTextContent(
-      'On leg 2 the ship needed 41 fuel to go on, but only 28 was left',
-    );
-    expect(why).toHaveTextContent('pump wasted 9 fuel');
+    expect(why).toHaveTextContent('Leg 2 was planned to burn 32 fuel and the tank held 28');
+    expect(why).toHaveTextContent('pump failed and wasted 9 more, so the leg needed 41');
     expect(why).toHaveTextContent('ran at 145% of their listed power');
   });
 

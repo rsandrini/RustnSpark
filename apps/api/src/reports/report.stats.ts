@@ -70,7 +70,16 @@ export interface ReportStats {
   readonly byLeg: readonly {
     readonly leg: number;
     readonly status: string;
+    /** The fuel in the tank when the leg began and when it ended (0 when it ran dry). */
+    readonly fuelBefore: number | null;
     readonly fuelAfter: number | null;
+    /** What the leg burned as planned (distance and terrain), what a failing pump wasted on top, what a leak lost. */
+    readonly fuelBase: number | null;
+    readonly fuelPump: number;
+    readonly fuelLeak: number;
+    /** The leg that ran dry: what it needed in all, and the chance (percent) the pump had of working. */
+    readonly fuelNeeded: number | null;
+    readonly pumpChancePct: number | null;
     readonly fuelWasted: number;
     readonly damage: { readonly shield: number; readonly armor: number; readonly hull: number };
   }[];
@@ -80,7 +89,10 @@ export interface ReportStats {
     readonly had: number;
     readonly needed: number;
     readonly wasted: number;
+    readonly chancePct?: number;
   } | null;
+  /** Of `fuelLost`-style waste: what a leaking tank part lost over the run (a failing pump is `pumpWasted`). */
+  readonly leakLost: number;
   /** How the engines were run (engine tuning): per group, the level, the legs it was pushed or
       eased, the failures and the chance the pushed legs went clean. Empty when run as listed. */
   readonly engines: readonly {
@@ -134,7 +146,6 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
   let distance = 0;
   let partFailures = 0;
   let fuelLost = 0;
-  let pumpWasted = 0;
   let stolenParts = 0;
   let motive: string | null = null;
   let race: ReportStats['race'] = null;
@@ -163,10 +174,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     if (event.type === 'combat_draw') drawn += 1;
     if (event.type === 'pvp_encounter') pvp += 1;
     if (PART_FAILURE_TYPES.has(event.type)) partFailures += 1;
-    if (event.fuelLost !== undefined) {
-      fuelLost += event.fuelLost;
-      if (Object.keys(event.effects.condByPart).length === 0) pumpWasted += event.fuelLost;
-    }
+    if (event.fuelLost !== undefined) fuelLost += event.fuelLost;
     if (event.type === 'scavenge_find' && event.found !== undefined) {
       found.push({
         kind: event.found.kind,
@@ -230,14 +238,21 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     }
   }
 
+  let previousFuel: number | null = log.startFuel ?? null;
   const byLeg = [...log.legs]
     .sort((a, b) => a.index - b.index)
     .map((leg) => {
       const here = log.events.filter((event) => event.leg === leg.index);
       const cost = { shield: 0, armor: 0, hull: 0 };
-      let wasted = 0;
+      let pump = 0;
+      let leak = 0;
+      let exhausted: (typeof here)[number] | undefined;
       for (const event of here) {
-        if (event.fuelLost !== undefined) wasted += event.fuelLost;
+        if (event.fuelLost !== undefined) {
+          if (Object.keys(event.effects.condByPart).length === 0) pump += event.fuelLost;
+          else leak += event.fuelLost;
+        }
+        if (event.type === 'fuel_exhausted') exhausted = event;
         if (
           event.cascade &&
           (event.type === 'combat_win' ||
@@ -250,11 +265,29 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
           cost.hull += event.cascade.hp;
         }
       }
+      const dryHere = leg.status === 'adrift' ? exhausted?.dry : undefined;
+      const fuelBefore = previousFuel;
+      const fuelAfter = leg.status === 'adrift' ? 0 : (leg.fuel ?? null);
+      // a run that ran dry never burned that leg: the stored event carries what it needed and what the pump wasted
+      const base =
+        dryHere !== undefined
+          ? dryHere.needed - dryHere.wasted
+          : fuelBefore !== null && fuelAfter !== null
+            ? Math.max(0, fuelBefore - fuelAfter - pump - leak)
+            : null;
+      if (dryHere !== undefined) pump += dryHere.wasted;
+      previousFuel = leg.fuel ?? previousFuel;
       return {
         leg: leg.index + 1,
         status: leg.status,
-        fuelAfter: leg.status === 'adrift' ? 0 : (leg.fuel ?? null),
-        fuelWasted: Math.round(wasted),
+        fuelBefore: fuelBefore === null ? null : Math.round(fuelBefore),
+        fuelAfter: fuelAfter === null ? null : Math.round(fuelAfter),
+        fuelBase: base === null ? null : Math.round(base),
+        fuelPump: Math.round(pump),
+        fuelLeak: Math.round(leak),
+        fuelNeeded: dryHere === undefined ? null : Math.round(dryHere.needed),
+        pumpChancePct: dryHere?.chancePct ?? null,
+        fuelWasted: Math.round(pump + leak),
         damage: {
           shield: Math.round(cost.shield),
           armor: Math.round(cost.armor),
@@ -262,6 +295,8 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
         },
       };
     });
+  const pumpTotal = byLeg.reduce((sum, row) => sum + row.fuelPump, 0);
+  const leakTotal = byLeg.reduce((sum, row) => sum + row.fuelLeak, 0);
 
   const partsDamage = log.partsBefore
     .map((part) => ({
@@ -287,7 +322,8 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     partsDamage,
     partFailures,
     fuelLost,
-    pumpWasted,
+    pumpWasted: pumpTotal,
+    leakLost: leakTotal,
     startFuel: log.startFuel ?? null,
     byLeg,
     found,

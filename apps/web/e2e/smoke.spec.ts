@@ -76,9 +76,9 @@ for (const faction of FACTIONS) {
     await page.getByRole('tab', { name: 'The story' }).click();
     await expect(page.locator('article.event').first()).toBeVisible();
     await assertClean(page, 'report story');
-    await page.getByRole('tab', { name: 'Log' }).click();
-    await expect(page.locator('table.log-table tbody tr').first()).toBeVisible();
-    await assertClean(page, 'report log');
+    await page.getByRole('tab', { name: 'By leg' }).click();
+    await expect(page.getByTestId('report-legs')).toBeVisible();
+    await assertClean(page, 'report by leg');
 
     // --- port ----------------------------------------------------------------------------------
     await page.goto('/port');

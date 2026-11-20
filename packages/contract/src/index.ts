@@ -1091,7 +1091,13 @@ export const ReportStatsSchema = z.object({
   /** How the engines were run (engine tuning), per group; empty when run as listed. */
   /** Why the ship ran dry (null when it did not): the leg (1-based), the fuel it had, what the leg needed, what a failed pump wasted. */
   dry: z
-    .object({ leg: z.number(), had: z.number(), needed: z.number(), wasted: z.number() })
+    .object({
+      leg: z.number(),
+      had: z.number(),
+      needed: z.number(),
+      wasted: z.number(),
+      chancePct: z.number().optional(),
+    })
     .nullable()
     .optional(),
   engines: z
@@ -1120,6 +1126,7 @@ export const ReportStatsSchema = z.object({
   fuelLost: z.number(),
   /** Of `fuelLost`, what a failing tank pump wasted; the rest is a leaking tank part. */
   pumpWasted: z.number().optional(),
+  leakLost: z.number().optional(),
   /** The fuel in the tank at the start of the run, and leg by leg what was left and what each leg cost. */
   startFuel: z.number().nullable().optional(),
   byLeg: z
@@ -1127,7 +1134,13 @@ export const ReportStatsSchema = z.object({
       z.object({
         leg: z.number(),
         status: z.string(),
+        fuelBefore: z.number().nullable().optional(),
         fuelAfter: z.number().nullable(),
+        fuelBase: z.number().nullable().optional(),
+        fuelPump: z.number().optional(),
+        fuelLeak: z.number().optional(),
+        fuelNeeded: z.number().nullable().optional(),
+        pumpChancePct: z.number().nullable().optional(),
         fuelWasted: z.number(),
         damage: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }),
       }),

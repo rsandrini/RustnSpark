@@ -68,7 +68,7 @@ describe('i18n keys used by the code', () => {
     const families: Array<[string, string[]]> = [
       ['hangar stat rows', hangarStats],
       ['mission types', MissionTypeSchema.options.map((type) => `board.type.${type}`)],
-      ['report tabs', ['overview', 'narrative', 'log'].map((tab) => `report.tabs.${tab}`)],
+      ['report tabs', ['overview', 'legs', 'narrative'].map((tab) => `report.tabs.${tab}`)],
       [
         'admin scene triggers',
         SCENE_TRIGGERS.map((trigger) => `admin.dialogue.triggers.${trigger}`),

@@ -1955,7 +1955,6 @@
     "tabs": {
       "overview": "Visão geral",
       "narrative": "A história",
-      "log": "Registro",
       "legs": "Por trecho"
     },
     "detail": {
@@ -1980,7 +1979,10 @@
         "pump": "Uma bomba do tanque falhando desperdiçou {{wasted}} de combustível no caminho (ela falha quando falta energia ou está gasta).",
         "leak": "Um vazamento no tanque perdeu {{lost}} de combustível no caminho.",
         "pushed": "{{group}} rodaram a {{level}}% da potência listada, o que queima muito mais combustível.",
-        "dryLeg": "O tanque secou no trecho {{leg}}."
+        "dryLeg": "O tanque secou no trecho {{leg}}.",
+        "plan": "O trecho {{leg}} estava planejado para gastar {{base}} de combustível e o tanque tinha {{had}}: suficiente no papel.",
+        "pumpFail": "A bomba do tanque falhou e desperdiçou mais {{wasted}}, então o trecho precisou de {{needed}}.",
+        "pumpChance": "Com a energia que recebe, a bomba funciona só {{chance}}% das vezes."
       },
       "adriftHint": "O tanque secou antes do fim da rota, então a nave parou no espaço. Encha o tanque antes de partir e lembre que rotas longas, zonas hostis e motor muito forçado gastam mais combustível."
     },
@@ -2125,7 +2127,13 @@
       "wasted": "bomba desperdiçou {{fuel}}",
       "noDamage": "nenhum",
       "damageValue": "Escudo {{shield}} · blindagem {{armor}} · casco {{hull}}",
-      "note": "O dano conta combates e a própria viagem. Uma bomba do tanque falhando desperdiça combustível além do que o trecho precisa."
+      "note": "O dano conta combates e a própria viagem. O gasto previsto vem da distância e do terreno; uma bomba do tanque falhando desperdiça mais além disso.",
+      "planned": "previsto {{fuel}}",
+      "pump": "bomba {{fuel}}",
+      "leak": "vazamento {{fuel}}",
+      "needed": "precisou de {{needed}}, tinha {{had}}",
+      "tankMove": "tanque {{before}} → {{after}}",
+      "key": "Barra: gasto previsto, desperdício da bomba, vazamento."
     }
   },
   "transit": {
