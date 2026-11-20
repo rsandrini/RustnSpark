@@ -1016,7 +1016,7 @@ export class ShipsService implements OnModuleInit {
     const [mission, repair] = await Promise.all([
       this.prisma.missionInstance.findFirst({
         where: { shipId: ship.id, status: { in: ['IN_TRANSIT', 'RESOLVING'] } },
-        select: { id: true, type: true, arrivalAt: true, cargo: true },
+        select: { id: true, type: true, arrivalAt: true, cargo: true, legs: true },
       }),
       this.prisma.repairJob.findFirst({
         where: { shipId: ship.id, status: 'PENDING' },
@@ -1027,7 +1027,14 @@ export class ShipsService implements OnModuleInit {
       // A free mining job (cargo.contracted === false) digs where the ship already is, like
       // scavenging; a contracted mining mission flies out to the field and stays 'flying'.
       const cargo = mission.cargo as { contracted?: unknown; digSeconds?: unknown } | null;
-      const freeMining = (mission.type as string) === 'MINING' && cargo?.contracted === false;
+      // (a board offer of a fixed pay is also "not contracted" but it flies out to the field: only a job set up at the
+      // ship's own place, whose first leg carries its ticks, digs in place)
+      const firstLeg = (Array.isArray(mission.legs) ? mission.legs[0] : undefined) as
+        { miningTicks?: unknown } | undefined;
+      const freeMining =
+        (mission.type as string) === 'MINING' &&
+        cargo?.contracted === false &&
+        typeof firstLeg?.miningTicks === 'number';
       // a mining contract flies out, then digs: the flight ends `digSeconds` before the arrival
       const digSeconds =
         (mission.type as string) === 'MINING' &&
