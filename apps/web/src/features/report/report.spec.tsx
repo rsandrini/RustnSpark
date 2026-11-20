@@ -768,6 +768,36 @@ describe('report (S10.8)', () => {
     expect(bar.querySelector('.lossbar-lost')).toHaveStyle({ width: '80%' });
   });
 
+  it('lists the parts that took the most damage first', async () => {
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'success',
+            stats: {
+              ...STATS,
+              partsDamage: [
+                { partId: 'a', partType: 'x', name: 'Light Hull', before: 100, after: 95 },
+                { partId: 'b', partType: 'y', name: 'Big Engine', before: 90, after: 40 },
+                { partId: 'c', partType: 'z', name: 'Cargo Hold', before: 80, after: 60 },
+              ],
+            },
+            view: 'summary',
+            lines: [{ text: 'Done', segments: [{ t: 'text', value: 'Done' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-sort'] });
+    const table = await screen.findByTestId('parts-damage');
+    const names = Array.from(table.querySelectorAll('.parts-damage-name')).map(
+      (n) => n.textContent,
+    );
+    expect(names).toEqual(['Big Engine', 'Cargo Hold', 'Light Hull']);
+  });
+
   it('a quiet run says so instead of listing parts', async () => {
     server.use(
       http.get('/v1/reports/:missionId', () =>

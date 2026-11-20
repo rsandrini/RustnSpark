@@ -64,6 +64,10 @@ export function ReportOverview({ stats }: { stats: ReportStats }) {
   const combatTotal = combat.shield + combat.armor + combat.hull;
   const wear = stats.travelWear;
   const engines = stats.engines ?? [];
+  // the parts that lost the most condition first (the short list shows the worst three)
+  const worstFirst = [...stats.partsDamage].sort(
+    (a, b) => b.before - b.after - (a.before - a.after),
+  );
   const travel = stats.travelLayers ?? { shield: 0, armor: 0, hull: 0 };
   const travelTotal = travel.shield + travel.armor + travel.hull;
   const travelMax = Math.max(1, travel.shield, travel.armor, travel.hull);
@@ -78,7 +82,7 @@ export function ReportOverview({ stats }: { stats: ReportStats }) {
             <p className="sub">{t('report.detail.noDamage')}</p>
           ) : (
             <ul className="stack parts-damage-list">
-              {(showAll ? stats.partsDamage : stats.partsDamage.slice(0, TOP_PARTS)).map((row) => (
+              {(showAll ? worstFirst : worstFirst.slice(0, TOP_PARTS)).map((row) => (
                 <li key={row.partId} className="parts-damage-row">
                   <span className="parts-damage-name">{row.name}</span>
                   <LossBar
