@@ -2321,7 +2321,8 @@
       "orderLabel": "The order",
       "orderValue": "{{quantity}} × {{material}}",
       "orderHint": "Dig it and deliver it to the client: full pay at 100%, partial below, nothing at zero.",
-      "phases": "Flight {{flight}}, then mining about {{dig}} · {{chance}}% to reach the amount"
+      "phases": "Flight {{flight}}, then mining about {{dig}} · {{chance}}% to reach the amount",
+      "phasesFixed": "Flight {{flight}}, then digging {{dig}} on arrival"
     },
     "race": {
       "title": "The field",

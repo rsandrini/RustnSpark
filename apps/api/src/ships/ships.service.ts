@@ -1038,8 +1038,7 @@ export class ShipsService implements OnModuleInit {
       // a mining contract flies out, then digs: the flight ends `digSeconds` before the arrival
       const digSeconds =
         (mission.type as string) === 'MINING' &&
-        cargo?.contracted === true &&
-        typeof cargo.digSeconds === 'number' &&
+        typeof cargo?.digSeconds === 'number' &&
         cargo.digSeconds > 0 &&
         mission.arrivalAt !== null
           ? cargo.digSeconds

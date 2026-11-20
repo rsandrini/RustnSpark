@@ -1001,6 +1001,22 @@ function offerInfo(
     };
   }
 
+  // A paid mining offer that is not a contract digs one tick on arrival: the card counts that dig after the flight.
+  if (
+    estimate !== null &&
+    miningOffer === null &&
+    row.type === 'MINING' &&
+    cargo.contracted !== true &&
+    legs.length > 0
+  ) {
+    estimate = {
+      ...estimate,
+      durationSeconds: estimate.durationSeconds + rules.mining.job_duration_seconds,
+      flightSeconds: estimate.durationSeconds,
+      digSeconds: rules.mining.job_duration_seconds,
+    };
+  }
+
   const requirements =
     sheet === null || parts === null
       ? []

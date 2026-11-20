@@ -438,6 +438,13 @@ export class DispatchService {
         mission.type === 'MINING' &&
         legs0Ticks(mission.legs) === undefined &&
         ((mission.cargo ?? {}) as { contracted?: unknown }).contracted === true;
+      // A paid board offer that is not a contract digs one tick on arrival (the resolver's "any other mission digs one
+      // tick"): the flight is followed by that dig, and the dispatch counts it in the time.
+      const fixedPayDig =
+        mission.type === 'MINING' &&
+        !contractedDig &&
+        legs0Ticks(mission.legs) === undefined &&
+        ((mission.cargo ?? {}) as { contracted?: unknown }).contracted !== true;
       const parsedLegs = parseDispatchLegs(mission.legs);
       const legs = contractedDig
         ? parsedLegs.map((leg, index) =>
@@ -550,6 +557,10 @@ export class DispatchService {
           });
         }
         digSecondsPlanned = ran * rules.mining.job_duration_seconds;
+        durationSeconds += digSecondsPlanned;
+      }
+      if (fixedPayDig) {
+        digSecondsPlanned = rules.mining.job_duration_seconds;
         durationSeconds += digSecondsPlanned;
       }
       const arrivalAt = new Date(serverTime.getTime() + durationSeconds * MS_PER_SECOND);

@@ -2321,7 +2321,8 @@
       "orderLabel": "O pedido",
       "orderValue": "{{quantity}} × {{material}}",
       "orderHint": "Cave e entregue ao cliente: pagamento integral com 100%, proporcional abaixo, nada com zero.",
-      "phases": "Voo de {{flight}}, depois mineração de cerca de {{dig}} · {{chance}}% de chance de chegar à quantidade"
+      "phases": "Voo de {{flight}}, depois mineração de cerca de {{dig}} · {{chance}}% de chance de chegar à quantidade",
+      "phasesFixed": "Voo de {{flight}}, depois {{dig}} de mineração na chegada"
     },
     "race": {
       "title": "O grid",

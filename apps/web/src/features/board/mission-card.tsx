@@ -265,7 +265,9 @@ export function MissionCard({
           <RouteMap path={pathOfLegs(offer.legs, world, offer.originId)} world={world} compact />
         )}
 
-        {(info.material !== null || info.mining != null) && (
+        {(info.material !== null ||
+          info.mining != null ||
+          info.estimate?.digSeconds !== undefined) && (
           <section className="mcard-mining" data-testid="mcard-mining">
             {info.material === null ? null : info.material.contracted &&
               info.material.quantity !== null ? (
@@ -314,6 +316,16 @@ export function MissionCard({
                 )}
               </p>
             )}
+            {info.estimate?.flightSeconds !== undefined &&
+              info.estimate.digSeconds !== undefined &&
+              !(info.mining != null && info.mining.required > 0) && (
+                <p className="sub" data-testid="mcard-mining-phases">
+                  {t('board.mining.phasesFixed', {
+                    flight: formatDuration(info.estimate.flightSeconds, t),
+                    dig: formatDuration(info.estimate.digSeconds, t),
+                  })}
+                </p>
+              )}
           </section>
         )}
 
