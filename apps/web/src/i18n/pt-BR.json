@@ -1701,7 +1701,9 @@
         "fuelValue": "{{units}} unidades",
         "fuelNone": "Nenhum"
       },
-      "noFuel": "Combustível insuficiente para vasculhar com a nave: precisa de {{units}} unidades e o tanque tem {{have}}. Reabasteça antes, ou vasculhe a pé."
+      "noFuel": "Combustível insuficiente para vasculhar com a nave: precisa de {{units}} unidades e o tanque tem {{have}}. Reabasteça antes, ou vasculhe a pé.",
+      "shipAway": "Sua nave está em missão, mas você ainda pode vasculhar o lugar a pé.",
+      "footRunning": "Vasculhando a pé — termina em"
     },
     "mine": {
       "title": "Minerar o campo",

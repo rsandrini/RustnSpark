@@ -413,6 +413,49 @@ describe('scavenging job (W8)', () => {
     expect((info.body as { retryAfterSeconds: number }).retryAfterSeconds).toBe(0);
   });
 
+  it('a search on foot can run while the ship is out on a mission, and it leaves the flight alone', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const playerId = player.seeded.player.id;
+    const template = await prisma.missionTemplate.findFirstOrThrow({ where: { type: 'DELIVERY' } });
+    // the ship is out on a flight
+    await prisma.ship.update({ where: { id: player.shipId }, data: { status: 'ON_MISSION' } });
+    const flight = await prisma.missionInstance.create({
+      data: {
+        templateId: template.id,
+        type: 'DELIVERY',
+        factionId: 'luna',
+        originId: 'ceres',
+        destinationId: 'hedus',
+        legs: [],
+        cargo: {},
+        reward: 100,
+        expiresAt: new Date(Date.now() + 3_600_000),
+        status: 'IN_TRANSIT',
+        playerId,
+        shipId: player.shipId,
+        seed: 'flight-seed',
+        arrivalAt: new Date(Date.now() + 3_600_000),
+      },
+    });
+    // with the ship: no (it is away)
+    const withShip = await start(player.token, 'ceres').send({ mode: 'ship' });
+    expect(withShip.status).toBe(409);
+    // on foot: yes
+    const onFoot = await start(player.token, 'ceres').send({ mode: 'foot' });
+    expect(onFoot.status).toBe(200);
+    const job = (await queue.getJob(
+      (onFoot.body as { missionId: string }).missionId,
+    )) as Job<DispatchJobData>;
+    await processor.process(job);
+    // the flight and the ship are as they were
+    const after = await prisma.missionInstance.findUniqueOrThrow({ where: { id: flight.id } });
+    expect(after.status).toBe('IN_TRANSIT');
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.status).toBe('ON_MISSION');
+    expect(ship.currentLocationId).toBe('ceres');
+  });
+
   it('scrap has a fixed price: the same everywhere, whatever the port or the mood', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

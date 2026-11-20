@@ -1701,7 +1701,9 @@
         "fuelValue": "{{units}} units",
         "fuelNone": "None"
       },
-      "noFuel": "Not enough fuel to search with the ship: it needs {{units}} units and the tank has {{have}}. Refuel first, or search on foot."
+      "noFuel": "Not enough fuel to search with the ship: it needs {{units}} units and the tank has {{have}}. Refuel first, or search on foot.",
+      "shipAway": "Your ship is out on a mission, but you can still search the place on foot.",
+      "footRunning": "Searching on foot — done in"
     },
     "mine": {
       "title": "Mine the field",

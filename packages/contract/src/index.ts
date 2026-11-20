@@ -613,6 +613,8 @@ export const ShipResponseSchema = z.object({
     repairUntil: IsoDate.nullable(),
     /** A mining contract flies out and then digs: when the flight ends (the dig follows until `until`). */
     flightUntil: IsoDate.nullable().optional(),
+    /** A search on foot under way beside the flight: when it ends. */
+    footUntil: IsoDate.nullable().optional(),
   }),
   routeCoverage: RouteCoverageSchema.nullable(),
 });

@@ -230,9 +230,15 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   // "With the ship" needs a ship that can actually fly and is free of a refit (the same two gates
   // the API applies to ship-mode); while the preview is loading, assume usable so the card does
   // not flash disabled. On foot needs neither, so it stays selectable either way.
+  // The ship out on a mission leaves the pilot at the port: only a search on foot is open then.
+  const awayOnMission = ship?.status === 'ON_MISSION';
   const shipUsable =
     (readinessQuery.data === undefined || readinessQuery.data.viability.viable) &&
-    ship?.activity.kind !== 'repairing';
+    ship?.activity.kind !== 'repairing' &&
+    !awayOnMission;
+  // A search on foot under way (beside a flight, or alone): the button waits for it.
+  const footSearchUntil =
+    ship?.activity.footUntil ?? (ship?.activity.kind === 'scavenging' ? ship.activity.until : null);
   // repairs under way: the Repair tab is locked and says for how long
   const repairUntil = ship?.activity.repairUntil ?? null;
   const repairing = repairUntil !== null;
@@ -530,6 +536,10 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   // to the Transit screen, where the report arrives when it ends.
   const navigate = useNavigate();
   const [scavengeMode, setScavengeMode] = useState<'ship' | 'foot'>('ship');
+  // While the ship is away, the only thing to do at the port is the search on foot.
+  useEffect(() => {
+    if (awayOnMission && tab !== 'scavenging') setTab('scavenging');
+  }, [awayOnMission, tab]);
   // No usable ship: the ship card is disabled, so make sure the mode is not left on "ship".
   useEffect(() => {
     if (!shipUsable && scavengeMode === 'ship') setScavengeMode('foot');
@@ -553,6 +563,8 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       void queryClient.invalidateQueries({ queryKey: ['active'] });
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       void queryClient.invalidateQueries({ queryKey: ['scavenge'] });
+      // A search on foot beside a flight stays here: the countdown shows on this screen.
+      if (awayOnMission) return;
       // Embedded, /hangar already IS the current route (a navigate() there would be a no-op),
       // so switch the host's own tab instead — same reason the "Install" link above does.
       if (embedded && onGoToShip !== undefined) {
@@ -760,7 +772,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
       <RescueBanner />
 
-      {portTabsRow}
+      {!awayOnMission && portTabsRow}
 
       {notice !== null && (
         <p className="notice" role="status">
@@ -1588,9 +1600,11 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
           {!shipUsable && (
             <p className="notice warn" data-testid="scavenge-no-ship">
               {t(
-                ship?.activity.kind === 'repairing'
-                  ? 'port.scav.shipRepairing'
-                  : 'port.scav.noShip',
+                awayOnMission
+                  ? 'port.scav.shipAway'
+                  : ship?.activity.kind === 'repairing'
+                    ? 'port.scav.shipRepairing'
+                    : 'port.scav.noShip',
               )}
             </p>
           )}
@@ -1629,6 +1643,15 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               </ul>
             </details>
           )}
+          {footSearchUntil !== null && footSearchUntil !== undefined && (
+            <p className="notice" role="status" data-testid="scavenge-foot-running">
+              {t('port.scav.footRunning')}{' '}
+              <Countdown
+                until={footSearchUntil}
+                onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
+              />
+            </p>
+          )}
           {scavengeInfoQuery.data !== undefined && scavengeWaitSeconds > 0 ? (
             <p className="notice" role="status">
               {t('port.scav.nextAttempt')}{' '}
@@ -1647,6 +1670,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               disabled={
                 scavenge.isPending ||
                 scavengeWaitSeconds > 0 ||
+                (footSearchUntil !== null && footSearchUntil !== undefined) ||
                 (scavengeMode === 'ship' && !shipUsable) ||
                 lacksScavengeFuel
               }

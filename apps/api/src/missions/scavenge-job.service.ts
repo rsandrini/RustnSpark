@@ -64,14 +64,22 @@ export class ScavengeJobService {
     // involved — the pilot searches on their own — so those ship-state gates fall away. The one
     // thing still needed either way is a ship to blame: the job is scoped to one location, the
     // player owns exactly one, and the mission record carries its id.
-    if (ship.status === 'ON_MISSION') throw new ConflictException({ error: 'SHIP_ON_MISSION' });
+    // (the pilot can search on foot while the ship is out on a mission: the ship is not involved)
+    if (!onFoot && ship.status === 'ON_MISSION') {
+      throw new ConflictException({ error: 'SHIP_ON_MISSION' });
+    }
     if (!onFoot && ship.status !== 'IN_PORT') {
       throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
     }
 
     const [active, repairing] = await Promise.all([
       this.prisma.missionInstance.count({
-        where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
+        // on foot, only another search on foot is in the way; a flight under way is not
+        where: {
+          playerId,
+          status: { in: [...ACTIVE_STATUSES] },
+          ...(onFoot ? { type: 'SCAVENGE' as const } : {}),
+        },
       }),
       this.prisma.repairJob.count({ where: { shipId: ship.id, status: 'PENDING' } }),
     ]);

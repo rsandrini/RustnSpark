@@ -347,20 +347,22 @@ export class MissionResolveService {
               );
             }
           }
-          await tx.ship.update({
-            where: { id: snapshot.shipId },
-            data: {
-              // A tank that ended the run dead (or one that is simply gone) takes its fuel with it.
-              fuel: Math.min(Math.max(0, outcome.fuel), fuelCapAfter),
-              status: outcome.shipStatus === 'ADRIFT' ? 'ADRIFT' : 'IN_PORT',
-              ...(finalStatus === 'DONE' ? { currentLocationId: mission.destinationId } : {}),
-              ...(stoppedAt !== null ? { currentLocationId: stoppedAt } : {}),
-              floatRouteId: floatSpot?.routeId ?? null,
-              floatFromId: floatSpot?.fromId ?? null,
-              floatProgress: floatSpot?.progress ?? null,
-              rescueAt: null,
-            },
-          });
+          // A search on foot never touched the ship (and the ship may be on a flight right now): leave it as it is.
+          if (snapshot.onFoot !== true)
+            await tx.ship.update({
+              where: { id: snapshot.shipId },
+              data: {
+                // A tank that ended the run dead (or one that is simply gone) takes its fuel with it.
+                fuel: Math.min(Math.max(0, outcome.fuel), fuelCapAfter),
+                status: outcome.shipStatus === 'ADRIFT' ? 'ADRIFT' : 'IN_PORT',
+                ...(finalStatus === 'DONE' ? { currentLocationId: mission.destinationId } : {}),
+                ...(stoppedAt !== null ? { currentLocationId: stoppedAt } : {}),
+                floatRouteId: floatSpot?.routeId ?? null,
+                floatFromId: floatSpot?.fromId ?? null,
+                floatProgress: floatSpot?.progress ?? null,
+                rescueAt: null,
+              },
+            });
           // A ship left adrift loses the mission for sure, and what it carried for it with it; only the pilot's
           // own independent mining job (no contract, no reward) keeps the ore it dug.
           for (const entry of outcome.shipStatus === 'ADRIFT' && !keepsLootAdrift(mission)

@@ -60,7 +60,10 @@ export function GameNav({ bar = false }: { bar?: boolean }) {
           </svg>
         );
         const locked = opening.allowedPaths !== null && !opening.allowedPaths.includes(to);
-        if (locked || (away && (id === 'port' || id === 'board'))) {
+        // the port stays open while the ship is on a mission: the pilot can still search on foot there
+        const awayBlocked =
+          away && (id === 'board' || (id === 'port' && ship.status !== 'ON_MISSION'));
+        if (locked || awayBlocked) {
           return (
             <span
               key={id}

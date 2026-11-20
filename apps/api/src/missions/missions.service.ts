@@ -363,6 +363,8 @@ export class MissionsService implements OnModuleInit {
       orderBy: [{ expiresAt: 'asc' }, { id: 'asc' }],
     });
     if (rows.length === 0) return [];
+    // a search on foot can run beside a flight: the flight (or any other mission) comes first, as the screens expect
+    rows.sort((a, b) => Number(a.type === 'SCAVENGE') - Number(b.type === 'SCAVENGE'));
     const [windows, templates] = await Promise.all([
       this.legWindows(rows.map((row) => row.id)),
       this.prisma.missionTemplate.findMany({
