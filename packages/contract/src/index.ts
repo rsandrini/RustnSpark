@@ -1120,6 +1120,19 @@ export const ReportStatsSchema = z.object({
   fuelLost: z.number(),
   /** Of `fuelLost`, what a failing tank pump wasted; the rest is a leaking tank part. */
   pumpWasted: z.number().optional(),
+  /** The fuel in the tank at the start of the run, and leg by leg what was left and what each leg cost. */
+  startFuel: z.number().nullable().optional(),
+  byLeg: z
+    .array(
+      z.object({
+        leg: z.number(),
+        status: z.string(),
+        fuelAfter: z.number().nullable(),
+        fuelWasted: z.number(),
+        damage: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }),
+      }),
+    )
+    .optional(),
   found: z.array(
     z.object({
       kind: z.enum(['part', 'scrap']),

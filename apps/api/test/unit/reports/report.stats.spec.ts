@@ -266,4 +266,40 @@ describe('computeReportStats', () => {
     expect(stats.fuelLost).toBe(58);
     expect(stats.pumpWasted).toBe(48);
   });
+
+  it('lists the run leg by leg: the fuel left, what the pump wasted and the damage each leg cost', () => {
+    const base = log([
+      event({ type: 'combat_win', leg: 0, cascade: { shield: 5, armor: 2, hp: 1 } }),
+      event({ type: 'tank', category: 'failure', leg: 0, fuelLost: 48 }),
+      event({ type: 'mission_wear', leg: 1, cascade: { shield: 0, armor: 0, hp: 2 } }),
+    ]);
+    const stats = computeReportStats(
+      {
+        ...base,
+        startFuel: 600,
+        legs: [
+          { index: 0, status: 'completed', fuel: 450 },
+          { index: 1, status: 'adrift', fuel: 40 },
+        ],
+      },
+      { parts: {}, materials: {} },
+    );
+    expect(stats.startFuel).toBe(600);
+    expect(stats.byLeg).toEqual([
+      {
+        leg: 1,
+        status: 'completed',
+        fuelAfter: 450,
+        fuelWasted: 48,
+        damage: { shield: 5, armor: 2, hull: 1 },
+      },
+      {
+        leg: 2,
+        status: 'adrift',
+        fuelAfter: 0,
+        fuelWasted: 0,
+        damage: { shield: 0, armor: 0, hull: 2 },
+      },
+    ]);
+  });
 });

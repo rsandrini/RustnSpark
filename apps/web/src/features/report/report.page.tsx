@@ -21,6 +21,7 @@ import { pathOfLegs } from '../../ui/RouteMap';
 import { PageTitle } from '../../ui/PageTitle';
 import { tablistKeys } from '../../ui/tablist';
 import { ReportOverview } from './report-overview';
+import { ReportLegs } from './report-legs';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { useAuthContext } from '../auth/auth.context';
 import { useTutorialVisit } from '../tutorial/tutorial-store';
@@ -52,10 +53,10 @@ export function ReportPage({ guided = false }: ReportPageProps) {
   // "Overview" is a client-only tab: everything it shows is `report.stats`, which comes back on
   // every server view alike, so it never needs a view of its own — it rides along on whichever
   // real view was last fetched (cheapest: 'summary').
-  type ReportTab = 'overview' | 'narrative' | 'log';
+  type ReportTab = 'overview' | 'legs' | 'narrative' | 'log';
   // A #combat link (from the mission history) goes straight to the story, where the fight is.
   const [tab, setTab] = useState<ReportTab>(location.hash === '#combat' ? 'narrative' : 'overview');
-  const view: ReportViewName = tab === 'overview' ? 'summary' : tab;
+  const view: ReportViewName = tab === 'overview' || tab === 'legs' ? 'summary' : tab;
   const [popupLine, setPopupLine] = useState<string | null>(null);
   const [refPopup, setRefPopup] = useState<Extract<ReportSegment, { t: 'ref' }> | null>(null);
 
@@ -119,7 +120,7 @@ export function ReportPage({ guided = false }: ReportPageProps) {
     </span>
   );
 
-  const tabs: readonly ReportTab[] = ['overview', 'narrative', 'log'];
+  const tabs: readonly ReportTab[] = ['overview', 'legs', 'narrative', 'log'];
   const placeName = (id: string) => {
     const found = worldQuery.data?.locations.find((entry) => entry.id === id);
     return found === undefined ? id : pickLocalized(found.displayName, i18n.language);
@@ -176,8 +177,9 @@ export function ReportPage({ guided = false }: ReportPageProps) {
           </div>
 
           {tab === 'overview' && <ReportOverview stats={report.stats} />}
+          {tab === 'legs' && <ReportLegs stats={report.stats} />}
 
-          {tab !== 'overview' && report.view === 'log' && (
+          {tab !== 'overview' && tab !== 'legs' && report.view === 'log' && (
             <div
               className="log-table-wrap"
               role="region"
@@ -213,7 +215,7 @@ export function ReportPage({ guided = false }: ReportPageProps) {
             </div>
           )}
 
-          {tab !== 'overview' && report.view === 'narrative' && (
+          {tab !== 'overview' && tab !== 'legs' && report.view === 'narrative' && (
             <section className="stack report-story">
               {report.chapters.map((chapter) => (
                 <article key={chapter.leg} className="event">
@@ -543,6 +545,9 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
   const damageTotal = stats.damage.shield + stats.damage.armor + stats.damage.hull;
 
   const you = stats.race?.standings.find((row) => row.you);
+  // Why the tank ran dry, when the run kept it: the leg it happened on, or the fuel a pump or a leak took.
+  const dryLeg = (stats.byLeg ?? []).find((row) => row.status === 'adrift');
+  const hasDryCause = stats.dry != null || stats.fuelLost > 0 || dryLeg !== undefined;
   const missionName =
     mission === undefined
       ? ''
@@ -603,13 +608,16 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
           <div className="debrief-outcome">
             {t(`report.outcome.${outcome}`, { defaultValue: outcome })}
           </div>
-          {outcome === 'adrift' && (
+          {outcome === 'adrift' && !hasDryCause && (
             <p className="debrief-hint" role="note" data-testid="adrift-hint">
               {t('report.outcome.adriftHint')}
             </p>
           )}
-          {outcome === 'adrift' && (stats.dry != null || stats.fuelLost > 0) && (
+          {outcome === 'adrift' && hasDryCause && (
             <ul className="debrief-why" data-testid="adrift-why">
+              {stats.dry == null && dryLeg !== undefined && (
+                <li>{t('report.outcome.adriftWhy.dryLeg', { leg: dryLeg.leg })}</li>
+              )}
               {stats.dry != null && (
                 <li>
                   {t('report.outcome.adriftWhy.short', {
@@ -757,7 +765,7 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
             <dd>{stats.partFailures}</dd>
           </div>
         )}
-        {stats.fuelLost > 0 && (
+        {stats.fuelLost > 0 && !(outcome === 'adrift' && hasDryCause) && (
           <div className="bad">
             <dt>{t('report.debrief.fuelLost')}</dt>
             <dd>{stats.fuelLost}</dd>
@@ -885,10 +893,6 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
             </button>
           ))}
         </div>
-      )}
-
-      {(damageTotal > 0 || stats.travelWear.points > 0) && (
-        <p className="debrief-hint">{t('report.debrief.repairHint')}</p>
       )}
     </section>
   );

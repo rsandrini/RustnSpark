@@ -242,6 +242,52 @@ describe('report (S10.8)', () => {
     );
   });
 
+  it('the By leg tab shows the fuel left after each leg and the damage each leg cost', async () => {
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'adrift',
+            stats: {
+              ...STATS,
+              startFuel: 600,
+              byLeg: [
+                {
+                  leg: 1,
+                  status: 'completed',
+                  fuelAfter: 450,
+                  fuelWasted: 48,
+                  damage: { shield: 5, armor: 2, hull: 1 },
+                },
+                {
+                  leg: 2,
+                  status: 'adrift',
+                  fuelAfter: 0,
+                  fuelWasted: 0,
+                  damage: { shield: 0, armor: 0, hull: 0 },
+                },
+              ],
+            },
+            view: 'summary',
+            lines: [{ text: 'Done', segments: [{ t: 'text', value: 'Done' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-legs'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'By leg' }));
+    const table = await screen.findByTestId('report-legs');
+    expect(table).toHaveTextContent('600 in the tank');
+    expect(table).toHaveTextContent('450 left');
+    expect(table).toHaveTextContent('pump wasted 48');
+    expect(table).toHaveTextContent('Shield 5 · armor 2 · hull 1');
+    expect(table).toHaveTextContent('ran dry');
+    // an adrift run with no stored cause still says where it ran dry
+    expect(screen.getByTestId('adrift-why')).toHaveTextContent('ran dry on leg 2');
+  });
+
   it('opens a detail popup for a loot reference', async () => {
     server.use(
       http.get('/v1/reports/:missionId', () =>

@@ -329,7 +329,10 @@ export class ReportsService {
     const events = this.parseStoredEvents(missionId, log.schemaVersion, stored.events);
     const rawLegs = stored.legs;
     const legs: ReportLegRef[] = Array.isArray(rawLegs)
-      ? rawLegs.map((entry) => entry as { index: number; status: string })
+      ? rawLegs.map((entry) => {
+          const leg = entry as { index: number; status: string; ship?: { fuel?: number } };
+          return { index: leg.index, status: leg.status, fuel: leg.ship?.fuel ?? null };
+        })
       : [];
     const resolved = (await this.resolvedEvents(log.playerId, [missionId])).get(missionId);
     const balanceAfter = readBalanceAfter(resolved?.payload);
@@ -340,6 +343,7 @@ export class ReportsService {
       outcome: log.outcome,
       events,
       legs,
+      startFuel: (log.shipSnapshot as { fuel?: number } | null)?.fuel ?? null,
       partTypeById: partTypesOf(log.shipSnapshot),
       hasShield: hasShieldOf(log.shipSnapshot),
       partsBefore: partsBeforeOf(log.shipSnapshot),

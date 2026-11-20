@@ -1955,7 +1955,8 @@
     "tabs": {
       "overview": "Overview",
       "narrative": "The story",
-      "log": "Log"
+      "log": "Log",
+      "legs": "By leg"
     },
     "detail": {
       "partsDamage": "Parts that took damage",
@@ -1978,7 +1979,8 @@
         "short": "On leg {{leg}} the ship needed {{needed}} fuel to go on, but only {{had}} was left in the tank.",
         "pump": "A failing tank pump wasted {{wasted}} fuel along the way (it fails when it lacks power or is worn).",
         "leak": "A leaking tank lost {{lost}} fuel on the way.",
-        "pushed": "{{group}} ran at {{level}}% of their listed power, which burns far more fuel."
+        "pushed": "{{group}} ran at {{level}}% of their listed power, which burns far more fuel.",
+        "dryLeg": "The tank ran dry on leg {{leg}}."
       },
       "adriftHint": "The tank ran dry before the route ended, so the ship stopped in space. Fill the tank before leaving, and remember that long routes, hostile zones and an overtuned engine burn more fuel."
     },
@@ -2085,7 +2087,10 @@
         },
         "pushed": "ran at {{value}}%: pushed on {{legs}} leg(s), {{failures}} failure(s); the chance of no failure at all was {{chance}}%.",
         "eased": "ran at {{value}}%: throttled down on {{legs}} leg(s), slower but burning less."
-      }
+      },
+      "foldDamage": "Damage in fights and on the way",
+      "showAll": "Show all {{count}} parts",
+      "showFewer": "Show fewer"
     },
     "story": {
       "leg": "Leg {{index}} · {{from}} → {{to}}",
@@ -2106,6 +2111,21 @@
       "kind": "Kind",
       "what": "What happened",
       "effect": "Effect"
+    },
+    "legs": {
+      "none": "This report has no leg-by-leg data.",
+      "leg": "Leg",
+      "fuel": "Fuel in the tank",
+      "damage": "Damage",
+      "start": "Start",
+      "inTank": "{{fuel}} in the tank",
+      "legN": "Leg {{leg}}",
+      "left": "{{fuel}} left",
+      "ranDry": "ran dry",
+      "wasted": "pump wasted {{fuel}}",
+      "noDamage": "none",
+      "damageValue": "Shield {{shield}} · armor {{armor}} · hull {{hull}}",
+      "note": "Damage counts fights and the journey itself. A failing tank pump wastes fuel on top of what the leg needs."
     }
   },
   "transit": {

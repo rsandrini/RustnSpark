@@ -11,6 +11,8 @@ export const VIEW_NAMES: readonly ViewName[] = ['summary', 'narrative', 'log'];
 export interface ReportLegRef {
   readonly index: number;
   readonly status: string;
+  /** The fuel left in the tank when the leg ended (the stored ship state), when the log kept it. */
+  readonly fuel?: number | null;
 }
 
 /**
@@ -26,6 +28,8 @@ export interface ReportLog {
   readonly outcome: string;
   readonly events: readonly ParsedMissionEvent[];
   readonly legs: readonly ReportLegRef[];
+  /** The fuel in the tank at dispatch (the run's start), when the snapshot kept it. */
+  readonly startFuel?: number | null;
   /**
    * Part instance id → catalog part type, from the mission's dispatch snapshot. Events name
    * parts by instance id; this is what lets a renderer (and the Admin replay) turn them into

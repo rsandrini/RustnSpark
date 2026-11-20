@@ -1955,7 +1955,8 @@
     "tabs": {
       "overview": "Visão geral",
       "narrative": "A história",
-      "log": "Registro"
+      "log": "Registro",
+      "legs": "Por trecho"
     },
     "detail": {
       "partsDamage": "Peças que sofreram dano",
@@ -1978,7 +1979,8 @@
         "short": "No trecho {{leg}} a nave precisava de {{needed}} de combustível para seguir, mas só restavam {{had}} no tanque.",
         "pump": "Uma bomba do tanque falhando desperdiçou {{wasted}} de combustível no caminho (ela falha quando falta energia ou está gasta).",
         "leak": "Um vazamento no tanque perdeu {{lost}} de combustível no caminho.",
-        "pushed": "{{group}} rodaram a {{level}}% da potência listada, o que queima muito mais combustível."
+        "pushed": "{{group}} rodaram a {{level}}% da potência listada, o que queima muito mais combustível.",
+        "dryLeg": "O tanque secou no trecho {{leg}}."
       },
       "adriftHint": "O tanque secou antes do fim da rota, então a nave parou no espaço. Encha o tanque antes de partir e lembre que rotas longas, zonas hostis e motor muito forçado gastam mais combustível."
     },
@@ -2085,7 +2087,10 @@
         },
         "pushed": "rodaram a {{value}}%: forçados em {{legs}} trecho(s), {{failures}} falha(s); a chance de nenhuma falha era {{chance}}%.",
         "eased": "rodaram a {{value}}%: reduzidos em {{legs}} trecho(s), mais devagar mas gastando menos."
-      }
+      },
+      "foldDamage": "Dano em combates e na viagem",
+      "showAll": "Mostrar as {{count}} peças",
+      "showFewer": "Mostrar menos"
     },
     "story": {
       "leg": "Etapa {{index}} · {{from}} → {{to}}",
@@ -2106,6 +2111,21 @@
       "kind": "Tipo",
       "what": "O que aconteceu",
       "effect": "Efeito"
+    },
+    "legs": {
+      "none": "Este relatório não tem dados por trecho.",
+      "leg": "Trecho",
+      "fuel": "Combustível no tanque",
+      "damage": "Dano",
+      "start": "Início",
+      "inTank": "{{fuel}} no tanque",
+      "legN": "Trecho {{leg}}",
+      "left": "restam {{fuel}}",
+      "ranDry": "secou",
+      "wasted": "bomba desperdiçou {{fuel}}",
+      "noDamage": "nenhum",
+      "damageValue": "Escudo {{shield}} · blindagem {{armor}} · casco {{hull}}",
+      "note": "O dano conta combates e a própria viagem. Uma bomba do tanque falhando desperdiça combustível além do que o trecho precisa."
     }
   },
   "transit": {

@@ -64,6 +64,16 @@ export interface ReportStats {
       }[];
     }[];
   } | null;
+  /** The fuel in the tank at the start of the run; null when the log did not keep it. */
+  readonly startFuel: number | null;
+  /** Leg by leg: the fuel left when it ended, the fuel a failing pump wasted on it, the damage it cost. */
+  readonly byLeg: readonly {
+    readonly leg: number;
+    readonly status: string;
+    readonly fuelAfter: number | null;
+    readonly fuelWasted: number;
+    readonly damage: { readonly shield: number; readonly armor: number; readonly hull: number };
+  }[];
   /** Why the ship ran dry (null when it did not): the leg, the fuel it had, what the leg needed and what a failed pump wasted. */
   readonly dry: {
     readonly leg: number;
@@ -220,6 +230,39 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     }
   }
 
+  const byLeg = [...log.legs]
+    .sort((a, b) => a.index - b.index)
+    .map((leg) => {
+      const here = log.events.filter((event) => event.leg === leg.index);
+      const cost = { shield: 0, armor: 0, hull: 0 };
+      let wasted = 0;
+      for (const event of here) {
+        if (event.fuelLost !== undefined) wasted += event.fuelLost;
+        if (
+          event.cascade &&
+          (event.type === 'combat_win' ||
+            event.type === 'combat_loss' ||
+            event.type === 'combat_draw' ||
+            event.type === 'mission_wear')
+        ) {
+          cost.shield += event.cascade.shield;
+          cost.armor += event.cascade.armor;
+          cost.hull += event.cascade.hp;
+        }
+      }
+      return {
+        leg: leg.index + 1,
+        status: leg.status,
+        fuelAfter: leg.status === 'adrift' ? 0 : (leg.fuel ?? null),
+        fuelWasted: Math.round(wasted),
+        damage: {
+          shield: Math.round(cost.shield),
+          armor: Math.round(cost.armor),
+          hull: Math.round(cost.hull),
+        },
+      };
+    });
+
   const partsDamage = log.partsBefore
     .map((part) => ({
       partId: part.id,
@@ -245,6 +288,8 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     partFailures,
     fuelLost,
     pumpWasted,
+    startFuel: log.startFuel ?? null,
+    byLeg,
     found,
     pirates: { stolenParts, motive },
     race,
