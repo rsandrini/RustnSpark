@@ -560,10 +560,19 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
       {cardOpen && (
         <MissionResultPopup
           tone={tone}
-          outcome={t(`report.outcome.${outcome}`, { defaultValue: outcome })}
+          outcome={
+            mission?.type === 'TRAVEL' && outcome === 'success'
+              ? t('report.popup.arrived')
+              : t(`report.outcome.${outcome}`, { defaultValue: outcome })
+          }
           title={missionName}
           route={missionRoute}
           credits={creditsText}
+          travel={
+            mission?.type === 'TRAVEL' && stats.race == null
+              ? { destination: place(mission.destinationId) }
+              : null
+          }
           race={
             stats.race === null || stats.race === undefined || you === undefined
               ? null

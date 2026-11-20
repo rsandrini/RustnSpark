@@ -23,6 +23,8 @@ export interface MissionResultProps {
   credits: string;
   /** A race: the place the pilot finished and the time they took (already formatted). */
   race: { place: number; time: string } | null;
+  /** A free flight (no mission): there is no pay, so the card says where the ship arrived instead. */
+  travel?: { destination: string } | null;
   /** Show the full report (the card goes away, the report is behind it). */
   onReport: () => void;
   /** Leave the report and go to My Ship; absent = the card has only the report button (the opening's report steps need the report). */
@@ -40,6 +42,7 @@ export function MissionResultPopup({
   route,
   credits,
   race,
+  travel = null,
   onReport,
   onDismiss,
 }: MissionResultProps) {
@@ -65,7 +68,12 @@ export function MissionResultPopup({
           </svg>
           <span>{outcome}</span>
         </p>
-        {race === null ? (
+        {travel !== null ? (
+          <p className="mresult-travel" data-testid="mission-result-travel">
+            <b>{travel.destination}</b>
+            <small>{[title, route].join(' · ')}</small>
+          </p>
+        ) : race === null ? (
           <>
             <p className="mresult-credits">{credits}</p>
             <p className="mresult-mission">

@@ -2004,6 +2004,7 @@
     "popup": {
       "racePlace": "Você chegou em {{place}}º",
       "raceTime": "Tempo {{time}}",
+      "arrived": "Chegou",
       "close": "Ver o relatório",
       "dismiss": "Fechar"
     },

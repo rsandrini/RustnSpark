@@ -85,8 +85,23 @@
   color: var(--muted, #9aa3b2);
   font-size: 0.8125rem;
 }
-.mresult-race {
+.mresult-race,
+.mresult-travel {
   margin-top: 12px;
+}
+.mresult-travel {
+  display: grid;
+  gap: 4px;
+  animation: mresult-up 0.4s ease-out 0.3s both;
+}
+.mresult-travel b {
+  font-size: 2.25rem;
+  line-height: 1.1;
+  font-weight: 700;
+}
+.mresult-travel small {
+  color: var(--muted, #9aa3b2);
+  font-size: 0.8125rem;
 }
 .mresult-race b {
   font-size: 2.25rem;
@@ -138,6 +153,7 @@
   .mresult-backdrop,
   .mresult-mission,
   .mresult-race,
+  .mresult-travel,
   .mresult-credits,
   .mresult-prize,
   .mresult-actions {

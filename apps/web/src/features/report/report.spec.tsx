@@ -523,6 +523,38 @@ describe('report (S10.8)', () => {
     await waitFor(() => expect(view.router.state.location.pathname).toBe('/ship'));
   });
 
+  it('a free flight (no mission) gets a different card: where the ship arrived, with no pay', async () => {
+    window.localStorage.clear();
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'success',
+            mission: {
+              type: 'TRAVEL',
+              title: { en: 'Travel', 'pt-BR': 'Viagem' },
+              originId: 'ceres',
+              destinationId: 'hedus',
+            },
+            stats: STATS,
+            view: 'summary',
+            lines: [{ text: 'Done', segments: [{ t: 'text', value: 'Done' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, {
+      initialEntries: [{ pathname: '/report/m-travel', state: { fresh: true } }],
+    });
+    const card = await screen.findByTestId('mission-result');
+    expect(card).toHaveTextContent('Arrived');
+    expect(within(card).getByTestId('mission-result-travel')).toBeInTheDocument();
+    expect(card).not.toHaveTextContent('Mission accomplished');
+    expect(card).not.toHaveTextContent('¢');
+  });
+
   it('does not open the result card when an old report is opened from the history', async () => {
     window.localStorage.clear();
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
