@@ -75,6 +75,9 @@ describe('map (S10.5)', () => {
       // the tag that would say "you are here" on the port is gone (the legend still names it)
       expect(svg.querySelectorAll('.you-tag text')).toHaveLength(1);
       expect(svg.querySelector('.you-tag text')?.textContent).toBe('Floating in space');
+      // the base the rescue would tow it to is marked, with a line from the ship
+      expect(svg.querySelector('[data-testid="tow-route"]')).not.toBeNull();
+      expect(svg.querySelector('.tow-tag text')?.textContent).toBe('Rescue tows you here');
       // the map opens centred on the spot where the ship floats, not on the port it left
       const [fx, fy] = (marker.getAttribute('transform') ?? '')
         .replace(/[^\d.\s-]/g, '')

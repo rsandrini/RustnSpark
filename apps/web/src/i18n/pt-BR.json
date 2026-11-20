@@ -2413,6 +2413,7 @@
         "NOT_ENOUGH_FUEL": "Combustível insuficiente para esta viagem: reabasteça no porto primeiro."
       }
     },
+    "towHere": "O resgate rebocará você aqui",
     "floating": "Sua nave está flutuando aqui",
     "working": {
       "SCAVENGE": "Vasculhando",
@@ -2545,6 +2546,8 @@
     "bar": "— sem combustível. Escolha como voltar.",
     "popup": {
       "open": "Opções de resgate",
+      "choose": "Escolher ›",
+      "seeOnMap": "Ver no mapa",
       "lead": "Sua nave ficou sem combustível e flutua onde parou, com os motores apagados. Nada pode ser feito com ela até ser rebocada para uma base.",
       "whyTitle": "O que aconteceu",
       "whyEnough": "Você saiu do porto com combustível suficiente para a rota planejada, mas ele não durou:",

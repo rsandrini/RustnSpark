@@ -2414,6 +2414,7 @@
       }
     },
     "floating": "Your ship is floating here",
+    "towHere": "Rescue tows you here",
     "working": {
       "SCAVENGE": "Scavenging",
       "MINING": "Mining"
@@ -2545,6 +2546,8 @@
     "bar": "— out of fuel. Pick how to get back.",
     "popup": {
       "open": "Rescue options",
+      "choose": "Choose ›",
+      "seeOnMap": "See it on the map",
       "lead": "Your ship ran out of fuel and drifts where it stopped, engines dark. Nothing can be done with it until it is towed to a base.",
       "whyTitle": "What happened",
       "whyEnough": "You left port with enough fuel for the planned route, but it did not last:",

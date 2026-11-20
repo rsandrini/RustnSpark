@@ -274,6 +274,10 @@ export function MapPage({ guided = false }: MapPageProps) {
   const nodeScale = 1 / Math.sqrt(camera.scale);
   const hiddenCount = (world?.locations ?? []).filter((location) => !shownAtZoom(location)).length;
 
+  // Where a rescue would tow the floating ship: the nearest base, marked on the map.
+  const towBase =
+    ship?.status === 'ADRIFT' && ship.rescue != null ? byId.get(ship.rescue.baseId) : undefined;
+
   // The map is always the first thing on this screen.
   useEffect(() => {
     if (phone) window.scrollTo?.(0, 0);
@@ -570,6 +574,17 @@ export function MapPage({ guided = false }: MapPageProps) {
                 </g>
               );
             })}
+            {floatPoint !== null && towBase !== undefined && (
+              <g className="tow-route" data-testid="tow-route" aria-hidden="true">
+                <line x1={floatPoint.x} y1={floatPoint.y} x2={towBase.x} y2={towBase.y} />
+                <circle cx={towBase.x} cy={towBase.y} r={16} />
+                <g className="tow-tag" transform={`translate(${towBase.x} ${towBase.y - 30})`}>
+                  <rect x={-62} y={-11} width={124} height={18} rx={9} />
+                  <text y={2}>{t('map.towHere')}</text>
+                  <path d="M-5,7 L0,13 L5,7 Z" />
+                </g>
+              </g>
+            )}
             {floatPoint !== null && (
               <g
                 className="ship-marker floating"

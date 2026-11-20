@@ -547,10 +547,18 @@
   stroke-width: 0.08;
 }
 
-.rules-side-N { grid-area: n; }
-.rules-side-W { grid-area: w; }
-.rules-side-E { grid-area: e; }
-.rules-side-S { grid-area: s; }
+.rules-side-N {
+  grid-area: n;
+}
+.rules-side-W {
+  grid-area: w;
+}
+.rules-side-E {
+  grid-area: e;
+}
+.rules-side-S {
+  grid-area: s;
+}
 .rules-side.locked {
   opacity: 0.8;
   border-style: dashed;
@@ -1044,7 +1052,11 @@ body:has(.modal-backdrop) .part-hover-card {
   height: 4px;
   margin-top: -2px;
   border-radius: 2px;
-  background: linear-gradient(90deg, color-mix(in oklab, var(--brass-hi) 10%, transparent), color-mix(in oklab, var(--brass-hi) 95%, transparent));
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--brass-hi) 10%, transparent),
+    color-mix(in oklab, var(--brass-hi) 95%, transparent)
+  );
   box-shadow: 0 0 12px 2px color-mix(in oklab, var(--brass) 70%, transparent);
   transform-origin: left center;
   animation: mine-beam-pulse 0.9s ease-in-out infinite alternate;
@@ -1398,7 +1410,18 @@ tbody tr:hover td {
 
 /* touch targets (phase 4): on phones and any touch screen a control is at least a finger tall (40 px) */
 @media (max-width: 860px), (pointer: coarse) {
-  :is(.btn, .chip, .seg, .tab, .tutorial-pill, .needs-dismiss, .guide-back, .brand, .avatar, summary),
+  :is(
+    .btn,
+    .chip,
+    .seg,
+    .tab,
+    .tutorial-pill,
+    .needs-dismiss,
+    .guide-back,
+    .brand,
+    .avatar,
+    summary
+  ),
   select,
   input.input,
   input[type='search'],

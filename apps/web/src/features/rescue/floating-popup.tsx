@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { ShipResponse } from '../../api/generated';
 import { Countdown } from '../../ui/Countdown';
@@ -85,7 +86,10 @@ export function FloatingPopup({
         )}
       </section>
       <p className="sub">
-        {t('rescue.nearestBase', { base: baseName, distance: rescue.baseDistance })}
+        {t('rescue.nearestBase', { base: baseName, distance: rescue.baseDistance })}{' '}
+        <Link to="/map" className="floatpop-maplink" data-testid="floating-map-link">
+          {t('rescue.popup.seeOnMap')}
+        </Link>
       </p>
       {waiting && rescue.dueAt != null && (
         <p className="notice" role="status" data-testid="rescue-waiting">
@@ -105,6 +109,7 @@ export function FloatingPopup({
               {t('rescue.popup.price', { cost: money(rescue.waitCost) })}
             </span>
             <small>{t('rescue.popup.waitSub', { minutes })}</small>
+            <span className="floatpop-choose">{t('rescue.popup.choose')}</span>
           </button>
           <button
             type="button"
@@ -117,6 +122,7 @@ export function FloatingPopup({
               {t('rescue.popup.price', { cost: money(rescue.nowCost) })}
             </span>
             <small>{t('rescue.popup.nowSub')}</small>
+            <span className="floatpop-choose">{t('rescue.popup.choose')}</span>
           </button>
         </div>
       ) : (

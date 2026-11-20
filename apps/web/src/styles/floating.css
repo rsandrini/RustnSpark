@@ -98,6 +98,38 @@
   font: inherit;
   cursor: pointer;
 }
+.floatpop-option {
+  position: relative;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.floatpop-option:not(:disabled):hover,
+.floatpop-option:not(:disabled):focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--brass, #d4a24c);
+  background: color-mix(in oklab, var(--brass, #d4a24c) 12%, var(--paper-2, #151a23));
+  box-shadow:
+    0 0 0 1px var(--brass, #d4a24c),
+    0 0 22px color-mix(in oklab, var(--brass, #d4a24c) 55%, transparent);
+  outline: none;
+}
+.floatpop-option:not(:disabled):active {
+  transform: translateY(0);
+}
+.floatpop-choose {
+  margin-top: 6px;
+  color: var(--brass, #d4a24c);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.floatpop-maplink {
+  color: var(--brass, #d4a24c);
+}
 .floatpop-option.primary {
   border-color: var(--brass, #d4a24c);
 }
