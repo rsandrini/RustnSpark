@@ -62,14 +62,12 @@
 
 .tow-route line {
   stroke: var(--brass);
-  stroke-width: 1.6;
   stroke-dasharray: 6 5;
   animation: tow-dash 1.2s linear infinite;
 }
 .tow-route circle {
   fill: color-mix(in oklab, var(--brass) 14%, transparent);
   stroke: var(--brass);
-  stroke-width: 1.6;
   stroke-dasharray: 3 3;
 }
 @keyframes tow-dash {

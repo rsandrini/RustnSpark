@@ -38,7 +38,7 @@ const HINT_RADIUS = 3;
 
 /** How far the map zooms in on the port the ship is stopped at when it opens. */
 const SHIP_FOCUS_SCALE = 5;
-const NODE_SHRINK = 0.9;
+const NODE_SHRINK = 0.7;
 
 /** Room kept around a trip under way when the map opens centred on it. */
 const TRIP_FOCUS_MARGIN = 140;
@@ -272,7 +272,7 @@ export function MapPage({ guided = false }: MapPageProps) {
   );
   const shownAtZoom = (location: WorldLocation): boolean =>
     camera.scale >= DETAIL_MIN_SCALE[location.detail] || alwaysShown.has(location.id);
-  // Places and labels shrink as the map zooms in so they stay readable: nearly constant on screen (1.3x at the closest zoom).
+  // Places and labels shrink as the map zooms in so they stay readable: nearly constant on screen (about 2.3x at the closest zoom).
   const nodeScale = 1 / camera.scale ** NODE_SHRINK;
   const hiddenCount = (world?.locations ?? []).filter((location) => !shownAtZoom(location)).length;
 
@@ -342,6 +342,11 @@ export function MapPage({ guided = false }: MapPageProps) {
               <>
                 {SEPARATOR}
                 <b>{t('map.lineFlying', { from: nameOf(flightFrom), to: nameOf(flightTo) })}</b>
+              </>
+            ) : floatPoint !== null ? (
+              <>
+                {SEPARATOR}
+                <b>{t('map.floating')}</b>
               </>
             ) : (
               shipPlace !== undefined && (
@@ -595,10 +600,24 @@ export function MapPage({ guided = false }: MapPageProps) {
             })}
             {floatPoint !== null && towBase !== undefined && (
               <g className="tow-route" data-testid="tow-route" aria-hidden="true">
-                <line x1={floatPoint.x} y1={floatPoint.y} x2={towBase.x} y2={towBase.y} />
-                <circle cx={towBase.x} cy={towBase.y} r={16} />
-                <g className="tow-tag" transform={`translate(${towBase.x} ${towBase.y - 30})`}>
-                  <rect x={-62} y={-11} width={124} height={18} rx={9} />
+                <line
+                  x1={floatPoint.x}
+                  y1={floatPoint.y}
+                  x2={towBase.x}
+                  y2={towBase.y}
+                  strokeWidth={2 * nodeScale}
+                />
+                <circle
+                  cx={towBase.x}
+                  cy={towBase.y}
+                  r={16 * nodeScale}
+                  strokeWidth={1.6 * nodeScale}
+                />
+                <g
+                  className="tow-tag"
+                  transform={`translate(${towBase.x} ${towBase.y - 30 * nodeScale}) scale(${nodeScale})`}
+                >
+                  <rect x={-80} y={-11} width={160} height={18} rx={9} />
                   <text y={2}>{t('map.towHere')}</text>
                   <path d="M-5,7 L0,13 L5,7 Z" />
                 </g>
@@ -607,7 +626,7 @@ export function MapPage({ guided = false }: MapPageProps) {
             {floatPoint !== null && (
               <g
                 className="ship-marker floating"
-                transform={`translate(${floatPoint.x} ${floatPoint.y})`}
+                transform={`translate(${floatPoint.x} ${floatPoint.y}) scale(${nodeScale})`}
                 role="img"
                 aria-label={t('map.floating')}
               >

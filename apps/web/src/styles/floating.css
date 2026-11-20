@@ -172,6 +172,7 @@
   text-transform: uppercase;
 }
 .floatpop-maplink {
+  margin-left: 6px;
   color: var(--brass, #d4a24c);
 }
 .floatpop-option.primary {
