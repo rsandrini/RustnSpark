@@ -117,7 +117,7 @@ describe('transit (S10.7)', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
     expect(await screen.findByTestId('mcard-engines')).toHaveTextContent(
-      'Engines: chemical x1 · ion x1',
+      'Engines: chemical 100% · ion 100%',
     );
   });
 

@@ -1279,7 +1279,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                 <>
                   {haveStrip}
                   <p className="sub">
-                    {upgradeCandidates.length > 0 ? t('port.upgradeNoneWhy') : t('port.upgradeNone')}
+                    {upgradeCandidates.length > 0
+                      ? t('port.upgradeNoneWhy')
+                      : t('port.upgradeNone')}
                   </p>
                   {whyNot}
                 </>
@@ -1458,11 +1460,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             return (
               <>
                 {haveStrip}
-                {eligible.length === 0 && (
-                  <p className="sub">
-                    {t('port.upgradeNoneWhy')}
-                  </p>
-                )}
+                {eligible.length === 0 && <p className="sub">{t('port.upgradeNoneWhy')}</p>}
                 {(['ready', 'credits', 'materials'] as const).map((group) =>
                   groups[group].length === 0 ? null : (
                     <section
@@ -1909,7 +1907,13 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
         {confirm !== null && (
           <div className="stack">
             {confirm.price !== null && (
-              <p>{t('port.balanceAfter', { balance: new Intl.NumberFormat(i18n.language).format(tradeBalance(confirm, wallet)) })}</p>
+              <p>
+                {t('port.balanceAfter', {
+                  balance: new Intl.NumberFormat(i18n.language).format(
+                    tradeBalance(confirm, wallet),
+                  ),
+                })}
+              </p>
             )}
             {confirm.hint !== undefined && <p className="sub">{confirm.hint}</p>}
             <button

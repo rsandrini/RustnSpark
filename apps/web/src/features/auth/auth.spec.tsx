@@ -128,10 +128,10 @@ describe('auth flow', () => {
     expect(
       screen.getByRole('heading', { name: 'Different ships, different jobs' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Pick a job. Beat the field.' })).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: 'A mission for every ship' }),
+      screen.getByRole('heading', { name: 'Pick a job. Beat the field.' }),
     ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'A mission for every ship' })).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: 'Not a game you can just leave running' }),
     ).toBeInTheDocument();
@@ -178,10 +178,10 @@ describe('auth flow', () => {
     expect(
       screen.getByRole('heading', { name: 'Different ships, different jobs' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Pick a job. Beat the field.' })).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: 'A mission for every ship' }),
+      screen.getByRole('heading', { name: 'Pick a job. Beat the field.' }),
     ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'A mission for every ship' })).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: 'Not a game you can just leave running' }),
     ).toBeInTheDocument();

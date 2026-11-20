@@ -593,9 +593,9 @@ describe('report (S10.8)', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
     const panel = await screen.findByTestId('report-engines');
-    expect(panel).toHaveTextContent('Ion engines ran at x2.5: pushed on 2 leg(s), 1 failure(s)');
+    expect(panel).toHaveTextContent('Ion engines ran at 250%: pushed on 2 leg(s), 1 failure(s)');
     expect(panel).toHaveTextContent('chance of no failure at all was 36%');
-    expect(panel).toHaveTextContent('Chemical engines ran at x0.5: throttled down on 2 leg(s)');
+    expect(panel).toHaveTextContent('Chemical engines ran at 50%: throttled down on 2 leg(s)');
   });
 
   it('the overview shows the parts-damage bars (before → after), and nothing for a quiet run', async () => {

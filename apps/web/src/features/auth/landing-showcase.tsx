@@ -6,17 +6,20 @@ const POINT_KEYS: Record<'build' | 'race', readonly string[]> = {
   race: ['field', 'fuel', 'fly'],
 };
 
-export function ShowcaseBlock({ id, flip }: { readonly id: 'build' | 'race'; readonly flip?: boolean }) {
+export function ShowcaseBlock({
+  id,
+  flip,
+}: {
+  readonly id: 'build' | 'race';
+  readonly flip?: boolean;
+}) {
   const { t } = useTranslation();
   const showcase = SHOWCASE[id];
   const titleId = `landing-${id}-title`;
   const pointKeys = POINT_KEYS[id];
 
   return (
-    <section
-      className={`landing-showcase${flip ? ' flip' : ''}`}
-      aria-labelledby={titleId}
-    >
+    <section className={`landing-showcase${flip ? ' flip' : ''}`} aria-labelledby={titleId}>
       <div className="landing-shot-wrap">
         <img
           className="landing-shot"

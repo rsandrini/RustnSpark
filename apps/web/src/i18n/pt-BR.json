@@ -2071,8 +2071,8 @@
           "chem": "Motores químicos",
           "ion": "Motores de íons"
         },
-        "pushed": "rodaram a x{{value}}: forçados em {{legs}} trecho(s), {{failures}} falha(s); a chance de nenhuma falha era {{chance}}%.",
-        "eased": "rodaram a x{{value}}: reduzidos em {{legs}} trecho(s), mais devagar mas gastando menos."
+        "pushed": "rodaram a {{value}}%: forçados em {{legs}} trecho(s), {{failures}} falha(s); a chance de nenhuma falha era {{chance}}%.",
+        "eased": "rodaram a {{value}}%: reduzidos em {{legs}} trecho(s), mais devagar mas gastando menos."
       }
     },
     "story": {
@@ -2140,7 +2140,7 @@
     "race": {
       "title": "Seus rivais",
       "rival": "{{name}} — velocidade {{mobility}}",
-      "rivalPushed": "{{name}} — velocidade {{mobility}}, forçando ×{{level}}",
+      "rivalPushed": "{{name}} — velocidade {{mobility}}, forçando {{level}}%",
       "projected": "A corrida até agora (projeção)",
       "projectedStart": "A corrida está em andamento em {{legs}} etapas. A ordem aparece aqui a cada etapa concluída.",
       "projectedTrouble": "problema de motor numa etapa"
@@ -2291,7 +2291,7 @@
       "bestHint": "Um grande dia: a melhor sorte em todas as etapas.",
       "none": "—",
       "dynamic": "Cada corrida é diferente: a sorte em cada etapa e as falhas de motor movem os tempos em torno destes valores. Um rival mantém a mesma velocidade e o mesmo nível de motor até o fim, como você.",
-      "pushing": "forçando ×{{level}}",
+      "pushing": "forçando {{level}}%",
       "finish": "Chegada"
     },
     "requirementNumbers": "Sua nave: {{actual}} · precisa de {{needed}}",
@@ -2300,7 +2300,7 @@
     "yourMission": "Sua missão",
     "startBefore": "Iniciar até",
     "goToShip": "Abrir em Minha Nave",
-    "engineLevels": "Motores: químicos x{{chem}} · íons x{{ion}}",
+    "engineLevels": "Motores: químicos {{chem}}% · íons {{ion}}%",
     "cargo": {
       "fixed": "Carga fixa: {{need}} unidades, ocupando esse tanto do seu espaço de carga.",
       "open": "Carga aberta: no mínimo {{need}} unidades, e você leva todo o espaço de carga que tiver. Cada unidade além de {{need}} paga {{pay}} ¢."
@@ -2785,10 +2785,10 @@
       "chem": "Motores químicos",
       "ion": "Motores de íons"
     },
-    "level": "nível {{value}}",
+    "level": "{{value}}%",
     "hint": {
-      "chem": "Sempre de pelo menos 100%. Acima de 1: mais rápido, queima muito mais combustível, desgasta os motores químicos e pode superaquecer.",
-      "ion": "Não queima combustível mas consome energia, e o consumo cresce mais rápido que o empuxo. Acima de 1: mais empuxo, desgasta os motores iônicos E as baterias, e pode superaquecer."
+      "chem": "Sempre de pelo menos 100%. Acima de 100%: mais rápido, queima muito mais combustível, desgasta os motores químicos e pode superaquecer.",
+      "ion": "Não queima combustível mas consome energia, e o consumo cresce mais rápido que o empuxo. Acima de 100%: mais empuxo, desgasta os motores iônicos E as baterias, e pode superaquecer."
     },
     "speed": "Velocidade {{value}} (listada: {{base}})",
     "fuelBurn": "Consumo de combustível {{value}} (listado: {{base}})",

@@ -124,10 +124,6 @@ export function ShipNeedsNote({
   if (!canShop) return null;
   const needs = lackingParts(sheet, installedParts).filter((need) => !dismissed.has(need.id));
   return (
-    <ShipNeedsList
-      needs={needs}
-      onShow={(need) => onShow(need.partClass)}
-      onDismiss={dismiss}
-    />
+    <ShipNeedsList needs={needs} onShow={(need) => onShow(need.partClass)} onDismiss={dismiss} />
   );
 }

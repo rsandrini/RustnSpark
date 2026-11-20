@@ -1,3 +1,4 @@
+import { enginePercent } from '../../ui/engine-level';
 import type { ReactNode } from 'react';
 import { useIsPhone } from '../../ui/use-phone';
 import { useTranslation } from 'react-i18next';
@@ -220,12 +221,8 @@ export function MissionCard({
         (offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
           <p className="sub" data-testid="mcard-engines">
             {t('board.engineLevels', {
-              chem: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(
-                engineLevels.chem,
-              ),
-              ion: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(
-                engineLevels.ion,
-              ),
+              chem: enginePercent(engineLevels.chem, i18n.language),
+              ion: enginePercent(engineLevels.ion, i18n.language),
             })}
           </p>
         )}
@@ -439,9 +436,7 @@ function RaceField({
                   <small className="race-trouble race-push">
                     {' '}
                     {t('board.race.pushing', {
-                      level: new Intl.NumberFormat(i18n.language, {
-                        maximumFractionDigits: 1,
-                      }).format(row.level),
+                      level: enginePercent(row.level, i18n.language),
                     })}
                   </small>
                 )}

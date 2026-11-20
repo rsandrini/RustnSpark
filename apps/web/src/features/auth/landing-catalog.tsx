@@ -31,7 +31,9 @@ export function MissionKinds() {
             <span className="landing-tag">{t(`landing.missions.${id}.name`)}</span>
             <p>{t(`landing.missions.${id}.text`)}</p>
             <span className="landing-needs">
-              <b>{t(start === 'board' ? 'landing.missions.needsLabel' : 'landing.missions.ownLabel')}</b>
+              <b>
+                {t(start === 'board' ? 'landing.missions.needsLabel' : 'landing.missions.ownLabel')}
+              </b>
               {t(`landing.missions.${id}.needs`)}
             </span>
           </li>

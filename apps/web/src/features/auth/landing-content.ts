@@ -12,14 +12,7 @@ export const MISSION_KINDS = [
   { id: 'travel', start: 'own' },
 ] as const satisfies readonly { readonly id: MissionKind; readonly start: 'board' | 'own' }[];
 export type MissionKind =
-  | 'delivery'
-  | 'transport'
-  | 'escort'
-  | 'mining'
-  | 'rescue'
-  | 'race'
-  | 'scavenge'
-  | 'travel';
+  'delivery' | 'transport' | 'escort' | 'mining' | 'rescue' | 'race' | 'scavenge' | 'travel';
 
 export interface Pin {
   readonly n: 1 | 2 | 3;
@@ -48,4 +41,12 @@ export const SHOWCASE = {
       { n: 3, left: 73, top: 48 },
     ] as const,
   },
-} as const satisfies Record<'build' | 'race', { readonly image: string; readonly width: number; readonly height: number; readonly pins: readonly Pin[] }>;
+} as const satisfies Record<
+  'build' | 'race',
+  {
+    readonly image: string;
+    readonly width: number;
+    readonly height: number;
+    readonly pins: readonly Pin[];
+  }
+>;

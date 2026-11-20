@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import type { EnergyMode, EnginePreview, ShipResponse } from '../../api/generated';
 import { scaleSpeed, useDisplay } from '../../ui/display';
+import { enginePercent } from '../../ui/engine-level';
 import { formatDuration } from '../../ui/duration';
 import { registerEngineTuningFlush } from './engine-tuning-sync';
 
@@ -138,7 +139,7 @@ export function EngineTuning({
         <span>
           <b>{t(`engineTuning.group.${group}`)}</b>{' '}
           <span className="engine-level">
-            {t('engineTuning.level', { value: number(levels[group], 2) })}
+            {t('engineTuning.level', { value: enginePercent(levels[group], i18n.language) })}
           </span>
         </span>
         <input

@@ -24,16 +24,18 @@ describe('ShowcaseBlock', () => {
     expect(screen.getByText('The ship becomes a class')).toBeInTheDocument();
     expect(screen.getByText('Read it at a glance')).toBeInTheDocument();
 
-    const pins = screen.getAllByText(/^[123]$/).filter((el) =>
-      el.classList.contains('landing-pin'),
-    );
+    const pins = screen
+      .getAllByText(/^[123]$/)
+      .filter((el) => el.classList.contains('landing-pin'));
     expect(pins).toHaveLength(3);
   });
 
   it('renders the race showcase with image, pins and legend', () => {
     renderWithProviders(<ShowcaseBlock id="race" />);
 
-    expect(screen.getByRole('heading', { name: 'Pick a job. Beat the field.' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Pick a job. Beat the field.' }),
+    ).toBeInTheDocument();
 
     const image = screen.getByRole('img', {
       name: 'A race mission: the field of rivals, the route on a map and the ship in flight',
@@ -46,9 +48,9 @@ describe('ShowcaseBlock', () => {
     expect(screen.getByText('Check the fuel')).toBeInTheDocument();
     expect(screen.getByText('Watch it fly')).toBeInTheDocument();
 
-    const pins = screen.getAllByText(/^[123]$/).filter((el) =>
-      el.classList.contains('landing-pin'),
-    );
+    const pins = screen
+      .getAllByText(/^[123]$/)
+      .filter((el) => el.classList.contains('landing-pin'));
     expect(pins).toHaveLength(3);
   });
 

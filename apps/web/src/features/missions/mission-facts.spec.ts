@@ -3,10 +3,18 @@ import { legRouteIds, summarizeLegs } from './mission-facts';
 
 describe('summarizeLegs', () => {
   it('reads defensively from untyped JSON', () => {
-    expect(summarizeLegs([{ distance: 400, danger: 2, zone: 1 }, { distance: 300, danger: 5, zone: 2 }])).toEqual(
-      { legCount: 2, totalDistance: 700, peakDanger: 5, peakZone: 2 },
-    );
-    expect(summarizeLegs(null)).toEqual({ legCount: 0, totalDistance: 0, peakDanger: 0, peakZone: 0 });
+    expect(
+      summarizeLegs([
+        { distance: 400, danger: 2, zone: 1 },
+        { distance: 300, danger: 5, zone: 2 },
+      ]),
+    ).toEqual({ legCount: 2, totalDistance: 700, peakDanger: 5, peakZone: 2 });
+    expect(summarizeLegs(null)).toEqual({
+      legCount: 0,
+      totalDistance: 0,
+      peakDanger: 0,
+      peakZone: 0,
+    });
   });
 });
 
@@ -17,7 +25,10 @@ describe('summarizeLegs', () => {
 describe('legRouteIds', () => {
   it('extracts routeId from each leg of the stored plan, in order', () => {
     expect(
-      legRouteIds([{ routeId: 'r1', distance: 400 }, { routeId: 'r2', distance: 300 }]),
+      legRouteIds([
+        { routeId: 'r1', distance: 400 },
+        { routeId: 'r2', distance: 300 },
+      ]),
     ).toEqual(['r1', 'r2']);
   });
 

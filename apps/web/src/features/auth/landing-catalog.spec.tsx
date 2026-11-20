@@ -32,15 +32,22 @@ describe('MissionKinds', () => {
   it('renders the heading and eight mission cards with needs labels', () => {
     renderWithProviders(<MissionKinds />);
 
-    expect(
-      screen.getByRole('heading', { name: 'A mission for every ship' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'A mission for every ship' })).toBeInTheDocument();
 
     const list = screen.getByRole('list');
     const items = list.querySelectorAll('li');
     expect(items).toHaveLength(8);
 
-    const names = ['Delivery', 'Transport', 'Escort', 'Mining', 'Rescue', 'Race', 'Scavenge', 'Travel'];
+    const names = [
+      'Delivery',
+      'Transport',
+      'Escort',
+      'Mining',
+      'Rescue',
+      'Race',
+      'Scavenge',
+      'Travel',
+    ];
     for (const name of names) {
       expect(screen.getByText(name)).toBeInTheDocument();
     }

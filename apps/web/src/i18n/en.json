@@ -2071,8 +2071,8 @@
           "chem": "Chemical engines",
           "ion": "Ion engines"
         },
-        "pushed": "ran at x{{value}}: pushed on {{legs}} leg(s), {{failures}} failure(s); the chance of no failure at all was {{chance}}%.",
-        "eased": "ran at x{{value}}: throttled down on {{legs}} leg(s), slower but burning less."
+        "pushed": "ran at {{value}}%: pushed on {{legs}} leg(s), {{failures}} failure(s); the chance of no failure at all was {{chance}}%.",
+        "eased": "ran at {{value}}%: throttled down on {{legs}} leg(s), slower but burning less."
       }
     },
     "story": {
@@ -2140,7 +2140,7 @@
     "race": {
       "title": "Your rivals",
       "rival": "{{name}} — speed {{mobility}}",
-      "rivalPushed": "{{name}} — speed {{mobility}}, pushing ×{{level}}",
+      "rivalPushed": "{{name}} — speed {{mobility}}, pushing {{level}}%",
       "projected": "The race so far (projected)",
       "projectedStart": "The race is under way over {{legs}} legs. The order shows up here as each leg is finished.",
       "projectedTrouble": "engine trouble on a leg"
@@ -2291,7 +2291,7 @@
       "bestHint": "A great day: the best luck on every leg.",
       "none": "—",
       "dynamic": "Every race is different: luck on each leg and engine failures move the times around these figures. A rival keeps the same speed and engine level to the end, like you.",
-      "pushing": "pushing ×{{level}}",
+      "pushing": "pushing {{level}}%",
       "finish": "Finish"
     },
     "requirementNumbers": "Your ship: {{actual}} · needs {{needed}}",
@@ -2300,7 +2300,7 @@
     "yourMission": "Your mission",
     "startBefore": "Start before",
     "goToShip": "Open on My Ship",
-    "engineLevels": "Engines: chemical x{{chem}} · ion x{{ion}}",
+    "engineLevels": "Engines: chemical {{chem}}% · ion {{ion}}%",
     "cargo": {
       "fixed": "Fixed load: {{need}} units of cargo, taking that much of your cargo space.",
       "open": "Open load: at least {{need}} units, and you take all the cargo space you have. Every unit beyond {{need}} pays {{pay}} ¢."
@@ -2785,10 +2785,10 @@
       "chem": "Chemical engines",
       "ion": "Ion engines"
     },
-    "level": "level {{value}}",
+    "level": "{{value}}%",
     "hint": {
-      "chem": "Always at least 100%. Above 1: faster, burns much more fuel, wears the chemical engines and can overheat.",
-      "ion": "Burns no fuel but draws power, and the draw climbs faster than the thrust. Above 1: more thrust, wears the ion engines AND the batteries, and can overheat."
+      "chem": "Always at least 100%. Above 100%: faster, burns much more fuel, wears the chemical engines and can overheat.",
+      "ion": "Burns no fuel but draws power, and the draw climbs faster than the thrust. Above 100%: more thrust, wears the ion engines AND the batteries, and can overheat."
     },
     "speed": "Speed {{value}} (listed: {{base}})",
     "fuelBurn": "Fuel burn {{value}} (listed: {{base}})",

@@ -1,3 +1,4 @@
+import { enginePercent } from '../../ui/engine-level';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -658,9 +659,7 @@ function RaceRivals({ cargo }: { cargo: unknown }) {
                 mobility: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
                   scaleSpeed(rival.mobility, display),
                 ),
-                level: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
-                  rival.level ?? 1,
-                ),
+                level: enginePercent(rival.level ?? 1, i18n.language),
               },
             )}
           </li>

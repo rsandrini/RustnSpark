@@ -1,3 +1,4 @@
+import { enginePercent } from '../../ui/engine-level';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ReportStats } from '../../api/generated';
@@ -133,13 +134,13 @@ export function ReportOverview({ stats }: { stats: ReportStats }) {
                   <b>{t(`report.overview.engines.group.${run.group}`)}</b>{' '}
                   {run.pushedLegs > 0
                     ? t('report.overview.engines.pushed', {
-                        value: number(run.levelPct / PERCENT),
+                        value: enginePercent(run.levelPct / PERCENT, i18n.language),
                         legs: run.pushedLegs,
                         failures: run.failures,
                         chance: run.cleanChancePct,
                       })
                     : t('report.overview.engines.eased', {
-                        value: number(run.levelPct / PERCENT),
+                        value: enginePercent(run.levelPct / PERCENT, i18n.language),
                         legs: run.easedLegs,
                       })}
                 </li>
