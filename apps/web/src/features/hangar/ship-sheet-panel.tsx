@@ -11,7 +11,7 @@ export interface ShipSheetPanelProps {
   shipClass: string | undefined;
   /** Shown instead of the class's own name (the opening's ship has no class yet). */
   classLabel?: string | undefined;
-  /** The ship's own name, shown at the top of the sheet with a Rename button (when `onRename` is given). */
+  /** The ship's own name, shown at the top of the sheet; click it to rename the ship (when `onRename` is given). */
   shipName?: string | undefined;
   onRename?: (() => void) | undefined;
   sheet: ShipSheet | undefined;
@@ -44,6 +44,7 @@ type Tone = 'ok' | 'warn' | 'bad';
 
 // The icon glyphs on the headline tiles; their meaning is in the buttons' aria-labels.
 const GEAR_GLYPH = '\u2699';
+const PENCIL_GLYPH = '\u270E';
 const WARN_GLYPH = '\u26A0';
 
 const GROUP_ORDER = ['combat', 'power', 'propulsion', 'cargo', 'hull'] as const;
@@ -146,10 +147,22 @@ export function ShipSheetPanel({
       {shipName !== undefined && (
         <div className="statrow ship-name-row" data-testid="ship-name-row">
           <span>{t('hangar.shipName')}</span>
-          <b>{shipName}</b>
-          {onRename !== undefined && (
-            <button type="button" className="btn" data-testid="rename-ship" onClick={onRename}>
-              {t('hangar.rename.button')}
+          {onRename === undefined ? (
+            <b>{shipName}</b>
+          ) : (
+            // the name itself is the way in: click it to rename the ship
+            <button
+              type="button"
+              className="ship-name-link"
+              data-testid="rename-ship"
+              title={t('hangar.rename.title')}
+              onClick={onRename}
+            >
+              <b>{shipName}</b>
+              <span className="ship-name-pencil" aria-hidden="true">
+                {PENCIL_GLYPH}
+              </span>
+              <span className="sr-only">{t('hangar.rename.title')}</span>
             </button>
           )}
         </div>

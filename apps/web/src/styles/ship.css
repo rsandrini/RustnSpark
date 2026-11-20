@@ -909,6 +909,34 @@ details.collapsible > summary h2 {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+/* the ship's name as the rename control: plain text with a faint pencil that lights up on hover or focus */
+.ship-name-link {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 0;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  justify-content: flex-end;
+  cursor: pointer;
+}
+.ship-name-pencil {
+  color: var(--muted);
+  transition: color 0.15s;
+}
+.ship-name-link:hover .ship-name-pencil,
+.ship-name-link:focus-visible .ship-name-pencil {
+  color: var(--brass);
+}
+.ship-name-link:hover b {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
 /* the opening hides the yard while a job is taken (the phone rules hide it the same way) */
 .hangar-layout[hidden] {
   display: none;

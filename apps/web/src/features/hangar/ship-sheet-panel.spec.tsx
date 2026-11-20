@@ -183,7 +183,7 @@ describe('ShipSheetPanel range', () => {
 });
 
 describe('ShipSheetPanel name', () => {
-  it('shows the ship name at the top of the sheet with a Rename button', () => {
+  it('shows the ship name at the top of the sheet and clicking the name renames the ship', () => {
     const onRename = vi.fn();
     renderWithProviders(
       <ShipSheetPanel
@@ -197,7 +197,7 @@ describe('ShipSheetPanel name', () => {
     );
     const row = screen.getByTestId('ship-name-row');
     expect(row).toHaveTextContent('LUN-NOVA');
-    fireEvent.click(within(row).getByRole('button', { name: 'Rename' }));
+    fireEvent.click(within(row).getByRole('button', { name: /Rename the ship/ }));
     expect(onRename).toHaveBeenCalledTimes(1);
   });
 });
