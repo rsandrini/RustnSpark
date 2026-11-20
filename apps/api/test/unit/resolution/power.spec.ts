@@ -31,16 +31,17 @@ const generator = (id: string, supply: number, engine = false): PowerPart => ({
 });
 
 describe('successChance', () => {
-  it('follows the curve: 100 → 100, 95 → 90, 80 → 70, 70 → 60 and nothing below', () => {
+  it('follows the curve: 100 → 100, 95 → 95, 80 → 85, 70 → 75, 50 → 25 and nothing below 40', () => {
     expect(successChance(1, rules)).toBe(1);
     expect(successChance(1.4, rules)).toBe(1);
-    expect(successChance(0.95, rules)).toBeCloseTo(0.9);
-    expect(successChance(0.8, rules)).toBeCloseTo(0.7);
-    expect(successChance(0.7, rules)).toBeCloseTo(0.6);
-    expect(successChance(0.49, rules)).toBe(0);
+    expect(successChance(0.95, rules)).toBeCloseTo(0.95);
+    expect(successChance(0.8, rules)).toBeCloseTo(0.85);
+    expect(successChance(0.7, rules)).toBeCloseTo(0.75);
+    expect(successChance(0.5, rules)).toBeCloseTo(0.25);
+    expect(successChance(0.39, rules)).toBe(0);
   });
   it('interpolates between the points', () => {
-    expect(successChance(0.875, rules)).toBeCloseTo(0.8);
+    expect(successChance(0.875, rules)).toBeCloseTo(0.9);
   });
 });
 

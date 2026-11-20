@@ -347,7 +347,7 @@ describe('decideFuel (the "no other way" rule)', () => {
     const decision = decideFuel(state, snapshot, rules, catalogByType, offerAt(1, 1000));
     expect(decision).toEqual({
       shouldRefuel: true,
-      units: 55,
+      units: 34,
       reason: 'expensive-port-minimum',
     });
   });
