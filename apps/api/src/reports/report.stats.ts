@@ -62,6 +62,13 @@ export interface ReportStats {
       }[];
     }[];
   } | null;
+  /** Why the ship ran dry (null when it did not): the leg, the fuel it had, what the leg needed and what a failed pump wasted. */
+  readonly dry: {
+    readonly leg: number;
+    readonly had: number;
+    readonly needed: number;
+    readonly wasted: number;
+  } | null;
   /** How the engines were run (engine tuning): per group, the level, the legs it was pushed or
       eased, the failures and the chance the pushed legs went clean. Empty when run as listed. */
   readonly engines: readonly {
@@ -118,6 +125,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
   let stolenParts = 0;
   let motive: string | null = null;
   let race: ReportStats['race'] = null;
+  let dry: ReportStats['dry'] = null;
   const engineRuns = new Map<
     'chem' | 'ion',
     { levelPct: number; pushedLegs: number; easedLegs: number; failures: number; clean: number }
@@ -152,6 +160,9 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
       });
     }
     if (event.type === 'race_result' && event.race !== undefined) race = event.race;
+    if (event.type === 'fuel_exhausted' && event.dry !== undefined) {
+      dry = { leg: event.leg + 1, ...event.dry };
+    }
     if (event.type === 'engine_tuning' && event.tuning !== undefined) {
       const run = engineRuns.get(event.tuning.group) ?? {
         levelPct: event.tuning.levelPct,
@@ -230,6 +241,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     found,
     pirates: { stolenParts, motive },
     race,
+    dry,
     engines: [...engineRuns.entries()].map(([group, run]) => ({
       group,
       levelPct: run.levelPct,

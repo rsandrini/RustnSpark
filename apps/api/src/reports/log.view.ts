@@ -31,7 +31,8 @@ const PART_FAILURE_TYPES = new Set([
   'sensor',
 ]);
 
-type EffectKey = 'credits' | 'damage' | 'condition' | 'wear' | 'loot' | 'distance' | 'fuel' | 'none';
+type EffectKey =
+  'credits' | 'damage' | 'condition' | 'wear' | 'loot' | 'distance' | 'fuel' | 'none';
 
 function effectFor(
   event: ParsedMissionEvent,

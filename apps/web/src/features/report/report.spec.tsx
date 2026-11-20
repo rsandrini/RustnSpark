@@ -523,6 +523,43 @@ describe('report (S10.8)', () => {
     await waitFor(() => expect(view.router.state.location.pathname).toBe('/ship'));
   });
 
+  it('a ship that ran dry says why: the leg, the fuel it had and needed, the pump and the pushed engines', async () => {
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'adrift',
+            stats: {
+              ...STATS,
+              dry: { leg: 2, had: 28, needed: 41, wasted: 9 },
+              engines: [
+                {
+                  group: 'chem',
+                  levelPct: 145,
+                  pushedLegs: 2,
+                  easedLegs: 0,
+                  failures: 0,
+                  cleanChancePct: 80,
+                },
+              ],
+            },
+            view: 'summary',
+            lines: [{ text: 'Done', segments: [{ t: 'text', value: 'Done' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-dry'] });
+    const why = await screen.findByTestId('adrift-why');
+    expect(why).toHaveTextContent(
+      'On leg 2 the ship needed 41 fuel to go on, but only 28 was left',
+    );
+    expect(why).toHaveTextContent('wasted 9');
+    expect(why).toHaveTextContent('ran at 145% of their listed power');
+  });
+
   it('a free flight (no mission) gets a different card: where the ship arrived, with no pay', async () => {
     window.localStorage.clear();
     server.use(

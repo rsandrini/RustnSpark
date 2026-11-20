@@ -231,4 +231,22 @@ describe('computeReportStats', () => {
   it('has no engine summary for a run with the engines as listed', () => {
     expect(computeReportStats(log([]), { parts: {}, materials: {} }).engines).toEqual([]);
   });
+
+  it('says why the ship ran dry: the leg, the fuel it had and what the leg needed', () => {
+    const names = { parts: {}, materials: {} };
+    const dry = computeReportStats(
+      log([
+        event({
+          type: 'fuel_exhausted',
+          category: 'transit',
+          leg: 1,
+          magnitude: 28,
+          dry: { had: 28, needed: 41, wasted: 9 },
+        }),
+      ]),
+      names,
+    ).dry;
+    expect(dry).toEqual({ leg: 2, had: 28, needed: 41, wasted: 9 });
+    expect(computeReportStats(log([]), names).dry).toBeNull();
+  });
 });

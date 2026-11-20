@@ -1971,6 +1971,12 @@
       "partial_failure": "Sucesso parcial",
       "failed": "Missão falhou",
       "adrift": "Nave à deriva — sem combustível",
+      "adriftWhy": {
+        "short": "No trecho {{leg}} a nave precisava de {{needed}} de combustível para seguir, mas só restavam {{had}} no tanque.",
+        "pump": "Uma bomba do tanque falhando desperdiçou {{wasted}} disso.",
+        "leak": "Um vazamento no tanque perdeu {{lost}} de combustível no caminho.",
+        "pushed": "{{group}} rodaram a {{level}}% da potência listada, o que queima muito mais combustível."
+      },
       "adriftHint": "O tanque secou antes do fim da rota, então a nave parou no espaço. Encha o tanque antes de partir e lembre que rotas longas, zonas hostis e motor muito forçado gastam mais combustível."
     },
     "cascade": {

@@ -1084,6 +1084,11 @@ export const ReportStatsSchema = z.object({
   /** Whether the dispatched ship had a shield at all (a DEFENSE part with ESC > 0). */
   hasShield: z.boolean(),
   /** How the engines were run (engine tuning), per group; empty when run as listed. */
+  /** Why the ship ran dry (null when it did not): the leg (1-based), the fuel it had, what the leg needed, what a failed pump wasted. */
+  dry: z
+    .object({ leg: z.number(), had: z.number(), needed: z.number(), wasted: z.number() })
+    .nullable()
+    .optional(),
   engines: z
     .array(
       z.object({

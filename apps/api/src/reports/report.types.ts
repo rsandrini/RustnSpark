@@ -64,7 +64,10 @@ export interface ReportViewChrome {
   };
   readonly chapter: string;
   readonly effects: Readonly<
-    Record<'credits' | 'damage' | 'condition' | 'wear' | 'loot' | 'distance' | 'fuel' | 'none', string>
+    Record<
+      'credits' | 'damage' | 'condition' | 'wear' | 'loot' | 'distance' | 'fuel' | 'none',
+      string
+    >
   >;
 }
 

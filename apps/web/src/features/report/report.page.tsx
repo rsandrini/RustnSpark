@@ -15,6 +15,7 @@ import type {
   ReportViewName,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
+import { enginePercent } from '../../ui/engine-level';
 import { formatDuration } from '../../ui/duration';
 import { pathOfLegs } from '../../ui/RouteMap';
 import { PageTitle } from '../../ui/PageTitle';
@@ -606,6 +607,33 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
             <p className="debrief-hint" role="note" data-testid="adrift-hint">
               {t('report.outcome.adriftHint')}
             </p>
+          )}
+          {outcome === 'adrift' && stats.dry != null && (
+            <ul className="debrief-why" data-testid="adrift-why">
+              <li>
+                {t('report.outcome.adriftWhy.short', {
+                  leg: stats.dry.leg,
+                  needed: number(stats.dry.needed),
+                  had: number(stats.dry.had),
+                })}
+              </li>
+              {stats.dry.wasted > 0 && (
+                <li>{t('report.outcome.adriftWhy.pump', { wasted: number(stats.dry.wasted) })}</li>
+              )}
+              {stats.fuelLost > 0 && (
+                <li>{t('report.outcome.adriftWhy.leak', { lost: number(stats.fuelLost) })}</li>
+              )}
+              {(stats.engines ?? [])
+                .filter((run) => run.levelPct > 100 && run.pushedLegs > 0)
+                .map((run) => (
+                  <li key={run.group}>
+                    {t('report.outcome.adriftWhy.pushed', {
+                      group: t(`report.overview.engines.group.${run.group}`),
+                      level: enginePercent(run.levelPct / 100, i18n.language),
+                    })}
+                  </li>
+                ))}
+            </ul>
           )}
           {mission !== undefined && (
             <div className="debrief-mission">

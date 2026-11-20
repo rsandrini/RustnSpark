@@ -369,6 +369,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
         type: 'fuel_exhausted',
         actors,
         magnitude: input.ship.fuel,
+        dry: { had: input.ship.fuel, needed: fuelBurned, wasted: wastedFuel },
         credits: 0,
       }),
     );

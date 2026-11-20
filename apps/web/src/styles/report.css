@@ -474,6 +474,12 @@ tr.ev-transit td:first-child {
   color: var(--ink);
 }
 
+.debrief-why {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: var(--text-sm, 0.875rem);
+}
 .debrief-hint {
   margin: 12px 0 0;
   padding: 8px 10px;

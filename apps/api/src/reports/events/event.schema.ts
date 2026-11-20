@@ -209,6 +209,9 @@ function eventMembers(
               .optional(),
           });
         }
+        if (type === 'fuel_exhausted') {
+          extras['dry'] = object({ had: num, needed: num, wasted: num }).optional();
+        }
         if (type === 'engine_tuning') {
           extras['tuning'] = object({
             group: z.enum(['chem', 'ion']),
