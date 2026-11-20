@@ -667,6 +667,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const scavengeRetryAt = new Date(
     serverNow() + (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) * 1000,
   ).toISOString();
+  // The wait between searches is for the ship's search only: on foot, a pilot can go again at once.
+  const scavengeWaitSeconds =
+    scavengeMode === 'ship' ? (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) : 0;
   // Totals come from the server's quote of the CURRENT plan; nothing selected is exactly zero.
   const repairQuote = changedTargets.length === 0 ? undefined : repairQuoteQuery.data;
   const repairTotalCost = repairQuote?.cost ?? 0;
@@ -1626,7 +1629,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               </ul>
             </details>
           )}
-          {scavengeInfoQuery.data !== undefined && scavengeInfoQuery.data.retryAfterSeconds > 0 ? (
+          {scavengeInfoQuery.data !== undefined && scavengeWaitSeconds > 0 ? (
             <p className="notice" role="status">
               {t('port.scav.nextAttempt')}{' '}
               <Countdown
@@ -1643,7 +1646,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               className="btn primary"
               disabled={
                 scavenge.isPending ||
-                (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) > 0 ||
+                scavengeWaitSeconds > 0 ||
                 (scavengeMode === 'ship' && !shipUsable) ||
                 lacksScavengeFuel
               }

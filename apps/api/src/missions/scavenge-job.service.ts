@@ -130,7 +130,8 @@ export class ScavengeJobService {
       update: {},
     });
     const cooldown = rules.scavenging.cooldown_seconds;
-    if (counter.attemptCount > 0 && counter.lastAttemptAt !== null && cooldown > 0) {
+    // The wait between searches is for the ship's search only: a search on foot can be repeated at once.
+    if (!onFoot && counter.attemptCount > 0 && counter.lastAttemptAt !== null && cooldown > 0) {
       const elapsed = Math.floor((now.getTime() - counter.lastAttemptAt.getTime()) / MS_PER_SECOND);
       if (cooldown - elapsed > 0) {
         throw new ConflictException({
@@ -226,7 +227,8 @@ export class ScavengeJobService {
       });
       await this.prisma.scavengeCounter.update({
         where: { playerId_locationId: { playerId, locationId } },
-        data: { attemptCount: counter.attemptCount + 1, lastAttemptAt: now },
+        // a search on foot does not start the ship's wait
+        data: { attemptCount: counter.attemptCount + 1, ...(onFoot ? {} : { lastAttemptAt: now }) },
       });
       return response;
     } catch (error) {

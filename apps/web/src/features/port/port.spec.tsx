@@ -324,6 +324,38 @@ describe('port (S10.9)', () => {
     expect(screen.getByRole('button', { name: /Go scavenging on foot/i })).toBeEnabled();
   });
 
+  it('the wait between searches is for the ship only: on foot the button is open at once', async () => {
+    server.use(
+      http.get('/v1/locations/:id/scavenge', ({ params }) =>
+        HttpResponse.json({
+          locationId: String(params.id),
+          fieldType: 'common',
+          dropChance: 0.25,
+          zone: 1,
+          scrapPlace: false,
+          durationSeconds: 600,
+          footDurationSeconds: 300,
+          shipFuel: 4,
+          cooldownSeconds: 600,
+          retryAfterSeconds: 120,
+          attempts: 1,
+          qualityMin: 30,
+          qualityMax: 70,
+          nothingChance: 0.3,
+        }),
+      ),
+    );
+    await renderPort();
+    openPortTab('Scavenging');
+    // with the ship: waiting
+    expect(await screen.findByText(/Next job in/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Send the ship scavenging/i })).toBeDisabled();
+    // on foot: no wait
+    fireEvent.click(screen.getByRole('radio', { name: /On foot/i }));
+    await waitFor(() => expect(screen.queryByText(/Next job in/i)).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /Go scavenging on foot/i })).toBeEnabled();
+  });
+
   it('the Repair tab says the repairs are under way and how long they take, even beside a job on foot', async () => {
     setShipActivity({
       kind: 'scavenging',

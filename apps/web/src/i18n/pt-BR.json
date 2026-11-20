@@ -353,7 +353,7 @@
         "sections": {
           "scavenging": {
             "title": "Recuperar sucata",
-            "text": "Num porto você pode vasculhar destroços com a nave ({{scavengeShip}}) ou a pé ({{scavengeFoot}}). Você pode achar sucata, peças e materiais; as zonas mais distantes dão achados melhores. A pé suas chances são menores. Depois de uma busca você espera {{scavengeCooldown}} até a próxima. Com a nave, piratas podem encontrar você."
+            "text": "Num porto você pode vasculhar destroços com a nave ({{scavengeShip}}) ou a pé ({{scavengeFoot}}). Você pode achar sucata, peças e materiais; as zonas mais distantes dão achados melhores. A pé suas chances são menores. Depois de uma busca com a nave você espera {{scavengeCooldown}} até a próxima; a pé você pode sair de novo na hora. Com a nave, piratas podem encontrar você."
           },
           "mining": {
             "title": "Mineração",
@@ -397,7 +397,7 @@
       "sellPercent": "Valor de venda",
       "scavengeShip": "Busca com a nave",
       "scavengeFoot": "Busca a pé",
-      "scavengeCooldown": "Espera entre buscas",
+      "scavengeCooldown": "Espera entre buscas com a nave",
       "miningJob": "Tempo de extração livre",
       "startCredits": "Créditos iniciais",
       "unitPay": "Carga aberta, pagamento por unidade extra",

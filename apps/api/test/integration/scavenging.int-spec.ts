@@ -393,6 +393,26 @@ describe('scavenging job (W8)', () => {
     expect((info.body as { retryAfterSeconds: number }).retryAfterSeconds).toBeGreaterThan(0);
   });
 
+  it("on foot there is no wait between searches, and a search on foot does not start the ship's wait", async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await configService.setValue('scavenging.cooldown_seconds', 600, 'tester', 'W8 test');
+    const first = await start(player.token, 'ceres').send({ mode: 'foot' });
+    expect(first.status).toBe(200);
+    const job = (await queue.getJob(
+      (first.body as { missionId: string }).missionId,
+    )) as Job<DispatchJobData>;
+    await processor.process(job);
+    // straight back out on foot: allowed
+    const again = await start(player.token, 'ceres').send({ mode: 'foot' });
+    expect(again.status).toBe(200);
+    // and the info says nothing is waiting (the wait belongs to the ship's search)
+    const info = await request(httpServer(testApp.app))
+      .get('/v1/locations/ceres/scavenge')
+      .set(auth(player.token));
+    expect((info.body as { retryAfterSeconds: number }).retryAfterSeconds).toBe(0);
+  });
+
   it('scrap has a fixed price: the same everywhere, whatever the port or the mood', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

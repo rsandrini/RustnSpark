@@ -353,7 +353,7 @@
         "sections": {
           "scavenging": {
             "title": "Scavenging",
-            "text": "At a port you can search for wreckage with the ship ({{scavengeShip}}) or on foot ({{scavengeFoot}}). You can find scrap, parts and materials; the farther zones give better finds. On foot your chances are lower. After a search you wait {{scavengeCooldown}} before the next. With the ship, pirates can find you."
+            "text": "At a port you can search for wreckage with the ship ({{scavengeShip}}) or on foot ({{scavengeFoot}}). You can find scrap, parts and materials; the farther zones give better finds. On foot your chances are lower. After a search with the ship you wait {{scavengeCooldown}} before the next; on foot you can go again at once. With the ship, pirates can find you."
           },
           "mining": {
             "title": "Mining",
@@ -397,7 +397,7 @@
       "sellPercent": "Selling value",
       "scavengeShip": "Search with the ship",
       "scavengeFoot": "Search on foot",
-      "scavengeCooldown": "Wait between searches",
+      "scavengeCooldown": "Wait between ship searches",
       "miningJob": "Free dig time",
       "startCredits": "Starting credits",
       "unitPay": "Open cargo, pay per extra unit",
