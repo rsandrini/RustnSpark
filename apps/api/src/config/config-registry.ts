@@ -2016,8 +2016,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 5,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.power.pump_fuel_factor),
     description: {
-      en: 'When the tank pump fails, the leg burns this many times the usual fuel.',
-      'pt-BR': 'Quando a bomba do tanque falha, o trecho gasta tantas vezes o combustível normal.',
+      en: 'No longer used: a pump short of power only weakens the engines for the leg and wastes no fuel (a worn tank leaks fuel through its own failure instead). Kept so existing databases stay valid.',
+      'pt-BR':
+        'Não é mais usado: uma bomba sem energia só enfraquece os motores no trecho e não desperdiça combustível (um tanque gasto vaza combustível pela própria falha). Mantido para os bancos existentes continuarem válidos.',
     },
   },
   {

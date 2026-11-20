@@ -399,17 +399,16 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   power: {
     success_curve: [
       [1, 1],
-      [0.95, 0.95],
-      [0.8, 0.85],
-      [0.7, 0.75],
-      [0.5, 0.25],
-      [0.4, 0],
+      [0.95, 0.9],
+      [0.8, 0.7],
+      [0.7, 0.6],
+      [0.5, 0],
     ],
     idle_demand: 1,
     combat_demand_factor: 2,
     life_support_min: 0.5,
     pump_engine_factor: 0.5,
-    pump_fuel_factor: 1.2,
+    pump_fuel_factor: 1.5,
     // In a given situation these systems are primary, in this order; any other system that draws
     // power is secondary and gets what is left (an idle one keeps drawing its minimum).
     tiers: {

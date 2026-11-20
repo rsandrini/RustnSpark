@@ -340,16 +340,16 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     envFuelMult: input.route.env.fuelMult,
   });
 
-  // Power sharing (layered model). The tank pump rolls to push fuel this leg: if it fails, the
-  // engines struggle (they generate less, which starves the rest further) and the leg wastes fuel.
+  // Power sharing (layered model). The tank pump rolls to push fuel this leg: a pump short of power fails the roll and
+  // the engines struggle (they generate less, which starves the rest further). That is a power problem, not a fuel
+  // loss: no fuel is wasted. Fuel is lost only to damage (a worn tank leaks: the part choke below).
   // Resolved once per leg, so a bad leg can only get a bounded amount worse.
   const powerRng = rng.child('power');
   const powerParts = input.ship.parts.flatMap((part) => (part.power ? [part.power] : []));
   const layeredPower = input.ship.armor !== undefined && powerParts.length > 0;
   const powerSituation = input.context.mining !== null ? 'mining' : 'cruise';
   let engineFactor = 1;
-  let wastedFuel = 0;
-  // the chance the tank pump worked on this leg, when the ship has one (a failed roll wastes fuel)
+  // the chance the tank pump worked on this leg, when the ship has one
   let pumpChancePct: number | undefined;
   let cruisePower = layeredPower ? allocatePower(powerParts, powerSituation, rules) : null;
   if (cruisePower !== null && powerParts.some((part) => part.kind === 'pump')) {
@@ -358,10 +358,9 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     if (chance < 1 && powerRng.float() >= chance) {
       engineFactor = rules.power.pump_engine_factor;
       cruisePower = allocatePower(powerParts, powerSituation, rules, engineFactor);
-      wastedFuel = baseBurn * (rules.power.pump_fuel_factor - 1);
     }
   }
-  const fuelBurned = baseBurn + wastedFuel;
+  const fuelBurned = baseBurn;
 
   // 1. Fuel gate — exhausted before the leg starts → adrift, not death.
   if (fuelBurned > input.ship.fuel) {
@@ -375,7 +374,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
         dry: {
           had: input.ship.fuel,
           needed: fuelBurned,
-          wasted: wastedFuel,
+          wasted: 0,
           ...(pumpChancePct !== undefined ? { chancePct: pumpChancePct } : {}),
         },
         credits: 0,
@@ -562,20 +561,6 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   );
 
   const chokeFlags = applyChokeFlags(chokeEvents);
-  if (wastedFuel > 0) {
-    events.push(
-      missionEvent({
-        leg: input.index,
-        category: 'failure',
-        type: 'tank',
-        actors,
-        magnitude: 0,
-        consequence: 'fuel_leak',
-        fuelLost: wastedFuel,
-      }),
-    );
-  }
-
   let ship: LegShipState = {
     ...input.ship,
     parts,
