@@ -2557,7 +2557,7 @@
       "whyUnknown": "O tanque secou antes do fim da rota.",
       "tip": "Um tanque gasto vaza e uma bomba gasta desperdiça combustível: conserte-os antes da próxima viagem e deixe uma folga no tanque.",
       "waitTitle": "Esperar o resgate",
-      "waitSub": "chega em cerca de {{minutes}} min, você paga então",
+      "waitSub": "Aguarde {{minutes}} minutos para ser rebocado, pague somente no final do tempo",
       "nowTitle": "Resgate agora",
       "nowSub": "rebocada na hora",
       "price": "{{cost}} ¢",
