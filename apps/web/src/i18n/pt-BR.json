@@ -561,7 +561,8 @@
       "defenseValue": "{{armor}} · {{shield}}",
       "shield": "Escudo",
       "armor": "Blindagem",
-      "tuneEngines": "Ajuste dos motores"
+      "tuneEngines": "Ajuste dos motores",
+      "pushed": "Motores acima da potência listada: químicos {{chem}}% · íons {{ion}}%"
     },
     "summary": {
       "ready": "Pronta para voar",

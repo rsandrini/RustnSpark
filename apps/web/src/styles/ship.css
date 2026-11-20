@@ -1077,6 +1077,19 @@ details.collapsible > summary h2 {
 .tile-icon:hover {
   color: var(--text);
 }
+.tile-push {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border: 1px solid var(--sun);
+  border-radius: 999px;
+  color: var(--sun);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+}
 .tile-icon-warn {
   color: var(--sun);
 }

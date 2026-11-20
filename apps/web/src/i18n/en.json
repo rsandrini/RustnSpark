@@ -561,7 +561,8 @@
       "defenseValue": "{{armor}} · {{shield}}",
       "shield": "Shield",
       "armor": "Armor",
-      "tuneEngines": "Engine tuning"
+      "tuneEngines": "Engine tuning",
+      "pushed": "Engines over their listed power: chemical {{chem}}% · ion {{ion}}%"
     },
     "summary": {
       "ready": "Ready to fly",

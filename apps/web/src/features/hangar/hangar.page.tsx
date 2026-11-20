@@ -1366,6 +1366,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   warningCount={allWarnings.length}
                   onShowWarnings={() => setWarningsOpen(true)}
                   onTuneEngines={ship !== undefined ? () => setTuningOpen(true) : undefined}
+                  engineLevels={savedLevels}
                   power={preview?.power}
                   layers={preview?.layers}
                   routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}

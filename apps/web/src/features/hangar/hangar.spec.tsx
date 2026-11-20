@@ -1479,11 +1479,14 @@ describe('hangar (S10.4)', () => {
     const first = renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByText('Ready to fly');
     expect(screen.queryByRole('button', { name: /^Warnings/ })).toBeNull();
+    expect(screen.queryByTestId('engines-pushed')).toBeNull();
     first.unmount();
 
     server.use(withLevels({ chem: 1.45, ion: 1 }));
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     const warn = await screen.findByRole('button', { name: 'Warnings (1)' });
+    // the mobility tile shows the push at a glance
+    expect(screen.getByTestId('engines-pushed')).toHaveTextContent('145%');
     fireEvent.click(warn);
     expect(
       await screen.findByText(/Engines are pushed above their listed power/),

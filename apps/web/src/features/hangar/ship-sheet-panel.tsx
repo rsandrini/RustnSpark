@@ -3,6 +3,7 @@ import { scaleSpeed, sheetStat, useDisplay } from '../../ui/display';
 import { useTranslation } from 'react-i18next';
 import type { PartCatalogStats, RouteCoverage, ShipSheet } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
+import { enginePercent } from '../../ui/engine-level';
 
 export interface ShipSheetPanelProps {
   /** Only the headline tiles: no "show all stats" (the new-pilot opening). */
@@ -25,6 +26,8 @@ export interface ShipSheetPanelProps {
   onShowWarnings?: (() => void) | undefined;
   /** Opens the engine tuning: a small icon on the mobility tile (only when given). */
   onTuneEngines?: (() => void) | undefined;
+  /** The saved engine levels: any above 1 (over the listed power) show a small "pushed" badge on the mobility tile. */
+  engineLevels?: { chem: number; ion: number } | undefined;
   /** How the ship's power is shared while travelling: each kind of system's share of its need. */
   power?: { shares: Record<string, number> } | undefined;
   /** What a fight starts with at the parts' current condition (worn or unconnected parts give less). */
@@ -41,6 +44,7 @@ type Tone = 'ok' | 'warn' | 'bad';
 
 // The icon glyphs on the headline tiles; their meaning is in the buttons' aria-labels.
 const GEAR_GLYPH = '\u2699';
+const PUSH_GLYPH = '\u25B2';
 const WARN_GLYPH = '\u26A0';
 
 const GROUP_ORDER = ['combat', 'power', 'propulsion', 'cargo', 'hull'] as const;
@@ -118,6 +122,7 @@ export function ShipSheetPanel({
   warningCount = 0,
   onShowWarnings,
   onTuneEngines,
+  engineLevels,
   power,
   layers,
   installedCatalogs,
@@ -333,6 +338,18 @@ export function ShipSheetPanel({
             <span>{t('hangar.headline.mobility')}</span>
             <b className={`tone-${mobilityTone}`}>
               {mobilityNumber(sheetStat(sheet, 'mob', display))}
+              {engineLevels !== undefined && Math.max(engineLevels.chem, engineLevels.ion) > 1 && (
+                <span
+                  className="tile-push"
+                  data-testid="engines-pushed"
+                  title={t('hangar.headline.pushed', {
+                    chem: enginePercent(engineLevels.chem, i18n.language),
+                    ion: enginePercent(engineLevels.ion, i18n.language),
+                  })}
+                >
+                  {`${PUSH_GLYPH} ${enginePercent(Math.max(engineLevels.chem, engineLevels.ion), i18n.language)}%`}
+                </span>
+              )}
               {onTuneEngines !== undefined && (
                 <button
                   type="button"
