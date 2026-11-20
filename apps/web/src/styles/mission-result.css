@@ -20,16 +20,16 @@
   position: relative;
   display: grid;
   justify-items: center;
-  gap: 8px;
-  width: min(360px, 100%);
-  padding: 26px 22px 20px;
-  border: 2px solid var(--tone);
-  border-radius: 16px;
-  background: var(--paper, #14181f);
+  gap: 6px;
+  width: min(340px, 100%);
+  padding: 28px 24px 20px;
+  border: 1px solid var(--rule-3, #2a3140);
+  border-radius: 20px;
+  background: var(--paper, #151a23);
   color: var(--ink, #f3f4f6);
   text-align: center;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
-  animation: mresult-rise 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  animation: mresult-rise 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
 }
 .mresult.warn {
   --tone: var(--warn, #e0a83a);
@@ -37,57 +37,85 @@
 .mresult.bad {
   --tone: var(--bad, #e5594f);
 }
-.mresult-glyph {
-  display: grid;
-  place-items: center;
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  border: 3px solid var(--tone);
+.mresult-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tone) 16%, transparent);
   color: var(--tone);
-  font-size: 42px;
-  font-weight: 800;
-  animation: mresult-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) 0.25s both;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
-.mresult-glyph::after {
-  content: '';
-  position: absolute;
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  border: 2px solid var(--tone);
-  animation: mresult-ring 1.2s ease-out 0.5s 2 both;
-  pointer-events: none;
+.mresult-chip svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.mresult-outcome {
-  margin: 4px 0 0;
-  font-size: 1.35rem;
-  color: var(--tone);
-  animation: mresult-up 0.4s ease-out 0.55s both;
+.mresult-credits {
+  margin: 14px 0 0;
+  font-size: 3.75rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  animation: mresult-up 0.4s ease-out 0.2s both;
 }
 .mresult-mission,
 .mresult-race {
   display: grid;
   gap: 2px;
-  margin: 0;
-  animation: mresult-up 0.4s ease-out 0.7s both;
+  margin: 10px 0 0;
+  animation: mresult-up 0.4s ease-out 0.3s both;
+}
+.mresult-mission b {
+  font-size: 1rem;
+  font-weight: 500;
+}
+.mresult-mission small,
+.mresult-race small,
+.mresult-prize {
+  color: var(--muted, #9aa3b2);
+  font-size: 0.8125rem;
+}
+.mresult-race {
+  margin-top: 12px;
 }
 .mresult-race b {
-  font-size: 1.6rem;
-}
-.mresult-credits {
-  margin: 4px 0 0;
-  font-size: 1.25rem;
+  font-size: 2.25rem;
+  line-height: 1.1;
   font-weight: 700;
-  animation: mresult-up 0.4s ease-out 0.85s both;
+}
+.mresult-race small {
+  font-size: 1.125rem;
+  color: var(--ink, #f3f4f6);
+}
+.mresult-prize {
+  margin: 0;
+  animation: mresult-up 0.4s ease-out 0.4s both;
 }
 .mresult-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  margin-top: 16px;
+  animation: mresult-up 0.4s ease-out 0.5s both;
+}
+.mresult-actions .btn {
+  min-height: 44px;
   justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
-  animation: mresult-up 0.4s ease-out 1s both;
+}
+.mresult-actions .btn:not(.primary) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted, #9aa3b2);
 }
 @keyframes mresult-fade {
   from {
@@ -100,22 +128,6 @@
     transform: translateY(24px) scale(0.92);
   }
 }
-@keyframes mresult-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.2) rotate(-30deg);
-  }
-}
-@keyframes mresult-ring {
-  from {
-    opacity: 0.8;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(1.8);
-  }
-}
 @keyframes mresult-up {
   from {
     transform: translateY(10px);
@@ -124,12 +136,10 @@
 @media (prefers-reduced-motion: reduce) {
   .mresult,
   .mresult-backdrop,
-  .mresult-glyph,
-  .mresult-glyph::after,
-  .mresult-outcome,
   .mresult-mission,
   .mresult-race,
   .mresult-credits,
+  .mresult-prize,
   .mresult-actions {
     animation: none;
   }

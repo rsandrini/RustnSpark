@@ -3,6 +3,13 @@ import { useTranslation } from 'react-i18next';
 import '../../styles/mission-result.css';
 import { noteResultCardShown } from './result-card-gate';
 
+/** The chip's icon, one stroke path per verdict (a tick, a flag, a cross). */
+const CHIP_ICON = {
+  ok: 'M5 12.5l4.5 4.5L19 7.5',
+  warn: 'M5 21V4M5 4h13l-2.5 4 2.5 4H5',
+  bad: 'M6 6l12 12M18 6L6 18',
+} as const;
+
 export interface MissionResultProps {
   /** How it ended: drives the colour and the glyph. */
   tone: 'ok' | 'warn' | 'bad';
@@ -22,8 +29,8 @@ export interface MissionResultProps {
 }
 
 /**
- * The short, animated card that opens on a finished mission: the verdict pops in, then the name of the job and what it
- * paid; a race says only the place and the time. Enter, Escape or a click closes it and leaves the full report below.
+ * The short popup that opens on a finished mission: a verdict chip, the pay as the big number, then the job and its
+ * route; a race leads with the place and the time instead. Enter, Escape or a click closes it and leaves the full report below.
  */
 export function MissionResultPopup({
   tone,
@@ -50,27 +57,34 @@ export function MissionResultPopup({
     <div className="mresult-layer" data-testid="mission-result" data-dialogue-free="">
       <div className="mresult-backdrop" aria-hidden="true" />
       <div className={`mresult ${tone}`} role="alertdialog" aria-label={outcome}>
-        <div className="mresult-glyph" aria-hidden="true">
-          <span>{t(`report.glyph.${tone}`)}</span>
-        </div>
-        <h2 className="mresult-outcome">{outcome}</h2>
+        <p className="mresult-chip">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d={CHIP_ICON[tone]} />
+          </svg>
+          <span>{outcome}</span>
+        </p>
         {race === null ? (
-          <p className="mresult-mission">
-            <b>{title}</b>
-            <small>{route}</small>
-          </p>
+          <>
+            <p className="mresult-credits">{credits}</p>
+            <p className="mresult-mission">
+              <b>{title}</b>
+              <small>{route}</small>
+            </p>
+          </>
         ) : (
-          <p className="mresult-race" data-testid="mission-result-race">
-            <b>{t('report.popup.racePlace', { place: race.place })}</b>
-            <small>{t('report.popup.raceTime', { time: race.time })}</small>
-          </p>
+          <>
+            <p className="mresult-race" data-testid="mission-result-race">
+              <b>{t('report.popup.racePlace', { place: race.place })}</b>
+              <small>{t('report.popup.raceTime', { time: race.time })}</small>
+            </p>
+            <p className="mresult-prize">{credits}</p>
+          </>
         )}
-        <p className="mresult-credits">{credits}</p>
         <div className="mresult-actions">
           <button
             ref={button}
             type="button"
-            className="btn primary mresult-close"
+            className="btn primary"
             data-testid="mission-result-report"
             onClick={onReport}
           >
@@ -79,7 +93,7 @@ export function MissionResultPopup({
           {onDismiss !== undefined && (
             <button
               type="button"
-              className="btn mresult-close"
+              className="btn"
               data-testid="mission-result-close"
               onClick={onDismiss}
             >
