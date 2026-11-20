@@ -1517,7 +1517,9 @@ describe('hangar (S10.4)', () => {
     fireEvent.click(toggle);
     expect(layout()).toHaveClass('side-hidden');
     expect(window.localStorage.getItem('rs.hangar.sideHidden')).toBe('1');
-    expect(toggle).toHaveTextContent('Show parts and store');
+    // an arrow with no text: its name says what it does
+    expect(toggle).toHaveAccessibleName('Show parts and store');
+    expect(toggle).toHaveTextContent(/^[\u2039\u203A]$/);
     fireEvent.click(toggle);
     expect(layout()).not.toHaveClass('side-hidden');
   });

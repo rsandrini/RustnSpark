@@ -942,9 +942,28 @@ details.collapsible > summary h2 {
   display: none;
 }
 .hangar-side-toggle {
-  display: flex;
-  justify-content: flex-start;
-  margin-top: 8px;
+  position: absolute;
+  top: 50%;
+  left: -12px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 56px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 1px solid var(--rule-3, var(--rule));
+  border-radius: 8px;
+  background: var(--paper-2);
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.hangar-side-toggle:hover,
+.hangar-side-toggle:focus-visible {
+  color: var(--brass);
+  border-color: var(--brass);
 }
 .hangar-layout.side-hidden {
   grid-template-columns: minmax(0, 1fr) 300px;

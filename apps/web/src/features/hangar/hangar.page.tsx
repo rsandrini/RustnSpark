@@ -111,6 +111,8 @@ const AUTO_SAVE_MS = 900;
 const FALLBACK_CELL_PX = 40;
 const STAGE_COLLAPSE_KEY = 'rs.hangar.stageCollapsed';
 const SIDE_HIDDEN_KEY = 'rs.hangar.sideHidden';
+const CHEVRON_LEFT = '\u2039';
+const CHEVRON_RIGHT = '\u203A';
 
 export interface HangarPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -872,19 +874,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           )}
 
           {/* On a phone a ship that is out on a mission shows only its flight: the yard cannot be edited then. */}
-          {!phone && !opening && (
-            <div className="hangar-side-toggle">
-              <button
-                type="button"
-                className="btn"
-                data-testid="toggle-side"
-                aria-pressed={sideHidden}
-                onClick={toggleSide}
-              >
-                {t(sideHidden ? 'hangar.side.show' : 'hangar.side.hide')}
-              </button>
-            </div>
-          )}
           <div
             className={`hangar-layout${sideHidden && !phone && !opening ? ' side-hidden' : ''}`}
             hidden={phone && onMission}
@@ -989,6 +978,20 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             </section>
 
             <section className="hangar-main" style={{ position: 'relative' }}>
+              {!phone && !opening && (
+                // a small arrow on the left border of the ship block: hides or shows the Parts / Store column
+                <button
+                  type="button"
+                  className="hangar-side-toggle"
+                  data-testid="toggle-side"
+                  aria-pressed={sideHidden}
+                  aria-label={t(sideHidden ? 'hangar.side.show' : 'hangar.side.hide')}
+                  title={t(sideHidden ? 'hangar.side.show' : 'hangar.side.hide')}
+                  onClick={toggleSide}
+                >
+                  <span aria-hidden="true">{sideHidden ? CHEVRON_RIGHT : CHEVRON_LEFT}</span>
+                </button>
+              )}
               {auto.isPending && (
                 <div className="yard-busy" role="status" data-testid="auto-busy">
                   <span className="yard-spinner" aria-hidden="true" />
