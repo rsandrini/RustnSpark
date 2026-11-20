@@ -2551,6 +2551,8 @@
     "title": "Floating in space",
     "body": "Your ship ran out of fuel and drifts where it stopped. Nothing can be done with it until it is towed to a base. Pick how: wait for the rescue to arrive (cheaper) or call it now. Either may leave your balance negative.",
     "bar": "— out of fuel. Pick how to get back.",
+    "checkNow": "The rescue should be here: check now",
+    "arrived": "The rescue arrived. Your ship is back at port.",
     "popup": {
       "open": "Rescue options",
       "choose": "Choose ›",

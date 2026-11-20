@@ -64,6 +64,19 @@ export function RescueBanner() {
     },
   });
 
+  // The countdown ran out but the ship is still floating (the automatic check was early or failed): a button asks again.
+  const [elapsed, setElapsed] = useState(false);
+  const settle = useMutation({
+    mutationFn: (shipId: string) => client.post(`/v1/ships/${shipId}/rescue/settle`),
+    onSuccess: () => {
+      setNotice(t('rescue.arrived'));
+      void reloadProfile();
+      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    },
+    onError: (failure) => setError(errorText(t, failure, t('error.unexpected'))),
+  });
+
   const adrift = ship?.status === 'ADRIFT';
   const options = ship?.rescue ?? null;
   const base = world.data?.locations.find((entry) => entry.id === options?.baseId);
@@ -116,9 +129,23 @@ export function RescueBanner() {
               {t('rescue.waiting')}{' '}
               <Countdown
                 until={options.dueAt}
-                onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
+                onElapsed={() => {
+                  setElapsed(true);
+                  void queryClient.invalidateQueries({ queryKey: ['ships'] });
+                }}
               />
             </span>
+          )}
+          {waiting && elapsed && (
+            <button
+              type="button"
+              className="btn primary"
+              data-testid="rescue-check"
+              disabled={settle.isPending}
+              onClick={() => settle.mutate(ship.id)}
+            >
+              {t('rescue.checkNow')}
+            </button>
           )}
           <button type="button" className="btn primary" onClick={() => setPopupOpen(true)}>
             {t('rescue.popup.open')}
@@ -136,7 +163,10 @@ export function RescueBanner() {
           onPick={setConfirming}
           onConfirm={(mode) => rescue.mutate({ shipId: ship.id, mode })}
           busy={rescue.isPending}
-          onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
+          onElapsed={() => {
+            setElapsed(true);
+            void queryClient.invalidateQueries({ queryKey: ['ships'] });
+          }}
         />
       )}
     </>

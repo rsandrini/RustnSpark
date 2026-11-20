@@ -2551,6 +2551,8 @@
     "title": "Flutuando no espaço",
     "body": "Sua nave ficou sem combustível e flutua onde parou. Não dá para fazer nada com ela até ser rebocada para uma base. Escolha como: esperar o resgate chegar (mais barato) ou chamá-lo já. Qualquer um pode deixar seu saldo negativo.",
     "bar": "— sem combustível. Escolha como voltar.",
+    "checkNow": "O resgate já deve ter chegado: verificar agora",
+    "arrived": "O resgate chegou. Sua nave está de volta ao porto.",
     "popup": {
       "open": "Opções de resgate",
       "choose": "Escolher ›",

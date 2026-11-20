@@ -89,6 +89,30 @@ describe('rescue (S8.6 / S10.9)', () => {
     await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,420 ¢'));
   });
 
+  it('a rescue that is "not due yet" for the server is asked again, so the pilot never has to reload', async () => {
+    setShipStatus('ADRIFT');
+    setRescueWaitMs(500);
+    // the first ask comes a moment early for the server's clock
+    server.use(
+      http.post(
+        '/v1/ships/:id/rescue/settle',
+        () =>
+          HttpResponse.json(
+            { statusCode: 409, message: { error: 'RESCUE_NOT_DUE' } },
+            { status: 409 },
+          ),
+        { once: true },
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const popup = await screen.findByRole('dialog', { name: 'Floating in space' });
+    fireEvent.click(within(popup).getByRole('button', { name: /Wait for the rescue/ }));
+    fireEvent.click(within(popup).getByRole('button', { name: 'Wait for the rescue' }));
+    await waitFor(() => expect(screen.queryByTestId('rescue-banner')).toBeNull(), {
+      timeout: 8000,
+    });
+  }, 15000);
+
   it('shows no rescue banner for a ship in port', async () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
