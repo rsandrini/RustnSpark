@@ -1,5 +1,5 @@
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
-import { floatSpotOf, pathNodes, type FloatSpot } from '../ships/floating.js';
+import { floatSpotOf, stopNodeOf, type FloatSpot } from '../ships/floating.js';
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { DispatchJobData } from './dispatch.service.js';
@@ -326,24 +326,25 @@ export class MissionResolveService {
                     });
             }
           }
-          // A trip that stopped on the way (engine dead, bridge lost to a fight...) leaves the ship where
-          // the journey had reached, not back at the start: the node the stopping leg set out from.
+          // A mission that failed on the way (a lost fight, a dead engine, a lost bridge...) leaves the ship where the
+          // journey had reached, not back at the start: the end of the last leg it travelled. (A ship that ran dry
+          // floats instead, handled above.)
           let stoppedAt: string | null = null;
-          if (
-            mission.type === 'TRAVEL' &&
-            finalStatus === 'FAILED' &&
-            outcome.shipStatus !== 'ADRIFT' &&
-            outcome.legs.length > 1
-          ) {
+          if (finalStatus === 'FAILED' && outcome.shipStatus !== 'ADRIFT') {
             const routeIds = snapshot.legs.map((leg) => leg.routeId ?? '');
             if (routeIds.every((id) => id !== '')) {
               const routes = await tx.route.findMany({ where: { id: { in: routeIds } } });
-              const nodes = pathNodes(
+              const travelled = new Set(
+                outcome.events
+                  .filter((event) => event.type === 'leg_travel')
+                  .map((event) => event.leg),
+              ).size;
+              stoppedAt = stopNodeOf(
                 mission.originId,
                 routeIds,
                 new Map(routes.map((route) => [route.id, route])),
+                travelled,
               );
-              stoppedAt = nodes?.[outcome.legs.length - 1] ?? null;
             }
           }
           await tx.ship.update({

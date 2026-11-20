@@ -4,6 +4,7 @@ import {
   floatSpotOf,
   pathNodes,
   rescuePrices,
+  stopNodeOf,
   towPlanFor,
   type RouteEdge,
 } from '../../../src/ships/floating.js';
@@ -29,6 +30,18 @@ describe('floating ship', () => {
     expect(pathNodes('hedus', ['drift-veil'], routes)).toBeNull();
   });
 
+  it('leaves a failed mission where the journey had reached: the end of the last leg it travelled', () => {
+    const legs = ['hedus-marsa', 'drift-marsa', 'drift-veil'];
+    // a fight lost on the first leg, after travelling it: the ship stays at the end of that leg
+    expect(stopNodeOf('hedus', legs, routes, 1)).toBe('marsa');
+    // two legs travelled
+    expect(stopNodeOf('hedus', legs, routes, 2)).toBe('drift');
+    // nothing travelled (stopped before the first leg): where it set out from
+    expect(stopNodeOf('hedus', legs, routes, 0)).toBe('hedus');
+    // a route that does not chain gives no answer
+    expect(stopNodeOf('hedus', ['drift-veil'], routes, 1)).toBeNull();
+  });
+
   it('floats on the leg it ran dry on, as far as the fuel that was left would carry it', () => {
     const spot = floatSpotOf({
       legIndex: 1,
@@ -43,18 +56,40 @@ describe('floating ship', () => {
   });
 
   it('never floats exactly on a node or at the far end', () => {
-    const none = floatSpotOf({ legIndex: 0, fuelLeft: 0, legBurn: 100, originId: 'hedus', routeIds: ['hedus-marsa'], routes });
-    const almost = floatSpotOf({ legIndex: 0, fuelLeft: 99.99, legBurn: 100, originId: 'hedus', routeIds: ['hedus-marsa'], routes });
+    const none = floatSpotOf({
+      legIndex: 0,
+      fuelLeft: 0,
+      legBurn: 100,
+      originId: 'hedus',
+      routeIds: ['hedus-marsa'],
+      routes,
+    });
+    const almost = floatSpotOf({
+      legIndex: 0,
+      fuelLeft: 99.99,
+      legBurn: 100,
+      originId: 'hedus',
+      routeIds: ['hedus-marsa'],
+      routes,
+    });
     expect(none!.progress).toBeGreaterThan(0);
     expect(almost!.progress).toBeLessThan(1);
   });
 
   it('is towed to the nearest base, along the route or on past the far end', () => {
     // near marsa on the long route: the base is just ahead
-    const near = towPlanFor({ routeId: 'drift-marsa', fromId: 'marsa', progress: 0.1 }, edges, bases);
+    const near = towPlanFor(
+      { routeId: 'drift-marsa', fromId: 'marsa', progress: 0.1 },
+      edges,
+      bases,
+    );
     expect(near).toEqual({ baseId: 'marsa', distance: 80 });
     // near drift on the same route: back to marsa is far, but there is no closer base
-    const far = towPlanFor({ routeId: 'drift-marsa', fromId: 'marsa', progress: 0.9 }, edges, bases);
+    const far = towPlanFor(
+      { routeId: 'drift-marsa', fromId: 'marsa', progress: 0.9 },
+      edges,
+      bases,
+    );
     expect(far!.baseId).toBe('marsa');
     expect(far!.distance).toBeCloseTo(720);
     // on the route out to the dead end: the base is back where it came from
@@ -64,10 +99,20 @@ describe('floating ship', () => {
 
   it('prefers a base of the pilot own faction over a nearer foreign one', () => {
     const own = new Set(['hedus']);
-    const plan = towPlanFor({ routeId: 'drift-marsa', fromId: 'marsa', progress: 0.1 }, edges, bases, own);
+    const plan = towPlanFor(
+      { routeId: 'drift-marsa', fromId: 'marsa', progress: 0.1 },
+      edges,
+      bases,
+      own,
+    );
     expect(plan).toEqual({ baseId: 'hedus', distance: 80 + 400 });
     // no own base reachable: fall back to the nearest base of any faction
-    const none = towPlanFor({ routeId: 'drift-marsa', fromId: 'marsa', progress: 0.1 }, edges, bases, new Set(['nowhere']));
+    const none = towPlanFor(
+      { routeId: 'drift-marsa', fromId: 'marsa', progress: 0.1 },
+      edges,
+      bases,
+      new Set(['nowhere']),
+    );
     expect(none).toEqual({ baseId: 'marsa', distance: 80 });
   });
 

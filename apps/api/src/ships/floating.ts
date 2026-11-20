@@ -54,6 +54,19 @@ export function pathNodes(
 }
 
 /**
+ * Where a ship that failed on the way is left: the end of the last leg it travelled (0 legs: where it set out from).
+ * Null when the route does not chain from the origin.
+ */
+export function stopNodeOf(
+  originId: string,
+  routeIds: readonly string[],
+  routes: ReadonlyMap<string, RouteEdge>,
+  travelledLegs: number,
+): string | null {
+  return pathNodes(originId, routeIds, routes)?.[travelledLegs] ?? null;
+}
+
+/**
  * Where a ship floats when it runs dry on leg `legIndex`: that leg's route, leaving the node the
  * journey had reached, as far as the fuel it still had would carry it (fuel left / the leg's burn).
  */
