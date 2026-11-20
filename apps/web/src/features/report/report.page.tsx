@@ -495,7 +495,9 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
   const placeArt = usePlaceArt();
   const { user } = useAuthContext();
   const seenKey = `rs.report.card.${user?.id ?? ''}.${missionId}`;
-  const [cardOpen, setCardOpen] = useState(() => fresh && !hasSeen(seenKey));
+  // `?card` opens the result card on any report, even one already seen (to look at it)
+  const previewCard = new URLSearchParams(useLocation().search).has('card');
+  const [cardOpen, setCardOpen] = useState(() => previewCard || (fresh && !hasSeen(seenKey)));
   const navigate = useNavigate();
   // the opening's report steps are about reading the report: there the card only leads to it
   const inOpening = usePrologueMode().active;
