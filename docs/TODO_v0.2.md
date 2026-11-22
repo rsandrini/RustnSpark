@@ -50,3 +50,13 @@ Items 1, 2 and 6 lean on the multiplayer work (item 6), so that one comes first 
   - live quests and races
   - war (item 2)
 - All of this together is what makes the game feel alive; items 1 and 2 depend on it.
+
+## 7. A game-like UI
+
+- [ ] Make the screens feel like a game, not a website: fewer words, custom components instead of default web controls, the ship's
+  state in a HUD, contract cards, a star-chart map, pilot card and podium, feedback on every action.
+- Plan, decisions and mockups: `docs/design/game-ui-v0.2-plan.md` (mockups in `docs/design/game-ui-v0.2/`). Eight phases, each
+  shippable alone; the first is the component kit and the HUD.
+- Fixed by the owner: the installed parts on the ship stay as they are today (only a type subtitle is added), and the connection
+  ports are shown everywhere a part appears (never abstracted).
+- Open: subtitle layout A or B, art direction for parts, sound assets, the Port as a place (needs a mockup).

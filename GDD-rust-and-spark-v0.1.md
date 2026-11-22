@@ -725,11 +725,13 @@ objeto e prêmio parcial · economia estática em 3 camadas · desgaste como dre
 jogador J1–J9 · admin A–E com tuning em runtime · ganchos de mundo vivo inertes.
 
 **Fase 2:** mundo proativo (jobs) · mundo vivo (estações com estado dinâmico, ecologia
-de piratas, painel de mestre) · controle de facção dinâmico · mercado dinâmico (oferta/
-procura) · múltiplas naves · roteamento de energia editável · transponder social (blitz,
-SOS, contrabando) · **posicionamento tático no combate** · **fila encadeada de missões**
-· **limite de inventário de peças** · mais tipos de missão (exploração, ciência) · editor
-de casco cosmético · mapa expandido.
+ de piratas, painel de mestre) · controle de facção dinâmico · mercado dinâmico (oferta/
+ procura) · múltiplas naves · roteamento de energia editável · transponder social (blitz,
+ SOS, contrabando) · **posicionamento tático no combate** · **reabastecimento em pernas**
+ · **missões compostas (bundling)** · **limite de inventário de peças** · mais tipos de
+ missão (exploração, ciência) · editor de casco cosmético · mapa expandido.
+
+> Ver design detalhado em [`design/missoes-compostas-e-reabastecimento-v0.2.md`](./design/missoes-compostas-e-reabastecimento-v0.2.md).
 
 **Fase 3:** territórios e conquista estilo Helldivers · dumping core e geradores
 avançados · clãs, eventos globais.
@@ -755,7 +757,8 @@ prototipagem/gameplay.
 
 **Design de v0.2+ (registrado para não perder):**
 - Posicionamento tático no combate (§8) — exige rodada de design dedicada.
-- Fila encadeada de missões (§12) — pilar próprio.
+- Reabastecimento em pernas e missões compostas (bundling) — ver
+  [`design/missoes-compostas-e-reabastecimento-v0.2.md`](./design/missoes-compostas-e-reabastecimento-v0.2.md).
 - Limite de inventário de peças (§14) — slots vs massa vs armazém.
 - Bônus comportamentais de tier alto (hoje cosméticos).
 
@@ -774,6 +777,7 @@ Companion técnico: [**Arquitetura Técnica v0.1**](./arquitetura-tecnica-v0.1.m
 - [faccoes-v0.1](./design/faccoes-v0.1.md) — Luna/Sun/Explorers/Piratas, matriz de relações
 - [mapa-e-missoes-v0.1](./design/mapa-e-missoes-v0.1.md) — estrutura do mapa, ambientes, tipos de missão
 - [missoes-detalhadas-v0.1](./design/missoes-detalhadas-v0.1.md) — spec dos 5 tipos, integridade do objeto
+- [missoes-compostas-e-reabastecimento-v0.2](./design/missoes-compostas-e-reabastecimento-v0.2.md) — bundling + refuel em pernas (v0.2)
 - [schema-dados-v0.1](./design/schema-dados-v0.1.md) — as 16 entidades canônicas para o banco
 - [ux-telas-v0.1](./design/ux-telas-v0.1.md) — inventário de telas, decisões de UX, paleta
 - [playtest-mesa-v0.1](./design/playtest-mesa-v0.1.md) — livro de regras jogável de teste de mesa

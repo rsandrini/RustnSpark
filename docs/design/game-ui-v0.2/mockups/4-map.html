@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The map as navigation</title>
+
+<style>
+body{margin:0;font-family:'Space Grotesk',system-ui,sans-serif}
+@keyframes dash{to{stroke-dashoffset:-20}}
+.route{animation:dash 1.2s linear infinite}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;family=Instrument+Serif&amp;display=swap">
+
+</head>
+<body style="margin:0;background:#06080d">
+
+
+<div style="width:1240px;height:680px;box-sizing:border-box;background:#06080d;color:#f3f4f6;padding:28px;display:grid;grid-template-columns:260px minmax(0,1fr);gap:28px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#9aa3b2">Today</div>
+<div style="padding:16px;border:1px solid #232b3a;border-radius:12px;background:#0e121a;opacity:0.8;font-size:13px">
+<div style="font-family:'Instrument Serif',serif;font-size:26px">Places</div>
+<div style="color:#9aa3b2;margin:6px 0 10px">Select a place to see its missions.</div>
+<div style="padding:10px;border:1px solid #232b3a;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between"><span><b>Ceres Port</b><br><span style="color:#9aa3b2;font-size:11px">COMMERCIAL PORT</span></span><span style="color:#4cc38a;font-size:11px">LOW RISK</span></div>
+<div style="padding:10px;border:1px solid #232b3a;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between"><span><b>Ceres Test Pad</b><br><span style="color:#9aa3b2;font-size:11px">TEST PAD</span></span><span style="color:#4cc38a;font-size:11px">LOW RISK</span></div>
+<div style="color:#9aa3b2">… 27 more</div>
+</div>
+<div style="font-size:13px;color:#9aa3b2;line-height:1.5">Grey lines on black, a list of 29 cards beside it. The map is a diagram, not a place.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#ff8f3f">Proposed · star chart: territories, fuel range, animated route, bottom sheet</div>
+<div style="position:relative;flex:1;border:1px solid #232b3a;border-radius:16px;overflow:hidden;background:radial-gradient(ellipse at 30% 40%,#0d1626,#06080d 70%)">
+<svg width="100%" height="100%" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0" aria-hidden="true">
+<circle cx="250" cy="260" r="170" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.35)" stroke-dasharray="4 6"></circle>
+<circle cx="640" cy="180" r="140" fill="rgba(245,166,35,0.07)" stroke="rgba(245,166,35,0.35)" stroke-dasharray="4 6"></circle>
+<circle cx="560" cy="400" r="120" fill="rgba(76,195,138,0.07)" stroke="rgba(76,195,138,0.35)" stroke-dasharray="4 6"></circle>
+<circle cx="250" cy="260" r="120" fill="none" stroke="#22d3ee" stroke-opacity="0.5" stroke-dasharray="2 5"></circle>
+<path d="M250 260L420 300L560 400" stroke="#2f3a52" stroke-width="2" fill="none"></path>
+<path d="M250 260L400 170L640 180" stroke="#2f3a52" stroke-width="2" fill="none"></path>
+<path class="route" d="M250 260L400 170L640 180" stroke="#ff8f3f" stroke-width="3" stroke-dasharray="8 6" fill="none"></path>
+<circle cx="400" cy="170" r="7" fill="#0e121a" stroke="#9aa3b2" stroke-width="2"></circle>
+<circle cx="420" cy="300" r="7" fill="#0e121a" stroke="#9aa3b2" stroke-width="2"></circle>
+<circle cx="560" cy="400" r="9" fill="#0e121a" stroke="#4cc38a" stroke-width="3"></circle>
+<circle cx="640" cy="180" r="11" fill="#2a1d08" stroke="#f5a623" stroke-width="3"></circle>
+<circle cx="640" cy="180" r="18" fill="none" stroke="#ff8f3f" stroke-width="2" stroke-dasharray="3 3"></circle>
+<circle cx="250" cy="260" r="11" fill="#0b1a33" stroke="#3b82f6" stroke-width="3"></circle>
+<path d="M250 236l9 16h-18z" fill="#ff8f3f"></path>
+<text x="250" y="292" fill="#cfd6e4" font-size="13" font-weight="700" text-anchor="middle">Ceres Port</text>
+<text x="640" y="150" fill="#cfd6e4" font-size="13" font-weight="700" text-anchor="middle">Hedus</text>
+<text x="560" y="430" fill="#cfd6e4" font-size="13" font-weight="700" text-anchor="middle">Marsa</text>
+<text x="190" y="140" fill="#60a5fa" font-size="11" letter-spacing="2">LUNA AUTHORITY</text>
+<text x="650" y="60" fill="#f5a623" font-size="11" letter-spacing="2">SUN TRADERS</text>
+<text x="600" y="520" fill="#4cc38a" font-size="11" letter-spacing="2">EXPLORERS</text>
+<text x="395" y="150" fill="#9aa3b2" font-size="11" text-anchor="middle">Gate</text>
+</svg>
+<div style="position:absolute;top:14px;left:14px;display:flex;gap:8px">
+<div style="padding:6px 12px;border:1px solid #2a3140;border-radius:999px;background:#0e121acc;font-size:12px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#22d3ee;display:block"></span>Fuel range</div>
+<div style="padding:6px 12px;border:1px solid #2a3140;border-radius:999px;background:#0e121acc;font-size:12px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#ff8f3f;display:block"></span>Planned trip</div>
+</div>
+<div style="position:absolute;left:14px;right:14px;bottom:14px;border:1px solid #2f3a52;border-radius:16px;background:#0e121aee;padding:12px 16px;display:flex;align-items:center;gap:18px">
+<div style="width:44px;height:44px;border-radius:50%;background:#4a3a1a;border:2px solid #f5a623;display:flex;align-items:center;justify-content:center;font-size:11px;color:#f0c987">Hedus</div>
+<div style="flex:1"><div style="font-size:16px;font-weight:700">Hedus Base</div><div style="font-size:12px;color:#9aa3b2">Sun Traders · 3 contracts</div></div>
+<div style="display:flex;gap:16px;font-size:13px"><span>12 min</span><span style="color:#22d3ee">fuel 118</span><span style="display:flex;gap:3px;align-items:center"><i style="width:8px;height:8px;border-radius:50%;background:#e0a83a;display:block"></i><i style="width:8px;height:8px;border-radius:50%;background:#e0a83a;display:block"></i><i style="width:8px;height:8px;border-radius:50%;background:#2a3140;display:block"></i></span></div>
+<div style="padding:10px 18px;border-radius:10px;background:#ff8f3f;color:#1a0d02;font-weight:700;font-size:14px">Plan trip</div>
+</div>
+</div>
+</div>
+</div>
+
+</body>
+</html>

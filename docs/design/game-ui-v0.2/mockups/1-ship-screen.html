@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ship screen</title>
+
+<style>
+body{margin:0;font-family:'Space Grotesk',system-ui,sans-serif}
+.cell{position:absolute;box-sizing:border-box;border:2px solid #8b93a3;background:#0d111a;border-radius:3px;text-align:center;color:#f3f4f6}
+.cell b{display:block;font-size:12px;font-weight:600;line-height:1.1;margin-top:22px}
+.cell small{display:block;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8aa0c0;margin-top:3px}
+.bar{position:absolute;left:8px;right:8px;bottom:6px;height:6px;border-radius:3px;background:#173a23}
+.bar i{display:block;height:6px;border-radius:3px;background:#4cc38a}
+.p{position:absolute;display:block;border-radius:50%;width:7px;height:7px}
+.g{background:#4cc38a}.u{background:#3b9eff}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;family=Instrument+Serif&amp;display=swap">
+
+</head>
+<body style="margin:0;background:#06080d">
+
+
+<div style="width:1240px;height:780px;box-sizing:border-box;background:#06080d;color:#f3f4f6;padding:20px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:18px;padding:8px 16px;background:#0e121a;border:1px solid #232b3a;border-radius:14px">
+<div style="font-family:'Instrument Serif',serif;font-size:24px">rust<span style="color:#ff8f3f">n</span>spark</div>
+<div style="display:flex;gap:6px;font-size:14px;color:#9aa3b2"><span style="padding:6px 14px;border-radius:8px;background:#1a2130;color:#f3f4f6">Ship</span><span style="padding:6px 14px">Port</span><span style="padding:6px 14px">Missions</span><span style="padding:6px 14px">Map</span></div>
+<div style="flex:1;display:flex;gap:16px;justify-content:center">
+<div style="width:130px"><div style="display:flex;justify-content:space-between;font-size:10px;color:#9aa3b2;letter-spacing:0.08em"><span>FUEL</span><span style="color:#f3f4f6">412/600</span></div><div style="height:7px;border-radius:4px;background:#1a2130;margin-top:3px"><div style="width:69%;height:7px;border-radius:4px;background:#22d3ee"></div></div></div>
+<div style="width:130px"><div style="display:flex;justify-content:space-between;font-size:10px;color:#9aa3b2;letter-spacing:0.08em"><span>HULL</span><span style="color:#f3f4f6">258/260</span></div><div style="height:7px;border-radius:4px;background:#1a2130;margin-top:3px"><div style="width:99%;height:7px;border-radius:4px;background:#4cc38a"></div></div></div>
+<div style="width:130px"><div style="display:flex;justify-content:space-between;font-size:10px;color:#9aa3b2;letter-spacing:0.08em"><span>CARGO</span><span style="color:#f3f4f6">0/5</span></div><div style="height:7px;border-radius:4px;background:#1a2130;margin-top:3px"><div style="width:0%;height:7px;border-radius:4px;background:#e0a83a"></div></div></div>
+</div>
+<div style="padding:5px 14px;border:1px solid #ff8f3f;border-radius:999px;color:#ff8f3f;font-weight:700;font-size:14px">3,000 ¢</div>
+</div>
+<div style="flex:1;display:grid;grid-template-columns:250px minmax(0,1fr) 270px;gap:14px;min-height:0">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;gap:4px;padding:4px;border:1px solid #232b3a;border-radius:12px;background:#0e121a;align-self:flex-start"><span style="padding:7px 16px;border-radius:9px;background:#2a3140;font-size:13px;font-weight:700">Parts</span><span style="padding:7px 16px;font-size:13px;color:#9aa3b2">Store</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #232b3a;border-radius:12px;background:#0e121a">
+<div style="width:46px;height:46px;border:1px solid #3a4358;border-radius:6px;position:relative;flex:none"><span class="p g" style="left:19px;top:3px"></span><span class="p u" style="left:19px;bottom:3px"></span><span class="p u" style="left:3px;top:19px"></span></div>
+<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">Laser</div><div style="font-size:10px;letter-spacing:0.1em;color:#8aa0c0;text-transform:uppercase">Weapon · 1×1</div></div>
+<div style="font-size:12px;color:#4cc38a">100%</div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #232b3a;border-radius:12px;background:#0e121a">
+<div style="width:46px;height:46px;border:1px solid #3a4358;border-radius:6px;position:relative;flex:none"><span class="p u" style="left:15px;top:3px"></span><span class="p u" style="left:25px;top:3px"></span><span class="p u" style="left:15px;bottom:3px"></span><span class="p u" style="left:25px;bottom:3px"></span></div>
+<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">Small Battery</div><div style="font-size:10px;letter-spacing:0.1em;color:#8aa0c0;text-transform:uppercase">Power store · 1×1</div></div>
+<div style="font-size:12px;color:#e0a83a">84%</div>
+</div>
+<div style="font-size:12px;color:#9aa3b2;line-height:1.4;margin-top:4px">Tap a part, then a cell. The mini square shows its ports: 1 dot central, 2 split, 3 universal. Blue = free.</div>
+</div>
+<div style="position:relative;border:1px solid #232b3a;border-radius:16px;background:radial-gradient(ellipse at 50% 40%,#0d1522,#06080d 75%);overflow:hidden">
+<div style="position:absolute;left:148px;top:126px;width:278px;height:274px;border:3px solid #22d3ee;border-radius:6px;box-shadow:0 0 16px rgba(34,211,238,0.5);background:rgba(34,211,238,0.03)"></div>
+<div class="cell" style="left:156px;top:134px;width:86px;height:86px"><b style="margin-top:12px">Small Chem Engine</b><small>Engine</small><span class="p g" style="right:4px;top:39px"></span><span class="p u" style="left:39px;bottom:4px"></span><span class="p u" style="left:39px;top:4px"></span><div class="bar"><i style="width:100%"></i></div><span style="position:absolute;left:-12px;top:34px;width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent;border-right:12px solid #ff8f3f"></span></div>
+<div class="cell" style="left:244px;top:134px;width:86px;height:86px"><b>Solar Panel</b><small>Power</small><span class="p g" style="left:4px;top:39px"></span><span class="p g" style="right:4px;top:39px"></span><span class="p u" style="left:39px;top:4px"></span><div class="bar"><i style="width:100%"></i></div></div>
+<div class="cell" style="left:332px;top:134px;width:86px;height:174px"><b style="margin-top:60px">Hull Frame</b><small>Structure</small><span class="p g" style="left:4px;top:39px"></span><span class="p u" style="right:4px;top:39px"></span><span class="p g" style="left:4px;top:128px"></span><span class="p u" style="right:4px;top:128px"></span><div class="bar"><i style="width:100%"></i></div></div>
+<div class="cell" style="left:244px;top:222px;width:86px;height:86px;border-color:#ff8f3f"><b>Bridge</b><small>Command</small><span class="p g" style="left:36px;top:4px"></span><span class="p g" style="left:46px;top:4px"></span><span class="p g" style="right:4px;top:39px"></span><span class="p u" style="left:4px;top:39px"></span><span class="p g" style="left:39px;bottom:4px"></span><div class="bar"><i style="width:100%"></i></div></div>
+<div class="cell" style="left:156px;top:310px;width:86px;height:86px"><b>Cargo Hold</b><small>Cargo</small><span class="p g" style="right:4px;top:39px"></span><span class="p u" style="left:4px;top:39px"></span><span class="p u" style="left:39px;top:4px"></span><div class="bar"><i style="width:100%"></i></div></div>
+<div class="cell" style="left:244px;top:310px;width:86px;height:86px"><b>Small Fuel Tank</b><small>Fuel tank</small><span class="p g" style="left:4px;top:39px"></span><span class="p g" style="right:4px;top:39px"></span><span class="p g" style="left:39px;top:4px"></span><div class="bar"><i style="width:100%"></i></div></div>
+<div class="cell" style="left:332px;top:310px;width:86px;height:86px"><b>Cannon</b><small>Weapon</small><span class="p g" style="left:4px;top:39px"></span><span class="p u" style="left:39px;top:4px"></span><div class="bar"><i style="width:100%"></i></div><span style="position:absolute;right:-12px;top:34px;width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent;border-left:12px solid #ff8f3f"></span></div>
+<div style="position:absolute;left:420px;top:222px;width:86px;height:86px;border:2px dashed #ff8f3f;border-radius:3px;display:flex;align-items:center;justify-content:center;color:#ff8f3f;font-size:11px;text-align:center;letter-spacing:0.08em">SHIELD<br>SLOT</div>
+<div style="position:absolute;left:130px;top:424px;width:430px;display:flex;flex-direction:column;gap:10px">
+<div style="font-size:11px;letter-spacing:0.12em;color:#ff8f3f">SUBTITLE · TWO LAYOUTS TO COMPARE</div>
+<div style="display:flex;gap:12px">
+<div style="flex:1"><div class="cell" style="position:relative;height:104px"><b style="margin-top:30px;font-size:13px">Small Fuel Tank</b><small style="font-size:9.5px">Fuel tank</small><span class="p g" style="left:4px;top:48px"></span><span class="p g" style="right:4px;top:48px"></span><div class="bar"><i style="width:100%"></i></div></div><div style="font-size:11px;color:#9aa3b2;margin-top:6px;text-align:center">A · under the name</div></div>
+<div style="flex:1"><div class="cell" style="position:relative;height:104px"><span style="position:absolute;left:6px;top:6px;display:flex;align-items:center;gap:4px;font-size:9px;letter-spacing:0.1em;color:#8aa0c0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"></path></svg>FUEL</span><b style="margin-top:36px;font-size:13px">Small Fuel Tank</b><span class="p g" style="left:4px;top:48px"></span><span class="p g" style="right:4px;top:48px"></span><div class="bar"><i style="width:100%"></i></div></div><div style="font-size:11px;color:#9aa3b2;margin-top:6px;text-align:center">B · corner chip with icon</div></div>
+</div>
+</div>
+<div style="position:absolute;left:14px;bottom:12px;display:flex;gap:8px"><span style="padding:4px 10px;border:1px solid #2a3140;border-radius:999px;font-size:12px;color:#cfd6e4">FP 3</span><span style="padding:4px 10px;border:1px solid #2a3140;border-radius:999px;font-size:12px;color:#cfd6e4">DEF 0</span><span style="padding:4px 10px;border:1px solid #2a3140;border-radius:999px;font-size:12px;color:#cfd6e4">CRG 5</span><span style="padding:4px 10px;border:1px solid #2a3140;border-radius:999px;font-size:12px;color:#cfd6e4">MOB 14.8</span></div>
+<div style="position:absolute;right:14px;bottom:12px;display:flex;gap:10px;font-size:11px;color:#9aa3b2;align-items:center"><span class="p g" style="position:relative;display:inline-block"></span>connected<span class="p u" style="position:relative;display:inline-block"></span>free<i style="width:7px;height:7px;border-radius:50%;background:#e5594f;display:inline-block"></i>incompatible</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="padding:12px 14px;border:1px solid #232b3a;border-radius:14px;background:#0e121a">
+<div style="font-size:11px;letter-spacing:0.12em;color:#ff8f3f">SHIP SHEET</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px;font-size:12px;color:#9aa3b2"><div>STRUCTURE<br><b style="font-size:18px;color:#4cc38a">27 / 60</b></div><div>FIREPOWER<br><b style="font-size:18px;color:#f3f4f6">3</b></div><div>SHIELD<br><b style="font-size:18px;color:#f3f4f6">0</b></div><div>MOBILITY<br><b style="font-size:18px;color:#4cc38a">14.8</b></div></div>
+<div style="margin-top:10px;display:inline-block;padding:4px 10px;border-radius:6px;background:#10281b;color:#4cc38a;font-size:11px;letter-spacing:0.1em">READY TO FLY</div>
+</div>
+<div style="padding:12px 14px;border:1px solid #ff8f3f;border-radius:14px;background:#1b1209">
+<div style="font-size:11px;letter-spacing:0.12em;color:#ff8f3f;margin-bottom:8px">NEEDS</div>
+<div style="display:flex;gap:8px"><span style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #ff8f3f;border-radius:999px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff8f3f" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path></svg>Shield</span><span style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #ff8f3f;border-radius:999px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff8f3f" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v18M3 12h18"></path></svg>Battery</span></div>
+<div style="font-size:11px;color:#9aa3b2;margin-top:8px">Tap a chip to open the Store on that type. The dashed slot on the ship marks where it fits.</div>
+</div>
+</div>
+</div>
+</div>
+
+</body>
+</html>
