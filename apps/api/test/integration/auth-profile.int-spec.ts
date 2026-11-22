@@ -50,7 +50,7 @@ describe('GET /v1/players/me profile shape', () => {
       id: expect.any(String),
       name: 'profile_pilot',
       credits: 0,
-      locale: 'en',
+      locale: 'pt-BR',
       role: 'PLAYER',
       factionId: null,
       tutorialDone: false,

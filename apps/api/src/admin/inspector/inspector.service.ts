@@ -237,7 +237,12 @@ export class InspectorService {
       schemaVersion: log.schemaVersion,
       outcome: recomputed.status,
       events: replayedEvents,
-      legs: recomputed.legs.map((leg) => ({ index: leg.index, status: leg.status })),
+      legs: recomputed.legs.map((leg) => ({
+        index: leg.index,
+        status: leg.status,
+        fuel: leg.ship?.fuel ?? null,
+      })),
+      startFuel: (log.shipSnapshot as { fuel?: number } | null)?.fuel ?? null,
       partTypeById: partTypesOf(log.shipSnapshot),
       hasShield: hasShieldOf(log.shipSnapshot),
       partsBefore: partsBeforeOf(log.shipSnapshot),

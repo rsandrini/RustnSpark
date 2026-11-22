@@ -170,13 +170,12 @@ describe('HTTP contract: real responses match packages/contract', () => {
 
     const prologue = await get('/v1/players/me/prologue');
     const payouts = contract(PrologueResponseSchema, prologue.body, 'GET /players/me/prologue');
-    expect(
-      payouts.payouts.reduce((sum, payout) => sum + payout, 0) +
-        payouts.purse -
-        payouts.refuelCost -
-        payouts.moduleCost -
-        payouts.upgradeCost,
-    ).toBe(payouts.startCredits);
+    // the opening's missions pay what the pilot spends in it (refuel, module, repair, upgrade); the rest of the
+    // start credits arrives after the rescue
+    expect(payouts.payouts.reduce((sum, payout) => sum + payout, 0)).toBe(
+      payouts.refuelCost + payouts.moduleCost + (payouts.repairCost ?? 0) + payouts.upgradeCost,
+    );
+    expect(payouts.startCredits).toBeGreaterThan(0);
     expect(payouts.guides).toHaveLength(3);
     const outcome = await post('/v1/players/me/prologue', { outcome: 'skipped' });
     contract(SavePrologueResponseSchema, outcome.body, 'POST /players/me/prologue');

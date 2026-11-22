@@ -110,6 +110,12 @@ describe('happy path over the API (S9.4)', () => {
       'S9.4: even the longest generated route resolves within a few seconds',
     );
     await configService.setValue(
+      'mining.job_duration_seconds',
+      1,
+      'e2e-happy-path',
+      'S9.4: a board mining offer adds its dig ticks to the flight; one second a tick keeps the run short',
+    );
+    await configService.setValue(
       'missions.board_min_per_location',
       20,
       'e2e-happy-path',
@@ -139,7 +145,7 @@ describe('happy path over the API (S9.4)', () => {
     const email = `happy-${randomUUID()}@example.com`;
     const registered = await request(server)
       .post('/v1/auth/register')
-      .send({ email, password: 'happy-path-pass-1', name: 'happyrunner' });
+      .send({ email, password: 'happy-path-pass-1', name: 'happyrunner', locale: 'en' });
     expect(registered.status).toBe(201);
     const token = accessTokenFrom(registered);
 
@@ -264,6 +270,10 @@ describe('happy path over the API (S9.4)', () => {
         cargo: { materialId: 'common_ore' },
       },
     });
+
+    // A new ship starts with a quarter of its tank, and a board mining offer pays fuel for its dig on top of
+    // the flight: fill the tank so the dispatch is not refused (the refuel step below still has a burn to refill).
+    await prisma.ship.update({ where: { id: shipId }, data: { fuel: sheet.fuelCap } });
 
     // --- dispatch (ship is at the mission origin: both are cair) -----------
     const dispatched = await request(server)

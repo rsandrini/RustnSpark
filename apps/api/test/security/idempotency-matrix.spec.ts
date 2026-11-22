@@ -74,6 +74,8 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
   'POST /v1/ships/:id/engine-preview': 'read-shaped: no state change',
   'POST /v1/ships/:id/rescue/settle':
     'settle only succeeds while rescueAt is set; a repeat finds it cleared and is a 409 RESCUE_NOT_DUE with no second tow',
+  'POST /v1/players/me/prologue':
+    'write-once: only sets the outcome while it is null, a repeat returns the stored outcome and records nothing',
   'POST /v1/admin/tuning/connector-rules/preview': 'read-shaped: samples a layout, changes nothing',
   'POST /v1/admin/tuning/factions/:id/art/:slot':
     'sets an image to a value: repeating is the same state',

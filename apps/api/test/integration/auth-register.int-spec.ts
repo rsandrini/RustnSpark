@@ -130,14 +130,14 @@ describe('POST /v1/auth/register', () => {
     expect(response.body).toMatchObject({ player: { locale: 'pt-BR' } });
   });
 
-  it("falls back to 'en' for an unsupported Accept-Language header", async () => {
+  it("falls back to the default (pt-BR) for an unsupported Accept-Language header", async () => {
     const response = await request(server())
       .post('/v1/auth/register')
       .set('Accept-Language', 'fr-FR,fr;q=0.8')
       .send({ email: 'fallback@example.com', password: 'fallback-pass-1', name: 'fallback_pilot' });
 
     expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({ player: { locale: 'en' } });
+    expect(response.body).toMatchObject({ player: { locale: 'pt-BR' } });
   });
 
   it('rejects an unsupported or wrongly-cased locale in the body with 400', async () => {

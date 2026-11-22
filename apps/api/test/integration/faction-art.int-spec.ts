@@ -233,7 +233,7 @@ describe('art uploads (factions and places)', () => {
         factions: { id: string; displayName: { en: string }; color: string; playable: boolean }[];
       }
     ).factions;
-    expect(factions.map((faction) => faction.id)).toEqual(['explorers', 'luna', 'pirates', 'sun']);
+    expect(factions.map((faction) => faction.id)).toEqual(['explorers', 'free', 'luna', 'pirates', 'sun']);
     const luna = factions.find((faction) => faction.id === 'luna');
     expect(luna?.displayName.en).toBe('Moon Combine');
     expect(luna?.color).toBe('#12ab34');
@@ -253,12 +253,13 @@ describe('art uploads (factions and places)', () => {
     };
     expect(body.factions.map((faction) => faction.id).sort()).toEqual([
       'explorers',
+      'free',
       'luna',
       'pirates',
       'sun',
     ]);
     expect(body.factions[0]!.displayName.en).not.toBe('');
-    expect(body.counts).toMatchObject({ parts: expect.any(Number), places: 29, factions: 4 });
+    expect(body.counts).toMatchObject({ parts: expect.any(Number), places: 29, factions: 5 });
     expect(body.counts.parts).toBeGreaterThan(200);
     // nothing but those two keys: no player data, no tuning values
     expect(Object.keys(body).sort()).toEqual(['counts', 'factions']);

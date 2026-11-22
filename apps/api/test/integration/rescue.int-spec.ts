@@ -471,14 +471,27 @@ describe('rescue API (S8.6)', () => {
           floatProgress: progress,
         },
       });
-      const locations = await prisma.location.findMany({ select: { id: true, type: true } });
-      const bases = new Set(
-        locations.filter((l) => RESCUE_BASE_TYPES.has(l.type)).map((l) => l.id),
+      const locations = await prisma.location.findMany({
+        select: { id: true, type: true, factionId: true },
+      });
+      const baseRows = locations.filter((l) => RESCUE_BASE_TYPES.has(l.type));
+      const bases = new Set(baseRows.map((l) => l.id));
+      // the tow prefers the nearest base of the pilot's own faction (so a rescue never drops a pilot among strangers)
+      const owner = await prisma.ship.findUnique({
+        where: { id: shipId },
+        select: { owner: { select: { factionId: true } } },
+      });
+      const ownFaction = owner?.owner.factionId ?? null;
+      const ownBases = new Set(
+        ownFaction === null
+          ? []
+          : baseRows.filter((l) => l.factionId === ownFaction).map((l) => l.id),
       );
       const plan = towPlanFor(
         { routeId: route.id, fromId: route.nodeAId, progress },
         routes,
         bases,
+        ownBases,
       )!;
       return { route, plan };
     }

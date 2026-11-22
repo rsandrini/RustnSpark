@@ -508,7 +508,7 @@ describe('reports API (S9.3)', () => {
 
     const unknown = await report(fixture.token, fixture.missionId, { locale: 'klingon' });
     expect(unknown.status).toBe(200);
-    expect((unknown.body as ReportBody).locale).toBe('en');
+    expect((unknown.body as ReportBody).locale).toBe('pt-BR');
   });
 
   it("answers 404 — never 403 — for another player's report or an unknown id", async () => {
@@ -696,11 +696,11 @@ describe('reports API (S9.3)', () => {
     }
   });
 
-  it('an unsupported ?locale= falls back to English rather than failing (owner decision, T1.4)', async () => {
+  it('an unsupported ?locale= falls back to the default language rather than failing (owner decision, T1.4)', async () => {
     const fixture = await setup({ locale: 'pt-BR' });
     const res = await report(fixture.token, fixture.missionId, { locale: 'fr' });
     expect(res.status).toBe(200);
     // An explicit but unsupported locale is not the saved locale: it resolves to the default.
-    expect((res.body as ReportBody).locale).toBe('en');
+    expect((res.body as ReportBody).locale).toBe('pt-BR');
   });
 });

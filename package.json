@@ -38,7 +38,8 @@
       "body-parser": ">=2.4.0",
       "multer": ">=2.5.0",
       "qs": ">=6.16.1",
-      "@sentry/bundler-plugins>glob": ">=14.0.2"
+      "@sentry/bundler-plugins>glob": ">=14.0.2",
+      "effect": ">=3.22.1 <4"
     }
   }
 }

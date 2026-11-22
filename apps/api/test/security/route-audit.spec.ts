@@ -91,6 +91,7 @@ const BODYLESS_MUTATIONS = new Set([
   'POST /v1/missions/:id/hold',
   'DELETE /v1/missions/:id/hold',
   'POST /v1/ships/:id/rescue/settle',
+  'POST /v1/ships/:id/escort',
   'POST /v1/admin/system/notices/:id/dismiss',
   'POST /v1/admin/tuning/factions/:id/art/:slot',
   'POST /v1/admin/tuning/locations/:id/art/:slot',
