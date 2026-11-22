@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
@@ -59,7 +60,7 @@ describe('mentor dialogue scenes', () => {
     for (const [id, scenes] of Object.entries(ALL_MENTOR_SCENES)) {
       await prisma.questGiver.update({
         where: { id },
-        data: { scenes: JSON.parse(JSON.stringify(scenes)) },
+        data: { scenes: JSON.parse(JSON.stringify(scenes)) as Prisma.InputJsonValue },
       });
     }
     await config.refresh();

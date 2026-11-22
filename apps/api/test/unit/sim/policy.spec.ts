@@ -14,7 +14,6 @@ import {
   minKeyConditionOf,
   portFactor,
   reachablePorts,
-  repairSecondsAt,
 } from '../../../sim/core/fleet.js';
 import { catalogIndex, starterPlayer } from '../../../sim/core/state.js';
 import { buildFillerWorld, type Offer } from '../../../sim/core/world.js';

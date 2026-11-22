@@ -1052,7 +1052,7 @@ export class ShipsService implements OnModuleInit {
         flightUntil:
           digSeconds === null || mission.arrivalAt === null
             ? null
-            : new Date(mission.arrivalAt.getTime() - digSeconds * 1000).toISOString(),
+            : new Date(mission.arrivalAt.getTime() - digSeconds * MS_PER_SECOND).toISOString(),
       };
     }
     if (repair !== null) {
@@ -1068,6 +1068,8 @@ type PartInstanceWithCatalog = PartInstance & { partCatalog: PrismaPartCatalog }
 type ShipWithFormat = Prisma.ShipGetPayload<{
   include: { format: { select: { cells: true; minBridgeSize: true } } };
 }>;
+
+const MS_PER_SECOND = 1000;
 
 const HALF_TURN = 180;
 

@@ -489,18 +489,6 @@ export function Director() {
         >
           {t('prologue.skip.link')}
         </button>
-        {/* TEMP-DEBUG-RESET: remove this button (and the import of writeStep's use here) when the final run is done */}
-        <button
-          type="button"
-          className="btn tiny"
-          data-testid="debug-reset-final"
-          onClick={() => {
-            if (playerId !== undefined) writeStep(playerId, 'final-run');
-            window.location.reload();
-          }}
-        >
-          [temp] restart final run
-        </button>
       </div>
       {finish.isError && (
         <p className="error-text opening-error" role="alert" data-opening-free="">
