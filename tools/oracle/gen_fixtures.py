@@ -599,17 +599,20 @@ def build_baselines() -> bytes:
                 "150, fuel_price 1.5 to 1.1): median_margin 766.4 to 895.38, still capped below "
                 "runaway, tier2 median 10 to 9 and tier5 median 135 to 115. This block is the "
                 "fixture's single source of truth: --check byte-diffs it, and production-mode."
-                "spec.ts measures against it, so the two must be recorded together."
+                "spec.ts measures against it, so the two must be recorded together. "
+                "Re-baselined 2026-11-22 after the balance rounds (fixed pirates by region, shields "
+                "that pay energy, flatter distance/bridge pay): choke is rarer (0.78%) and the "
+                "median margin higher (~996)."
             ),
             "n_lives_per_config": 120,
             "baseline": {
                 "falencia_pct": 0,
-                "combat_winrate": 55.44,
-                "tier5_pct": 96.94,
-                "missions_tier2_median": 9,
-                "missions_tier5_median": 115,
-                "engasgo_pct": 2.87,
-                "median_margin": 895.38,
+                "combat_winrate": 54.41,
+                "tier5_pct": 99.17,
+                "missions_tier2_median": 8,
+                "missions_tier5_median": 100,
+                "engasgo_pct": 0.78,
+                "median_margin": 995.82,
             },
             "band": {
                 "falencia_pct": [0, 15],
@@ -617,8 +620,8 @@ def build_baselines() -> bytes:
                 "tier5_pct": [90, 100],
                 "missions_tier2_median": [4, 10],
                 "missions_tier5_median": [60, 160],
-                "engasgo_pct": [2, 12],
-                "median_margin": [740, 950],
+                "engasgo_pct": [0, 12],
+                "median_margin": [740, 1150],
             },
         },
     }
