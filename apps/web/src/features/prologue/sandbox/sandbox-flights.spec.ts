@@ -342,6 +342,20 @@ describe('the final run follows the ship', () => {
     expect(final[0]?.eligibility.eligible).toBe(true);
     expect(final[0]?.info.title.en).toMatch(/passengers/i);
   });
+
+  it('dispatch of an accepted job is refused with NOT_ELIGIBLE after the module is removed from the ship', async () => {
+    const env = fresh();
+    const final = await toFinalBoard(env, 'crates');
+    await env.call('POST', `/v1/missions/${final[0]?.id}/accept`);
+    await env.call('POST', '/v1/ships/prologue-ship/assemble', {
+      layout: layoutWith({ id: PROLOGUE_ENGINE.id, gx: -4, gy: 0 }),
+    });
+    env.sandbox.setFuel(300);
+    await expect(
+      env.call('POST', '/v1/ships/prologue-ship/dispatch', { missionId: final[0]?.id }),
+    ).rejects.toMatchObject({ code: 'NOT_ELIGIBLE' });
+    expect(env.sandbox.state.mission?.status).toBe('ACCEPTED');
+  });
 });
 
 describe('the old ship', () => {

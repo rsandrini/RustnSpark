@@ -265,6 +265,13 @@ const ROUTES: readonly Route[] = [
         message: { error: 'SHIP_NOT_VIABLE', problems: preview.viability.problems },
       });
     }
+    const offer = offerOf(sandbox, mission.job);
+    if (!offer.eligibility.eligible) {
+      throw new ApiError(CONFLICT, 'not eligible', 'NOT_ELIGIBLE', {
+        statusCode: CONFLICT,
+        message: { error: 'NOT_ELIGIBLE', reasons: offer.eligibility.reasons },
+      });
+    }
     const needed = fuelNeededFor(mission.job.routes, preview.sheet.fuelUse);
     if (sandbox.state.fuel < needed) {
       throw new ApiError(CONFLICT, 'Not enough fuel', 'INSUFFICIENT_FUEL');

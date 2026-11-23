@@ -1,5 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { moduleKindOf } from '../sandbox/sandbox-offers';
+
+// lets a test make the final job ineligible, as if the ship could not do it
+const refuse = vi.hoisted(() => ({ finalJob: false }));
+vi.mock('../sandbox/sandbox-offers', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../sandbox/sandbox-offers')>();
+  return {
+    ...real,
+    offerOf: (...args: Parameters<typeof real.offerOf>) => {
+      const offer = real.offerOf(...args);
+      return refuse.finalJob && args[1].id === 'sandbox-final'
+        ? { ...offer, eligibility: { eligible: false, reasons: [] } }
+        : offer;
+    },
+  };
+});
 import { createSandbox, STARTING_FUEL } from '../sandbox/sandbox-state';
 import { restoreSandbox } from './restore';
 import { OPENING_STEPS, type StepId } from './steps';
@@ -91,5 +106,24 @@ describe('coming back to the opening (the sandbox is rebuilt to where the pilot 
     const sandbox = at('final-run');
     expect(sandbox.state.mission?.job.kind).toBe('final');
     expect(sandbox.state.shipLost).toBe(false);
+  });
+
+  it('restore with the matching module still accepts the final run (flown on the loss step)', () => {
+    expect(at('final-run', 'crates').state.mission?.job.id).toBe('sandbox-final');
+    const lost = at('loss', 'crates').state;
+    expect(lost.mission).toBeNull();
+    expect(lost.history.at(-1)?.id).toBe('sandbox-final');
+  });
+
+  it('restore at final-run with a ship that cannot do the job leaves the job on the board, not accepted', () => {
+    refuse.finalJob = true;
+    try {
+      expect(at('final-run').state.mission).toBeNull();
+      const lost = at('loss').state;
+      expect(lost.mission).toBeNull();
+      expect(lost.history.some((h) => h.id === 'sandbox-final')).toBe(false);
+    } finally {
+      refuse.finalJob = false;
+    }
   });
 });

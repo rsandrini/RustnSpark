@@ -7,6 +7,7 @@ import {
   UPGRADE_SCRAP,
   type ModuleKind,
 } from '../sandbox/sandbox-world';
+import { offerOf } from '../sandbox/sandbox-offers';
 import { previewOf, tankSpace } from '../sandbox/sandbox-ship';
 import type { Sandbox } from '../sandbox/sandbox-state';
 import { OPENING_STEPS, type StepId } from './steps';
@@ -95,7 +96,10 @@ export function restoreSandbox(sandbox: Sandbox, step: StepId, kind: ModuleKind 
   // the final run taken (final-run), or flown and lost (the loss and the rescue)
   if (index >= at('final-run')) {
     const job = jobOf(sandbox, 3, chosen);
-    if (job !== null && index >= at('loss')) fly(sandbox, job);
-    else if (job !== null) sandbox.accept(job);
+    // only a job the ship can do is taken (the sandbox's accept route refuses the rest); otherwise it stays on the board
+    if (job !== null && offerOf(sandbox, job).eligibility.eligible) {
+      if (index >= at('loss')) fly(sandbox, job);
+      else sandbox.accept(job);
+    }
   }
 }
