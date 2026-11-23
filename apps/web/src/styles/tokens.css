@@ -40,9 +40,8 @@
   --warn: oklch(76% 0.15 70);
   --info: oklch(72% 0.14 245);
 
-  /* kit: the reserve line (fuel and the like) and the size of a framed panel's corner notch */
-  --reserve: oklch(78% 0.15 80);
-  --notch: 10px;
+  /* kit: the reserve line (fuel and the like) */
+  --reserve: var(--warn);
 
   /* steel (the assembly yard and decorative metal) */
   --steel: oklch(34% 0.02 255);

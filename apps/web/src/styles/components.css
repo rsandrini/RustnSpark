@@ -780,6 +780,7 @@ body:has(.modal-backdrop) .part-hover-card {
   padding: 0 8px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--black) 78%, transparent);
+  white-space: nowrap;
 }
 
 /* reserve tick: amber, kept inside the clipped track even at 0% and 100% */
@@ -789,7 +790,7 @@ body:has(.modal-backdrop) .part-hover-card {
   bottom: 0;
   left: clamp(0px, var(--tick), calc(100% - 2px));
   width: 2px;
-  background: var(--warn);
+  background: var(--reserve);
   pointer-events: none;
 }
 
@@ -797,6 +798,11 @@ body:has(.modal-backdrop) .part-hover-card {
   display: inline-flex;
   vertical-align: middle;
   margin-right: 4px;
+}
+
+.gauge-icon svg {
+  width: 12px;
+  height: 12px;
 }
 
 /* art: places and parts ------------------------------------------------------------ */

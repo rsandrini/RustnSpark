@@ -30,6 +30,13 @@
   white-space: normal;
 }
 
+/* the card hangs from the trigger's right edge (a trigger at the right edge of the screen) */
+.kit-tip-card--end {
+  left: auto;
+  right: 0;
+  text-align: right;
+}
+
 /* resource chip -------------------------------------------------------------- */
 .kit-chip {
   display: inline-flex;
@@ -51,6 +58,9 @@
 }
 
 .kit-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--muted);
 }
 
@@ -58,6 +68,7 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -229,4 +240,17 @@ button.kit-blocker:hover {
 .kit-tab.on {
   background: var(--brass);
   color: var(--brass-ink);
+}
+
+/* touch targets: a finger needs 44px */
+@media (pointer: coarse) {
+  a.kit-blocker,
+  button.kit-blocker {
+    min-height: 44px;
+  }
+
+  .kit-tab {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }

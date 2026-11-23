@@ -16,9 +16,13 @@ export interface GaugeProps {
   /** Optional glyph shown before the label, inside the label pill. */
   icon?: ReactNode;
   /** Optional reserve threshold: an amber tick is drawn at `reserve / max` of the bar. Ignored
-      when `max <= 0`, `reserve < 0` or `reserve > max`. Decorative: the numbers are in the label. */
+      when `max <= 0`, `reserve <= 0` or `reserve > max`. Decorative: the numbers are in the label. */
   reserve?: number;
   tone?: 'ok' | 'warn' | 'bad' | 'fuel';
+  /** Pass-through to the bar so a Tooltip can describe it. */
+  'aria-describedby'?: string;
+  /** Pass-through to the bar; set 0 to make it focusable (default: none, as before). */
+  tabIndex?: number;
 }
 
 // A horizontal bar with its number on it. Presentation only: the caller decides the tone.
@@ -32,6 +36,8 @@ export function Gauge({
   icon,
   reserve,
   tone = 'ok',
+  'aria-describedby': describedBy,
+  tabIndex,
 }: GaugeProps) {
   const pct = (amount: number) =>
     max <= 0 ? 0 : Math.min(100, Math.max(0, Math.round((amount / max) * 100)));
@@ -48,6 +54,8 @@ export function Gauge({
       aria-valuemin={0}
       aria-valuemax={max}
       aria-valuenow={value}
+      aria-describedby={describedBy}
+      tabIndex={tabIndex}
     >
       {planned !== undefined && planned > value && (
         <div className="gauge-planned" style={{ width: `${pct(planned)}%` }} />
@@ -59,7 +67,7 @@ export function Gauge({
           style={{ left: `${pct(remain)}%`, width: `${pct(value) - pct(remain)}%` }}
         />
       )}
-      {reserve !== undefined && max > 0 && reserve >= 0 && reserve <= max && (
+      {reserve !== undefined && max > 0 && reserve > 0 && reserve <= max && (
         <div
           className="gauge-tick"
           aria-hidden="true"

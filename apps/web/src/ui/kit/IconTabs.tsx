@@ -14,14 +14,19 @@ export interface IconTabsProps {
   onChange: (id: string) => void;
 }
 
-/** Tabs that are only an icon each; the label is the accessible name and shows as a tooltip. */
+/**
+ * Tabs that are only an icon each; the label is the accessible name and shows as a tooltip (not announced a second
+ * time). Known limit: the tooltip cards are rendered inside the tablist (a sibling of each tab inside its Tooltip
+ * wrapper), which a strict axe `aria-required-children` check can flag. Moving them out needs a portal or shared
+ * tooltip state; left as is until axe reports it on a real screen.
+ */
 export function IconTabs({ tabs, value, onChange }: IconTabsProps) {
   return (
     <div className="kit-tabs" role="tablist" onKeyDown={tablistKeys}>
       {tabs.map((tab) => {
         const selected = tab.id === value;
         return (
-          <Tooltip key={tab.id} content={tab.label}>
+          <Tooltip key={tab.id} content={tab.label} describe={false}>
             <button
               type="button"
               role="tab"

@@ -55,6 +55,8 @@ interface Toast {
 }
 
 const MINUS = '\u2212';
+/** Read out between the amount and the message (visually hidden; a plain space would not be spoken as a pause). */
+const SEPARATOR = '. ';
 function signed(amount: number, language: string): string {
   const text = new Intl.NumberFormat(language).format(Math.abs(amount));
   if (amount < 0) return `${MINUS}${text}`;
@@ -168,6 +170,7 @@ function FeedbackHost({
                   {toast.unit !== undefined ? ` ${toast.unit}` : ''}
                 </strong>
               )}
+              {toast.amount !== undefined && <span className="sr-only">{SEPARATOR}</span>}
               {toast.message}
             </span>
             {toast.next !== undefined && (

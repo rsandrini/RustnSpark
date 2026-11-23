@@ -66,4 +66,18 @@ describe('ResourceChip', () => {
     expect(screen.getByTestId('chip')).toHaveTextContent('1,000');
     expect(screen.getByTestId('chip')).not.toHaveClass('kit-chip--rise');
   });
+
+  it('ariaLabel names the chip root and hideLabel keeps the label for assistive tech only', () => {
+    render(
+      <ResourceChip label="Credits" value={5} testId="chip" ariaLabel="Credits: 5" hideLabel />,
+    );
+    expect(screen.getByTestId('chip')).toHaveAttribute('aria-label', 'Credits: 5');
+    expect(screen.getByText('Credits')).toHaveClass('sr-only');
+  });
+
+  it('keeps the label visible by default', () => {
+    render(<ResourceChip label="Credits" value={5} testId="chip" />);
+    expect(screen.getByText('Credits')).not.toHaveClass('sr-only');
+    expect(screen.getByTestId('chip')).not.toHaveAttribute('aria-label');
+  });
 });

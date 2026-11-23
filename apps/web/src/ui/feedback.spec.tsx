@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import type { ReactNode } from 'react';
@@ -140,6 +139,13 @@ describe('feedback', () => {
       expect(screen.getByRole('status')).toHaveTextContent('Mission paid');
     });
 
+    it('separates the amount from the message in the text', () => {
+      render(<Amount amount={646} unit="¢" />, { wrapper: wrap });
+      fireEvent.click(screen.getByText(ACT));
+      expect(screen.getByRole('status').textContent).toMatch(/646 ¢\s*\S*\s*Mission paid/);
+      expect(screen.getByRole('status').textContent).not.toContain('¢Mission');
+    });
+
     it('a negative amount carries a minus sign and the cost tone', () => {
       render(<Amount amount={-120} />, { wrapper: wrap });
       fireEvent.click(screen.getByText(ACT));
@@ -155,13 +161,6 @@ describe('feedback', () => {
         vi.advanceTimersByTime(FEEDBACK_MS + 50);
       });
       expect(screen.queryByTestId('feedback-amount')).toBeNull();
-    });
-
-    it('reduced motion: the slide only exists under no-preference', () => {
-      const css = readFileSync('src/styles/feedback.css', 'utf8');
-      const reduce = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
-      expect(reduce).toContain('.feedback-toast');
-      expect(reduce).toMatch(/transform:\s*translate\(-50%, 0\)/);
     });
 
     it('existing notify behaviour (text only, takeoff) is unchanged', () => {

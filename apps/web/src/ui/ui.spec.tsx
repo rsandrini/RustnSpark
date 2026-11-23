@@ -190,8 +190,14 @@ describe('Gauge', () => {
     expect(tick?.style.getPropertyValue('--tick')).toBe('40%');
   });
 
-  it('draws no tick when reserve is absent, above max, negative or max is 0', () => {
-    for (const props of [{ reserve: 11 }, { reserve: -1 }, { max: 0, reserve: 0 }, {}]) {
+  it('draws no tick when reserve is absent, above max, zero, negative or max is 0', () => {
+    for (const props of [
+      { reserve: 11 },
+      { reserve: -1 },
+      { max: 0, reserve: 0 },
+      { reserve: 0 },
+      {},
+    ]) {
       const { container, unmount } = renderWithProviders(<Gauge {...base} {...props} />);
       expect(container.querySelector('.gauge-tick')).toBeNull();
       unmount();

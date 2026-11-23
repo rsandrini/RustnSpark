@@ -33,4 +33,12 @@ describe('IconTabs', () => {
     fireEvent.focus(screen.getByRole('tab', { name: 'Cargo' }));
     expect(screen.getByRole('tooltip')).toHaveTextContent('Cargo');
   });
+
+  it('the tab name is not read twice: no aria-describedby on the tab', () => {
+    render(<IconTabs tabs={TABS} value="a" onChange={() => undefined} />);
+    const tab = screen.getByRole('tab', { name: 'Cargo' });
+    fireEvent.focus(tab);
+    expect(screen.getByRole('tooltip')).toBeInTheDocument();
+    expect(tab).not.toHaveAttribute('aria-describedby');
+  });
 });
