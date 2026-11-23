@@ -36,25 +36,18 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
   ports are shown everywhere a part appears (never abstracted).
 - Open: subtitle layout A or B, art direction for parts, sound assets, the Port as a place (needs a mockup).
 
-## 5. Ship-structure damage (owner idea, 2026-10-27; moved from v0.2)
-
-- [ ] Hull damage today spreads over every part alike, so a bridge or a reactor wears like a weapon and the dearest parts drive the
-  repair bill (passive parts are ~30% of it, ~44% on ion). The idea: spread damage by the layers of the build, outer parts take more and
-  inner ones (bridge, reactors) less, so the layout decides the ship's integrity. The resolver sees no positions, so the dispatch
-  snapshot would carry an exposure per part; the sim has no layout model yet. *Needs design.*
-
-## 6. More missions per port, more mission kinds, a bigger map (owner, 2026-11-23) - *needs design*
+## 5. More missions per port, more mission kinds, a bigger map (owner, 2026-11-23) - *needs design*
 
 Related to item 1 (missions follow the ship's specialty); plan them together. Needs the sim before any number changes.
 
-### 6a. More missions per port, always short and long ones
+### 5a. More missions per port, always short and long ones
 
 - [ ] About 4 mission types on every port's board: cargo transport, people transport, escort and mining. Plus at least 2 races, and other
   kinds. So the board limit (8 today) goes away.
 - [ ] Rethink and balance the offers so a port always has short missions (the shortest routes around the place) and long ones (some hours
   of mission).
 
-### 6b. New mission subtypes
+### 5b. New mission subtypes
 
 - [ ] **Fuel transport**, or anything else that rides in tanks. Open: do we need a new kind of tank, or can the fuel tank carry it?
 - [ ] **Explore a region:** needs a radar on the ship.
@@ -62,11 +55,15 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 - [ ] **Repair something:** may need a specialized tool fitted on the ship.
 - [ ] Others of the same kind (each subtype asks for the part that fits it, like mining asks for a drill).
 
-### 6c. Review the map distances
+### 5c. Review the map distances
 
 - [ ] Make zones with really long distances, hours to cross between ports, so bigger tanks are worth having and can be validated.
   The initial zone stays as it is (or with small adjustments).
 
-### 6d. Refuel between ports
+### 5d. Refuel between ports
 
 - [ ] The option to refuel between ports (today the pilot refuels docked at a port).
+
+## Bugs found testing v0.1.4 in prod
+
+- [ ] (the owner will add them here as they are found; each ships in v0.1.5, or as a `v0.1.4b` hotfix if it blocks play)
