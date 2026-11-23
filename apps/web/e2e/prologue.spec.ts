@@ -95,6 +95,8 @@ async function playOpening(page: Page): Promise<void> {
   await dispatch(page);
   for (let guard = 0; guard < 60; guard += 1) {
     if ((await bar(page).getAttribute('data-step')) !== 'dispatch-job') break;
+    // a finished flight opens its result card; the guide's lines wait until it is closed
+    await closeResult(page);
     await read(page);
     await page.waitForTimeout(2000);
   }
@@ -130,6 +132,7 @@ async function playOpening(page: Page): Promise<void> {
   await dispatch(page);
   // the second job needs no report to read: the story goes on by itself
   for (let guard = 0; guard < 90; guard += 1) {
+    await closeResult(page);
     await read(page);
     if ((await bar(page).getAttribute('data-step')) !== 'stop-two') break;
     await page.waitForTimeout(2000);
