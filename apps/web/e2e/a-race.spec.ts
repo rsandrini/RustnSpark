@@ -100,4 +100,32 @@ test.describe('race mission', () => {
     await page.goto('/port');
     expect(await walletOf(page)).toBeGreaterThanOrEqual(before);
   });
+
+  test('an accepted race the ship no longer fits says so and blocks Dispatch, until the ship fits again', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'needs the tuned board; desktop runs first');
+    await registerAndLaunch(page, 'luna');
+    await fillTank(page);
+
+    await page.goto('/missions');
+    const race = page.locator('.mrow.type-race').first();
+    await expect(race).toBeVisible({ timeout: 30_000 });
+    await race.getByRole('button', { name: 'Accept' }).click();
+    await expect(page).toHaveURL(/\/ship/);
+    const dispatch = page.getByRole('button', { name: 'Dispatch' });
+    await expect(dispatch).toBeEnabled();
+    await expect(page.getByTestId('transit-not-eligible')).toHaveCount(0);
+
+    // strip the ship: it no longer meets the race's requirements, and the card says so without a reload
+    await page.getByRole('button', { name: 'Empty the ship' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Empty the ship' }).click();
+    await expect(page.getByTestId('transit-not-eligible')).toBeVisible();
+    await expect(dispatch).toBeDisabled();
+
+    // put it back: the notice goes and Dispatch works again, still without a reload
+    await page.getByRole('button', { name: 'Auto layout' }).click();
+    await expect(page.getByTestId('transit-not-eligible')).toHaveCount(0);
+    await expect(dispatch).toBeEnabled();
+  });
 });
