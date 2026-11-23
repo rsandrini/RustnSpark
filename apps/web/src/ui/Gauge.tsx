@@ -1,3 +1,5 @@
+import type { CSSProperties, ReactNode } from 'react';
+
 export interface GaugeProps {
   value: number;
   max: number;
@@ -11,11 +13,26 @@ export interface GaugeProps {
   /** Text inside the bar. */
   label: string;
   ariaLabel: string;
+  /** Optional glyph shown before the label, inside the label pill. */
+  icon?: ReactNode;
+  /** Optional reserve threshold: an amber tick is drawn at `reserve / max` of the bar. Ignored
+      when `max <= 0`, `reserve < 0` or `reserve > max`. Decorative: the numbers are in the label. */
+  reserve?: number;
   tone?: 'ok' | 'warn' | 'bad' | 'fuel';
 }
 
 // A horizontal bar with its number on it. Presentation only: the caller decides the tone.
-export function Gauge({ value, max, planned, remainingAfter, label, ariaLabel, tone = 'ok' }: GaugeProps) {
+export function Gauge({
+  value,
+  max,
+  planned,
+  remainingAfter,
+  label,
+  ariaLabel,
+  icon,
+  reserve,
+  tone = 'ok',
+}: GaugeProps) {
   const pct = (amount: number) =>
     max <= 0 ? 0 : Math.min(100, Math.max(0, Math.round((amount / max) * 100)));
   const spend =
@@ -42,7 +59,17 @@ export function Gauge({ value, max, planned, remainingAfter, label, ariaLabel, t
           style={{ left: `${pct(remain)}%`, width: `${pct(value) - pct(remain)}%` }}
         />
       )}
-      <span className="gauge-label">{label}</span>
+      {reserve !== undefined && max > 0 && reserve >= 0 && reserve <= max && (
+        <div
+          className="gauge-tick"
+          aria-hidden="true"
+          style={{ '--tick': `${(reserve / max) * 100}%` } as CSSProperties}
+        />
+      )}
+      <span className="gauge-label">
+        {icon !== undefined && icon !== null && <span className="gauge-icon">{icon}</span>}
+        {label}
+      </span>
     </div>
   );
 }

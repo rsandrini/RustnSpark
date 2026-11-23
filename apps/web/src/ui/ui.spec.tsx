@@ -9,6 +9,7 @@ import { FactionBadge } from './FactionBadge';
 import { PortTabs } from './PortTabs';
 import { Countdown } from './Countdown';
 import { Popup } from './Popup';
+import { Gauge } from './Gauge';
 
 describe('ItemCard', () => {
   it('renders name, description and the action slot', () => {
@@ -166,5 +167,41 @@ describe('Popup keyboard behaviour (modal contract)', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(opener).toHaveFocus();
+  });
+});
+
+describe('Gauge', () => {
+  const base = { value: 5, max: 10, label: '5/10', ariaLabel: 'Fuel' };
+
+  it('keeps the role and aria values', () => {
+    const { container } = renderWithProviders(<Gauge {...base} />);
+    const bar = screen.getByRole('progressbar', { name: 'Fuel' });
+    expect(bar).toHaveAttribute('aria-valuemin', '0');
+    expect(bar).toHaveAttribute('aria-valuemax', '10');
+    expect(bar).toHaveAttribute('aria-valuenow', '5');
+    expect(container.querySelector('.gauge-tick')).toBeNull();
+    expect(container.querySelector('.gauge-icon')).toBeNull();
+  });
+
+  it('draws a reserve tick at the right percentage', () => {
+    const { container } = renderWithProviders(<Gauge {...base} reserve={4} />);
+    const tick = container.querySelector<HTMLElement>('.gauge-tick');
+    expect(tick).not.toBeNull();
+    expect(tick?.style.getPropertyValue('--tick')).toBe('40%');
+  });
+
+  it('draws no tick when reserve is absent, above max, negative or max is 0', () => {
+    for (const props of [{ reserve: 11 }, { reserve: -1 }, { max: 0, reserve: 0 }, {}]) {
+      const { container, unmount } = renderWithProviders(<Gauge {...base} {...props} />);
+      expect(container.querySelector('.gauge-tick')).toBeNull();
+      unmount();
+    }
+  });
+
+  it('shows the icon before the label', () => {
+    const { container } = renderWithProviders(<Gauge {...base} icon={<svg data-testid="ico" />} />);
+    const label = container.querySelector('.gauge-label') as HTMLElement;
+    expect(label.firstElementChild).toBe(screen.getByTestId('ico').parentElement);
+    expect(label.textContent).toBe('5/10');
   });
 });

@@ -782,6 +782,23 @@ body:has(.modal-backdrop) .part-hover-card {
   background: color-mix(in oklab, var(--black) 78%, transparent);
 }
 
+/* reserve tick: amber, kept inside the clipped track even at 0% and 100% */
+.gauge-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: clamp(0px, var(--tick), calc(100% - 2px));
+  width: 2px;
+  background: var(--warn);
+  pointer-events: none;
+}
+
+.gauge-icon {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
 /* art: places and parts ------------------------------------------------------------ */
 .place-art {
   display: block;
