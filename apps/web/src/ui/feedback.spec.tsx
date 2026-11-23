@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import type { ReactNode } from 'react';
@@ -118,5 +119,65 @@ describe('feedback', () => {
     expect(result.current.delta).toBe('-919');
     rerender({ credits: 2334 });
     expect(result.current.delta).toBe('+253');
+  });
+
+  describe('reward toast with an amount', () => {
+    function Amount({ amount, unit }: { amount: number; unit?: string }) {
+      const { notify } = useFeedback();
+      return (
+        <button type="button" onClick={() => notify('Mission paid', { amount, unit })}>
+          {ACT}
+        </button>
+      );
+    }
+
+    it('notify with an amount shows it large with its sign and the one-line text', () => {
+      render(<Amount amount={646} unit="¢" />, { wrapper: wrap });
+      fireEvent.click(screen.getByText(ACT));
+      const amount = screen.getByTestId('feedback-amount');
+      expect(amount).toHaveTextContent('+646 ¢');
+      expect(amount).toHaveClass('gain');
+      expect(screen.getByRole('status')).toHaveTextContent('Mission paid');
+    });
+
+    it('a negative amount carries a minus sign and the cost tone', () => {
+      render(<Amount amount={-120} />, { wrapper: wrap });
+      fireEvent.click(screen.getByText(ACT));
+      const amount = screen.getByTestId('feedback-amount');
+      expect(amount).toHaveTextContent('\u2212120');
+      expect(amount).toHaveClass('loss');
+    });
+
+    it('the toast leaves after FEEDBACK_MS', () => {
+      render(<Amount amount={5} />, { wrapper: wrap });
+      fireEvent.click(screen.getByText(ACT));
+      act(() => {
+        vi.advanceTimersByTime(FEEDBACK_MS + 50);
+      });
+      expect(screen.queryByTestId('feedback-amount')).toBeNull();
+    });
+
+    it('reduced motion: the slide only exists under no-preference', () => {
+      const css = readFileSync('src/styles/feedback.css', 'utf8');
+      const reduce = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
+      expect(reduce).toContain('.feedback-toast');
+      expect(reduce).toMatch(/transform:\s*translate\(-50%, 0\)/);
+    });
+
+    it('existing notify behaviour (text only, takeoff) is unchanged', () => {
+      function Plain() {
+        const { notify } = useFeedback();
+        return (
+          <button type="button" onClick={() => notify('Sent', { takeoff: true })}>
+            {ACT}
+          </button>
+        );
+      }
+      const { container } = render(<Plain />, { wrapper: wrap });
+      fireEvent.click(screen.getByText(ACT));
+      expect(screen.getByRole('status')).toHaveTextContent('Sent');
+      expect(screen.queryByTestId('feedback-amount')).toBeNull();
+      expect(container.ownerDocument.querySelector('.feedback-ship')).not.toBeNull();
+    });
   });
 });

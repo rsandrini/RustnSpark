@@ -21,6 +21,10 @@ export interface FeedbackOptions {
   next?: FeedbackNext;
   /** A ship crosses the line under the top bar (a dispatch). */
   takeoff?: boolean;
+  /** A signed amount shown big on the toast: positive is a reward, negative a cost. */
+  amount?: number;
+  /** The unit written after the amount (for example the money sign); the caller gives it translated. */
+  unit?: string;
 }
 interface FeedbackApi {
   /** False without a provider (a screen rendered alone): callers then keep their own inline message. */
@@ -46,6 +50,15 @@ interface Toast {
   id: number;
   message: string;
   next: FeedbackNext | undefined;
+  amount: number | undefined;
+  unit: string | undefined;
+}
+
+const MINUS = '\u2212';
+function signed(amount: number, language: string): string {
+  const text = new Intl.NumberFormat(language).format(Math.abs(amount));
+  if (amount < 0) return `${MINUS}${text}`;
+  return amount > 0 ? `+${text}` : text;
 }
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {
@@ -56,7 +69,13 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 
   const notify = useCallback((message: string, options: FeedbackOptions = {}) => {
     counter.current += 1;
-    setToast({ id: counter.current, message, next: options.next });
+    setToast({
+      id: counter.current,
+      message,
+      next: options.next,
+      amount: options.amount,
+      unit: options.unit,
+    });
     if (options.takeoff === true) setTakeoff(counter.current);
     try {
       navigator.vibrate?.(VIBRATE_MS);
@@ -120,7 +139,7 @@ function FeedbackHost({
   onClose: () => void;
 }) {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <>
       <div className="feedback-strip" aria-hidden="true">
@@ -140,6 +159,15 @@ function FeedbackHost({
               {TICK}
             </span>
             <span className="feedback-msg" role="status">
+              {toast.amount !== undefined && (
+                <strong
+                  className={`feedback-amount ${toast.amount < 0 ? 'loss' : 'gain'}`}
+                  data-testid="feedback-amount"
+                >
+                  {signed(toast.amount, i18n.language)}
+                  {toast.unit !== undefined ? ` ${toast.unit}` : ''}
+                </strong>
+              )}
               {toast.message}
             </span>
             {toast.next !== undefined && (

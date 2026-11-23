@@ -63,6 +63,19 @@
   font-size: var(--text-sm, 14px);
   line-height: 1.25;
 }
+.feedback-amount {
+  display: block;
+  font-size: var(--text-xl, 26px);
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.feedback-amount.gain {
+  color: var(--ok, #4cc38a);
+}
+.feedback-amount.loss {
+  color: var(--bad, #ef5b5b);
+}
 .feedback-next,
 .feedback-close {
   flex: none;
@@ -156,6 +169,10 @@
 }
 @media (prefers-reduced-motion: reduce) {
   /* nothing moves; the message, the colour and the numbers still change */
+  .feedback-toast {
+    transform: translate(-50%, 0);
+    transition: opacity 0.2s;
+  }
   .wallet-delta.go {
     opacity: 1;
   }
