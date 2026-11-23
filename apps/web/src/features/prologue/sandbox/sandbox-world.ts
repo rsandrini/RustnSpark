@@ -279,6 +279,13 @@ export interface JobSpec {
   readonly title: LocalizedText;
   readonly brief: LocalizedText;
   readonly cargoNeed: number;
+  /** What the job carries: crates (a cargo hold) or people (a cabin and life support). The final run follows the ship. */
+  readonly load: ModuleKind;
+}
+
+/** Does the job need a cargo hold? */
+export function carriesCrates(job: JobSpec): boolean {
+  return job.load === 'crates';
 }
 
 const NAME = (id: string) =>
@@ -287,10 +294,10 @@ const NAME = (id: string) =>
     'pt-BR': id,
   };
 
-function jobTitle(kind: JobKind, destination: string): LocalizedText {
+function jobTitle(kind: JobKind, load: ModuleKind, destination: string): LocalizedText {
   const to = NAME(destination);
   if (kind === 'race') return { en: 'Race to Dockside', 'pt-BR': 'Corrida até Dockside' };
-  if (kind === 'crates') return { en: `Crates to ${to.en}`, 'pt-BR': `Caixas para ${to['pt-BR']}` };
+  if (load === 'crates') return { en: `Crates to ${to.en}`, 'pt-BR': `Caixas para ${to['pt-BR']}` };
   return { en: `Passengers to ${to.en}`, 'pt-BR': `Passageiros para ${to['pt-BR']}` };
 }
 
@@ -313,6 +320,12 @@ const BRIEFS: Record<JobKind, LocalizedText> = {
   },
 };
 
+const FINAL_CRATES_BRIEF: LocalizedText = {
+  en: 'Forty crates of supplies need to get to Cinder Reach, and nobody else will fly the route.',
+  'pt-BR':
+    'Quarenta caixas de suprimentos precisam chegar a Cinder Reach, e ninguém mais voa essa rota.',
+};
+
 function job(
   id: string,
   kind: JobKind,
@@ -321,6 +334,7 @@ function job(
   destination: string,
   routes: readonly RouteId[],
   cargoNeed = 0,
+  load: ModuleKind = kind === 'crates' ? 'crates' : 'passengers',
 ): JobSpec {
   return {
     id,
@@ -329,9 +343,10 @@ function job(
     origin,
     destination,
     routes,
-    title: jobTitle(kind, destination),
-    brief: BRIEFS[kind],
+    title: jobTitle(kind, load, destination),
+    brief: kind === 'final' && load === 'crates' ? FINAL_CRATES_BRIEF : BRIEFS[kind],
     cargoNeed,
+    load,
   };
 }
 
@@ -404,7 +419,22 @@ export function jobsAt(
     );
   }
   const way = pathTo(location, PLACE.cinder);
-  return way === null ? [] : [job('sandbox-final', 'final', 3, location, PLACE.cinder, way)];
+  // the final run carries what the ship is built for: one job, crates for a cargo hold, people for a cabin
+  const load: ModuleKind = module ?? 'passengers';
+  return way === null
+    ? []
+    : [
+        job(
+          'sandbox-final',
+          'final',
+          3,
+          location,
+          PLACE.cinder,
+          way,
+          load === 'crates' ? CARGO_NEED : 0,
+          load,
+        ),
+      ];
 }
 
 /** Units of cargo a crates job needs (the cargo hold has room for five). */

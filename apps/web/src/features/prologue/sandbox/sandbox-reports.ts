@@ -12,6 +12,7 @@ import {
   routeOf,
   SANDBOX_WORLD,
 } from './sandbox-world';
+import { typeOf } from './sandbox-offers';
 import type { Sandbox, SandboxResult } from './sandbox-state';
 
 /*
@@ -241,12 +242,7 @@ export function reportOf(sandbox: Sandbox, missionId: string, view: string): Rep
     outcome: result.outcome === 'failure' ? ('failed' as const) : ('success' as const),
     stats: statsOf(sandbox, result),
     mission: {
-      type:
-        result.job.kind === 'race'
-          ? ('RACE' as const)
-          : result.job.kind === 'crates'
-            ? ('DELIVERY' as const)
-            : ('TRANSPORT' as const),
+      type: typeOf(result.job),
       originId: result.job.origin,
       destinationId: result.job.destination,
       reward: result.reward,

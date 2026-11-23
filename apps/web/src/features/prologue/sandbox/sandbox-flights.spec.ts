@@ -272,16 +272,10 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     expect(final?.info.peakDanger).toBeGreaterThan(0);
     expect(final?.info.legCount).toBeGreaterThanOrEqual(1);
     expect(final?.reward).toBe(2500);
-    // the final run needs the passenger module, so give the pilot one (the ship is rebuilt for the test)
-    env.sandbox.addPart(SANDBOX_PASSENGER_CABIN, SANDBOX_PASSENGER_CABIN.id);
-    env.sandbox.addPart(SANDBOX_LIFE_SUPPORT, SANDBOX_LIFE_SUPPORT.id);
-    await env.call('POST', '/v1/ships/prologue-ship/assemble', {
-      layout: layoutWith(
-        { id: PROLOGUE_ENGINE.id, gx: -4, gy: 0 },
-        { id: SANDBOX_PASSENGER_CABIN.id, gx: 1, gy: 0 },
-        { id: SANDBOX_LIFE_SUPPORT.id, gx: 2, gy: 0 },
-      ),
-    });
+    // a cargo ship gets a final run of crates: eligible as it is, a delivery, not a passenger run
+    expect(final?.type).toBe('DELIVERY');
+    expect(final?.eligibility.eligible).toBe(true);
+    expect(final?.info.cargo?.need).toBeGreaterThan(0);
     await env.call('POST', `/v1/missions/${final?.id}/accept`);
     await env.call('POST', '/v1/ships/prologue-ship/dispatch', { missionId: final?.id });
     env.advance(120);
@@ -293,6 +287,60 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     );
     expect(report.outcome).toBe('failed');
     expect(report.stats.credits).toBe(0);
+  });
+});
+
+describe('the final run follows the ship', () => {
+  async function toFinalBoard(env: Env, kind: 'passengers' | 'crates') {
+    await flyRace(env);
+    if (kind === 'crates') {
+      env.sandbox.addPart(PROLOGUE_CARGO, PROLOGUE_CARGO.id);
+      await env.call('POST', '/v1/ships/prologue-ship/assemble', {
+        layout: layoutWith(
+          { id: PROLOGUE_ENGINE.id, gx: -4, gy: 0 },
+          { id: PROLOGUE_CARGO.id, gx: 1, gy: 0 },
+        ),
+      });
+    } else {
+      env.sandbox.addPart(SANDBOX_PASSENGER_CABIN, SANDBOX_PASSENGER_CABIN.id);
+      env.sandbox.addPart(SANDBOX_LIFE_SUPPORT, SANDBOX_LIFE_SUPPORT.id);
+      await env.call('POST', '/v1/ships/prologue-ship/assemble', {
+        layout: layoutWith(
+          { id: PROLOGUE_ENGINE.id, gx: -4, gy: 0 },
+          { id: SANDBOX_PASSENGER_CABIN.id, gx: 1, gy: 0 },
+          { id: SANDBOX_LIFE_SUPPORT.id, gx: 2, gy: 0 },
+        ),
+      });
+    }
+    env.sandbox.setFuel(300);
+    for (let slot = 1; slot < 3; slot += 1) {
+      const type = kind === 'crates' ? 'DELIVERY' : 'TRANSPORT';
+      const job = (await board(env)).find((offer) => offer.type === type);
+      await env.call('POST', `/v1/missions/${job?.id}/accept`);
+      await env.call('POST', '/v1/ships/prologue-ship/dispatch', { missionId: job?.id });
+      env.advance(60);
+      await env.call('GET', '/v1/missions/active');
+      env.sandbox.setFuel(300);
+    }
+    return board(env);
+  }
+
+  it('offers one final run of crates to a cargo ship, and it can take it', async () => {
+    const env = fresh();
+    const final = await toFinalBoard(env, 'crates');
+    expect(final).toHaveLength(1);
+    expect(final[0]?.type).toBe('DELIVERY');
+    expect(final[0]?.eligibility.eligible).toBe(true);
+    expect(final[0]?.info.title.en).toMatch(/crates/i);
+  });
+
+  it('offers one final run of passengers to a passenger ship, and it can take it', async () => {
+    const env = fresh();
+    const final = await toFinalBoard(env, 'passengers');
+    expect(final).toHaveLength(1);
+    expect(final[0]?.type).toBe('TRANSPORT');
+    expect(final[0]?.eligibility.eligible).toBe(true);
+    expect(final[0]?.info.title.en).toMatch(/passengers/i);
   });
 });
 

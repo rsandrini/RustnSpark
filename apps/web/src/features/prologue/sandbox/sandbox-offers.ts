@@ -2,6 +2,7 @@ import type { ActiveMission, MissionOffer, RequirementCheck } from '../../../api
 import { previewOf, shipOf } from './sandbox-ship';
 import {
   PLACE,
+  carriesCrates,
   RACE_FRIEND_LEGS,
   RACE_PILOT_LEGS,
   SANDBOX_WORLD,
@@ -22,12 +23,11 @@ const FRIEND_LEGS = RACE_FRIEND_LEGS;
 const PILOT_LEGS = RACE_PILOT_LEGS;
 const RACE_WINDOW = 3;
 
-const TYPE_OF: Record<JobSpec['kind'], MissionOffer['type']> = {
-  race: 'RACE',
-  passengers: 'TRANSPORT',
-  crates: 'DELIVERY',
-  final: 'TRANSPORT',
-};
+/** The mission type a job shows as: a race, a delivery (crates) or a transport (people). */
+export function typeOf(job: JobSpec): MissionOffer['type'] {
+  if (job.kind === 'race') return 'RACE';
+  return carriesCrates(job) ? 'DELIVERY' : 'TRANSPORT';
+}
 
 /** Which kind of job the pilot's ship is built for: a passenger module, or a cargo hold (null = neither yet). */
 export function moduleKindOf(sandbox: Sandbox): ModuleKind | null {
@@ -66,7 +66,7 @@ function requirementsOf(sandbox: Sandbox, job: JobSpec): RequirementCheck[] {
       actual: ship.sheet.mob,
       unit: 'mobility',
     });
-  } else if (job.kind === 'crates') {
+  } else if (carriesCrates(job)) {
     checks.push({
       code: 'CARGO_MODULE',
       message: 'Needs a Cargo Module fitted on the ship',
@@ -167,7 +167,7 @@ export function offerOf(sandbox: Sandbox, job: JobSpec): MissionOffer {
   return {
     id: job.id,
     templateId: `sandbox-${job.kind}`,
-    type: TYPE_OF[job.kind],
+    type: typeOf(job),
     factionId: 'free',
     originId: job.origin,
     destinationId: job.destination,
@@ -208,7 +208,7 @@ export function offerOf(sandbox: Sandbox, job: JobSpec): MissionOffer {
       material: null,
       mining: null,
       requirements: checks,
-      cargo: job.kind === 'crates' ? { mode: 'fixed', need: job.cargoNeed, unitPay: 0 } : null,
+      cargo: carriesCrates(job) ? { mode: 'fixed', need: job.cargoNeed, unitPay: 0 } : null,
       race: job.kind === 'race' ? raceInfoOf(sandbox, job) : null,
     },
   };
