@@ -30,6 +30,7 @@ import { connectedPartIds, incorrectPortPartIds, outsidePartIds } from '../ships
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { loadHold, withHoldProblem, withMiningCargoProblem } from '../ships/hold.js';
 import { cargoLoadFor, cargoTermsOf } from './cargo-mode.js';
+import { checkMissionRequirements } from './requirements.checker.js';
 import { checkViability } from '../ships/viability.js';
 import { flightShip, type AppliedPenalty } from '../ships/penalties.js';
 import { jobDelayMs } from '../config/debug-timing.js';
@@ -409,6 +410,26 @@ export class DispatchService {
         (!viability.viable || viability.warnings.length > 0);
       if (!viability.viable && mission.type !== 'SCAVENGE') {
         throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
+      }
+      // The ship may have changed since the mission was accepted: it must still meet what the mission
+      // asks of it (the same check accept runs, on the same untuned sheet). After the viability
+      // throw (as accept orders them: a ship that cannot fly is refused as such). A scavenging job has no requirements to meet.
+      if (mission.type !== 'SCAVENGE') {
+        const requirement = checkMissionRequirements(
+          {
+            missionType: mission.type,
+            requirements: template?.requirements,
+            sheet,
+            parts: installedConnected,
+          },
+          rules,
+        );
+        if (!requirement.eligible) {
+          throw new BadRequestException({
+            error: 'MISSION_REQUIREMENTS_NOT_MET',
+            reasons: requirement.reasons,
+          });
+        }
       }
       // Warnings do not ground the ship, they weaken it: the flight is resolved from the parts as
       // they would actually perform (a scavenging job never flies, so nothing is weakened).

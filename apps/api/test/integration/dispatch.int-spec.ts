@@ -906,4 +906,169 @@ describe('ship dispatch API (S7.2)', () => {
       await app.close();
     }
   });
+  describe('dispatch re-checks the mission requirements (slice 0.1)', () => {
+    type Reason = { code: string };
+
+    async function missionOfType(
+      player: AuthPair,
+      type: 'RACE' | 'DELIVERY' | 'TRANSPORT' | 'MINING' | 'TRAVEL' | 'SCAVENGE',
+      status: 'ACCEPTED' | 'AVAILABLE' = 'ACCEPTED',
+    ): Promise<MissionInstance> {
+      const template = await prisma.missionTemplate.findFirstOrThrow({
+        where: { type },
+        orderBy: { id: 'asc' },
+      });
+      const route = await prisma.route.findFirstOrThrow({ orderBy: { id: 'asc' } });
+      const accepted = status === 'ACCEPTED';
+      return prisma.missionInstance.create({
+        data: {
+          templateId: template.id,
+          type,
+          factionId: template.factionId,
+          originId: 'ceres',
+          destinationId: 'hedus',
+          legs: [
+            {
+              routeId: route.id,
+              distance: 40,
+              danger: 1,
+              zone: 0,
+              env: { id: 'belt', level: 1, fuelMult: 1 },
+            },
+          ],
+          cargo: {},
+          reward: 100,
+          expiresAt: new Date(Date.now() + 30 * 60_000),
+          seed: `s0.1-${randomUUID()}`,
+          status,
+          ...(accepted
+            ? {
+                playerId: player.seeded.player.id,
+                shipId: player.shipId,
+                acceptedAt: new Date(),
+              }
+            : {}),
+        },
+      });
+    }
+
+    // Takes the parts out of the ship: the layout keeps the stale placements, like the other tests here.
+    async function removeParts(
+      player: AuthPair,
+      matches: (part: {
+        partClass: string;
+        crg: number;
+        min: number;
+        specialProp: unknown;
+      }) => boolean,
+    ): Promise<void> {
+      const installed = await prisma.partInstance.findMany({
+        where: { shipId: player.shipId, ownerPlayerId: player.seeded.player.id },
+        include: { partCatalog: true },
+      });
+      const ids = installed.filter((part) => matches(part.partCatalog)).map((part) => part.id);
+      expect(ids.length).toBeGreaterThan(0);
+      await prisma.partInstance.updateMany({
+        where: { id: { in: ids } },
+        data: { location: 'INVENTORY', shipId: null },
+      });
+    }
+
+    // A mission that asks for more hold than the starter ship has: the ship itself stays able to fly
+    // (taking the hold out of a random-connector kit can also disconnect other parts).
+    async function askForBiggerHold(mission: MissionInstance): Promise<void> {
+      await prisma.missionTemplate.update({
+        where: { id: mission.templateId },
+        data: { requirements: { cargo: 100000 } },
+      });
+    }
+
+    function reasonCodes(body: unknown): string[] {
+      const message = (body as { message: { reasons: Reason[] } }).message;
+      return message.reasons.map((reason) => reason.code);
+    }
+
+    async function expectRefused(
+      player: AuthPair,
+      mission: MissionInstance,
+      code: string,
+    ): Promise<void> {
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({ message: { error: 'MISSION_REQUIREMENTS_NOT_MET' } });
+      expect(reasonCodes(response.body)).toContain(code);
+      const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+      expect(ship.status).toBe('IN_PORT');
+    }
+
+    it('refuses a RACE once the ship is below the race speed', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const mission = await missionOfType(player, 'RACE');
+      // a race that asks for more speed than the starter ship has (the ship stays able to fly)
+      await prisma.missionTemplate.update({
+        where: { id: mission.templateId },
+        data: { requirements: { minMobility: 100000 } },
+      });
+      await expectRefused(player, mission, 'RACE_SPEED');
+    });
+
+    it('refuses a DELIVERY once the cargo space is gone', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const mission = await missionOfType(player, 'DELIVERY');
+      await askForBiggerHold(mission);
+      await expectRefused(player, mission, 'CARGO_TYPE');
+    });
+
+    it('refuses a TRANSPORT once the life support is removed', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const mission = await missionOfType(player, 'TRANSPORT');
+      // the starter ship has no pressurized cabin with life support: it must not fly a transport
+      await expectRefused(player, mission, 'PRESSURIZED_LIFE_SUPPORT');
+    });
+
+    it('refuses a MINING mission once the drill is removed', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const mission = await missionOfType(player, 'MINING');
+      await expectRefused(player, mission, 'MINER');
+    });
+
+    it('still dispatches a TRAVEL mission (nothing to check)', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const mission = await missionOfType(player, 'TRAVEL');
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(200);
+    });
+
+    it('still dispatches a SCAVENGE job even on a ship that fails every requirement', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const mission = await missionOfType(player, 'SCAVENGE');
+      await removeParts(player, (part) => part.crg > 0);
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(200);
+    });
+
+    it('accept and dispatch agree on the reasons for the same ship', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const available = await missionOfType(player, 'DELIVERY', 'AVAILABLE');
+      await askForBiggerHold(available);
+      const accepted = await request(httpServer(testApp.app))
+        .post(`/v1/missions/${available.id}/accept`)
+        .set(auth(player.token))
+        .send({ shipId: player.shipId });
+      expect(accepted.status).toBe(400);
+      const mission = await missionOfType(player, 'DELIVERY');
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(400);
+      const acceptBody = (accepted.body as { message: unknown }).message;
+      const dispatchBody = (response.body as { message: unknown }).message;
+      expect(dispatchBody).toEqual(acceptBody);
+    });
+  });
 });
