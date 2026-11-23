@@ -1,6 +1,7 @@
 # To do - v0.1.5
 
 Owner's list for v0.1.5 (planned 2026-11-09 as v0.1.4; v0.1.4 shipped without it, renamed 2026-11-23). Delete an item when it ships.
+The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadmap.md` (card fix, then ALL the UI, then the mission world, then ship damage; the tutorial last or dropped).
 
 ## 1. Missions follow the ship's own specialty (transport, escort, delivery, race)
 
