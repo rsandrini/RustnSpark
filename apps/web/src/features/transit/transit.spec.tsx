@@ -6,6 +6,7 @@ import { server } from '../../test/msw/server';
 import { resetActiveState, resetEconomyState } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import type { ActiveMission } from '../../api/generated';
+import { invalidateShip } from '../ship/invalidate-ship';
 
 const iso = (offsetMs: number) => new Date(Date.now() + offsetMs).toISOString();
 
@@ -427,6 +428,81 @@ describe('transit (S10.7)', () => {
     const currentLeg = screen.getByText('Leg 1 of 2').closest('li')!;
     expect(within(currentLeg).getByText(/Arrives in/)).toBeInTheDocument();
     expect(within(currentLeg).getByRole('timer')).toBeInTheDocument();
+  });
+
+  describe('not-eligible', () => {
+    const blocked = {
+      eligible: false,
+      reasons: [
+        { code: 'MISSING_ENGINE_VIABILITY', message: 'The ship has no working engine.' },
+        { code: 'NEEDS_CARGO', message: 'Needs more cargo space.' },
+      ],
+    };
+
+    it('shows the not-eligible notice and disables Dispatch when the active mission says eligible: false', async () => {
+      server.use(
+        http.get('/v1/missions/active', () =>
+          HttpResponse.json([mission({ eligibility: blocked })], { status: 200 }),
+        ),
+      );
+      renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+      const notice = await screen.findByTestId('transit-not-eligible');
+      expect(notice).toHaveTextContent(
+        "Your ship no longer meets this mission's needs. Fix the ship, or abandon the mission.",
+      );
+      // a code with no translation falls back to the server message, never a raw key
+      expect(notice).toHaveTextContent('The ship has no working engine.');
+      expect(notice).not.toHaveTextContent('board.requirements.');
+      expect(screen.getByRole('button', { name: /dispatch/i })).toBeDisabled();
+    });
+
+    it('enables Dispatch when eligible: true', async () => {
+      server.use(
+        http.get('/v1/missions/active', () =>
+          HttpResponse.json([mission({ eligibility: { eligible: true, reasons: [] } })], {
+            status: 200,
+          }),
+        ),
+      );
+      renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+      await screen.findByText('Mission accepted — ready for departure.');
+      expect(screen.queryByTestId('transit-not-eligible')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /dispatch/i })).toBeEnabled();
+    });
+
+    it('after the ship changes the card refetches and the notice goes away', async () => {
+      let eligible = false;
+      server.use(
+        http.get('/v1/missions/active', () =>
+          HttpResponse.json(
+            [mission({ eligibility: eligible ? { eligible: true, reasons: [] } : blocked })],
+            { status: 200 },
+          ),
+        ),
+      );
+      const { queryClient } = renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+      await screen.findByTestId('transit-not-eligible');
+      eligible = true;
+      act(() => invalidateShip(queryClient));
+      await waitFor(() =>
+        expect(screen.queryByTestId('transit-not-eligible')).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole('button', { name: /dispatch/i })).toBeEnabled();
+    });
+
+    it('no notice for a mission without eligibility (older server)', async () => {
+      server.use(
+        http.get('/v1/missions/active', () => HttpResponse.json([mission()], { status: 200 })),
+      );
+      renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+      await screen.findByText('Mission accepted — ready for departure.');
+      expect(screen.queryByTestId('transit-not-eligible')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /dispatch/i })).toBeEnabled();
+    });
   });
 
   it('flags an accepted mission whose start deadline has passed and refuses to dispatch it', async () => {

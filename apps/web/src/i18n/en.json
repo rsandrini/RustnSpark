@@ -2144,6 +2144,7 @@
   "transit": {
     "title": "In transit",
     "empty": "No active mission. Accept one from the mission board.",
+    "notEligible": "Your ship no longer meets this mission's needs. Fix the ship, or abandon the mission.",
     "accepted": "Mission accepted — ready for departure.",
     "dispatch": "Dispatch",
     "failed": "Could not dispatch the ship.",

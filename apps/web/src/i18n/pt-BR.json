@@ -2144,6 +2144,7 @@
   "transit": {
     "title": "Em trânsito",
     "empty": "Nenhuma missão ativa. Aceite uma no quadro de missões.",
+    "notEligible": "Sua nave não atende mais os requisitos desta missão. Arrume a nave ou abandone a missão.",
     "accepted": "Missão aceita — pronta para sair.",
     "dispatch": "Partir",
     "failed": "Não foi possível despachar a nave.",

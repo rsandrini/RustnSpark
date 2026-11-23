@@ -310,12 +310,24 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
             dispatch.isPending ||
             ship === undefined ||
             startDeadlinePassed ||
-            runningJob !== undefined
+            runningJob !== undefined ||
+            mission.eligibility?.eligible === false
           }
           onClick={() => dispatch.mutate()}
         >
           {t('transit.dispatch')}
         </button>
+        {mission.eligibility?.eligible === false && (
+          <p className="notice" role="alert" data-testid="transit-not-eligible">
+            {t('transit.notEligible')}
+            {mission.eligibility.reasons.map((reason, index) => (
+              <span key={`${reason.code}-${index}`} className="sub">
+                {' '}
+                {t(`board.requirements.${reason.code}`, { defaultValue: reason.message })}
+              </span>
+            ))}
+          </p>
+        )}
         {runningJob !== undefined && runningJob.arrivalAt != null && (
           <p className="notice" role="status" data-testid="transit-job-running">
             {t('transit.jobRunning')} <Countdown until={runningJob.arrivalAt} />{' '}
