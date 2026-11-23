@@ -26,7 +26,7 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
 - The first ship can arrive PRE-MOUNTED: the pilot adds only the last parts and completes it.
 - Related to the new opening: decide together how much the opening and the first minutes of the real tutorial overlap.
 
-## 4. A game-like UI (moved from v0.2)
+## 4. A game-like UI (moved from v0.2; no sound in this version; the art for the parts is the last task)
 
 - [ ] Make the screens feel like a game, not a website: fewer words, custom components instead of default web controls, the ship's
   state in a HUD, contract cards, a star-chart map, pilot card and podium, feedback on every action.
@@ -49,9 +49,9 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 
 ### 5b. New mission subtypes
 
-- [ ] **Fuel transport**, or anything else that rides in tanks. Open: do we need a new kind of tank, or can the fuel tank carry it?
+- [ ] **Tank cargo** (decided 2026-11-23): a new separate cargo-tank part family, with tank kinds water, chemicals and fuel (fuel carried as cargo is not consumed by the ship). Missions to carry them; each needs a tank of its kind.
 - [ ] **Explore a region:** needs a radar on the ship.
-- [ ] **Fight in a zone:** define what counts as a victory.
+- [ ] **Fight in a zone** (decided 2026-11-23): waves of pirates with a target; a score is kept and a partial result that reaches the target is still a victory. Seed of the v0.2 War idea (factions conquering zones): for now only the fight, no faction points.
 - [ ] **Repair something:** may need a specialized tool fitted on the ship.
 - [ ] Others of the same kind (each subtype asks for the part that fits it, like mining asks for a drill).
 
