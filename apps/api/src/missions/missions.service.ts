@@ -376,21 +376,26 @@ export class MissionsService implements OnModuleInit {
       }),
     ]);
     const wordsById = new Map(templates.map((entry) => [entry.id, entry]));
-    // The same figures the board shows, so the accepted mission keeps its details (the
-    // eligibility verdict is not wanted here: the mission is already taken).
+    // The same figures the board shows, so the accepted mission keeps its details, plus the
+    // verdict on whether the ship as it is now still qualifies (it can change after accepting).
     const viewer = await this.viewerContext(playerId, rows[0]!.originId);
     const withInfo = await this.withEligibility(
       rows.map((row) => ({ ...row, rewardEstimate: row.reward })),
       viewer,
       playerId,
       rows[0]!.originId,
+      { own: true },
     );
     const infoById = new Map(withInfo.map((offer) => [offer.id, offer.info]));
+    const eligibilityById = new Map(withInfo.map((offer) => [offer.id, offer.eligibility]));
     return rows.map((row) => {
       const template = wordsById.get(row.templateId);
       return {
         ...row,
         info: infoById.get(row.id)!,
+        ...(row.status === 'ACCEPTED' || row.status === 'HELD'
+          ? { eligibility: eligibilityById.get(row.id)! }
+          : {}),
         isJob: isJob(row),
         legWindows: windows.get(row.id) ?? [],
         giver: infoById.get(row.id)?.giver ?? null,
@@ -759,6 +764,9 @@ export class MissionsService implements OnModuleInit {
     viewer: ViewerContext,
     playerId: string,
     locationId: string,
+    // own: the rows are the player's own mission, so the "take a second mission" reasons
+    // (a mission already under way, the ship elsewhere) do not apply.
+    options: { own?: boolean } = {},
   ): Promise<BoardOffer[]> {
     if (rows.length === 0) return [];
     const { rules } = this.config.snapshot();
@@ -838,13 +846,13 @@ export class MissionsService implements OnModuleInit {
       if (viewer.ship === undefined) {
         reasons.push({ code: 'NO_SHIP', message: 'no ship available' });
       } else {
-        if (active > 0) {
+        if (active > 0 && options.own !== true) {
           reasons.push({
             code: 'ACTIVE_MISSION_EXISTS',
             message: 'a mission is already under way',
           });
         }
-        if (viewer.ship.currentLocationId !== locationId) {
+        if (viewer.ship.currentLocationId !== locationId && options.own !== true) {
           reasons.push({ code: 'SHIP_NOT_AT_ORIGIN', message: 'ship is not at this location' });
         }
         if (viability !== null && !viability.viable) {

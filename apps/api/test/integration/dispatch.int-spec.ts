@@ -457,6 +457,70 @@ describe('ship dispatch API (S7.2)', () => {
     });
   });
 
+  describe('GET /v1/missions/active eligibility of the accepted mission', () => {
+    type ActiveRow = {
+      id: string;
+      eligibility?: { eligible: boolean; reasons: Array<{ code: string; message: string }> };
+      info?: { requirements: Array<{ met: boolean }> };
+    };
+    async function activeRow(player: AuthPair): Promise<ActiveRow> {
+      const response = await request(httpServer(testApp.app))
+        .get('/v1/missions/active')
+        .set(auth(player.token));
+      expect(response.status).toBe(200);
+      return (response.body as ActiveRow[])[0]!;
+    }
+
+    it('active returns eligible: true for an accepted mission the ship qualifies for', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await createMission(player, [30, 10]);
+      const row = await activeRow(player);
+      expect(row.eligibility).toEqual({ eligible: true, reasons: [] });
+    });
+
+    it('a part change that breaks the requirement flips it to eligible: false, and back', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const mission = await createMission(player, [30, 10]);
+      const original = await prisma.missionTemplate.findUniqueOrThrow({
+        where: { id: mission.templateId },
+      });
+      await prisma.missionTemplate.update({
+        where: { id: mission.templateId },
+        data: { requirements: { cargo: 100000 } },
+      });
+      const broken = await activeRow(player);
+      expect(broken.eligibility!.eligible).toBe(false);
+      expect(broken.eligibility!.reasons.map((reason) => reason.code)).toContain('CARGO_TYPE');
+      expect(broken.eligibility!.reasons.map((reason) => reason.code)).not.toContain(
+        'ACTIVE_MISSION_EXISTS',
+      );
+      expect(broken.eligibility!.reasons.map((reason) => reason.code)).not.toContain(
+        'SHIP_NOT_AT_ORIGIN',
+      );
+      expect(broken.info!.requirements.some((entry) => entry.met === false)).toBe(true);
+
+      await prisma.missionTemplate.update({
+        where: { id: mission.templateId },
+        data: { requirements: original.requirements ?? {} },
+      });
+      const restored = await activeRow(player);
+      expect(restored.eligibility).toEqual({ eligible: true, reasons: [] });
+    });
+
+    it('an IN_TRANSIT mission has no eligibility', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const mission = await createMission(player, [40]);
+      const sent = await dispatch(player.token, player.shipId, mission.id);
+      expect(sent.status).toBe(200);
+      const row = await activeRow(player);
+      expect(row.id).toBe(mission.id);
+      expect(row.eligibility).toBeUndefined();
+    });
+  });
+
   it('exposes per-leg windows on GET /v1/missions/active: none before dispatch, contiguous after', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

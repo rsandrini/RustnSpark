@@ -971,6 +971,8 @@ export const ActiveMissionSchema = MissionInstanceDataSchema.extend({
   giver: GiverRefSchema.nullable().optional(),
   /** The board card's figures for this mission (time, fuel, requirements, material, race). */
   info: OfferInfoSchema.optional(),
+  /** Whether the ship as it is now still qualifies; only for an accepted or held mission. */
+  eligibility: BoardEligibilitySchema.optional(),
   /** A search or a free mining job started at a port (not a mission from the board). */
   isJob: z.boolean().optional(),
 });
