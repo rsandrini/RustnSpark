@@ -6,6 +6,7 @@ import { server } from '../../test/msw/server';
 import { resetActiveState, resetEconomyState } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import type { ActiveMission } from '../../api/generated';
+import i18n from '../../i18n';
 import { invalidateShip } from '../ship/invalidate-ship';
 
 const iso = (offsetMs: number) => new Date(Date.now() + offsetMs).toISOString();
@@ -434,7 +435,7 @@ describe('transit (S10.7)', () => {
     const blocked = {
       eligible: false,
       reasons: [
-        { code: 'MISSING_ENGINE_VIABILITY', message: 'The ship has no working engine.' },
+        { code: 'NO_ENGINE', message: 'The ship has no working engine.' },
         { code: 'NEEDS_CARGO', message: 'Needs more cargo space.' },
       ],
     };
@@ -451,10 +452,51 @@ describe('transit (S10.7)', () => {
       expect(notice).toHaveTextContent(
         "Your ship no longer meets this mission's needs. Fix the ship, or abandon the mission.",
       );
-      // a code with no translation falls back to the server message, never a raw key
-      expect(notice).toHaveTextContent('The ship has no working engine.');
+      // a viability code is spoken from the translations (not the server's English message), as a list
+      expect(notice).toHaveTextContent('No engine installed.');
+      expect(notice).not.toHaveTextContent('The ship has no working engine.');
       expect(notice).not.toHaveTextContent('board.requirements.');
+      expect(notice).not.toHaveTextContent('hangar.problems.');
+      expect(within(notice).getAllByRole('listitem')).toHaveLength(2);
       expect(screen.getByRole('button', { name: /dispatch/i })).toBeDisabled();
+    });
+
+    it('speaks the reasons in pt-BR', async () => {
+      try {
+        server.use(
+          http.get('/v1/missions/active', () =>
+            HttpResponse.json([mission({ eligibility: blocked })], { status: 200 }),
+          ),
+        );
+        renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+        const notice = await screen.findByTestId('transit-not-eligible');
+        // switched after sign-in: the session's own locale would otherwise win on load
+        await act(() => i18n.changeLanguage('pt-BR'));
+        expect(notice).toHaveTextContent('Nenhum motor instalado.');
+        expect(notice).not.toHaveTextContent('The ship has no working engine.');
+      } finally {
+        await i18n.changeLanguage('en');
+      }
+    });
+
+    it('a refused dispatch refetches the active list', async () => {
+      let activeCalls = 0;
+      server.use(
+        http.get('/v1/missions/active', () => {
+          activeCalls += 1;
+          return HttpResponse.json([mission()], { status: 200 });
+        }),
+        http.post('/v1/ships/:id/dispatch', () =>
+          HttpResponse.json({ error: { code: 'SHIP_NOT_VIABLE', message: 'no' } }, { status: 409 }),
+        ),
+      );
+      renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+      await screen.findByText('Mission accepted — ready for departure.');
+      const before = activeCalls;
+      fireEvent.click(screen.getByRole('button', { name: 'Dispatch' }));
+      await waitFor(() => expect(activeCalls).toBeGreaterThan(before));
     });
 
     it('enables Dispatch when eligible: true', async () => {

@@ -1,3 +1,4 @@
+import { useProblemText } from '../hangar/problem-text';
 import { enginePercent } from '../../ui/engine-level';
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -105,6 +106,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
     void queryClient.invalidateQueries({ queryKey: ['ships'] });
   };
   const feedback = useFeedback();
+  const problemText = useProblemText();
   const dispatch = useMutation({
     mutationFn: async () => {
       // A slider moved a moment ago may not be saved yet: the trip flies with the levels shown.
@@ -130,6 +132,8 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
     },
     onError: (error) => {
       setActionError(errorText(t, error, t('transit.failed')));
+      // A refusal (requirements not met, ship not viable) means the card was stale: show the truth.
+      invalidateActive();
     },
   });
 
@@ -318,15 +322,16 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
           {t('transit.dispatch')}
         </button>
         {mission.eligibility?.eligible === false && (
-          <p className="notice" role="alert" data-testid="transit-not-eligible">
+          <div className="notice" role="alert" data-testid="transit-not-eligible">
             {t('transit.notEligible')}
-            {mission.eligibility.reasons.map((reason, index) => (
-              <span key={`${reason.code}-${index}`} className="sub">
-                {' '}
-                {t(`board.requirements.${reason.code}`, { defaultValue: reason.message })}
-              </span>
-            ))}
-          </p>
+            <ul className="reasons">
+              {mission.eligibility.reasons.map((reason, index) => (
+                <li key={`${reason.code}-${index}`}>
+                  {t(`board.requirements.${reason.code}`, { defaultValue: problemText(reason) })}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         {runningJob !== undefined && runningJob.arrivalAt != null && (
           <p className="notice" role="status" data-testid="transit-job-running">

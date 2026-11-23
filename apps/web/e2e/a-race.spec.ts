@@ -120,7 +120,10 @@ test.describe('race mission', () => {
     // strip the ship: it no longer meets the race's requirements, and the card says so without a reload
     await page.getByRole('button', { name: 'Empty the ship' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Empty the ship' }).click();
-    await expect(page.getByTestId('transit-not-eligible')).toBeVisible();
+    const notEligible = page.getByTestId('transit-not-eligible');
+    await expect(notEligible).toBeVisible();
+    // the reasons are spoken in words (the stripped ship has no engine), not raw codes
+    await expect(notEligible).toContainText(/No engine installed|No bridge installed/);
     await expect(dispatch).toBeDisabled();
 
     // put it back: the notice goes and Dispatch works again, still without a reload
