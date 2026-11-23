@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateShip } from '../ship/invalidate-ship';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import { errorText } from '../../api/errors';
@@ -54,8 +55,7 @@ export function RescueBanner() {
           : t('rescue.done', { cost: response.cost, fuel: response.fuel }),
       );
       void reloadProfile();
-      void queryClient.invalidateQueries({ queryKey: ['ships'] });
-      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      invalidateShip(queryClient);
     },
     onError: (failure) => {
       setConfirming(null);
@@ -71,8 +71,7 @@ export function RescueBanner() {
     onSuccess: () => {
       setNotice(t('rescue.arrived'));
       void reloadProfile();
-      void queryClient.invalidateQueries({ queryKey: ['ships'] });
-      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      invalidateShip(queryClient);
     },
     onError: (failure) => setError(errorText(t, failure, t('error.unexpected'))),
   });
@@ -131,7 +130,7 @@ export function RescueBanner() {
                 until={options.dueAt}
                 onElapsed={() => {
                   setElapsed(true);
-                  void queryClient.invalidateQueries({ queryKey: ['ships'] });
+                  invalidateShip(queryClient);
                 }}
               />
             </span>
@@ -165,7 +164,7 @@ export function RescueBanner() {
           busy={rescue.isPending}
           onElapsed={() => {
             setElapsed(true);
-            void queryClient.invalidateQueries({ queryKey: ['ships'] });
+            invalidateShip(queryClient);
           }}
         />
       )}

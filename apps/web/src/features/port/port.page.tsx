@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateShip } from '../ship/invalidate-ship';
 import { Trans, useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
 import { errorText, priceChangedActualOf } from '../../api/errors';
@@ -335,7 +336,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     void queryClient.invalidateQueries({ queryKey: ['inventory'] });
     void queryClient.invalidateQueries({ queryKey: ['materials'] });
     void queryClient.invalidateQueries({ queryKey: ['market'] });
-    void queryClient.invalidateQueries({ queryKey: ['ships'] });
+    invalidateShip(queryClient);
   };
 
   // A stale quote: the server's actual price replaces the one on screen and the player
@@ -936,7 +937,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                 <b>{t('port.repairBusy')}</b>
                 <Countdown
                   until={repairUntil}
-                  onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
+                  onElapsed={() => invalidateShip(queryClient)}
                 />
               </p>
             )}

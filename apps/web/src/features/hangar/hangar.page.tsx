@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateShip } from '../ship/invalidate-ship';
 import { Trans, useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import { errorCodeOf, problemsOf } from '../../api/errors';
@@ -363,8 +364,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       setSaveError(null);
       setSelectedId(null);
       setPendingPartId(null);
-      void queryClient.invalidateQueries({ queryKey: ['ships'] });
-      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      invalidateShip(queryClient);
     },
     onError: (error) => setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) }),
   });
@@ -385,8 +385,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       setSelectedId(null);
       setPendingPartId(null);
       setClearOpen(false);
-      void queryClient.invalidateQueries({ queryKey: ['ships'] });
-      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      invalidateShip(queryClient);
     },
     onError: (error) => {
       setClearOpen(false);
@@ -427,8 +426,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       setPendingPartId(null);
       setFormatPickerOpen(false);
       setFormatPreview(null);
-      void queryClient.invalidateQueries({ queryKey: ['ships'] });
-      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      invalidateShip(queryClient);
     },
   });
 
@@ -485,8 +483,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       setSaveError(null);
       setSelectedId(null);
       setPendingPartId(null);
-      void queryClient.invalidateQueries({ queryKey: ['ships'] });
-      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      invalidateShip(queryClient);
     },
     onError: (error) => setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) }),
   });

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateShip } from '../ship/invalidate-ship';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import { errorCodeOf, errorText, priceChangedActualOf } from '../../api/errors';
@@ -110,7 +111,7 @@ export function MarketPanel({
       void reloadProfile();
       void queryClient.invalidateQueries({ queryKey: ['inventory'] });
       void queryClient.invalidateQueries({ queryKey: ['market'] });
-      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+      invalidateShip(queryClient);
     },
     // A stale quote: the server's actual price replaces the one on screen and the player
     // confirms again (a new expectedPrice is a new action, so it gets a new key).

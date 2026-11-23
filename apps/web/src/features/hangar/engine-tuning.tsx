@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateShip } from '../ship/invalidate-ship';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import type { EnergyMode, EnginePreview, ShipResponse } from '../../api/generated';
@@ -79,7 +80,7 @@ export function EngineTuning({
     mutationFn: (energyMode: EnergyMode) =>
       client.post<ShipResponse>(`/v1/ships/${ship.id}/energy-mode`, { energyMode }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+      invalidateShip(queryClient);
     },
   });
 
@@ -98,8 +99,7 @@ export function EngineTuning({
     mutationFn: (next: { chem: number; ion: number }) =>
       client.post<ShipResponse>(`/v1/ships/${ship.id}/engine-levels`, next),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['ships'] });
-      void queryClient.invalidateQueries({ queryKey: ['active'] });
+      invalidateShip(queryClient);
       void queryClient.invalidateQueries({ queryKey: ['missions'] });
     },
   });

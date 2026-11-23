@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { invalidateShip } from '../ship/invalidate-ship';
 import { client, serverNow } from '../../api/client';
 import type { ShipResponse } from '../../api/generated';
 import { useAuthContext } from '../auth/auth.context';
@@ -29,12 +30,11 @@ export function useRescueSettle(ship: ShipResponse | undefined): void {
         .post(`/v1/ships/${shipId}/rescue/settle`)
         .then(() => {
           void reloadProfile();
-          void queryClient.invalidateQueries({ queryKey: ['ships'] });
-          void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+          invalidateShip(queryClient);
         })
         .catch(() => {
           // not due yet (clock drift) or already settled elsewhere: look again, then ask again
-          void queryClient.invalidateQueries({ queryKey: ['ships'] });
+          invalidateShip(queryClient);
           if (!cancelled && retries < MAX_RETRIES) {
             timer = window.setTimeout(() => attempt(retries + 1), RETRY_MS);
           }

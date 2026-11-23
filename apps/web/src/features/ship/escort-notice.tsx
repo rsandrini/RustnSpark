@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateShip } from './invalidate-ship';
 import { useTranslation } from 'react-i18next';
 import { useIntentKey } from '../../api/intent-key';
 import { client } from '../../api/client';
@@ -46,8 +47,7 @@ export function EscortNotice() {
   });
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['escort'] });
-    void queryClient.invalidateQueries({ queryKey: ['ships'] });
-    void queryClient.invalidateQueries({ queryKey: ['active'] });
+    invalidateShip(queryClient);
   };
   const accept = useMutation({
     mutationFn: () =>
