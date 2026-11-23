@@ -77,3 +77,156 @@
   border-color: var(--bad);
   background: color-mix(in oklab, var(--bad) 16%, var(--paper-2));
 }
+
+/* risk pips ------------------------------------------------------------------ */
+.kit-pips {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.kit-pip {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--paper-4);
+}
+
+.kit-pips--lo .kit-pip.on {
+  background: var(--risk-lo);
+}
+
+.kit-pips--md .kit-pip.on {
+  background: var(--risk-md);
+}
+
+.kit-pips--hi .kit-pip.on {
+  background: var(--risk-hi);
+}
+
+/* stat pip ------------------------------------------------------------------- */
+.kit-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-md);
+}
+
+.kit-stat-icon {
+  display: inline-flex;
+  color: var(--brass);
+}
+
+.kit-stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.kit-stat-diff {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.kit-stat-diff.up {
+  color: var(--ok);
+}
+
+.kit-stat-diff.down {
+  color: var(--bad);
+}
+
+/* slot frame ----------------------------------------------------------------- */
+.kit-slot {
+  --slot: var(--rar-common);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  max-width: 100%;
+  border: 2px solid var(--slot);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--slot) 10%, var(--paper-2));
+  color: var(--slot);
+}
+
+.kit-slot--rare {
+  --slot: var(--rar-rare);
+}
+
+.kit-slot--epic {
+  --slot: var(--rar-epic);
+}
+
+.kit-slot--legendary {
+  --slot: var(--rar-legendary);
+}
+
+.kit-slot--empty {
+  --slot: var(--brass);
+  border-style: dashed;
+  background: transparent;
+}
+
+/* blocker chip --------------------------------------------------------------- */
+.kit-blocker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--bad) 16%, transparent);
+  color: var(--bad);
+  font-size: 12px;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+a.kit-blocker,
+button.kit-blocker {
+  min-height: 32px;
+  cursor: pointer;
+}
+
+a.kit-blocker:hover,
+button.kit-blocker:hover {
+  background: color-mix(in oklab, var(--bad) 26%, transparent);
+}
+
+/* icon tabs ------------------------------------------------------------------ */
+.kit-tabs {
+  display: inline-flex;
+  max-width: 100%;
+  gap: 6px;
+  padding: 4px;
+  overflow-x: auto;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius);
+}
+
+.kit-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.kit-tab:hover {
+  color: var(--ink);
+}
+
+.kit-tab.on {
+  background: var(--brass);
+  color: var(--brass-ink);
+}

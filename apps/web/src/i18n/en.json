@@ -3106,5 +3106,12 @@
     "searching": "Searching — done in",
     "mining": "Mining — done in",
     "missionWaits": "Your mission waits and can start after it."
+  },
+  "kit": {
+    "stat": {
+      "plain": "{{label}}: {{value}}",
+      "up": "{{label}}: {{value}}, up {{diff}}",
+      "down": "{{label}}: {{value}}, down {{diff}}"
+    }
   }
 }

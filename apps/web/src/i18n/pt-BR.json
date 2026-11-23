@@ -3106,5 +3106,12 @@
     "searching": "Vasculhando — termina em",
     "mining": "Minerando — termina em",
     "missionWaits": "Sua missão espera e pode começar depois."
+  },
+  "kit": {
+    "stat": {
+      "plain": "{{label}}: {{value}}",
+      "up": "{{label}}: {{value}}, mais {{diff}}",
+      "down": "{{label}}: {{value}}, menos {{diff}}"
+    }
   }
 }
