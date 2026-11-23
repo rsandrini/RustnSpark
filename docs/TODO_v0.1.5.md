@@ -34,7 +34,8 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
   shippable alone; the first is the component kit and the HUD.
 - Fixed by the owner: the installed parts on the ship stay as they are today (only a type subtitle is added), and the connection
   ports are shown everywhere a part appears (never abstracted).
-- Open: subtitle layout A or B, art direction for parts, sound assets, the Port as a place (needs a mockup).
+- Decided 2026-11-23: subtitle layout B (icon + type row inside the cell, below the connector band). No sound. The art for the parts is the last task.
+- Open: the Port as a place (needs a mockup).
 
 ## 5. More missions per port, more mission kinds, a bigger map (owner, 2026-11-23) - *needs design*
 

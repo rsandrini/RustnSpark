@@ -25,7 +25,7 @@ arrow), the port banner and ship-stage animation, the faction portraits, the pho
 ## 2. Decisions so far (owner, 2026-11-21)
 
 - **Installed parts on the ship stay as they are today.** They are better than the first mockup. We only add a small **type
-  subtitle** under (A) or in a corner chip (B) of each block. **Open: A or B.** The mockup shows both.
+  subtitle** under (A) or in a corner chip (B) of each block. **Decided (2026-11-23): layout B**, the type as an icon + label row inside the cell, below the connector band and above the name (never over the dots; icon only at 1×1 phone size).
 - **Connections (ports) are a core mechanic and are never abstracted.** Every place that shows a part shows its ports with the same
   language the ship uses: dots on the edge, **kind = number of dots** (1 central, 2 split, 3 universal), **state = colour**
   (green connected, blue free, red incompatible). Rules: central joins central, split joins split, universal joins anything but
@@ -48,7 +48,7 @@ arrow), the port banner and ship-stage animation, the faction portraits, the pho
 
 | Screen | Change | Mockup |
 |---|---|---|
-| Ship (yard) | Keep the parts as they are; add the type subtitle (A or B); HUD gauges in the top bar; "Needs" as two chips plus a dashed slot on the ship; tray rows show the part's mini port square | `1-ship-screen` |
+| Ship (yard) | Keep the parts as they are; add the type subtitle (layout B, decided 2026-11-23); HUD gauges in the top bar; "Needs" as two chips plus a dashed slot on the ship; tray rows show the part's mini port square | `1-ship-screen` |
 | Port > Store | Item cards: the part's footprint with its ports is the largest element, a one-line "does it fit my ship" verdict, type subtitle, rarity frame, icon stats with compare arrows, a "Fits my free ports" filter, icon type tabs. A legend for the ports and a "what joins what" table. While placing a part, the ghost shows each edge green or red before the drop | `2-port-and-parts` |
 | Port (rest) | Buy / Service / Work as a place (illustrated scene with hotspots) instead of nested tabs. **Not mocked up yet** | none |
 | Missions | Contract cards: giver portrait (faction ring), route arrow, risk pips, time, big reward, "Accept"; locked contracts show blocker chips instead of paragraphs; icon filters | `3-contracts` |
@@ -74,7 +74,6 @@ Each phase gets its own implementation plan in `docs/superpowers/plans/` when it
 
 ## 6. Open questions
 
-- Subtitle layout A or B?
 - Art: generated icons per part type, or commissioned art? (The mockups use placeholder shapes.)
 - Sound: any assets yet? Opt-out setting?
 - Does "Fits my free ports" need the server (to count free ports) or can the web compute it from the ship and part layouts?
