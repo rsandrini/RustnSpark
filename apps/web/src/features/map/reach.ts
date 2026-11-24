@@ -48,5 +48,6 @@ export function rangeBudget(input: {
 }): number | 'unlimited' {
   if (input.fuelUse <= 0) return 'unlimited';
   if (input.fuelCap <= 0) return 0;
-  return input.autonomy * (input.fuelHave / input.fuelCap);
+  const ratio = Math.min(1, Math.max(0, input.fuelHave / input.fuelCap));
+  return Math.max(0, input.autonomy) * ratio;
 }
