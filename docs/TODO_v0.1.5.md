@@ -94,6 +94,23 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
   job), the sim for pay per person. Existing accepted/flying TRANSPORT missions must keep working (default head count when none is stored).
 - Plan: with item 6's task A0 (the `pax` stat); see `docs/superpowers/plans/2026-11-24-ship-identity-and-spider-chart.md`.
 
+## 9. Hard mode: start with no flag, no money, no ship (owner, 2026-11-24) - *needs a plan*
+
+- [ ] A pilot can start WITHOUT a faction to fight for. This is the hard mode. It starts with no money and no kit: everything is
+  collected from scrap (scavenging), and the pilot picks the start point among "safe" places. Once enough is collected to mount a
+  ship, it was built without any help, and the pilot pays the price as a neutral, not as a friend of a faction.
+- Written as "0.1.4" in the request; v0.1.4 already shipped, so it is filed on the open list (v0.1.5) and flagged *needs plan*. Consider
+  v0.2: it touches onboarding, the economy and the factions at once.
+- What exists today (checked 2026-11-24): onboarding picks a faction and creates the pilot with `start_credits` and the starter kit
+  (`onboarding.service.ts`: `starter_parts`, start fuel); a `free` faction already exists (the mentor NPCs belong to it); prices
+  apply the player's faction relation to the place's faction (`pricing.service.ts`, `relationOf(...)`), so "neutral" can be a
+  relation of its own; scavenging exists (scrap, drops) and scrap sells at a fixed price everywhere.
+- To plan: how a pilot with no ship and no money moves and earns (scavenge on foot? from a start station?); the list of "safe"
+  start places and how the pilot picks one; how much scrap buys the first ship (a minimum viable ship by the part catalog) and
+  whether a cheap used hull is sold; the neutral price relation (worse prices and what else); whether the pilot can join a faction
+  later and how; the guide and the opening for this mode; ranking (a separate board or the same); the sim to tune the scrap economy.
+- Open question for the owner: is "start with nothing" a choice on the faction screen (a fourth card) or a separate "hard mode" switch?
+
 ## Bugs found testing v0.1.4 in prod
 
 - [ ] (the owner will add them here as they are found; each ships in v0.1.5, or as a `v0.1.4b` hotfix if it blocks play)
