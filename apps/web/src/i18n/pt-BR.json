@@ -2497,6 +2497,7 @@
       "fuelShort": "Combustível insuficiente: faltam {{missing}}. Reabasteça no porto antes.",
       "tankSmall": "A viagem precisa de mais combustível do que o tanque comporta: um tanque maior ou uma rota mais curta.",
       "noShip": "Você não tem nave.",
+      "quoteFailed": "Não foi possível calcular a viagem. Tente de novo em instantes.",
       "flying": "A nave está voando: espere ela pousar."
     },
     "layers": {

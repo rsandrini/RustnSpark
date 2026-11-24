@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MAX_SCALE,
+  centreAbove,
   boxOf,
   clampView,
   clientToMap,
@@ -53,5 +54,17 @@ describe('map camera', () => {
     const rect = { left: 0, top: 0, width: 500, height: 500 };
     expect(clientToMap(box, rect, 250, 250)).toEqual({ x: 500, y: 250 });
     expect(clientToMap(box, rect, 0, 125)).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('centreAbove', () => {
+  const bounds = { minX: 0, minY: 0, width: 1000, height: 800 };
+  it('centres below the point so it sits in the upper part of the view', () => {
+    const view = centreAbove(bounds, { x: 500, y: 400 }, 4, 0.25);
+    expect(view.cx).toBe(500);
+    expect(view.cy).toBe(400 + (800 / 4) * 0.25);
+  });
+  it('stays inside the map', () => {
+    expect(centreAbove(bounds, { x: 500, y: 790 }, 4, 0.25).cy).toBe(800);
   });
 });

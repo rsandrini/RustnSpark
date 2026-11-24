@@ -30,7 +30,7 @@ function node(svg: SVGSVGElement, name: string): SVGGElement {
 
 /** The sheet's Details toggle: mining, services, missions and the full trip box live behind it. */
 async function openDetails(name: string) {
-  const sheet = await screen.findByRole('region', { name });
+  const sheet = await screen.findByRole('dialog', { name });
   fireEvent.click(within(sheet).getByRole('button', { name: 'Details' }));
   return sheet;
 }
@@ -67,7 +67,7 @@ describe('map (S10.5)', () => {
     expect(screen.getAllByText('Medium risk').length).toBeGreaterThan(0);
     expect(screen.getAllByText('High risk').length).toBeGreaterThan(0);
     expect(screen.getAllByText('You are here').length).toBeGreaterThan(0);
-    expect(screen.queryByRole('region', { name: 'Porto Ceres' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Porto Ceres' })).not.toBeInTheDocument();
   });
 
   it('a ship out of fuel floats between two places: no "you are here", a floating marker mid-route', async () => {
@@ -146,7 +146,7 @@ describe('map (S10.5)', () => {
   it('a place that is selected stays on the map even when the zoom would hide it', async () => {
     server.use(onboarded());
     const view = renderWithRouter(routes, { initialEntries: ['/map?place=ceres_dock'] });
-    await screen.findByRole('region', { name: 'Doca Seca de Ceres' });
+    await screen.findByRole('dialog', { name: 'Doca Seca de Ceres' });
     const svg = view.container.querySelector('.map-stage svg') as SVGSVGElement;
     expect(svg.querySelector('[aria-label="Doca Seca de Ceres"]')).not.toBeNull();
   });
@@ -213,7 +213,7 @@ describe('map (S10.5)', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(() =>
-      expect(screen.queryByRole('region', { name: 'Porto Ceres' })).not.toBeInTheDocument(),
+      expect(screen.queryByRole('dialog', { name: 'Porto Ceres' })).not.toBeInTheDocument(),
     );
     // nothing selected: the chart is clear and the Places drawer is one click away
     expect(screen.getByRole('button', { name: 'Places' })).toBeInTheDocument();
@@ -242,7 +242,7 @@ describe('map (S10.5)', () => {
   it('opens on the place named in ?place=', async () => {
     server.use(onboarded());
     renderWithRouter(routes, { initialEntries: ['/map?place=ceres'] });
-    expect(await screen.findByRole('region', { name: 'Porto Ceres' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Porto Ceres' })).toBeInTheDocument();
   });
 
   it('"Open mission board" actually opens the Board tab, not the Ship tab', async () => {
@@ -280,7 +280,8 @@ describe('map (S10.5)', () => {
     expect(fuel).toHaveTextContent('Fuel: you have 25 · the trip needs 12 · tank 60');
     expect(fuel).toHaveAttribute('data-state', 'ok');
     expect(within(box).getByText(/pays nothing/)).toBeInTheDocument();
-    expect(within(box).getByRole('button', { name: /Fly to Estaleiro Tycho/ })).toBeEnabled();
+    expect(within(box).queryByRole('button', { name: /Fly to/ })).toBeNull(); // the sheet owns the only trip button
+    expect(screen.getByRole('button', { name: 'Plan trip' })).toBeEnabled();
   });
 
   it('a place card lists what is available and what can be mined, with only ore names and rarity', async () => {
@@ -409,7 +410,7 @@ describe('map (S10.5)', () => {
   it('does not offer a trip to the place you are already at', async () => {
     const { svg } = await renderMap();
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    await screen.findByRole('region', { name: 'Porto Ceres' });
+    await screen.findByRole('dialog', { name: 'Porto Ceres' });
     expect(screen.queryByTestId('travel')).toBeNull();
   });
 
@@ -418,7 +419,7 @@ describe('map (S10.5)', () => {
 
     fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
 
-    expect(await screen.findByRole('region', { name: 'Estaleiro Tycho' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Estaleiro Tycho' })).toBeInTheDocument();
   });
 
   it('marks the ship location as you-are-here', async () => {
@@ -427,7 +428,7 @@ describe('map (S10.5)', () => {
     expect(svg.querySelector('[aria-label="Porto Ceres — You are here"]')).not.toBeNull();
 
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    const dialog = await screen.findByRole('region', { name: 'Porto Ceres' });
+    const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
     expect(dialog.textContent).toContain('You are here');
   });
 

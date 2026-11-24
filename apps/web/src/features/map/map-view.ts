@@ -112,3 +112,14 @@ export function clientToMap(
 /** How many map units one screen pixel covers. */
 export const unitsPerPixel = (box: Box, rect: { width: number; height: number }): number =>
   1 / Math.min(rect.width / box.w, rect.height / box.h);
+
+/** A view centred on a point, nudged so the point sits in the upper part of the screen (a sheet covers the lower part). */
+export function centreAbove(
+  bounds: Bounds,
+  point: { x: number; y: number },
+  scale: number,
+  fraction: number,
+): View {
+  const h = bounds.height / Math.max(scale, MIN_SCALE);
+  return clampView(bounds, { scale, cx: point.x, cy: point.y + h * fraction });
+}

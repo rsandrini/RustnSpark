@@ -30,7 +30,7 @@ import { useNow } from '../../ui/useNow';
 import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
 import { transitPollInterval } from '../transit/poll';
 import { PageTitle } from '../../ui/PageTitle';
-import { DETAIL_MIN_SCALE, MAX_SCALE, MIN_SCALE } from './map-view';
+import { DETAIL_MIN_SCALE, MAX_SCALE, MIN_SCALE, centreAbove } from './map-view';
 
 /** The radius of the dot that marks a place hidden at this zoom. */
 const HINT_RADIUS = 3;
@@ -38,6 +38,8 @@ const HINT_RADIUS = 3;
 /** How far the map zooms in on the port the ship is stopped at when it opens. */
 const SHIP_FOCUS_SCALE = 5;
 const NODE_SHRINK = 0.7;
+/** On a phone, how far (a fraction of the view height) the centre drops below the selected place so it clears the sheet. */
+const SHEET_CENTRE_SHIFT = 0.22;
 
 /** Room kept around a trip under way when the map opens centred on it. */
 const TRIP_FOCUS_MARGIN = 140;
@@ -311,6 +313,16 @@ export function MapPage({ guided = false }: MapPageProps) {
   const quoteQuery = useTravelQuote(selected?.id ?? null, canPlan);
   const quote = canPlan ? quoteQuery.data : undefined;
 
+  // On a phone the sheet covers the lower part of the map: keep the selected place in view above it.
+  const { focusOn: centreOn } = camera;
+  const selectedPlace = selected;
+  useEffect(() => {
+    if (!phone || selectedPlace === undefined || bounds === null) return;
+    const view = centreAbove(bounds, selectedPlace, Math.max(camera.scale, 2), SHEET_CENTRE_SHIFT);
+    centreOn({ x: view.cx, y: view.cy }, view.scale);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone, selectedPlace?.id]);
+
   // The map is always the first thing on this screen.
   useEffect(() => {
     if (phone) window.scrollTo?.(0, 0);
@@ -419,7 +431,19 @@ export function MapPage({ guided = false }: MapPageProps) {
       </div>
 
       <div className="map-layout">
-        <div className="map-chart">
+        <div
+          className="map-chart"
+          onKeyDown={(event) => {
+            // Escape closes the open place; a field (the Places search) keeps its own Escape
+            if (
+              event.key === 'Escape' &&
+              selected !== undefined &&
+              !(event.target instanceof HTMLInputElement)
+            ) {
+              setSelectedId(null);
+            }
+          }}
+        >
           <div className="stage map-stage" ref={camera.stageRef} {...camera.stageHandlers}>
             <div className="map-zoom" role="group" aria-label={t('map.zoom.label')}>
               <button
@@ -731,9 +755,11 @@ export function MapPage({ guided = false }: MapPageProps) {
 
           {selected !== undefined && (
             <PlaceSheet
+              key={selected.id}
               place={selected}
               quote={quote}
               quoteLoading={canPlan && quoteQuery.isLoading}
+              quoteFailed={canPlan && quoteQuery.isError}
               hasShip={ship !== undefined}
               inFlight={inFlight}
               isHere={selected.id === shipLocation && !inFlight}
@@ -748,6 +774,7 @@ export function MapPage({ guided = false }: MapPageProps) {
                   shipLocation={shipLocation}
                   byId={byId}
                   fuelUse={ship?.sheet.fuelUse}
+                  hideFly
                 />
               }
             />
@@ -812,6 +839,7 @@ interface PlaceDetailsProps {
   byId: ReadonlyMap<string, WorldLocation>;
   /** The ship's fuel burn rate (0 = pure ion: no fuel to show). */
   fuelUse?: number | undefined;
+  hideFly?: boolean | undefined;
 }
 
 /** The services a place card lists, in this order: [key in `place.services`, label key]. */
@@ -878,6 +906,7 @@ function PlaceDetails({
   shipLocation,
   byId,
   fuelUse,
+  hideFly,
 }: PlaceDetailsProps) {
   const { t, i18n } = useTranslation();
   const suggestingDeliveries = !isHere && shipLocation !== null;
@@ -931,7 +960,9 @@ function PlaceDetails({
       </div>
 
       <div className="stack place-col">
-        {!isHere && canTravel && <TravelSection place={place} byId={byId} fuelUse={fuelUse} />}
+        {!isHere && canTravel && (
+          <TravelSection place={place} byId={byId} fuelUse={fuelUse} hideFly={hideFly} />
+        )}
 
         <h3>
           {suggestingDeliveries ? t('map.popup.missionsToHere') : t('map.popup.missionsHere')}
@@ -986,6 +1017,8 @@ function PlaceDetails({
 }
 
 interface TravelSectionProps {
+  /** The place sheet has its own Plan trip button: no second one here. */
+  hideFly?: boolean | undefined;
   place: WorldLocation;
   byId: ReadonlyMap<string, WorldLocation>;
   /** The ship's fuel burn rate: 0 (a pure-ion ship) means there is no fuel to show. */
@@ -994,7 +1027,7 @@ interface TravelSectionProps {
 
 // "Fly there without a mission": the server prices the trip (route, time, fuel) and says
 // whether the ship can leave; the pilot only confirms. The trip costs fuel and pays nothing.
-function TravelSection({ place, byId, fuelUse }: TravelSectionProps) {
+function TravelSection({ place, byId, fuelUse, hideFly }: TravelSectionProps) {
   const burnsFuel = fuelUse === undefined || fuelUse > 0;
   const { t, i18n } = useTranslation();
   const quoteQuery = useTravelQuote(place.id);
@@ -1053,14 +1086,16 @@ function TravelSection({ place, byId, fuelUse }: TravelSectionProps) {
           {errorText(t, fly.error, t('map.travel.failed'))}
         </p>
       )}
-      <button
-        type="button"
-        className="btn primary block"
-        disabled={quote === undefined || !quote.canDepart || fly.isPending}
-        onClick={() => fly.mutate()}
-      >
-        {t('map.travel.go', { place: nameOf(place.id) })}
-      </button>
+      {hideFly !== true && (
+        <button
+          type="button"
+          className="btn primary block"
+          disabled={quote === undefined || !quote.canDepart || fly.isPending}
+          onClick={() => fly.mutate()}
+        >
+          {t('map.travel.go', { place: nameOf(place.id) })}
+        </button>
+      )}
     </section>
   );
 }

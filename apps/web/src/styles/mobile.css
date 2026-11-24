@@ -394,8 +394,12 @@
     bottom: calc(64px + env(safe-area-inset-bottom, 0px));
     z-index: 60;
     max-width: none;
-    max-height: 68vh;
+    max-height: 50vh;
     border-radius: 16px 16px 0 0;
+  }
+  /* the zoom buttons would sit under the sheet: the pinch and the Fit map reset are not needed while a place is open */
+  .map-chart:has(.place-sheet) .map-zoom {
+    display: none;
   }
 
   /* refuel: the gauge on top says it all; one slider, one price line, the buttons */

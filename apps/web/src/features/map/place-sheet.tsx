@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,8 @@ export interface PlaceSheetProps {
   /** The server's price of the trip; undefined while loading or when there is nothing to price. */
   quote: TravelQuote | undefined;
   quoteLoading: boolean;
+  /** The quote could not be fetched. */
+  quoteFailed?: boolean;
   hasShip: boolean;
   inFlight: boolean;
   /** The ship is docked at this very place. */
@@ -38,6 +41,7 @@ export function PlaceSheet({
   place,
   quote,
   quoteLoading,
+  quoteFailed = false,
   hasShip,
   inFlight,
   isHere,
@@ -49,6 +53,26 @@ export function PlaceSheet({
   const factions = useFactions().byId;
   const fly = useFlyTo(place.id);
   const [open, setOpen] = useState(false);
+  // Non-modal dialog: it takes focus when it opens and gives it back to what opened it (the place or the Places button).
+  const sheetRef = useRef<HTMLElement>(null);
+  const opener = useRef<Element | null>(
+    typeof document === 'undefined' ? null : document.activeElement,
+  );
+  useEffect(() => {
+    sheetRef.current?.focus();
+    const from = opener.current;
+    return () => {
+      if ((from instanceof HTMLElement || from instanceof SVGElement) && from.isConnected) {
+        from.focus();
+      }
+    };
+  }, []);
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && !event.defaultPrevented) {
+      event.preventDefault();
+      onClose();
+    }
+  };
   const name = pickLocalized(place.displayName, i18n.language);
   const faction =
     factionName(factions[place.factionId], i18n.language) ??
@@ -71,17 +95,27 @@ export function PlaceSheet({
     ? t('map.sheet.noShip')
     : inFlight
       ? t('map.sheet.flying')
-      : fuelLow
-        ? t(fuel.state === 'tank' ? 'map.sheet.tankSmall' : 'map.sheet.fuelShort', {
-            missing: fuel.missing,
-          })
-        : quote !== undefined && quote.blockers.length > 0
-          ? t(`map.travel.blockers.${quote.blockers[0]}`)
-          : null;
+      : quoteFailed
+        ? t('map.sheet.quoteFailed')
+        : fuelLow
+          ? t(fuel.state === 'tank' ? 'map.sheet.tankSmall' : 'map.sheet.fuelShort', {
+              missing: fuel.missing,
+            })
+          : quote !== undefined && quote.blockers.length > 0
+            ? t(`map.travel.blockers.${quote.blockers[0]}`)
+            : null;
   const canGo = hasShip && !inFlight && quote !== undefined && quote.canDepart && !fuelLow;
 
   return (
-    <section className="place-sheet" aria-label={name} data-testid="place-sheet">
+    <section
+      ref={sheetRef}
+      role="dialog"
+      aria-label={name}
+      tabIndex={-1}
+      className="place-sheet"
+      data-testid="place-sheet"
+      onKeyDown={onKeyDown}
+    >
       <header className="place-sheet-head">
         <GiverBadge
           name={name}
@@ -133,7 +167,9 @@ export function PlaceSheet({
             <span className="place-sheet-stat">
               <small>{t('map.sheet.risk')}</small>
               <span className="place-sheet-risk">
-                <RiskPips level={LEVEL[place.risk]} label={t(`ui.risk.${place.risk}`)} />
+                <span aria-hidden="true">
+                  <RiskPips level={LEVEL[place.risk]} label={t(`ui.risk.${place.risk}`)} />
+                </span>
                 <b>{t(`ui.risk.${place.risk}`)}</b>
               </span>
             </span>

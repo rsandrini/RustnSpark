@@ -2497,6 +2497,7 @@
       "fuelShort": "Not enough fuel: {{missing}} more needed. Refuel at the port first.",
       "tankSmall": "The trip needs more fuel than the tank holds: a bigger tank or a shorter route.",
       "noShip": "You have no ship.",
+      "quoteFailed": "The trip could not be priced. Try again in a moment.",
       "flying": "The ship is flying: wait for it to land."
     },
     "layers": {

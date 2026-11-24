@@ -42,7 +42,7 @@ describe('PlaceSheet', () => {
     expect(await within(sheet).findByText('2m 30s')).toBeInTheDocument();
     expect(within(sheet).getByTestId('sheet-fuel')).toHaveTextContent('12 fuel');
     expect(within(sheet).getByRole('button', { name: 'Plan trip' })).toBeEnabled();
-    expect(within(sheet).getByRole('img', { name: 'Low risk' })).toBeInTheDocument();
+    expect(within(sheet).getByText('Low risk')).toBeInTheDocument();
   });
 
   it('shows a red chip leading to refuel and a disabled Plan trip with the reason when fuel is short', async () => {
@@ -107,5 +107,56 @@ describe('PlaceSheet', () => {
     await waitFor(() =>
       expect(document.querySelectorAll('[data-testid="trip-preview"]')).toHaveLength(1),
     );
+  });
+
+  it('is a dialog that takes focus, and closes with Escape on the sheet or the chart', async () => {
+    const sheet = await openSheet();
+    expect(sheet).toHaveAttribute('role', 'dialog');
+    await waitFor(() => expect(sheet).toHaveFocus());
+    fireEvent.keyDown(sheet, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByTestId('place-sheet')).toBeNull());
+  });
+
+  it('closes with Escape pressed on the chart', async () => {
+    await openSheet();
+    const chart = document.querySelector('.map-chart') as HTMLElement;
+    fireEvent.keyDown(chart, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByTestId('place-sheet')).toBeNull());
+  });
+
+  it('gives focus back to the place that opened it', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/map'] });
+    const place = await screen.findByLabelText(/Estaleiro Tycho/);
+    place.focus();
+    expect(place).toHaveFocus();
+    fireEvent.keyDown(place, { key: 'Enter' });
+    const sheet = await screen.findByTestId('place-sheet');
+    await waitFor(() => expect(sheet).toHaveFocus());
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByTestId('place-sheet')).toBeNull());
+    expect(screen.getByLabelText(/Estaleiro Tycho/)).toHaveFocus();
+  });
+
+  it('starts closed for each place and says when the quote failed', async () => {
+    server.use(http.get('/v1/travel/quote', () => HttpResponse.json({}, { status: 500 })));
+    const sheet = await openSheet();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Details' }));
+    expect(within(sheet).getByRole('button', { name: 'Hide details' })).toBeInTheDocument();
+    expect(await within(sheet).findByTestId('sheet-reason')).toHaveTextContent(
+      /could not be priced/,
+    );
+    // another place: the sheet is a fresh one, Details closed
+    const other = document.querySelector('svg g.node-hit[aria-label*="Ceres"]') as Element;
+    fireEvent.keyDown(other, { key: 'Enter' });
+    const next = await screen.findByRole('dialog', { name: /Ceres/ });
+    expect(within(next).getByRole('button', { name: 'Details' })).toBeInTheDocument();
+  });
+
+  it('has a single Fly button: the one in the sheet', async () => {
+    const sheet = await openSheet();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Details' }));
+    await within(sheet).findByTestId('travel');
+    expect(within(sheet).queryByRole('button', { name: /Fly to/ })).toBeNull();
   });
 });
