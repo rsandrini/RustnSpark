@@ -19,20 +19,27 @@
 
 ## Design
 
-1. **Profile = a score 0..1 per axis, computed on the server from the sheet** (single source for the type AND the chart, so they cannot disagree). Axes (7): Cargo (`crg`), Passengers (new, see open question 1), Firepower (`pot`), Defense (`esc` + `bli` x armor pool factor), Mobility (`mob`), Range (`autonomy`), Mining (`min`). Sensors (`sen`) is an 8th axis candidate; keep 7 or 8 after the owner sees it.
+1. **Profile = a score 0..1 per axis, computed on the server from the sheet** (single source for the type AND the chart, so they cannot disagree). Axes (7): Cargo (`crg`), Passengers (new, see open question 1), Firepower (`pot`), Defense (`esc` + `bli` x armor pool factor), Mobility (`mob`), Range (`autonomy`), Mining (`min`). Sensors is not an axis (decided).
    Each axis score = `min(1, value / reference)`, where the reference is a **config knob per axis** (`ship_profile.ref_*`: "the value that counts as a full axis"), starting from the strongest value seen in the sim/prod fleets so a good mid-game ship fills about 60 to 70% of its main axis. Admin owns every number.
 2. **Type = the main point.** The top-scoring axis names the type (Hauler, Transport, Warship, Miner, plus new Racer (mobility) and Scout (sensors/range) if the owner wants them; defaults: keep the 5 existing names + Racer). It is "Balanced" (rename of Multirole) ONLY when the top axis is below `ship_profile.min_main` (a weak ship) or its lead over the second axis is below `ship_profile.lead_margin`. A strong second axis adds a modifier shown as a second line ("Hauler, armed"). Config: `ship_profile.min_main`, `ship_profile.lead_margin`, `ship_profile.second_min`.
    The old `ship_class.*_share` knobs are removed (migration of the config registry; DB wins, so a migration deletes the stored keys).
 3. **Spider chart** (web): a small SVG radar, `ShipRadar` in `apps/web/src/ui/kit/`, props `{ axes: {key, value0to1}[], ghost?: same, label }`. Axis icons + short names around the rim (icons are the kit's), the filled polygon uses the type's colour, the optional ghost polygon (dashed) shows "if I fit this part" (the preview response already returns a sheet/profile for a candidate layout). Accessible: a visually hidden table with the same numbers. 390px: 160 to 200px square; the ship sheet shows it beside the headline tiles on desktop, above them on phone. The pilot card shows a small one.
 4. **Where it shows:** ship sheet panel (always), pilot card (small), hover/ghost while placing a part and in the store's compare popup (before/after) as a follow-up.
 
-## Open questions (owner, before building)
+## Decisions (owner, 2026-11-24) and what is still open
+
+DECIDED: add Racer (mobility); rename Multirole to Balanced; 7 axes (cargo, passengers, firepower, defense, mobility, range, mining; sensors is NOT an axis); add the `pax` passenger-capacity stat to the part catalog and the sheet (migration + seed + admin editor + sheet field + en/pt-BR labels). Types: Hauler, Transport, Warship, Miner, Racer, Balanced. Still open: the reference values per axis (from the real fleet, in Task A) and the exact `pax` numbers per cabin part.
+
+Original questions, for the record:
 
 1. **Passengers axis:** there is no passenger-capacity stat. Either add `pax` to the part catalog/sheet (cabins already exist as pressurized parts; a migration + sheet field) or drop Passengers from the chart and keep Transport as "has a cabin". Recommendation: add `pax` (a missing stat blocks Transport from ever being "the main point").
 2. **Which types:** keep Hauler, Transport, Warship, Miner; add Racer and Scout? Rename Multirole to "Balanced"?
 3. **How many axes:** 7 (above) or 8 with Sensors.
 
 ## Tasks (outline; each its own subagent task with TDD once the questions are answered)
+
+### Task A0: the `pax` stat (first)
+- Add a passenger-capacity stat to the part catalog (cabin / pressurized parts), the sheet (`ShipSheetSchema.pax`, sum over installed connected parts), the admin part editor, the seed (family tables, per the parts-catalog rules) and a MIGRATION for prod (the seed only fills empty tables); en + pt-BR labels; the part detail and compare card show it. Tests first: a cabin part adds its `pax` to the sheet, a ship without a cabin has 0, the migration sets values for existing cabin parts. Numbers per cabin tier: owner/sim.
 
 ### Task A: the profile on the server
 - Files: create `apps/api/src/ships/ship-profile.ts` (+ spec), modify `ship-class.ts` (derive from the profile), `config/game-config.defaults.ts`, `game-rules.schema.ts`, `config-registry.ts` (new knobs with en + pt-BR labels), a migration that drops the old `ship_class.*` rows, `ships.service.ts` (return `profile` next to `shipClass` in the three places that return the sheet), `packages/contract/src/index.ts` (`profile` optional on the ship/preview responses).

@@ -64,7 +64,8 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
   one mining part makes a Miner). Make it name what the ship is mainly good at, and call it balanced only when it really is.
 - [ ] A spider (radar) chart on the ship sheet (and a small one on the pilot card): cargo, passengers, firepower, defense, mobility,
   range, mining (sensors maybe), with a before/after ghost when a part is considered.
-- Plan and open questions (a passenger-capacity stat, which types, how many axes): `docs/superpowers/plans/2026-11-24-ship-identity-and-spider-chart.md`.
+- Decided 2026-11-24: add the Racer type, rename Multirole to Balanced, 7 axes (cargo, passengers, firepower, defense, mobility, range, mining), add a passenger-capacity stat (`pax`) to the cabin parts and the sheet.
+- Plan (tasks and what is still open: axis reference values, `pax` numbers): `docs/superpowers/plans/2026-11-24-ship-identity-and-spider-chart.md`.
   Best built with UI slice 1.5 (type subtitle and Needs chips).
 
 ## 7. The map badge shows the pilots anchored at a place, not the missions (owner, 2026-11-24)
