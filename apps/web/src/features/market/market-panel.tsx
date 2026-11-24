@@ -326,7 +326,7 @@ export function MarketPanel({
             {extraFilters > 0 && <span className="count">{extraFilters}</span>}
           </button>
         </div>
-        {freePorts !== undefined && !opening && <PortsLegend />}
+        {!opening && <PortsLegend />}
         <div className="market-types" role="group" aria-label={t('market.filterByType')}>
           <IconTabs
             tabs={[

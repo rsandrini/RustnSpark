@@ -10,7 +10,7 @@ export interface PortLookupItem {
 }
 
 /** The two lookups `computePortMarks` takes, keyed by part instance id. */
-export function portLookups(items: readonly PortLookupItem[]): {
+function portLookups(items: readonly PortLookupItem[]): {
   catalogById: Map<string, PartCatalogStats>;
   connectorsById: Map<string, readonly ConnectorCell[]>;
 } {
@@ -23,11 +23,11 @@ export function portLookups(items: readonly PortLookupItem[]): {
   return { catalogById, connectorsById };
 }
 
-/** The kind of every free port of a ship: its layout plus the installed parts it places. */
+/** The kind of every free port of a ship (undefined when it cannot be judged, see `freeShipPorts`). */
 export function freePortsOfShip(
   layout: readonly Placement[],
   installed: readonly PortLookupItem[],
-): Kind[] {
+): Kind[] | undefined {
   const { catalogById, connectorsById } = portLookups(installed);
   return freeShipPorts(layout, catalogById, connectorsById);
 }

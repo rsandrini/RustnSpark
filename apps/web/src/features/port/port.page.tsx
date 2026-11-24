@@ -598,6 +598,18 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     },
   });
 
+  // The Port deliberately uses the SAVED ship layout, while the Hangar uses the live one.
+  const marketFreePorts = useMemo(
+    () =>
+      ship === undefined || inventoryQuery.data === undefined
+        ? undefined
+        : freePortsOfShip(
+            ship.layout,
+            inventoryQuery.data.filter((entry) => entry.location === 'INSTALLED'),
+          ),
+    [ship, inventoryQuery.data],
+  );
+
   if (
     marketQuery.isLoading ||
     inventoryQuery.isLoading ||
@@ -795,7 +807,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             shipId={ship.id}
             installedParts={installed}
             currentSheet={ship.sheet}
-            freePorts={freePortsOfShip(ship.layout, installed)}
+            freePorts={marketFreePorts}
           />
         </section>
       )}
@@ -937,10 +949,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             {repairing && (
               <p className="repair-busy" role="status" data-testid="repair-busy">
                 <b>{t('port.repairBusy')}</b>
-                <Countdown
-                  until={repairUntil}
-                  onElapsed={() => invalidateShip(queryClient)}
-                />
+                <Countdown until={repairUntil} onElapsed={() => invalidateShip(queryClient)} />
               </p>
             )}
             <div

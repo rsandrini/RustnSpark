@@ -12,6 +12,7 @@ import {
   type PartInfoData,
 } from './part-detail';
 import { ConnectorGrid, KindIcon } from './connector-grid';
+import { fitView } from './fit-view';
 import type { PortFit } from './port-fit';
 import type { Kind, Side } from '../hangar/connectors';
 import { PartInfoButton } from './part-info-button';
@@ -63,13 +64,6 @@ function portGroups(
   return groups;
 }
 
-const FIT_VIEW = {
-  full: { tone: 'ok', icon: '✓', key: 'full' },
-  partial: { tone: 'ok', icon: '✓', key: 'partial' },
-  none: { tone: 'bad', icon: '✕', key: 'none' },
-  'none-free': { tone: 'bad', icon: '✕', key: 'noneFree' },
-} as const;
-
 // One part, one card, stacked top to bottom: name and price, what it is, how worn it is, what it
 // does, then the buttons. The rarity is the accent colour of the card.
 export function PartCard({
@@ -98,10 +92,7 @@ export function PartCard({
   ].join(' · ');
 
   const groups = portGroups(part.connectors ?? []);
-  const verdict =
-    fit === undefined || fit.level === 'unknown' || fit.level === 'no-ports'
-      ? undefined
-      : FIT_VIEW[fit.level];
+  const verdict = fitView(fit);
 
   // Owner request: Market/Store gets the same hover-only compare card the Hangar tray already
   // has, not just the (i) button's full popup — cursor-anchored, viewport-clamped the same way.
@@ -159,10 +150,7 @@ export function PartCard({
           {verdict !== undefined && (
             <p className={`pcard-fit ${verdict.tone}`} data-testid="part-fit">
               <span aria-hidden="true">{verdict.icon}</span>{' '}
-              {t(`connectors.fit.${verdict.key}`, {
-                matching: fit !== undefined && 'matching' in fit ? fit.matching : 0,
-                total: fit !== undefined && 'total' in fit ? fit.total : 0,
-              })}
+              {t(`connectors.fit.${verdict.key}`, verdict.counts)}
             </p>
           )}
         </div>

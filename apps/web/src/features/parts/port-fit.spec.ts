@@ -99,6 +99,39 @@ describe('freeShipPorts', () => {
       ['b', [cell('central', 'W'), cell('universal', 'S')]],
     ]);
     const free = freeShipPorts(layout, catalogById, connectorsById);
-    expect([...free].sort()).toEqual(['split', 'universal']);
+    expect([...(free ?? [])].sort()).toEqual(['split', 'universal']);
+  });
+
+  const one: Placement[] = [{ partInstanceId: 'a', gx: 0, gy: 0, rot: 0 }];
+  const cat = new Map([['a', catalog(1, 1)]]);
+
+  it('is undefined for an empty layout', () => {
+    expect(freeShipPorts([], new Map(), new Map())).toBeUndefined();
+  });
+
+  it('is undefined when a placement has no catalog entry', () => {
+    expect(freeShipPorts(one, new Map(), new Map([['a', [cell('central', 'E')]]]))).toBeUndefined();
+  });
+
+  it('is undefined for a legacy part with no stored connectors', () => {
+    expect(freeShipPorts(one, cat, new Map([['a', []]]))).toBeUndefined();
+    expect(freeShipPorts(one, cat, new Map())).toBeUndefined();
+  });
+
+  it('is [] for a known ship whose every port is connected (none-free stays true)', () => {
+    const layout: Placement[] = [...one, { partInstanceId: 'b', gx: 1, gy: 0, rot: 0 }];
+    const free = freeShipPorts(
+      layout,
+      new Map([
+        ['a', catalog(1, 1)],
+        ['b', catalog(1, 1)],
+      ]),
+      new Map<string, readonly ConnectorCell[]>([
+        ['a', [cell('central', 'E')]],
+        ['b', [cell('central', 'W')]],
+      ]),
+    );
+    expect(free).toEqual([]);
+    expect(portFit([cell('central')], free)).toEqual({ level: 'none-free' });
   });
 });

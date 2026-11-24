@@ -9,6 +9,7 @@ const KINDS: readonly { kind: PortKind; dots: number }[] = [
   { kind: 'split', dots: 2 },
   { kind: 'universal', dots: 3 },
 ];
+const COLON = ': ';
 const PLUS = '+';
 const STATES: readonly PortState[] = ['connected', 'available', 'incorrect'];
 
@@ -52,8 +53,11 @@ export function PortsLegend() {
                 key={`${a}-${b}`}
                 data-testid={`legend-join-${a}-${b}`}
                 data-joins={String(joins)}
-                aria-label={`${t(`portsLegend.kinds.${a}`)} + ${t(`portsLegend.kinds.${b}`)}: ${t(joins ? 'portsLegend.joins' : 'portsLegend.doesNotJoin')}`}
               >
+                <span className="sr-only">
+                  {[t(`portsLegend.kinds.${a}`), PLUS, t(`portsLegend.kinds.${b}`)].join(' ')}
+                  {COLON}
+                </span>
                 <KindIcon kind={a} />
                 <span aria-hidden="true">{PLUS}</span>
                 <KindIcon kind={b} />

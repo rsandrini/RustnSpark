@@ -7,7 +7,7 @@ import { MarketPanel } from './market-panel';
 import { server } from '../../test/msw/server';
 import { economyState, resetEconomyState, setWallet } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
-import type { ShipSheet } from '../../api/generated';
+import type { InventoryItem, ShipResponse, ShipSheet } from '../../api/generated';
 
 // Mirrors the default fixture's own ship sheet (handlers.ts's private `sheet()`) exactly, same
 // convention hangar.spec.tsx already uses for its own compare tests — the "before" side of the
@@ -62,6 +62,41 @@ async function renderPortMarket(): Promise<void> {
   await screen.findByRole('tab', { name: 'Market' });
 }
 
+// A known ship whose installed parts carry connectors and are all joined: no free port left.
+async function fullyConnectedShip(): Promise<void> {
+  const inventory = (await (await fetch('/v1/inventory')).json()) as InventoryItem[];
+  const ship = (await (await fetch('/v1/ships/ship-1')).json()) as ShipResponse;
+  const [a, b] = inventory.filter((item) => item.location === 'INSTALLED');
+  const part = (item: InventoryItem, side: 'E' | 'W'): InventoryItem => ({
+    ...item,
+    catalog: { ...item.catalog, w: 1, h: 1 },
+    connectors: [{ dx: 0, dy: 0, side, kind: 'central' }],
+  });
+  server.use(
+    http.get('/v1/inventory', () => HttpResponse.json([part(a!, 'E'), part(b!, 'W')])),
+    http.get('/v1/ships/:id', () =>
+      HttpResponse.json({
+        ...ship,
+        layout: [
+          { partInstanceId: a!.id, gx: 0, gy: 0, rot: 0 },
+          { partInstanceId: b!.id, gx: 1, gy: 0, rot: 0 },
+        ],
+      }),
+    ),
+    http.get('/v1/ships', () =>
+      HttpResponse.json([
+        {
+          ...ship,
+          layout: [
+            { partInstanceId: a!.id, gx: 0, gy: 0, rot: 0 },
+            { partInstanceId: b!.id, gx: 1, gy: 0, rot: 0 },
+          ],
+        },
+      ]),
+    ),
+  );
+}
+
 describe('market panel: port verdict', () => {
   beforeEach(() => {
     resetEconomyState();
@@ -69,12 +104,28 @@ describe('market panel: port verdict', () => {
   });
 
   it('puts a join verdict on listings that have ports, computed from the ship free ports', async () => {
+    await fullyConnectedShip();
     await renderPortMarket();
     await screen.findByText('Plated Hull');
-    // the fixture ship has no free port (its parts carry no connectors): the verdict says so
+    // every port of this known ship is connected: the verdict says so
     const verdicts = await within(panel()).findAllByTestId('part-fit');
     expect(verdicts.length).toBeGreaterThan(0);
     expect(verdicts[0]).toHaveTextContent('Your ship has no free port');
+  });
+});
+
+describe('market panel: a ship that cannot be judged', () => {
+  beforeEach(() => {
+    resetEconomyState();
+    server.use(onboarded());
+  });
+
+  it('is neutral (no verdict, no toggle) for legacy parts without connectors, and the legend stays', async () => {
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    expect(screen.queryByTestId('part-fit')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Fits my free ports' })).toBeNull();
+    expect(within(panel()).getByTestId('legend-join-central-split')).toBeInTheDocument();
   });
 });
 
@@ -121,11 +172,12 @@ describe('market panel: type tabs and the free-ports filter', () => {
         }),
       ),
     );
+    await fullyConnectedShip();
     await renderPortMarket();
     await screen.findByText('Plain Plate');
     const list = () => document.querySelectorAll('.market-panel .pcard-grid .pcard');
     const total = list().length;
-    // the fixture ship has no free port: every part with ports reads "none-free"
+    // the ship's ports are all connected: every part with ports reads "none-free"
     const toggle = screen.getByRole('button', { name: 'Fits my free ports' });
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(toggle);

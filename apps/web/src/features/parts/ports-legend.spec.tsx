@@ -42,5 +42,10 @@ describe('PortsLegend', () => {
     expect(joins('central', 'universal')).toBe('true');
     expect(joins('split', 'universal')).toBe('true');
     expect(joins('central', 'split')).toBe('false');
+    // the row reads as text, not through an aria-label
+    const row = screen.getByTestId('legend-join-central-split');
+    expect(row).not.toHaveAttribute('aria-label');
+    expect(row).toHaveTextContent('Central + Split:');
+    expect(row).toHaveTextContent('does not join');
   });
 });

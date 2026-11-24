@@ -11,6 +11,7 @@ import {
   useNumberFormat,
   type PartCompareContext,
 } from '../parts/part-detail';
+import { fitView } from '../parts/fit-view';
 import type { PortFit } from '../parts/port-fit';
 import { ConnectorGrid } from '../parts/connector-grid';
 import { PartInfoButton } from '../parts/part-info-button';
@@ -53,20 +54,18 @@ export function TrayPartRow({
   const [anchor, setAnchor] = useState<HoverAnchor | null>(null);
   const { ref: cardRef, style: cardStyle } = useClampedPosition(anchor);
 
-  let chip: { tone: 'ok' | 'bad'; text: string; sentence: string } | undefined;
-  if (fit?.level === 'full' || fit?.level === 'partial') {
-    chip = {
-      tone: 'ok',
-      text: t('connectors.fit.chipJoins', { count: fit.matching }),
-      sentence: t(`connectors.fit.${fit.level}`, { matching: fit.matching, total: fit.total }),
-    };
-  } else if (fit?.level === 'none' || fit?.level === 'none-free') {
-    chip = {
-      tone: 'bad',
-      text: t('connectors.fit.chipNone'),
-      sentence: t(`connectors.fit.${fit.level === 'none' ? 'none' : 'noneFree'}`),
-    };
-  }
+  const view = fitView(fit);
+  const chip =
+    view === undefined
+      ? undefined
+      : {
+          tone: view.tone,
+          text:
+            view.tone === 'ok'
+              ? t('connectors.fit.chipJoins', { count: view.counts.matching })
+              : t('connectors.fit.chipNone'),
+          sentence: t(`connectors.fit.${view.key}`, view.counts),
+        };
 
   return (
     <div
