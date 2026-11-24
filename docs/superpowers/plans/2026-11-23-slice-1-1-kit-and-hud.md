@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** the first UI slice: a small set of custom components (the kit) and a HUD in the top bar that shows the ship's state (fuel, hull, cargo) and the wallet on every screen, replacing the ship-state warning banners.
+**Goal:** the first UI slice: a small set of custom components (the kit) and a HUD in the top bar that shows the ship's state (fuel, hull, cargo) on every screen, next to the wallet that already lives in the account menu, replacing the ship-state warning banners.
 
 **Architecture:** presentational kit components in `apps/web/src/ui/kit/` (one file each, props in, no data fetching), styled by one new `styles/kit.css` on the existing tokens (`styles/tokens.css`). The HUD (`ui/hud/Hud.tsx`) is the only data-aware piece: it reads the ship and the accepted mission from the queries the app already runs. Later UI slices (contracts, map, ship, pilot card) consume the kit; this slice changes no gameplay and no server code.
 
@@ -36,11 +36,12 @@
 - Colour is never the only signal (a bad gauge also has a label/icon, contrast in light and dark per tokens); `prefers-reduced-motion` turns off the count-up and the flash.
 - The prologue (opening) runs the same shell over a sandbox ship: the HUD must work there (ship from the sandbox API) and respect the opening's locks.
 
-## Decisions needed from the owner before Task 3 and Task 5
+## Decisions (owner, 2026-11-23: "can we continue" = go with the proposals; provisional, easy to rework)
 
-1. **Phone HUD:** proposal: on a phone the HUD is one compact row under the top bar: three icon + number mini gauges (fuel, hull, cargo) and the wallet chip; tap a gauge for its tooltip card. Alternative: only fuel and wallet on the bar, the rest in the account menu.
-2. **Which banners the HUD replaces:** proposal: only ship-state ones that repeat HUD data (fuel low/empty, hull low). Contextual notices (a deadline passed, scavenge handicap, rescue) stay as they are until their screen's own slice (contracts 1.3, port 1.8). The board's `ship-faults` paragraph becomes blocker chips (Task 5).
-3. **Fuel gauge "reserve" tick** (mockup shows an amber tick): proposal: the tick marks the fuel the accepted mission needs (`info.estimate.fuelNeeded`), shown only while a mission is accepted; reuse `Gauge.remainingAfter`.
+1. **Phone HUD:** one compact row under the top bar: three icon + number mini gauges (fuel, hull, cargo); tap a gauge for its tooltip card (`Tooltip` with `align="end"` where needed). The wallet stays where it is (the account menu's `wallet-chip`, `data-testid="topbar-wallet"`), unchanged.
+2. **Banners:** the HUD replaces only ship-state banners that repeat HUD data (fuel low/empty, hull low). The board's `ship-faults` paragraph becomes blocker chips (Task 5). Contextual notices (a deadline passed, scavenge handicap, rescue) stay until their own screen's slice.
+3. **Reserve tick:** marks the fuel the accepted mission needs (`info.estimate.fuelNeeded`), shown only while a mission is accepted and only when it is above 0; reuses `Gauge.reserve`.
+4. **Wallet feedback (found in the kit review):** ONE system. The existing wallet chip with its pulse (`use-wallet-answer.ts`) stays; the HUD does NOT render a second wallet and does NOT use `ResourceChip` for money. `ResourceChip` is kept in the kit for later slices (resource counts such as scrap).
 
 ---
 
@@ -75,7 +76,7 @@
 - [ ] **Step 4: Run** that spec plus the specs of the callers (`part-card`, `tray-part-row`, `map`, `port` specs that render a gauge), tsc, eslint: PASS.
 - [ ] **Step 5: Commit** `feat(ui): the gauge takes an icon and a reserve tick`.
 
-### Task 3: The HUD in the top bar (after decisions 1 and 3)
+### Task 3: The HUD in the top bar
 
 **Files:**
 - Create: `apps/web/src/ui/hud/Hud.tsx`, `apps/web/src/ui/hud/hud-model.ts`
@@ -83,12 +84,12 @@
 - Test: `apps/web/src/ui/hud/hud-model.spec.ts`, `apps/web/src/ui/hud/Hud.spec.tsx`, update `apps/web/src/ui/TopBar.spec.tsx`
 
 **Interfaces:**
-- Consumes: `Gauge` (Task 2), `ResourceChip` and `Tooltip` (Task 1); queries `['ships']` (`GET /v1/ships`) and `['active']` (`GET /v1/missions/active`, for the accepted mission's `info.estimate.fuelNeeded`).
-- Produces: `hudModel(ship: ShipResponse | undefined, accepted: ActiveMission | undefined): { fuel: { value; max; reserve?: number; tone } | null; hull: { value; max; tone } | null; cargo: { used; max } | null }` (pure: `fuel` is null when the ship burns no fuel or there is no ship; tones: `bad` at or below the reserve or empty, `warn` under a quarter, else `ok`); `Hud(): JSX.Element | null` (null while the pilot has no faction or no ship).
+- Consumes: `Gauge` (Task 2) and `Tooltip` (Task 1; `align`, `describe`, tap-toggle); queries `['ships']` (`GET /v1/ships`) and `['active']` (`GET /v1/missions/active`, for the accepted mission's `info.estimate.fuelNeeded`).
+- Produces: `hudModel(ship: ShipResponse | undefined, accepted: ActiveMission | undefined): { fuel: { value; max; reserve?: number; tone } | null; hull: { value; max; tone } | null; cargo: { used; max } | null }` (pure: `fuel` is null when the ship burns no fuel or there is no ship; tones: `bad` at or below the reserve or empty, `warn` under a quarter, else `ok`); `Hud(): JSX.Element | null` (null while the pilot has no faction or no ship). It renders NO wallet.
 
-- [ ] **Step 1: Failing tests:** `hudModel`: `fuel is null for a ship whose engines burn no fuel`; `reserve equals the accepted mission's fuelNeeded and is absent without one`; `tone bad when empty or at the reserve`; `no NaN or division by zero when max is 0`; `cargo and hull null without a ship`. `Hud`: `renders three gauges and the wallet chip for a normal ship`, `renders nothing while there is no ship`, `the fuel gauge is missing for an ion-only ship`, `each gauge has an accessible name and its tooltip text`, `phone layout renders the compact row` (mock `useIsPhone`).
+- [ ] **Step 1: Failing tests:** `hudModel`: `fuel is null for a ship whose engines burn no fuel`; `reserve equals the accepted mission's fuelNeeded and is absent without one`; `tone bad when empty or at the reserve`; `no NaN or division by zero when max is 0`; `cargo and hull null without a ship`. `Hud`: `renders three gauges for a normal ship and no wallet`, `renders nothing while there is no ship`, `the fuel gauge is missing for an ion-only ship`, `each gauge has an accessible name and its tooltip text`, `phone layout renders the compact row` (mock `useIsPhone`).
 - [ ] **Step 2: Run** (`npx vitest run src/ui/hud`): FAIL.
-- [ ] **Step 3: Implement** `hudModel` (pure) and `Hud`; mount in `TopBar`; the wallet chip in the HUD is the same `topbar-wallet` element the e2e specs read (keep its `data-testid`; do not render two).
+- [ ] **Step 3: Implement** `hudModel` (pure) and `Hud`; mount in `TopBar`; leave the wallet chip in `AccountMenu` untouched (its `data-testid="topbar-wallet"` is read by e2e).
 - [ ] **Step 4: Run** the HUD specs, `TopBar.spec.tsx`, `AccountMenu` specs, i18n `keys.spec.ts`, tsc, eslint: PASS.
 - [ ] **Step 5: Commit** `feat(ui): a HUD in the top bar with fuel, hull, cargo and the wallet`.
 
@@ -111,7 +112,7 @@
 - [ ] **Step 4: Run** the kit specs, tsc, eslint, prettier: PASS.
 - [ ] **Step 5: Commit** `feat(ui): kit pieces (risk pips, stat pip, slot frame, blocker chip, icon tabs)`.
 
-### Task 5: Replace the ship-state banners (after decision 2)
+### Task 5: Replace the ship-state banners
 
 **Files:**
 - Modify: `apps/web/src/features/board/board.page.tsx` (~214: the `ship-faults` paragraph becomes `BlockerChip`s that jump to the fix: the hangar tab for a part problem), any banner whose text only repeats HUD data (fuel low), their css and i18n keys in both locales (remove the dead keys from both)
@@ -147,4 +148,4 @@
 
 - Spec coverage: gauge (T2), HUD with fuel/hull/cargo/wallet (T3), resource chip (T1), tooltip (T1), risk pips, stat pip, slot frame, blocker chips, icon tabs (T4), reward toast (T6), banners replaced (T5), phone (T3 + T7), art for parts excluded by decision (last task of the version), no sound.
 - Names used across tasks: `Gauge.icon`/`reserve`, `hudModel`, `Hud`, `ResourceChip`, `Tooltip`, `BlockerChip`: each defined where first produced.
-- Open points that block execution are the three owner decisions above (Task 3 needs 1 and 3, Task 5 needs 2).
+- Decisions 1-4 above are provisional rulings; nothing blocks execution.
