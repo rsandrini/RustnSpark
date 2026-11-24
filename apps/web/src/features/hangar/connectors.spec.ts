@@ -6,6 +6,7 @@ import {
   authoredToWorld,
   computePortMarks,
   kindCompatible,
+  previewPortMarks,
   rotateSide,
   type Kind,
   type Rot,
@@ -182,5 +183,57 @@ describe('computePortMarks', () => {
     expect(marks).toEqual([
       { partInstanceId: 'wide', x: 5, y: 6, side: 'S', kind: 'central', state: 'available' },
     ]);
+  });
+});
+
+describe('previewPortMarks', () => {
+  const one = catalog(1, 1);
+  const catalogs = new Map([
+    ['host', one],
+    ['split-host', one],
+    ['cand', one],
+  ]);
+  const connectors = new Map<string, ConnectorCell[]>([
+    ['host', [cell(0, 0, 'W', 'central')]],
+    ['split-host', [cell(0, 0, 'W', 'split')]],
+    ['cand', [cell(0, 0, 'E', 'central'), cell(0, 0, 'N', 'central')]],
+  ]);
+  const candidateAt = (gx: number, gy: number): Placement => ({
+    partInstanceId: 'cand',
+    gx,
+    gy,
+    rot: 0,
+  });
+
+  it('marks the candidate edge connected next to a matching port', () => {
+    const marks = previewPortMarks(
+      [{ partInstanceId: 'host', gx: 1, gy: 0, rot: 0 }],
+      candidateAt(0, 0),
+      catalogs,
+      connectors,
+    );
+    expect(marks.find((m) => m.side === 'E')?.state).toBe('connected');
+  });
+
+  it('marks it incorrect next to a split port and available with nothing adjacent', () => {
+    const next = previewPortMarks(
+      [{ partInstanceId: 'split-host', gx: 1, gy: 0, rot: 0 }],
+      candidateAt(0, 0),
+      catalogs,
+      connectors,
+    );
+    expect(next.find((m) => m.side === 'E')?.state).toBe('incorrect');
+    const alone = previewPortMarks([], candidateAt(5, 5), catalogs, connectors);
+    expect(alone.map((m) => m.state)).toEqual(['available', 'available']);
+  });
+
+  it('returns only the candidate marks', () => {
+    const marks = previewPortMarks(
+      [{ partInstanceId: 'host', gx: 1, gy: 0, rot: 0 }],
+      candidateAt(0, 0),
+      catalogs,
+      connectors,
+    );
+    expect(marks.every((m) => m.partInstanceId === 'cand')).toBe(true);
   });
 });

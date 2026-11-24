@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { ConnectorCell, PartCatalogStats, Placement } from '../../api/generated';
 import { PortGlyph } from '../parts/connector-grid';
-import { computePortMarks } from './connectors';
+import { computePortMarks, previewPortMarks } from './connectors';
 import { PartBlockArt } from './part-block-art';
 import {
   directionViolations,
@@ -131,6 +131,8 @@ export interface DropPreview {
   width: number;
   height: number;
   valid: boolean;
+  /** The quarter turn the part carries (0 when absent); the edge marks follow it. */
+  rot?: Rot;
 }
 
 /** What the page can ask of the yard while it runs a drag of its own (a part pulled from the parts list). */
@@ -667,6 +669,7 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
           width,
           height,
           valid: placementIssue(layout, catalogById, partInstanceId, gx, gy, rot, cellSet) === null,
+          rot,
         };
       },
       labelFor: (name, width, height) => ({
@@ -984,6 +987,27 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
                   height={dropPreview.height - 0.08}
                   rx={0.06}
                 />
+                {connectorsById !== undefined &&
+                  previewPortMarks(
+                    layout,
+                    {
+                      partInstanceId: dropPreview.partInstanceId,
+                      gx: dropPreview.gx,
+                      gy: dropPreview.gy,
+                      rot: dropPreview.rot ?? 0,
+                    },
+                    catalogById,
+                    connectorsById,
+                  ).map((mark) => (
+                    <PortGlyph
+                      key={`p-${mark.x},${mark.y},${mark.side}`}
+                      x={mark.x}
+                      y={mark.y}
+                      side={mark.side}
+                      kind={mark.kind}
+                      state={mark.state}
+                    />
+                  ))}
                 <text
                   className="block-label ghost-label"
                   x={middleX}

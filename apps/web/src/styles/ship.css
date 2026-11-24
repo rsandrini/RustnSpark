@@ -1463,3 +1463,13 @@ body.dragging-part .part-hover-card {
   overflow-y: auto;
   text-align: left;
 }
+
+/* The edges of a part about to be dropped: bigger and outlined so green/red reads over the dashed cell. */
+svg .yard-ghost .conn-mark {
+  stroke: var(--paper-3);
+  stroke-width: 0.04;
+  paint-order: stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1.35);
+}

@@ -135,3 +135,18 @@ export function computePortMarks(
   }
   return marks;
 }
+
+/**
+ * The port marks of `candidate` as they would read once placed on top of `layout`; the marks of
+ * every other part are left out (the candidate is only added to a copy of the layout).
+ */
+export function previewPortMarks(
+  layout: readonly Placement[],
+  candidate: Placement,
+  catalogById: ReadonlyMap<string, PartCatalogStats>,
+  connectorsById: ReadonlyMap<string, readonly ConnectorCell[]>,
+): PortMark[] {
+  return computePortMarks([...layout, candidate], catalogById, connectorsById).filter(
+    (mark) => mark.partInstanceId === candidate.partInstanceId,
+  );
+}

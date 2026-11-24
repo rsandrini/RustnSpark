@@ -131,6 +131,44 @@ describe('ShipYard port marks', () => {
     expect(container.querySelectorAll('.conn-connected')).toHaveLength(0);
   });
 
+  it('draws the drop preview edges connected or incorrect against the neighbours', () => {
+    const { container } = renderWithProviders(
+      <ShipYard
+        {...baseProps}
+        catalogById={
+          new Map([
+            ['a', one],
+            ['b', one],
+            ['c', one],
+          ])
+        }
+        layout={[
+          { partInstanceId: 'a', gx: 0, gy: 0, rot: 0 },
+          { partInstanceId: 'b', gx: 2, gy: 0, rot: 0 },
+        ]}
+        connectorsById={
+          new Map<string, ConnectorCell[]>([
+            ['a', [{ dx: 0, dy: 0, side: 'E', kind: 'central' }]],
+            ['b', [{ dx: 0, dy: 0, side: 'W', kind: 'split' }]],
+            [
+              'c',
+              [
+                { dx: 0, dy: 0, side: 'W', kind: 'central' },
+                { dx: 0, dy: 0, side: 'E', kind: 'central' },
+                { dx: 0, dy: 0, side: 'N', kind: 'central' },
+              ],
+            ],
+          ])
+        }
+        dropPreview={{ partInstanceId: 'c', gx: 1, gy: 0, width: 1, height: 1, valid: true }}
+      />,
+    );
+    const ghost = container.querySelector('.yard-ghost') as HTMLElement;
+    expect(ghost.querySelectorAll('.conn-connected')).toHaveLength(1);
+    expect(ghost.querySelectorAll('.conn-incorrect')).toHaveLength(1);
+    expect(ghost.querySelectorAll('.conn-available')).toHaveLength(1);
+  });
+
   it('draws nothing for parts without stored connectors', () => {
     const { container } = renderWithProviders(
       <ShipYard
