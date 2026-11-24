@@ -36,3 +36,11 @@ export function factionBlurb(faction: PublicFaction | undefined, language: strin
   const blurb = pickLocalized(faction.description, language);
   return blurb === '' ? undefined : blurb;
 }
+
+/** Built-in fallback colour variables per faction; the admin-edited faction colour (database) wins when the server lists it. */
+export const factionColorVar: Record<string, string> = {
+  luna: '--luna',
+  sun: '--sun',
+  explorers: '--explorers',
+  pirates: '--pirata',
+};

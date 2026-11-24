@@ -29,8 +29,8 @@ describe('RangeLayer', () => {
     expect(mark('a')).toHaveAttribute('data-reach', 'yes');
     expect(mark('b')).toHaveAttribute('data-reach', 'yes');
     expect(mark('c')).toHaveAttribute('data-reach', 'no');
-    expect(mark('b')).toHaveAttribute('aria-label', 'Reachable with the fuel on board');
-    expect(mark('c')).toHaveAttribute('aria-label', 'Out of range with the fuel on board');
+    // the node's own label carries the reach word; the separate marks are decoration
+    expect(mark('b')).toHaveAttribute('aria-hidden', 'true');
     expect(container.querySelectorAll('circle.range-halo')).toHaveLength(2);
     expect(container.querySelectorAll('path.range-cross')).toHaveLength(1);
   });

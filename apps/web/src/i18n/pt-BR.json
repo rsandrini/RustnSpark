@@ -2498,6 +2498,7 @@
       "tankSmall": "A viagem precisa de mais combustível do que o tanque comporta: um tanque maior ou uma rota mais curta.",
       "noShip": "Você não tem nave.",
       "quoteFailed": "Não foi possível calcular a viagem. Tente de novo em instantes.",
+      "adrift": "A nave está à deriva: resgate-a primeiro.",
       "flying": "A nave está voando: espere ela pousar."
     },
     "layers": {

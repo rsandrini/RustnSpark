@@ -44,3 +44,45 @@ export function territoriesOf(
     };
   });
 }
+
+/** Territory labels never go below this many screen pixels. */
+export const MIN_LABEL_PX = 9;
+
+/** A label's y: near the top of its circle, but never above the visible window (so a zoomed-in label stays on screen). */
+export function territoryLabelY(
+  territory: Pick<Territory, 'cy' | 'radius'>,
+  box: { y: number } | null,
+  scale: number,
+): number {
+  const top = territory.cy - territory.radius + 14 * scale;
+  return box === null ? top : Math.max(top, box.y + 14 * scale);
+}
+
+/** The label font size in map units: the base size, but at least `minPx` on screen (unitsPerPx = map units per pixel). */
+export function labelFontSize(base: number, unitsPerPx: number, minPx = MIN_LABEL_PX): number {
+  return Number.isFinite(unitsPerPx) && unitsPerPx > 0 ? Math.max(base, minPx * unitsPerPx) : base;
+}
+
+/**
+ * Which territories get a label. Everywhere but a phone at fit zoom all of them; there they would collide,
+ * so only the territory holding the ship or the selected place is named until the map is zoomed to regional detail.
+ */
+export function labelledFactions(
+  territories: readonly Pick<Territory, 'factionId' | 'placeIds'>[],
+  opts: {
+    phone: boolean;
+    zoom: number;
+    regionalZoom: number;
+    placeIds: readonly (string | null | undefined)[];
+  },
+): Set<string> {
+  if (!opts.phone || opts.zoom >= opts.regionalZoom) {
+    return new Set(territories.map((territory) => territory.factionId));
+  }
+  const wanted = new Set(opts.placeIds.filter((id): id is string => typeof id === 'string'));
+  return new Set(
+    territories
+      .filter((territory) => territory.placeIds.some((id) => wanted.has(id)))
+      .map((territory) => territory.factionId),
+  );
+}

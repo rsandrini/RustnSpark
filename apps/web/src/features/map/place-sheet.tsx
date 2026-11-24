@@ -27,6 +27,8 @@ export interface PlaceSheetProps {
   quoteFailed?: boolean;
   hasShip: boolean;
   inFlight: boolean;
+  /** The ship is floating in space (out of fuel): no trip can be planned until it is rescued. */
+  adrift?: boolean;
   /** The ship is docked at this very place. */
   isHere: boolean;
   /** The ship's fuel burn rate (0 = pure ion: no fuel to show). */
@@ -44,6 +46,7 @@ export function PlaceSheet({
   quoteFailed = false,
   hasShip,
   inFlight,
+  adrift = false,
   isHere,
   fuelUse,
   details,
@@ -64,7 +67,13 @@ export function PlaceSheet({
     return () => {
       if ((from instanceof HTMLElement || from instanceof SVGElement) && from.isConnected) {
         from.focus();
+        return;
       }
+      // the opener is gone (a closed drawer's button): the selected node, else the Places button
+      const fallback = document.querySelector<SVGElement | HTMLElement>(
+        '.node-hit.sel, .map-places-btn, .map-phone-bar .btn',
+      );
+      fallback?.focus();
     };
   }, []);
   const onKeyDown = (event: KeyboardEvent) => {
@@ -95,15 +104,17 @@ export function PlaceSheet({
     ? t('map.sheet.noShip')
     : inFlight
       ? t('map.sheet.flying')
-      : quoteFailed
-        ? t('map.sheet.quoteFailed')
-        : fuelLow
-          ? t(fuel.state === 'tank' ? 'map.sheet.tankSmall' : 'map.sheet.fuelShort', {
-              missing: fuel.missing,
-            })
-          : quote !== undefined && quote.blockers.length > 0
-            ? t(`map.travel.blockers.${quote.blockers[0]}`)
-            : null;
+      : adrift
+        ? t('map.sheet.adrift')
+        : quoteFailed
+          ? t('map.sheet.quoteFailed')
+          : fuelLow
+            ? t(fuel.state === 'tank' ? 'map.sheet.tankSmall' : 'map.sheet.fuelShort', {
+                missing: fuel.missing,
+              })
+            : quote !== undefined && quote.blockers.length > 0
+              ? t(`map.travel.blockers.${quote.blockers[0]}`)
+              : null;
   const canGo = hasShip && !inFlight && quote !== undefined && quote.canDepart && !fuelLow;
 
   return (

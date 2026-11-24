@@ -2498,6 +2498,7 @@
       "tankSmall": "The trip needs more fuel than the tank holds: a bigger tank or a shorter route.",
       "noShip": "You have no ship.",
       "quoteFailed": "The trip could not be priced. Try again in a moment.",
+      "adrift": "The ship is floating in space: rescue it first.",
       "flying": "The ship is flying: wait for it to land."
     },
     "layers": {

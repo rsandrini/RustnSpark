@@ -23,7 +23,7 @@ const onboarded = () =>
   );
 
 function node(svg: SVGSVGElement, name: string): SVGGElement {
-  const match = svg.querySelector<SVGGElement>(`[aria-label="${name}"]`);
+  const match = svg.querySelector<SVGGElement>(`[aria-label^="${name}"]`);
   if (match === null) throw new Error(`node ${name} not found`);
   return match;
 }
@@ -125,7 +125,9 @@ describe('map (S10.5)', () => {
   it('shows main places zoomed out, regional ones zoomed in and local ones zoomed in close, plus the selected place', async () => {
     const { svg } = await renderWholeMap();
     const shown = () =>
-      Array.from(svg.querySelectorAll('g.node-hit')).map((node) => node.getAttribute('aria-label'));
+      Array.from(svg.querySelectorAll('g.node-hit')).map(
+        (node) => node.getAttribute('aria-label')?.split(' · ')[0],
+      );
     expect(shown()).toHaveLength(12);
     expect(shown()).not.toContain('Alcance Halcyon');
     expect(screen.getByText(/2 more when you zoom in/)).toBeInTheDocument();
@@ -148,7 +150,7 @@ describe('map (S10.5)', () => {
     const view = renderWithRouter(routes, { initialEntries: ['/map?place=ceres_dock'] });
     await screen.findByRole('dialog', { name: 'Doca Seca de Ceres' });
     const svg = view.container.querySelector('.map-stage svg') as SVGSVGElement;
-    expect(svg.querySelector('[aria-label="Doca Seca de Ceres"]')).not.toBeNull();
+    expect(svg.querySelector('[aria-label^="Doca Seca de Ceres"]')).not.toBeNull();
   });
 
   it('zooms with the buttons and Fit map returns to the whole map', async () => {
@@ -425,7 +427,7 @@ describe('map (S10.5)', () => {
   it('marks the ship location as you-are-here', async () => {
     const { svg } = await renderMap();
 
-    expect(svg.querySelector('[aria-label="Porto Ceres — You are here"]')).not.toBeNull();
+    expect(svg.querySelector('[aria-label^="Porto Ceres — You are here"]')).not.toBeNull();
 
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
     const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
@@ -723,6 +725,34 @@ describe('map layers (slice 1.4)', () => {
     unmount();
     await renderMap();
     expect(await screen.findByTestId('layer-range')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('an adrift ship gets no trip preview, says why in the sheet and is not "here" at its last port', async () => {
+    setShipStatus('ADRIFT');
+    const { svg } = await renderMap();
+    await waitFor(() => expect(svg.querySelector('.ship-marker.floating')).not.toBeNull());
+    fireEvent.click(node(svg, 'Estaleiro Tycho'));
+    const sheet = await screen.findByRole('dialog', { name: 'Estaleiro Tycho' });
+    expect(
+      within(sheet).getByText('The ship is floating in space: rescue it first.'),
+    ).toBeInTheDocument();
+    expect(svg.querySelector('[data-testid="trip-preview"]')).toBeNull();
+    fireEvent.click(node(svg, 'Porto Ceres'));
+    const here = await screen.findByRole('dialog', { name: 'Porto Ceres' });
+    expect(here.textContent).not.toContain('You are here');
+  });
+
+  it('Escape in the Places drawer closes the drawer and keeps the selected place', async () => {
+    const { svg } = await renderMap();
+    fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
+    await screen.findByRole('dialog', { name: 'Estaleiro Tycho' });
+    fireEvent.click(screen.getByRole('button', { name: 'Places' }));
+    const list = await screen.findByRole('region', { name: 'Places' });
+    fireEvent.keyDown(list.querySelectorAll('.map-place')[0] as Element, { key: 'Escape' });
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: 'Places' })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole('dialog', { name: 'Estaleiro Tycho' })).toBeInTheDocument();
   });
 
   it('shows no fuel range while the ship flies or is adrift', async () => {

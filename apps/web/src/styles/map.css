@@ -537,7 +537,9 @@
   stroke-width: 1.5;
   stroke-linecap: round;
 }
-.node-hit.out-of-range {
+/* only the ring and core are dimmed: the place name and type stay at full strength */
+.node-hit.out-of-range .ncore,
+.node-hit.out-of-range .nring {
   opacity: 0.5;
 }
 

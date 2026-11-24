@@ -1,5 +1,3 @@
-import { useTranslation } from 'react-i18next';
-
 export interface RangePlace {
   id: string;
   x: number;
@@ -21,7 +19,6 @@ const HALO_RADIUS = 17;
 
 /** A halo on each place the fuel on board reaches; a small cross on the ones beyond it. */
 export function RangeLayer({ places, reachable, unlimited, scale }: RangeLayerProps) {
-  const { t } = useTranslation();
   return (
     <g className="range-layer" data-testid="range-layer">
       {places.map((place) => {
@@ -33,8 +30,7 @@ export function RangeLayer({ places, reachable, unlimited, scale }: RangeLayerPr
             data-testid="range-mark"
             data-place={place.id}
             data-reach={yes ? 'yes' : 'no'}
-            role="img"
-            aria-label={t(yes ? 'map.range.reachable' : 'map.range.out')}
+            aria-hidden="true"
             transform={`translate(${place.x} ${place.y}) scale(${scale})`}
           >
             {yes ? (

@@ -25,12 +25,19 @@ import { errorText } from '../../api/errors';
 import { PlaceArt } from '../../ui/PlaceArt';
 import { pathOfLegs } from '../../ui/RouteMap';
 import { RiskBadge } from '../../ui/RiskBadge';
-import { useFactions } from '../../ui/factions';
+import { factionColorVar, useFactions } from '../../ui/factions';
 import { useNow } from '../../ui/useNow';
 import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
 import { transitPollInterval } from '../transit/poll';
 import { PageTitle } from '../../ui/PageTitle';
-import { DETAIL_MIN_SCALE, MAX_SCALE, MIN_SCALE, centreAbove, visibleHeight } from './map-view';
+import {
+  DETAIL_MIN_SCALE,
+  MAX_SCALE,
+  MIN_SCALE,
+  centreAbove,
+  unitsPerPixel,
+  visibleHeight,
+} from './map-view';
 
 /** The radius of the dot that marks a place hidden at this zoom. */
 const HINT_RADIUS = 3;
@@ -55,19 +62,11 @@ import { LayerChip, useStoredToggle } from './layers/layer-toggles';
 import { RangeLayer } from './layers/range-layer';
 import { TerritoryLayer } from './layers/territory-layer';
 import { reachableWithin, rangeBudget } from './reach';
-import { territoriesOf } from './territories';
+import { labelledFactions, territoriesOf } from './territories';
 
 const SEPARATOR = ' · ';
 const NODE_RADIUS = 9;
 const VIEW_PADDING = 70;
-
-// Built-in fallback colours; the admin-edited faction colour (database) wins when the server lists it.
-const FACTION_VAR: Record<string, string> = {
-  luna: '--luna',
-  sun: '--sun',
-  explorers: '--explorers',
-  pirates: '--pirata',
-};
 
 const DOT_SEPARATOR = ' · ';
 
@@ -286,6 +285,16 @@ export function MapPage({ guided = false }: MapPageProps) {
   const [showRange, toggleRange] = useStoredToggle('map.layer.range');
   const [showTrips, toggleTrips] = useStoredToggle('map.layer.trips');
   const territories = useMemo(() => territoriesOf(world?.locations ?? []), [world]);
+  // Territory names: at least 9px on screen; on a phone at fit zoom only the ship's and the selected place's territory.
+  const stageRect = camera.svgRef.current?.getBoundingClientRect();
+  const labelUnits =
+    camera.box === null || stageRect === undefined ? 0 : unitsPerPixel(camera.box, stageRect);
+  const labelled = labelledFactions(territories, {
+    phone,
+    zoom: camera.scale,
+    regionalZoom: DETAIL_MIN_SCALE.regional,
+    placeIds: [shipLocation, selectedId],
+  });
   // What the fuel on board reaches: only for a ship docked at a place (not flying, not adrift).
   const range = useMemo(() => {
     if (ship === undefined || world === undefined || shipLocation === null) return null;
@@ -308,8 +317,10 @@ export function MapPage({ guided = false }: MapPageProps) {
     ship?.status === 'ADRIFT' && ship.rescue != null ? byId.get(ship.rescue.baseId) : undefined;
 
   // The price of flying to the selected place: the sheet shows it and the chart draws its route.
-  const canPlan =
-    selected !== undefined && shipLocation !== null && selected.id !== shipLocation && !inFlight;
+  // Docked: at a place, not flying and not adrift (a floating ship has no trip to plan).
+  const adrift = ship?.status === 'ADRIFT';
+  const docked = shipLocation !== null && !inFlight && !adrift;
+  const canPlan = selected !== undefined && docked && selected.id !== shipLocation;
   const quoteQuery = useTravelQuote(selected?.id ?? null, canPlan);
   const quote = canPlan ? quoteQuery.data : undefined;
 
@@ -449,7 +460,8 @@ export function MapPage({ guided = false }: MapPageProps) {
             if (
               event.key === 'Escape' &&
               selected !== undefined &&
-              !(event.target instanceof HTMLInputElement)
+              !(event.target instanceof HTMLInputElement) &&
+              !(event.target instanceof Element && event.target.closest('.map-drawer') !== null)
             ) {
               setSelectedId(null);
             }
@@ -490,7 +502,14 @@ export function MapPage({ guided = false }: MapPageProps) {
               role="group"
               aria-label={t('map.title')}
             >
-              <TerritoryLayer territories={territories} factions={factions} scale={nodeScale} />
+              <TerritoryLayer
+                territories={territories}
+                factions={factions}
+                scale={nodeScale}
+                box={camera.box}
+                unitsPerPx={labelUnits}
+                labelled={labelled}
+              />
               {world.routes.map((route) => {
                 const from = byId.get(route.nodeAId);
                 const to = byId.get(route.nodeBId);
@@ -580,12 +599,17 @@ export function MapPage({ guided = false }: MapPageProps) {
               {world.locations.filter(shownAtZoom).map((location) => {
                 const outOfRange =
                   rangeShown && !range.unlimited && !range.reachable.has(location.id);
-                const isHere = location.id === shipLocation && !inFlight && floatPoint === null;
+                const isHere = location.id === shipLocation && docked && floatPoint === null;
                 const isDestination = inFlight && flight?.destinationId === location.id;
-                const label = isHere
-                  ? `${nameOf(location)} — ${t('map.youAreHere')}`
-                  : nameOf(location);
-                const factionVar = FACTION_VAR[location.factionId] ?? '--neutro';
+                const pilots = location.pilotCount ?? 0;
+                const label = [
+                  isHere ? `${nameOf(location)} — ${t('map.youAreHere')}` : nameOf(location),
+                  pilots > 0 ? t('map.pilotsHere', { count: pilots }) : null,
+                  rangeShown ? t(outOfRange ? 'map.range.out' : 'map.range.reachable') : null,
+                ]
+                  .filter((part) => part !== null)
+                  .join(SEPARATOR);
+                const factionVar = factionColorVar[location.factionId] ?? '--neutro';
                 const factionColor = factions[location.factionId]?.color;
                 return (
                   <g
@@ -773,15 +797,16 @@ export function MapPage({ guided = false }: MapPageProps) {
               quoteFailed={canPlan && quoteQuery.isError}
               hasShip={ship !== undefined}
               inFlight={inFlight}
-              isHere={selected.id === shipLocation && !inFlight}
+              adrift={adrift}
+              isHere={selected.id === shipLocation && docked}
               fuelUse={ship?.sheet.fuelUse}
               onClose={() => setSelectedId(null)}
               details={
                 <PlaceDetails
-                  canTravel={shipLocation !== null && !inFlight}
+                  canTravel={docked}
                   place={selected}
                   description={descriptionOf(selected)}
-                  isHere={selected.id === shipLocation && !inFlight}
+                  isHere={selected.id === shipLocation && docked}
                   shipLocation={shipLocation}
                   byId={byId}
                   fuelUse={ship?.sheet.fuelUse}
@@ -800,7 +825,16 @@ export function MapPage({ guided = false }: MapPageProps) {
             </button>
           )}
           {placesOpen && !phone && (
-            <aside className="map-drawer">
+            <aside
+              className="map-drawer"
+              onKeyDown={(event) => {
+                // Escape closes the drawer (a field keeps its own Escape) and leaves the selected place alone
+                if (event.key === 'Escape' && !(event.target instanceof HTMLInputElement)) {
+                  event.stopPropagation();
+                  setPlacesOpen(false);
+                }
+              }}
+            >
               <PlacesDrawer
                 places={nearest}
                 onSelect={selectNode}
