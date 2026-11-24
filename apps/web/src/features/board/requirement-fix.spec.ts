@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fixHref, fixOf } from './requirement-fix';
+import { fixHref, fixOf, fuelFix } from './requirement-fix';
 
 describe('fixOf', () => {
   it.each([
@@ -15,19 +15,22 @@ describe('fixOf', () => {
     expect(fixOf(code)).toEqual({ kind: 'store', partClass });
   });
 
-  it('names life support when only it is missing', () => {
-    expect(fixOf('PRESSURIZED_LIFE_SUPPORT', 'Needs Life Support installed')).toEqual({
-      kind: 'store',
-      partClass: 'UTILITY',
-    });
-  });
+  it.each(['NO_BRIDGE', 'NO_ENGINE', 'PART_DISCONNECTED', 'STRUCTURE_EXCEEDED'])(
+    '%s leads to the ship',
+    (code) => {
+      expect(fixOf(code)).toEqual({ kind: 'ship' });
+    },
+  );
 
-  it.each(['NO_BRIDGE', 'NO_ENGINE', 'OVERLAP'])('%s leads to the ship', (code) => {
-    expect(fixOf(code)).toEqual({ kind: 'ship' });
-  });
+  it.each(['NO_LIFE_SUPPORT', 'LIFE_SUPPORT_UNPOWERED'])(
+    '%s leads to the UTILITY store tab',
+    (code) => {
+      expect(fixOf(code)).toEqual({ kind: 'store', partClass: 'UTILITY' });
+    },
+  );
 
-  it('a short fuel leads to refuel', () => {
-    expect(fixOf('fuel-short')).toEqual({ kind: 'refuel' });
+  it('does not invent a fuel code', () => {
+    expect(fixOf('fuel-short')).toEqual({ kind: 'none' });
   });
 
   it('an unknown code leads nowhere', () => {
@@ -41,5 +44,13 @@ describe('fixHref', () => {
     expect(fixHref({ kind: 'store', partClass: 'CARGO' })).toBe('/ship?store=CARGO');
     expect(fixHref({ kind: 'refuel' })).toBe('/port?tab=refuel');
     expect(fixHref({ kind: 'ship' })).toBe('/ship');
+  });
+});
+
+describe('fuelFix', () => {
+  it('maps each real fuel state', () => {
+    expect(fuelFix('short')).toEqual({ kind: 'refuel' });
+    expect(fuelFix('tank')).toEqual({ kind: 'store', partClass: 'TANK' });
+    expect(fuelFix('ok')).toEqual({ kind: 'none' });
   });
 });
