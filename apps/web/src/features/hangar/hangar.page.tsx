@@ -54,6 +54,7 @@ import { useProblemText } from './problem-text';
 import { insideBox } from './drag-geometry';
 import { CarriedPart } from './carried-part';
 import { computePortMarks } from './connectors';
+import { freeShipPorts } from '../parts/port-fit';
 import { useCarriedPointer } from './use-carried-pointer';
 import { useRotateKey } from './use-rotate-key';
 import { useTrayDrag } from './use-tray-drag';
@@ -275,6 +276,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   }, [parts]);
 
   const effectiveLayout = useMemo(() => layout ?? [], [layout]);
+
+  // The kinds of the ship's free ports, as the yard shows it: the store says whether a part joins it.
+  const storeFreePorts = useMemo(
+    () => freeShipPorts(effectiveLayout, catalogById, connectorsById),
+    [effectiveLayout, catalogById, connectorsById],
+  );
   const placedIds = useMemo(
     () => new Set(effectiveLayout.map((placement) => placement.partInstanceId)),
     [effectiveLayout],
@@ -968,6 +975,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     // real, saved one, matching what the server itself computes against.
                     currentSheet={ship.sheet}
                     showNeeds={false}
+                    freePorts={storeFreePorts}
                   />
                 ) : (
                   <p className="muted">{t('hangar.side.storeUnavailable')}</p>

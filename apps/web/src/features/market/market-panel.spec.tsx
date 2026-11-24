@@ -60,6 +60,22 @@ async function renderPortMarket(): Promise<void> {
   await screen.findByRole('tab', { name: 'Market' });
 }
 
+describe('market panel: port verdict', () => {
+  beforeEach(() => {
+    resetEconomyState();
+    server.use(onboarded());
+  });
+
+  it('puts a join verdict on listings that have ports, computed from the ship free ports', async () => {
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    // the fixture ship has no free port (its parts carry no connectors): the verdict says so
+    const verdicts = await within(panel()).findAllByTestId('part-fit');
+    expect(verdicts.length).toBeGreaterThan(0);
+    expect(verdicts[0]).toHaveTextContent('Your ship has no free port');
+  });
+});
+
 describe('market panel: descriptions and filters', () => {
   beforeEach(() => {
     resetEconomyState();

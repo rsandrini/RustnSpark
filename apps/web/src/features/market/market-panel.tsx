@@ -15,6 +15,8 @@ import { usePrologueMode } from '../prologue/prologue-mode';
 import { ShipNeedsList, isShield, lackingParts, useDismissedNeeds } from './ship-needs';
 import { useNotice, type FeedbackOptions } from '../../ui/feedback';
 import { rankReplaceCandidates, type InstalledPartForCompare } from '../parts/part-compare-match';
+import { portFit } from '../parts/port-fit';
+import type { Kind } from '../hangar/connectors';
 import { PartDetail, type PartCompareContext } from '../parts/part-detail';
 import { classOfGroup, matchesPartGroup, partGroupOf } from '../parts/part-group';
 
@@ -46,6 +48,8 @@ export interface MarketPanelProps {
   currentSheet?: ShipSheet;
   /** Show the "Your ship needs" note above the offers (default). The Hangar shows it itself, on the Ship screen. */
   showNeeds?: boolean;
+  /** The kinds of the ship's free ports; with it each card says whether the part joins the ship. */
+  freePorts?: readonly Kind[];
 }
 
 // The buy side of a port: a filterable list of offers with the full explanation of each part
@@ -60,6 +64,7 @@ export function MarketPanel({
   installedParts,
   currentSheet,
   showNeeds = true,
+  freePorts,
 }: MarketPanelProps) {
   const { t, i18n } = useTranslation();
   // the opening buys one module for one job: no list of what the ship lacks
@@ -422,6 +427,7 @@ export function MarketPanel({
               priceCaption={t('market.youPay')}
               used={listing.kind === 'used'}
               compare={compareContextFor(listing)}
+              fit={opening ? undefined : portFit(listing.connectors, freePorts)}
               actions={
                 <button
                   type="button"

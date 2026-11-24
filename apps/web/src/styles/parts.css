@@ -599,3 +599,48 @@
 .compare-inline .compare-now {
   color: var(--muted);
 }
+
+/* Store cards lead with their ports: a big diagram, the ports in words, then the verdict. */
+.pcard-ports {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.pcard-port-words {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  font-size: 12px;
+  color: var(--ink);
+}
+.pcard-port-words li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.pcard-port-words .kind-icon {
+  width: 22px;
+  height: 9px;
+}
+.pcard-fit {
+  justify-self: stretch;
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+.pcard-fit.ok {
+  color: var(--ok-hi);
+  background: color-mix(in oklch, var(--ok) 14%, transparent);
+}
+.pcard-fit.bad {
+  color: var(--bad);
+  background: color-mix(in oklch, var(--bad) 14%, transparent);
+}

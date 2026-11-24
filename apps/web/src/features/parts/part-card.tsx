@@ -11,7 +11,9 @@ import {
   type PartCompareContext,
   type PartInfoData,
 } from './part-detail';
-import { ConnectorGrid } from './connector-grid';
+import { ConnectorGrid, KindIcon } from './connector-grid';
+import type { PortFit } from './port-fit';
+import type { Kind, Side } from '../hangar/connectors';
 import { PartInfoButton } from './part-info-button';
 import { hoverAnchor, useClampedPosition, type HoverAnchor } from './use-hover-card-position';
 
@@ -39,7 +41,34 @@ export interface PartCardProps {
   /** When set, the hover card renders the "this part today → upgraded" table instead of the
       usual stats card. */
   hoverVersus?: PartInfoData;
+  /** Store cards: how the part's ports match the free ports of the ship. */
+  fit?: PortFit;
 }
+
+const SIDES: readonly Side[] = ['N', 'E', 'S', 'W'];
+
+/** One entry per distinct (side, kind) of the part's ports, in side order. */
+function portGroups(
+  connectors: readonly { side: Side; kind: Kind }[],
+): { side: Side; kind: Exclude<Kind, 'none'>; count: number }[] {
+  const groups: { side: Side; kind: Exclude<Kind, 'none'>; count: number }[] = [];
+  for (const side of SIDES) {
+    for (const cell of connectors) {
+      if (cell.side !== side || cell.kind === 'none') continue;
+      const found = groups.find((g) => g.side === side && g.kind === cell.kind);
+      if (found === undefined) groups.push({ side, kind: cell.kind, count: 1 });
+      else found.count += 1;
+    }
+  }
+  return groups;
+}
+
+const FIT_VIEW = {
+  full: { tone: 'ok', icon: '✓', key: 'full' },
+  partial: { tone: 'ok', icon: '✓', key: 'partial' },
+  none: { tone: 'bad', icon: '✕', key: 'none' },
+  'none-free': { tone: 'bad', icon: '✕', key: 'noneFree' },
+} as const;
 
 // One part, one card, stacked top to bottom: name and price, what it is, how worn it is, what it
 // does, then the buttons. The rarity is the accent colour of the card.
@@ -55,6 +84,7 @@ export function PartCard({
   hideInfo = false,
   hoverPart,
   hoverVersus,
+  fit,
 }: PartCardProps) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
@@ -66,6 +96,12 @@ export function PartCard({
     t(`parts.rarities.${part.rarity}`, { defaultValue: part.rarity }),
     `${part.catalog.w}×${part.catalog.h}`,
   ].join(' · ');
+
+  const groups = portGroups(part.connectors ?? []);
+  const verdict =
+    fit === undefined || fit.level === 'unknown' || fit.level === 'no-ports'
+      ? undefined
+      : FIT_VIEW[fit.level];
 
   // Owner request: Market/Store gets the same hover-only compare card the Hangar tray already
   // has, not just the (i) button's full popup — cursor-anchored, viewport-clamped the same way.
@@ -93,15 +129,44 @@ export function PartCard({
       <div className="pcard-meta">
         {used && <span className="used-tag">{t('market.used')}</span>}
         {meta}
-        {part.connectors !== undefined && part.connectors.length > 0 && (
+      </div>
+      {groups.length > 0 && part.connectors !== undefined && (
+        <div className="pcard-ports">
           <ConnectorGrid
             w={part.catalog.w}
             h={part.catalog.h}
             connectors={part.connectors}
-            size="mini"
+            size="large"
           />
-        )}
-      </div>
+          <ul
+            className="pcard-port-words"
+            data-testid="part-ports"
+            aria-label={t('connectors.portsLabel')}
+          >
+            {groups.map((group) => (
+              <li key={`${group.side}-${group.kind}`}>
+                <KindIcon kind={group.kind} />
+                <span>
+                  {t('connectors.portLine', {
+                    side: t(`connectors.sides.${group.side}`),
+                    count: group.count,
+                    kind: t(`connectors.kinds.${group.kind}`),
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {verdict !== undefined && (
+            <p className={`pcard-fit ${verdict.tone}`} data-testid="part-fit">
+              <span aria-hidden="true">{verdict.icon}</span>{' '}
+              {t(`connectors.fit.${verdict.key}`, {
+                matching: fit !== undefined && 'matching' in fit ? fit.matching : 0,
+                total: fit !== undefined && 'total' in fit ? fit.total : 0,
+              })}
+            </p>
+          )}
+        </div>
+      )}
       {(part.broken === true || note !== undefined) && (
         <div className="pcard-note">{part.broken === true ? t('parts.broken') : note}</div>
       )}

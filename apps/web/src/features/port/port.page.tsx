@@ -45,6 +45,7 @@ import { ActiveShipStage } from '../ship/active-ship-stage';
 import { jobFitsWaitingMission, PendingStrip } from '../ship/pending-strip';
 import { useActiveMissions } from '../transit/use-active-mission';
 import { MarketPanel } from '../market/market-panel';
+import { freePortsOfShip } from '../hangar/ship-ports';
 import { PartCard } from '../parts/part-card';
 import { useDisplay } from '../../ui/display';
 import { readinessOf, upgradeNeeds, firstMissing, type UpgradeReadiness } from './upgrade-needs';
@@ -794,6 +795,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             shipId={ship.id}
             installedParts={installed}
             currentSheet={ship.sheet}
+            freePorts={freePortsOfShip(ship.layout, installed)}
           />
         </section>
       )}

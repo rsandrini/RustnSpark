@@ -139,6 +139,20 @@
       "split": "Conector dividido",
       "universal": "Conector universal"
     },
+    "sides": {
+      "N": "Norte",
+      "E": "Leste",
+      "S": "Sul",
+      "W": "Oeste"
+    },
+    "portLine": "{{side}} · {{count}} × {{kind}}",
+    "portsLabel": "Portas desta peça",
+    "fit": {
+      "full": "Todas as portas combinam com portas livres da sua nave",
+      "partial": "{{matching}} de {{total}} portas combinam com portas livres da sua nave",
+      "none": "Nenhuma porta livre da sua nave se une a estas portas",
+      "noneFree": "Sua nave não tem porta livre"
+    },
     "states": {
       "connected": "conectada",
       "incorrect": "vizinha incompatível",
