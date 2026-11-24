@@ -386,6 +386,11 @@
     min-height: 44px;
   }
 
+  /* the legend's layer chips are buttons: a thumb-sized target */
+  .legend > .layer-chip {
+    min-height: 40px;
+  }
+
   /* a place's sheet sits above the tab bar, like the other phone sheets */
   .place-sheet {
     position: fixed;
