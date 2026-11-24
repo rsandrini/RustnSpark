@@ -2248,7 +2248,8 @@
       "RESCUE": "Resgate",
       "TRAVEL": "Viagem",
       "SCAVENGE": "Saque",
-      "RACE": "Corrida"
+      "RACE": "Corrida",
+      "unknown": "Missão"
     },
     "status": {
       "AVAILABLE": "Aberta",
