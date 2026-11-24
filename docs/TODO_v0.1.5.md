@@ -28,6 +28,7 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
 - Decided 2026-11-23: subtitle layout B (icon + type row inside the cell, below the connector band). No sound. The art for the parts is the last task.
 - Slice 1.1 HUD built: fuel, hull and cargo gauges under the top bar (a compact row on a phone); the wallet stays in the account menu.
 - Slice 1.1 (kit and HUD) built on branch feat/ui-slice-1-1-kit-and-hud, verified in a browser: HUD and chips render at 1240 and 390 px, but axe flags the HUD as outside a landmark (region) on every screen; the other e2e failures also fail on develop.
+- Slice 1.2 (ports first-class) built on develop, verified in a browser at 1280 and 390 px: port diagram, verdict, Fits my free ports, icon tabs, ports legend, tray chips and the placement ghost all render with no horizontal scroll; the red ghost edge was not reproduced (starter parts all join) and an empty ship shows No fit on every tray row; the a11y, widths pt-BR and phone prologue-race e2e failures also fail before 1.2.
 - Open: the Port as a place (needs a mockup).
 
 ## 5. More missions per port, more mission kinds, a bigger map (owner, 2026-11-23) - *needs design*
