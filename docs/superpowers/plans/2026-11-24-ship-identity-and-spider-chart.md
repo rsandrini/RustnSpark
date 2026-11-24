@@ -1,67 +1,136 @@
-# Ship identity: type from the main point + a spider chart (plan, not yet built)
+# Ship identity (types by main point, spider chart) and people-transport capacity
 
-> **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (or executing-plans). Steps use checkbox syntax. This plan is a design + task outline; the first task is a design check with the owner's numbers (see "Open questions"), then the tasks below.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax. Commit on `develop`, one commit per task.
 
-**Goal:** the ship's type names what the ship is MAINLY good at (or says it is balanced only when it really is), and a spider chart on the ship sheet shows its profile at a glance, including a "before/after" ghost when a part is considered.
+**Goal:** (a) the ship's type names what it is MAINLY good at, with Racer added and Multirole renamed Balanced, shown with a 7-axis spider chart; (b) passenger transport has real limits: a cabin gives seats (`pax`), a life-support module keeps a number of people alive (`lifeCap`), and a passenger mission carries a head count.
 
-**Spec:** owner request 2026-11-24 ("ship type is too matching with multipurpose instead of getting the main point; add a spider chart to show some info about the ship"). Depends on the UI kit (slice 1.1). Fits UI slice 1.5 (ship type subtitle + Needs chips): build it there or right after.
+**Owner scope note (2026-11-24):** no browser/e2e/screenshot task; the owner reviews visually later. Unit/int specs and the final whole-slice review still run.
+
+**Decisions (owner, 2026-11-24):** add Racer (mobility); rename Multirole to Balanced; 7 axes: cargo, passengers, firepower, defense, mobility, range, mining (NO sensors axis); add the `pax` passenger-capacity stat; people transport gets seats + life-support capacity + a head count per mission (TODO items 6 and 8). Types: Hauler, Transport, Warship, Miner, Racer, Balanced.
+
+**Spec:** `docs/TODO_v0.1.5.md` items 6 and 8; this plan's "What the code does today".
 
 ## What the code does today (checked 2026-11-24)
 
-- `apps/api/src/ships/ship-class.ts` `deriveShipClass(parts, rules)`: classes `HAULER | TRANSPORT | WARSHIP | MINER | MULTIROLE`.
-  Shares are of STRUCTURE COST (everything but the bridge), tested in a fixed order, first match wins:
-  cargo share >= 0.30 -> Hauler; pressurized share >= 0.20 -> Transport; weapon+defense share >= 0.45 -> Warship; ANY part with `min > 0` -> Miner; otherwise **Multirole**.
-  Thresholds: config `ship_class.{cargo_share, pressurized_share, combat_share}` (defaults 0.3 / 0.2 / 0.45), admin-tunable.
-- Why it reads as "multipurpose": (1) the fallback catches every ship below a threshold, and with engines, tanks, a bridge and a little of each, most ships are below all three; (2) it measures what the parts COST, not what the ship CAN DO (a small gun on a cheap hull and a big shield are both weak "combat share" signals; shields/armor/sensors/mobility are not looked at except weapons+defense cost); (3) first match wins: 30% cargo + 60% combat is a Hauler; (4) any single mining part makes a Miner regardless of its weight; (5) no class for fast, sensor or escort builds.
-- The class is display-only: no mission or rule reads it (`grep shipClass apps/api/src` finds only the derive, the sheet/profile responses and the sim playstyle). Changing it cannot break gameplay.
-- Shown in: ship sheet panel (`apps/web/src/features/hangar/ship-sheet-panel.tsx`, `hangar.classes.*`), the pilot card (`features/profile/pilot-card.tsx`), the prologue sandbox (`sandbox-ship.ts`, fixed `TRANSPORT`).
-- The sheet (`ShipSheetSchema`, `packages/contract/src/index.ts:188`) already has the capability stats: `pot` (firepower), `pdf`/`bli`/`esc` (defense: shield esc, armor bli), `sen` (sensors), `crg` (cargo), `min` (mining), `mob` (mobility), `autonomy` (range), `fuelCap`, `hp`, `condition`. There is NO passenger-capacity number on the sheet (only `pressurized` per part).
+- `apps/api/src/ships/ship-class.ts` `deriveShipClass(parts, rules)`: classes `HAULER | TRANSPORT | WARSHIP | MINER | MULTIROLE`. Shares of STRUCTURE COST (everything but the bridge), first match wins: cargo >= 0.30 -> Hauler; pressurized >= 0.20 -> Transport; weapon+defense >= 0.45 -> Warship; ANY part with `min > 0` -> Miner; else Multirole. Config `ship_class.{cargo_share, pressurized_share, combat_share}` (0.3 / 0.2 / 0.45), admin-tunable (`game-config.defaults.ts` ~453, `game-rules.schema.ts` ~300, `game-config.types.ts` ~221 and ~614, `config-registry.ts`). The class is display-only (nothing in missions or rules reads it); shown in the ship sheet panel (`hangar.classes.*`), the pilot card, the sim playstyle (`apps/api/sim/bots/playstyle.ts`), the prologue sandbox (`sandbox-ship.ts`, fixed `TRANSPORT`).
+- Parts: table `Part` (Prisma model keyed by `partType`) with stat columns (`pot pdf bli esc sen crg min energyCont ... fuelCap fuelUse bat*`) and a JSON column `specialProp` that holds `pressurized`, `lifeSupport`, `shieldRegen`, `idlePower`, `armorPiercing` (`apps/api/src/parts/parts.service.ts` ~100 maps them into `PartCatalog`; seed in `apps/api/prisma/seed-data/parts.ts`, family tables of 5 rarity tiers; admin edits via `admin/tuning/entity-schemas.ts` ~349). The seed only fills empty tables: a data change for existing parts needs a SQL MIGRATION (`apps/api/prisma/migrations/<timestamp>_name/migration.sql`).
+- The contract already carries the flags: `PartCatalogStatsSchema` (`packages/contract/src/index.ts` ~114) has `pressurized` and `lifeSupport` as booleans, and the web's `api/generated.ts` re-exports the contract. (An earlier note that the web lacks them was wrong: `partKindOf` can use the flags; no work needed there.)
+- Sheet: `deriveSheet(parts, rules)` (`apps/api/src/ships/sheet.deriver.ts`) sums stats into `ShipSheet` (`ships/sheet.types.ts`; contract `ShipSheetSchema` ~188 has pot pdf bli esc sen crg min hp mass energy* bat* fuelCap fuelUse structureUsed structureBudget autonomy mob condition). The resolution oracles pin some sheet values: adding fields must not change existing ones.
+- Transport mission today: `missionRequirementChecklist` (`apps/api/src/missions/requirements.checker.ts`) for `TRANSPORT` returns ONE yes/no check `PRESSURIZED_LIFE_SUPPORT` = a pressurized part AND a life-support part installed. No head count, no seats, no life-support capacity: the smallest of each moves any group. Offer `requirements` JSON carries hints parsed by `parseHints` (`cargo`, `speed`, `minMobility`); the generator is `missions/generator/` (`template.filler.ts` reads template requirements). Viability (`ships/viability.ts` ~177-183) also needs a life-support part when a pressurized part is aboard.
 
-## Design
+## Global Constraints
 
-1. **Profile = a score 0..1 per axis, computed on the server from the sheet** (single source for the type AND the chart, so they cannot disagree). Axes (7): Cargo (`crg`), Passengers (new, see open question 1), Firepower (`pot`), Defense (`esc` + `bli` x armor pool factor), Mobility (`mob`), Range (`autonomy`), Mining (`min`). Sensors is not an axis (decided).
-   Each axis score = `min(1, value / reference)`, where the reference is a **config knob per axis** (`ship_profile.ref_*`: "the value that counts as a full axis"), starting from the strongest value seen in the sim/prod fleets so a good mid-game ship fills about 60 to 70% of its main axis. Admin owns every number.
-2. **Type = the main point.** The top-scoring axis names the type (Hauler, Transport, Warship, Miner, plus new Racer (mobility) and Scout (sensors/range) if the owner wants them; defaults: keep the 5 existing names + Racer). It is "Balanced" (rename of Multirole) ONLY when the top axis is below `ship_profile.min_main` (a weak ship) or its lead over the second axis is below `ship_profile.lead_margin`. A strong second axis adds a modifier shown as a second line ("Hauler, armed"). Config: `ship_profile.min_main`, `ship_profile.lead_margin`, `ship_profile.second_min`.
-   The old `ship_class.*_share` knobs are removed (migration of the config registry; DB wins, so a migration deletes the stored keys).
-3. **Spider chart** (web): a small SVG radar, `ShipRadar` in `apps/web/src/ui/kit/`, props `{ axes: {key, value0to1}[], ghost?: same, label }`. Axis icons + short names around the rim (icons are the kit's), the filled polygon uses the type's colour, the optional ghost polygon (dashed) shows "if I fit this part" (the preview response already returns a sheet/profile for a candidate layout). Accessible: a visually hidden table with the same numbers. 390px: 160 to 200px square; the ship sheet shows it beside the headline tiles on desktop, above them on phone. The pilot card shows a small one.
-4. **Where it shows:** ship sheet panel (always), pilot card (small), hover/ghost while placing a part and in the store's compare popup (before/after) as a follow-up.
-
-## Decisions (owner, 2026-11-24) and what is still open
-
-DECIDED: add Racer (mobility); rename Multirole to Balanced; 7 axes (cargo, passengers, firepower, defense, mobility, range, mining; sensors is NOT an axis); add the `pax` passenger-capacity stat to the part catalog and the sheet (migration + seed + admin editor + sheet field + en/pt-BR labels). Types: Hauler, Transport, Warship, Miner, Racer, Balanced. Still open: the reference values per axis (from the real fleet, in Task A) and the exact `pax` numbers per cabin part.
-
-Original questions, for the record:
-
-1. **Passengers axis:** there is no passenger-capacity stat. Either add `pax` to the part catalog/sheet (cabins already exist as pressurized parts; a migration + sheet field) or drop Passengers from the chart and keep Transport as "has a cabin". Recommendation: add `pax` (a missing stat blocks Transport from ever being "the main point").
-2. **Which types:** keep Hauler, Transport, Warship, Miner; add Racer and Scout? Rename Multirole to "Balanced"?
-3. **How many axes:** 7 (above) or 8 with Sensors.
-
-## Tasks (outline; each its own subagent task with TDD once the questions are answered)
-
-### Task A0: the `pax` stat (first)
-Also expose the `pressurized` and `lifeSupport` flags (and `lifeCap`) on the catalog the web receives: today the web's generated `PartCatalogStats` has none of them, so `partKindOf` (slice 1.5) tells cabins and life-support modules by their family name only.
-- Add a passenger-capacity stat to the part catalog (cabin / pressurized parts), the sheet (`ShipSheetSchema.pax`, sum over installed connected parts), the admin part editor, the seed (family tables, per the parts-catalog rules) and a MIGRATION for prod (the seed only fills empty tables); en + pt-BR labels; the part detail and compare card show it. Tests first: a cabin part adds its `pax` to the sheet, a ship without a cabin has 0, the migration sets values for existing cabin parts. Numbers per cabin tier: owner/sim.
-
-Note (owner, 2026-11-24, TODO item 8): the same task also adds `lifeCap` (people a life-support module keeps alive, scaling with tier and size) and a head count per TRANSPORT mission; the `pax` axis of the chart is the ship's seats. Today a passenger mission checks only the two flags (a pressurized part and a life-support part), so any group fits any ship.
-
-### Task A: the profile on the server
-- Files: create `apps/api/src/ships/ship-profile.ts` (+ spec), modify `ship-class.ts` (derive from the profile), `config/game-config.defaults.ts`, `game-rules.schema.ts`, `config-registry.ts` (new knobs with en + pt-BR labels), a migration that drops the old `ship_class.*` rows, `ships.service.ts` (return `profile` next to `shipClass` in the three places that return the sheet), `packages/contract/src/index.ts` (`profile` optional on the ship/preview responses).
-- Tests first: a pure-cargo ship is Hauler; a gun-heavy hull with a big shield is Warship; one tiny mining part on a cargo ship is Hauler, not Miner; two equal axes -> Balanced; a weak ship (everything under `min_main`) -> Balanced; lead margin; config changes take effect at once. Check against real prod ships (read-only DB recipe in memory `reference_prod_db_readonly.md`): how many prod ships fall in each type before and after. Sim playstyle (`apps/api/sim/bots/playstyle.ts`) updated if it names the classes.
-- Gate: api specs for ships + config; owner sees the before/after type table for the real fleet.
-
-### Task B: the radar component
-- Create `apps/web/src/ui/kit/ShipRadar.tsx` (+ spec), CSS in `styles/kit.css`. Tests: N axes draw an N-gon, a value 0 collapses to the centre and 1 touches the rim, the ghost draws a second polygon, the hidden table lists every axis with its percent, a value above 1 is clamped.
-
-### Task C: wire it into the screens and the type label
-- Ship sheet panel + pilot card use `profile`; the class row shows type + modifier line; new `hangar.classes.*` and `hangar.profile.*` keys in en AND pt-BR (remove none that are still used); prologue sandbox ship gets a profile; the preview while placing parts passes the candidate profile as the ghost.
-- Tests: sheet panel renders the radar and the type; opening shows the radar only if the opening shows the sheet (decide with the tutorial: default hidden in the opening); pt-BR no overflow at 390px.
-
-### Task D: browser check + status
-- Isolated stack check at 1280 and 390px with ships of each type; screenshots in `docs/design/game-ui-v0.2/after/`.
+- Work on `develop`, one commit per task. `git branch --show-current` before every commit; never `release/*`, `main`, `master`. Pushing `develop` is allowed; the owner promotes.
+- Code in English; every player-facing string in en AND pt-BR, no hard-coded text; new error/reason codes need en + pt-BR (`apps/api/src` must NOT import the contract package: the Docker api build has none; use local types, parse in int-spec).
+- Admin owns every tunable number: the DB wins over TS defaults, changes take effect at once; new knobs go in the config registry (`config-registry.ts`) with en + pt-BR labels.
+- Missions resolve in the `worker` container: rebuild api AND worker after an engine/requirements change (a note for the owner; no docker run in this plan).
+- A pilot with a mission accepted or flying while a migration changes parts or requirements: nothing may break (accepted/flying TRANSPORT missions without a stored head count default to 1 passenger).
+- The seed fills data only when empty: any part/config change needs a MIGRATION for prod.
+- Sims need Node 22. Run only the specs of touched files (api: the unit/int specs for touched modules; web: touched specs); the api int-test stack recipe is in memory `feedback_targeted_tests.md`.
+- The prologue sandbox (`apps/web/src/features/prologue/sandbox`) and the admin screens follow every new field/kind.
 
 ## Review Focus
-- A ship with no parts but the bridge, and a ship with only one axis > 0: the radar still draws, the type is Balanced (not a crash on a divide).
-- An axis value far above its reference (a late-game ship): clamped, the type still stable.
-- Config edited in the admin while pilots are online: type and chart change at once, nothing cached stale.
-- Existing saved data: the class is derived, not stored (check `Ship` has no stored class column); the profile summary in the pilot card and rankings use the new derivation.
-- pt-BR names are short enough for the axis labels at 390px.
+
+- A ship with no parts but the bridge, and one with a single non-zero axis: the radar draws, the type is Balanced, no divide by zero.
+- An axis far above its reference: clamped to the rim, the type stays stable.
+- Config edited in the admin while pilots are online: type and chart change at once (no stale cache).
+- The class/profile are DERIVED, never stored (check the `Ship` model has no class column): nothing to migrate for ships.
+- A TRANSPORT offer accepted BEFORE the migration (no `passengers` in its requirements) stays takeable and dispatchable with the default of 1.
+- A ship with a cabin and a life-support module but not enough seats/capacity for the group: the offer is blocked with a reason naming which one is short (seats vs life support), the fix chip points to the right store tab (cabin = CARGO class, life support = UTILITY class).
+- The oracles for resolution/sheet values still pass unchanged (adding `pax`/`lifeCap` to the sheet changes no existing field).
+- pt-BR axis labels short enough for a 390px radar.
+
+## File Structure
+
+- Server: `apps/api/prisma/migrations/<ts>_part_pax_and_life_capacity/migration.sql`, `prisma/seed-data/parts.ts`, `src/parts/part.types.ts`, `src/parts/parts.service.ts`, `src/ships/sheet.types.ts`, `sheet.deriver.ts`, new `src/ships/ship-profile.ts`, `ship-class.ts`, `src/missions/requirements.checker.ts`, `src/missions/generator/*`, `src/config/*`, `src/admin/tuning/entity-schemas.ts`, `apps/api/sim/bots/playstyle.ts`.
+- Contract: `packages/contract/src/index.ts`.
+- Web: `apps/web/src/ui/kit/ShipRadar.tsx` (+ spec), `features/hangar/ship-sheet-panel.tsx`, `features/profile/pilot-card.tsx`, `features/board/requirement-fix.ts`, `features/prologue/sandbox/*`, `styles/kit.css`, both locale files.
+
+---
+
+### Task 1: the `pax` and `lifeCap` stats on parts and on the sheet
+
+**Files:** migration SQL, `parts.ts` seed, `part.types.ts`, `parts.service.ts`, `sheet.types.ts`, `sheet.deriver.ts`, `packages/contract/src/index.ts` (`PartCatalogStatsSchema` + `ShipSheetSchema`), `entity-schemas.ts` (admin part editor shows them), the prologue sandbox sheet (`sandbox-ship.ts`), en/pt-BR labels; specs for the deriver and the parts service.
+
+**Interfaces:**
+- Produces: `PartCatalog.pax: number` and `PartCatalog.lifeCap: number` (0 when absent), read with the existing `readNumber(row.specialProp, 'pax' | 'lifeCap')`; `ShipSheet.pax` = sum of `pax` over installed parts, `ShipSheet.lifeCap` = sum of `lifeCap`; contract `ShipSheetSchema` gets `pax: z.number()` and `lifeCap: z.number()` (with `.default(0)` so an older payload still parses), `PartCatalogStatsSchema` gets `pax` and `lifeCap` (`z.number().default(0)`).
+- Values (defaults, tunable in the admin part editor; "owner/sim to tune"): the `passenger_cabin` family tiers (COMMON..LEGENDARY) seat 2, 3, 4, 6, 8; the `life_support` family tiers keep alive 3, 4, 6, 8, 10. Check the family tables in `parts.ts` for the real tier structure/sizes and keep the ratio "life support covers a bit more than one cabin" per tier.
+
+- [ ] **Step 1: Failing tests.** deriver spec: a ship with a cabin (pax 4) and a life-support (lifeCap 6) has `sheet.pax = 4`, `sheet.lifeCap = 6`; two cabins sum; no cabin -> 0; dead parts (worn to nothing, `isDead`) contribute nothing (mirror how `fuelCap` ignores dead tanks); existing sheet fields unchanged for a fixed fixture (guard the oracles). Parts-service spec: a part row with `specialProp {pax: 4}` maps to `catalog.pax = 4`, missing -> 0. Seed check: the cabin and life-support tiers carry the values above.
+- [ ] **Step 2: Run** (api unit specs of those files): FAIL.
+- [ ] **Step 3: Implement.** Migration SQL: `UPDATE "Part" SET "specialProp" = COALESCE("specialProp", '{}'::jsonb) || jsonb_build_object('pax', <n>) WHERE "partType" LIKE 'passenger_cabin%'` per rarity suffix (`''`, `_uncommon`, `_rare`, `_epic`, `_legendary`; verify the suffixes in `parts.ts` ~93) and the same for `life_support%` with `lifeCap`; idempotent; admin-edited parts keep their own value if already present (`AND NOT (COALESCE("specialProp",'{}'::jsonb) ? 'pax')`). Seed: add `specialProp.pax`/`lifeCap` to the tier definitions. The admin part editor exposes the two numbers (read how `specialProp` is edited at `entity-schemas.ts` ~349 and add the fields in the same style, en + pt-BR labels).
+- [ ] **Step 4: Run** the specs; also the API contract test that checks responses against the contract schemas; the web specs that build a `ShipSheet` fixture (`profile-fixtures.ts`, sandbox sheets, msw handlers) get `pax: 0, lifeCap: 0` added where TypeScript requires it.
+- [ ] **Step 5: Commit** `feat: passenger seats (pax) and life-support capacity (lifeCap) on parts and on the ship sheet`.
+
+---
+
+### Task 2: passenger missions carry a head count and need seats and life-support capacity
+
+**Files:** `requirements.checker.ts` (+ spec), the generator code that builds `requirements` for an offer (`missions/generator/template.filler.ts` and its callers) (+ spec), config (`config-registry.ts`, `game-config.defaults.ts`, `game-rules.schema.ts`, `game-config.types.ts`: new knobs `missions.transport_passengers_min`, `missions.transport_passengers_max`, `missions.transport_pay_per_extra_passenger`), `apps/web/src/features/board/requirement-fix.ts` (+ spec), en/pt-BR reason texts, the prologue sandbox offers (`sandbox-offers.ts`, the transport job), `apps/api/sim` if it builds transport offers.
+
+**Interfaces:**
+- Offer `requirements.passengers?: number` (head count; absent = 1). `parseHints` returns `passengers`.
+- `missionRequirementChecklist` for `TRANSPORT` returns THREE checks: `PRESSURIZED_LIFE_SUPPORT` (unchanged), `PASSENGER_SEATS` (`numeric`, unit new `'passengers'`: needed = head count, actual = `sheet.pax`) and `LIFE_SUPPORT_CAPACITY` (needed = head count, actual = `sheet.lifeCap`). New `RequirementReasonCode`s `PASSENGER_SEATS` and `LIFE_SUPPORT_CAPACITY` with English messages in the checker and texts under `board.requirements.<CODE>` / `error.*` in BOTH web locales (read how the existing codes are translated and match it); `RequirementUnit` gains `'passengers'` (the web number formatter in `mission-row`/`contract-face`/`mission-card` shows it as a plain count: check `requirementNumber`).
+- The generator sets `requirements.passengers` for TRANSPORT offers: a random integer in `[transport_passengers_min, transport_passengers_max]` (defaults 1 and 6), following the cargo pattern if the generator already scales cargo; the reward grows by `transport_pay_per_extra_passenger` (default 10% of the base per extra passenger above 1) through the existing reward formula (read the `reward` computation first; keep the economy sim in mind: a note, not a rebalance here).
+- Web fix map (`requirement-fix.ts`): `PASSENGER_SEATS` -> store CARGO (cabins are CARGO class), `LIFE_SUPPORT_CAPACITY` -> store UTILITY; add to its spec.
+
+- [ ] **Step 1: Failing tests.** checker spec: a group of 4 with a cabin of 4 seats and a life-support of 6 -> eligible; seats 2 -> `PASSENGER_SEATS` unmet with needed 4 actual 2; lifeCap 3 -> `LIFE_SUPPORT_CAPACITY` unmet; cabin without life support -> `PRESSURIZED_LIFE_SUPPORT` unmet; an offer with NO `passengers` hint needs 1 (a cabin of 2 seats passes: legacy offers keep working); the dispatch-time check uses the same checklist (an accepted TRANSPORT whose ship lost seats is refused with the reason: a spec near the slice-0.1 dispatch spec). Generator spec: a TRANSPORT offer's `requirements.passengers` is within the configured range and the reward grows with it; other types get no `passengers`. Web `requirement-fix.spec`: the two new codes map as above.
+- [ ] **Step 2: Run:** FAIL. **Step 3: Implement.** **Step 4: Run** the api specs of the checker, generator, dispatch (int) and the web specs (requirement-fix, contract-face if it renders `unit`), the board i18n spec.
+- [ ] **Step 5: Commit** `feat: passenger missions carry a head count; seats and life-support capacity gate them`.
+
+---
+
+### Task 3: the ship profile and the types by main point
+
+**Files:** create `apps/api/src/ships/ship-profile.ts` (+ spec); modify `ship-class.ts` (+ spec), `ships.service.ts` (return `profile` next to `shipClass` in the three places that return the sheet: ~382, ~444, ~978), `game-config.defaults.ts` / `game-rules.schema.ts` / `game-config.types.ts` / `config-registry.ts` (new `ship_profile.*` knobs, remove `ship_class.*`), a migration that deletes the stored `ship_class.*` config override rows (find where DB overrides are stored and follow how an earlier migration removed a config key), `apps/api/sim/bots/playstyle.ts`, `packages/contract/src/index.ts` (the class enum gains `RACER` and `BALANCED`, loses `MULTIROLE`; a `profile` object on the ship/preview/profile responses: `{ cargo, passengers, firepower, defense, mobility, range, mining }` each 0..1, plus an optional `modifier` axis key), `apps/web/src/i18n/*` (`hangar.classes.RACER`, `hangar.classes.BALANCED`; remove `MULTIROLE` once nothing uses it), the web fixtures and the prologue sandbox (`sandbox-ship.ts`: profile and class).
+
+**Interfaces:**
+- `type ShipProfile = { cargo: number; passengers: number; firepower: number; defense: number; mobility: number; range: number; mining: number }` (0..1) and `deriveShipProfile(sheet: ShipSheet, rules: GameRules): ShipProfile`: each axis = `min(1, value / ref)`; values: cargo = `sheet.crg`, passengers = `min(sheet.pax, sheet.lifeCap)` (seats without air do not count), firepower = `sheet.pot`, defense = `sheet.esc + sheet.bli * <armor pool factor>` (find the server-side config key the web's `display.armorPoolFactor` mirrors), mobility = the raw mobility (`rawMobility`), range = `sheet.autonomy`, mining = `sheet.min`. References from config `ship_profile.ref_cargo`, `ref_passengers`, `ref_firepower`, `ref_defense`, `ref_mobility`, `ref_range`, `ref_mining` ("the value that counts as a full axis"). Choose the defaults from the strongest builds the seed and the sim support (read `apps/api/sim` builds and the top-tier parts; a good mid-game ship should fill about 60 to 70% of its main axis) and write the chosen numbers and how they were derived in a note `docs/balance/ship-profile-references.md`.
+- `deriveShipClass(profile: ShipProfile, rules)`: the type = the top axis (cargo -> HAULER, passengers -> TRANSPORT, `max(firepower, defense)` -> WARSHIP, mining -> MINER, mobility -> RACER; range has no type of its own: a long-range ship takes the next axis). BALANCED only when the top score is below `ship_profile.min_main` (default 0.25) OR its lead over the second is below `ship_profile.lead_margin` (default 0.1). `ship_profile.second_min` (default 0.5): a second axis at or above it is returned as `modifier` (shown by the web as "Hauler, armed"). Ties break in a fixed axis order (documented in the code).
+- Config removal: delete `ship_class.*` from defaults, schema, types, registry and the DB (migration deleting the override rows); nothing may read them afterwards (grep).
+- Compatibility: nothing reads the class except display and the sim playstyle (update its mapping).
+
+- [ ] **Step 1: Failing tests.** ship-profile spec: a pure-cargo sheet -> cargo near 1 and the rest 0; every axis clamped to 1 for a huge value; zeros -> all 0 (no NaN); passengers = `min(pax, lifeCap)` scaled; defense includes the armor pool factor. ship-class spec: pure cargo -> HAULER; a gun-heavy hull with a big shield -> WARSHIP; ONE tiny mining part on a cargo ship -> HAULER not MINER; a fast light hull -> RACER; two equal axes -> BALANCED (lead margin); a weak ship (all under min_main) -> BALANCED; a strong second axis -> `modifier`; config changes take effect at once (use the config test helpers). `ships.service` spec: the three responses carry `profile` and the new class names. A guard: grep that no `MULTIROLE` remains in `apps/api/src` and `apps/web/src` (historic migrations excepted).
+- [ ] **Step 2: Run:** FAIL. **Step 3: Implement.** **Step 4: Run** the api specs of ships/config plus the contract test; the web specs that build ship fixtures or show the class (`ship-sheet-panel.spec`, `pilot-card`, profile specs, the prologue sandbox specs).
+- [ ] **Step 5: Commit** `feat: the ship's type names its main point (Racer, Balanced) from a 7-axis profile`.
+
+---
+
+### Task 4: the spider chart component
+
+**Files:** create `apps/web/src/ui/kit/ShipRadar.tsx`, `ShipRadar.spec.tsx`, CSS in `styles/kit.css`, locale keys `hangar.profile.axis.<key>` (en + pt-BR) for the 7 axes.
+
+**Interfaces:** `ShipRadar({ values: ShipProfile; ghost?: ShipProfile; size?: number; label: string })`: an inline SVG heptagon radar: rings at 25/50/75/100%, 7 spokes with an icon + short label at the rim (reuse `PartKindIcon` kinds where they fit: cargo, cabin (passengers), weapon (firepower), shield (defense), engine (mobility), tank (range), mining; labels short: "Cargo, Pax, Fire, Def, Speed, Range, Mining" and pt-BR equivalents), the filled polygon in the brass accent, the optional `ghost` as a dashed outline, `role="img"` with `aria-label={label}` plus a visually hidden `<table>` listing each axis and its percent. Values outside 0..1 are clamped; NaN -> 0.
+
+- [ ] **Step 1: Failing tests:** 7 axes draw a 7-vertex polygon; 0 collapses to the centre and 1 touches the rim (assert the vertex radius); the ghost draws a second dashed polygon; values above 1 clamp, negative and NaN -> 0; the hidden table lists 7 rows with percents; every axis key has a label in en and pt-BR (parity spec); `size` scales the viewBox correctly.
+- [ ] **Step 2: Run:** FAIL. **Step 3: Implement.** **Step 4: Run:** PASS.
+- [ ] **Step 5: Commit** `feat(ui): the ship spider chart (7 axes, with an optional ghost)`.
+
+---
+
+### Task 5: show the profile on the ship sheet and the pilot card
+
+**Files:** modify `features/hangar/ship-sheet-panel.tsx` (+ spec), `features/hangar/hangar.page.tsx` (pass `profile` and the preview's `profile` as the ghost while a part is considered), `features/profile/pilot-card.tsx` (+ spec), `features/prologue/sandbox/sandbox-ship.ts` (the fixed sandbox ship gets a profile), `styles/ship.css`, locale files.
+
+**Behaviour:** the sheet's "Class" row shows the type plus the modifier ("Hauler, armed" via `hangar.classes.<TYPE>` and `hangar.classModifier.<axis>`), the radar sits beside the headline tiles on desktop and above them on phone (one column under 700px), the preview ghost comes from `preview?.profile` (Task 3 added `profile` to the preview response); the pilot card shows a small radar (size 96); the opening shows the radar only if it shows the sheet (default hidden in the opening: `usePrologueMode().active`).
+
+- [ ] **Step 1: Failing tests:** the sheet renders the class label with its modifier and a radar with the profile's values; a preview profile draws the ghost; no profile (older payload) renders no radar and no crash; the opening hides the radar; the pilot card renders the small radar and the new class names; pt-BR labels exist.
+- [ ] **Step 2: Run:** FAIL. **Step 3: Implement.** **Step 4: Run** `ship-sheet-panel.spec`, `hangar.spec`, pilot-card/profile specs, prologue specs, i18n specs.
+- [ ] **Step 5: Commit** `feat(ui): the ship sheet and the pilot card show the ship's type and its spider chart`.
+
+---
+
+### Task 6: status
+
+- [ ] **Step 1:** api unit specs of touched modules + the web suite once, lint + prettier on touched files, web build, `tsc` for api and web.
+- [ ] **Step 2:** update `docs/TODO_v0.1.5.md` (items 6 and 8: built and unit-tested, NOT browser-checked; the prod deploy needs the migrations `part_pax_and_life_capacity` and the config-key cleanup, and a rebuild of api AND worker) and make sure `docs/balance/ship-profile-references.md` exists with the chosen reference values and how they were derived.
+- [ ] **Step 3: Commit** `docs: ship identity and passenger capacity built (status and balance note)`.
+
+---
+
+## Self-review
+
+- Coverage: types by main point incl. Racer/Balanced (T3), 7-axis spider chart (T4, T5), `pax` (T1), people-transport capacity (T1, T2), life-support capacity (T1, T2).
+- Names across tasks: `PartCatalog.pax/lifeCap`, `ShipSheet.pax/lifeCap` (T1) feed T2 and T3; `ShipProfile`, `deriveShipProfile`, class enum with RACER/BALANCED (T3) feed T4/T5; `ShipRadar` (T4) feeds T5.
+- Not in this plan: sim re-tuning of mission pay (a note only), a Sensors axis (decided out), the spider chart in the store compare popup (a follow-up), item 1 (specialty).
+- Open (defaults chosen, change by saying so): cabin seats 2/3/4/6/8 and life-support capacity 3/4/6/8/10 per tier; transport head count 1 to 6; pay +10% per extra passenger; type margins 0.25 / 0.1 / second axis at 0.5; reference values derived from the sim.
