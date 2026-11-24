@@ -73,7 +73,11 @@ describe('the real Board and Port screens on the sandbox', () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
 
     expect(await screen.findByText(/passenger cabin/i)).toBeInTheDocument();
-    expect(await screen.findByText(/life support/i)).toBeInTheDocument();
+    // The module's name AND its type tag both read "Life support": the market lists the module
+    // itself (not just the tag), so one match must sit outside a `.kind-tag`.
+    const lifeSupport = await screen.findAllByText(/life support/i);
+    expect(lifeSupport.some((el) => !el.closest('.kind-tag'))).toBe(true);
+    expect(lifeSupport.some((el) => el.closest('.kind-tag'))).toBe(true);
     expect((await screen.findAllByText(/800/)).length).toBeGreaterThan(0);
   });
 
