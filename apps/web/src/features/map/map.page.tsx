@@ -46,6 +46,11 @@ const TRIP_FOCUS_MARGIN = 140;
 /** How long the quest card stays after the pointer leaves, so the pointer can reach its link. */
 const TIP_HIDE_DELAY_MS = 250;
 import { useMapCamera } from './use-map-camera';
+import { LayerChip, useStoredToggle } from './layers/layer-toggles';
+import { RangeLayer } from './layers/range-layer';
+import { TerritoryLayer } from './layers/territory-layer';
+import { reachableWithin, rangeBudget } from './reach';
+import { territoriesOf } from './territories';
 
 const SEPARATOR = ' · ';
 const NODE_RADIUS = 9;
@@ -274,6 +279,24 @@ export function MapPage({ guided = false }: MapPageProps) {
     camera.scale >= DETAIL_MIN_SCALE[location.detail] || alwaysShown.has(location.id);
   // Places and labels shrink as the map zooms in so they stay readable: nearly constant on screen (about 2.3x at the closest zoom).
   const nodeScale = 1 / camera.scale ** NODE_SHRINK;
+  const [showRange, toggleRange] = useStoredToggle('map.layer.range');
+  const [showTrips, toggleTrips] = useStoredToggle('map.layer.trips');
+  const territories = useMemo(() => territoriesOf(world?.locations ?? []), [world]);
+  // What the fuel on board reaches: only for a ship docked at a place (not flying, not adrift).
+  const range = useMemo(() => {
+    if (ship === undefined || world === undefined || shipLocation === null) return null;
+    if (ship.status === 'ADRIFT' || flight !== undefined) return null;
+    const budget = rangeBudget({
+      autonomy: ship.sheet.autonomy,
+      fuelUse: ship.sheet.fuelUse,
+      fuelHave: ship.fuel,
+      fuelCap: ship.sheet.fuelCap,
+    });
+    return budget === 'unlimited'
+      ? { unlimited: true, reachable: new Map<string, number>() }
+      : { unlimited: false, reachable: reachableWithin(world.routes, shipLocation, budget) };
+  }, [ship, world, shipLocation, flight]);
+  const rangeShown = range !== null && showRange;
   const hiddenCount = (world?.locations ?? []).filter((location) => !shownAtZoom(location)).length;
 
   // Where a rescue would tow the floating ship: the nearest base, marked on the map.
@@ -379,6 +402,20 @@ export function MapPage({ guided = false }: MapPageProps) {
           <span className="dotleg" style={{ background: 'var(--brass)' }} />
           {t('map.youAreHere')}
         </span>
+        <LayerChip
+          labelKey="map.layers.trips"
+          on={showTrips}
+          onToggle={toggleTrips}
+          testId="layer-trips"
+        />
+        {range !== null && (
+          <LayerChip
+            labelKey="map.layers.range"
+            on={showRange}
+            onToggle={toggleRange}
+            testId="layer-range"
+          />
+        )}
       </div>
 
       <div className={selected === undefined ? 'map-layout' : 'map-layout'}>
@@ -417,6 +454,7 @@ export function MapPage({ guided = false }: MapPageProps) {
             role="group"
             aria-label={t('map.title')}
           >
+            <TerritoryLayer territories={territories} factions={factions} scale={nodeScale} />
             {world.routes.map((route) => {
               const from = byId.get(route.nodeAId);
               const to = byId.get(route.nodeBId);
@@ -433,45 +471,46 @@ export function MapPage({ guided = false }: MapPageProps) {
                 />
               );
             })}
-            {plannedTrips.map(({ mission, stops }) => {
-              const points = stops.map((stop) => `${stop.x},${stop.y}`).join(' ');
-              // the flag sits on the middle of the path
-              const at = Math.floor((stops.length - 1) / 2);
-              const from = stops[at]!;
-              const to = stops[at + 1]!;
-              const middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
-              const title = pickLocalized(mission.brief.title, i18n.language);
-              return (
-                <g
-                  key={`planned-${mission.id}`}
-                  className="planned-trip"
-                  data-testid="planned-trip"
-                >
-                  <polyline className="planned-path" points={points} />
-                  <polyline
-                    className="planned-hit"
-                    points={points}
-                    onPointerEnter={() => showTip(mission.id, middle)}
-                    onPointerLeave={hideTip}
-                  />
+            {showTrips &&
+              plannedTrips.map(({ mission, stops }) => {
+                const points = stops.map((stop) => `${stop.x},${stop.y}`).join(' ');
+                // the flag sits on the middle of the path
+                const at = Math.floor((stops.length - 1) / 2);
+                const from = stops[at]!;
+                const to = stops[at + 1]!;
+                const middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+                const title = pickLocalized(mission.brief.title, i18n.language);
+                return (
                   <g
-                    className="quest-flag"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={t('map.quest.flag', { title })}
-                    transform={`translate(${middle.x} ${middle.y}) scale(${nodeScale})`}
-                    onPointerEnter={() => showTip(mission.id, middle)}
-                    onPointerLeave={hideTip}
-                    onFocus={() => showTip(mission.id, middle)}
-                    onBlur={hideTip}
-                    onClick={() => showTip(mission.id, middle)}
+                    key={`planned-${mission.id}`}
+                    className="planned-trip"
+                    data-testid="planned-trip"
                   >
-                    <circle r={11} />
-                    <path d="M-3,-6 L-3,6 M-3,-6 L6,-3 L-3,1" />
+                    <polyline className="planned-path" points={points} />
+                    <polyline
+                      className="planned-hit"
+                      points={points}
+                      onPointerEnter={() => showTip(mission.id, middle)}
+                      onPointerLeave={hideTip}
+                    />
+                    <g
+                      className="quest-flag"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t('map.quest.flag', { title })}
+                      transform={`translate(${middle.x} ${middle.y}) scale(${nodeScale})`}
+                      onPointerEnter={() => showTip(mission.id, middle)}
+                      onPointerLeave={hideTip}
+                      onFocus={() => showTip(mission.id, middle)}
+                      onBlur={hideTip}
+                      onClick={() => showTip(mission.id, middle)}
+                    >
+                      <circle r={11} />
+                      <path d="M-3,-6 L-3,6 M-3,-6 L6,-3 L-3,1" />
+                    </g>
                   </g>
-                </g>
-              );
-            })}
+                );
+              })}
             {journey !== null && inFlight && (
               <polyline
                 className="flight-path"
@@ -493,7 +532,17 @@ export function MapPage({ guided = false }: MapPageProps) {
                   r={HINT_RADIUS * nodeScale}
                 />
               ))}
+            {rangeShown && (
+              <RangeLayer
+                places={world.locations.filter(shownAtZoom)}
+                reachable={range.reachable}
+                unlimited={range.unlimited}
+                scale={nodeScale}
+              />
+            )}
             {world.locations.filter(shownAtZoom).map((location) => {
+              const outOfRange =
+                rangeShown && !range.unlimited && !range.reachable.has(location.id);
               const isHere = location.id === shipLocation && !inFlight && floatPoint === null;
               const isDestination = inFlight && flight?.destinationId === location.id;
               const label = isHere
@@ -504,7 +553,8 @@ export function MapPage({ guided = false }: MapPageProps) {
               return (
                 <g
                   key={location.id}
-                  className={`node-hit${selectedId === location.id ? ' sel' : ''}`}
+                  className={`node-hit${selectedId === location.id ? ' sel' : ''}${outOfRange ? ' out-of-range' : ''}`}
+                  data-reach={rangeShown ? (outOfRange ? 'no' : 'yes') : undefined}
                   role="button"
                   tabIndex={0}
                   aria-label={label}

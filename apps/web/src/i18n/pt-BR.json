@@ -2482,6 +2482,14 @@
       "SCAVENGE": "Vasculhando",
       "MINING": "Minerando"
     },
+    "layers": {
+      "range": "Alcance do combustível",
+      "trips": "Viagem planejada"
+    },
+    "range": {
+      "reachable": "Alcançável com o combustível a bordo",
+      "out": "Fora do alcance com o combustível a bordo"
+    },
     "zoom": {
       "label": "Zoom",
       "in": "Aproximar",

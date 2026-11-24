@@ -2482,6 +2482,14 @@
       "SCAVENGE": "Scavenging",
       "MINING": "Mining"
     },
+    "layers": {
+      "range": "Fuel range",
+      "trips": "Planned trip"
+    },
+    "range": {
+      "reachable": "Reachable with the fuel on board",
+      "out": "Out of range with the fuel on board"
+    },
     "zoom": {
       "label": "Zoom",
       "in": "Zoom in",

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
@@ -523,3 +523,116 @@ function withinText(container: HTMLElement, pattern: RegExp): Element {
   if (match === undefined) throw new Error(`text ${pattern.source} not found`);
   return match;
 }
+
+describe('map layers (slice 1.4)', () => {
+  const withFuel = (fuel: number, fuelUse = 1) => {
+    const base = ship();
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json([{ ...base, fuel, sheet: { ...base.sheet, fuelUse } }]),
+      ),
+    );
+  };
+  const flying = () => {
+    const now = Date.now();
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json([
+          {
+            id: 'm1',
+            templateId: 'delivery_luna',
+            type: 'DELIVERY',
+            factionId: 'luna',
+            originId: 'ceres',
+            destinationId: 'gate',
+            legs: [],
+            cargo: {},
+            reward: 100,
+            expiresAt: new Date(now + 3_600_000).toISOString(),
+            status: 'IN_TRANSIT',
+            playerId: 'player-1',
+            privatePlayerId: null,
+            shipId: 'ship-1',
+            acceptedAt: new Date(now - 60_000).toISOString(),
+            arrivalAt: new Date(now + 600_000).toISOString(),
+            deadlineAt: null,
+            seed: 's',
+            version: 1,
+            legWindows: [
+              {
+                legIndex: 0,
+                routeId: 'ceres-gate',
+                from: new Date(now - 300_000).toISOString(),
+                to: new Date(now + 300_000).toISOString(),
+              },
+            ],
+          },
+        ]),
+      ),
+    );
+  };
+
+  beforeEach(() => window.localStorage.clear());
+
+  it('draws one territory area and label per faction, none for independent places', async () => {
+    const { svg } = await renderWholeMap();
+    const factionIds = new Set(
+      world()
+        .locations.map((place) => place.factionId)
+        .filter((id) => id !== 'free'),
+    );
+    await waitFor(() =>
+      expect(svg.querySelectorAll('[data-testid="territory"]')).toHaveLength(factionIds.size),
+    );
+    expect(svg.querySelectorAll('text.territory-label')).toHaveLength(factionIds.size);
+    expect(svg.querySelector('[data-faction="free"]')).toBeNull();
+  });
+
+  it('marks the places the fuel reaches and dims the others', async () => {
+    withFuel(0);
+    const { svg } = await renderWholeMap();
+    await waitFor(() => expect(svg.querySelector('[data-testid="range-layer"]')).not.toBeNull());
+    expect(svg.querySelectorAll('[data-testid="range-mark"][data-reach="yes"]')).toHaveLength(1);
+    expect(svg.querySelectorAll('[data-testid="range-mark"][data-reach="no"]')).toHaveLength(11);
+    expect(svg.querySelectorAll('g.node-hit.out-of-range')).toHaveLength(11);
+    expect(node(svg, 'Porto Ceres — You are here')).toHaveAttribute('data-reach', 'yes');
+  });
+
+  it('a ship that burns no fuel reaches every place', async () => {
+    withFuel(0, 0);
+    const { svg } = await renderWholeMap();
+    await waitFor(() =>
+      expect(svg.querySelectorAll('[data-testid="range-mark"][data-reach="yes"]')).toHaveLength(12),
+    );
+    expect(svg.querySelectorAll('[data-reach="no"]')).toHaveLength(0);
+  });
+
+  it('the legend chips hide their layer and the choice is remembered', async () => {
+    resetActiveState();
+    const { svg, unmount } = await renderWholeMap();
+    await waitFor(() => expect(svg.querySelector('[data-testid="range-layer"]')).not.toBeNull());
+    await waitFor(() => expect(svg.querySelector('[data-testid="planned-trip"]')).not.toBeNull());
+    fireEvent.click(screen.getByTestId('layer-range'));
+    fireEvent.click(screen.getByTestId('layer-trips'));
+    expect(svg.querySelector('[data-testid="range-layer"]')).toBeNull();
+    expect(svg.querySelector('[data-testid="planned-trip"]')).toBeNull();
+    expect(screen.getByTestId('layer-range')).toHaveAttribute('aria-pressed', 'false');
+    unmount();
+    await renderMap();
+    expect(await screen.findByTestId('layer-range')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('shows no fuel range while the ship flies or is adrift', async () => {
+    flying();
+    const flight = await renderWholeMap();
+    await waitFor(() => expect(flight.svg.querySelector('.ship-marker')).not.toBeNull());
+    expect(flight.svg.querySelector('[data-testid="range-layer"]')).toBeNull();
+    expect(screen.queryByTestId('layer-range')).toBeNull();
+    flight.unmount();
+    server.resetHandlers();
+    setShipStatus('ADRIFT');
+    const drift = await renderMap();
+    await waitFor(() => expect(drift.svg.querySelector('.ship-marker.floating')).not.toBeNull());
+    expect(drift.svg.querySelector('[data-testid="range-layer"]')).toBeNull();
+  });
+});

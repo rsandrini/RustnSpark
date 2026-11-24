@@ -286,11 +286,11 @@
     display: none;
   }
 
-  /* the sector map: a smaller header, no legend */
+  /* the sector map: a smaller header; the legend keeps only its layer chips (they wrap) */
   .map-stage {
     height: min(52vh, 420px);
   }
-  .legend {
+  .legend > span {
     display: none;
   }
   .map-panel-title {
