@@ -3,7 +3,12 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { classicSquareCells, resetBoardState, resetActiveState } from '../../test/msw/handlers';
+import {
+  classicSquareCells,
+  resetBoardState,
+  resetActiveState,
+  ship,
+} from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 
 const onboarded = () =>
@@ -30,6 +35,41 @@ async function renderBoard(extra = ''): Promise<void> {
   // Board's own type-filter chips only render once its offers have loaded.
   await screen.findByRole('tab', { name: /^All missions/ });
 }
+
+const bareOffer = (id: string) => ({
+  id,
+  templateId: `tpl-${id}`,
+  type: 'DELIVERY',
+  factionId: 'luna',
+  originId: 'ceres',
+  destinationId: 'gate',
+  legs: [],
+  cargo: {},
+  reward: 900,
+  expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+  status: 'AVAILABLE',
+  playerId: null,
+  privatePlayerId: null,
+  shipId: null,
+  acceptedAt: null,
+  arrivalAt: null,
+  deadlineAt: null,
+  seed: `seed-${id}`,
+  version: 1,
+  rewardEstimate: 900,
+  info: {
+    title: { en: id, 'pt-BR': id },
+    description: { en: 'A run.', 'pt-BR': '' },
+    legCount: 1,
+    totalDistance: 300,
+    peakDanger: 2,
+    peakZone: 0,
+    estimate: { durationSeconds: 100, fuelNeeded: 8 },
+    material: null,
+    requirements: [],
+    race: null,
+  },
+});
 
 describe('board (S10.6)', () => {
   beforeEach(() => {
@@ -714,6 +754,49 @@ describe('board (S10.6)', () => {
     expect(screen.getByRole('tab', { name: 'All missions (3)' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Delivery (1)' })).toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /Travel/ })).toBeNull();
+  });
+
+  describe('an unassembled ship', () => {
+    const unassembled = () =>
+      http.get('/v1/ships', () => HttpResponse.json([{ ...ship(), layout: [] }]));
+    const emptyShelf = () =>
+      http.get('/v1/locations/:id/missions', () => HttpResponse.json([], { status: 200 }));
+    const NOTICE = 'Your ship is not assembled';
+
+    it('says so once when the shelf is empty (no offer carries a chip)', async () => {
+      server.use(unassembled(), emptyShelf());
+      await renderBoard();
+      expect(await screen.findAllByText(NOTICE)).toHaveLength(1);
+      expect(screen.queryByTestId('ship-faults')).toBeNull();
+    });
+
+    it('with offers, tells it in the chips (one per reason) and not in the notice', async () => {
+      const blocked = (id: string, code: string) => ({
+        ...bareOffer(id),
+        eligibility: { eligible: false, reasons: [{ code, message: code }] },
+      });
+      server.use(
+        unassembled(),
+        http.get('/v1/locations/:id/missions', () =>
+          HttpResponse.json([blocked('u-1', 'NO_BRIDGE'), blocked('u-2', 'NO_ENGINE')], {
+            status: 200,
+          }),
+        ),
+      );
+      await renderBoard();
+      const faults = await screen.findByTestId('ship-faults');
+      expect(within(faults).getByRole('button', { name: /No bridge/ })).toBeVisible();
+      expect(within(faults).getByRole('button', { name: /No engine/ })).toBeVisible();
+      expect(screen.queryByText(NOTICE)).toBeNull();
+    });
+
+    it('an assembled ship with an empty shelf gets neither', async () => {
+      server.use(emptyShelf());
+      await renderBoard();
+      expect(await screen.findByText('No offers at this location.')).toBeInTheDocument();
+      expect(screen.queryByText(NOTICE)).toBeNull();
+      expect(screen.queryByTestId('ship-faults')).toBeNull();
+    });
   });
 
   it('no fault, no chips', async () => {

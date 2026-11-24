@@ -7,6 +7,7 @@ import { BlockerChip } from '../../ui/kit/BlockerChip';
 import { PlaceBanner } from '../../ui/PlaceArt';
 import { activeAsOffer } from './active-offer';
 import { MissionRow } from './mission-row';
+import { EmptyShipNotice } from '../ship/empty-ship-notice';
 import { BoardFilters, type SortKey } from './board-filters';
 import { fixHref, fixOf } from './requirement-fix';
 import { EscortNotice } from '../ship/escort-notice';
@@ -223,6 +224,12 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
             );
           })}
         </div>
+      )}
+
+      {/* An unassembled ship with nothing on the shelf has no offer to carry the fault chips: the notice
+          speaks for it then (and only then, so the problem is never told twice). */}
+      {!boardQuery.isLoading && shipFaults.length === 0 && offers.length === 0 && (
+        <EmptyShipNotice />
       )}
 
       <RescueBanner />
