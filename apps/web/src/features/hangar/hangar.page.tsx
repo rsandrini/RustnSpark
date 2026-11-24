@@ -18,6 +18,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook, type ShipYardHandle } from './ship-yard';
 import {
   directionViolations,
+  facingEdgeCells,
   footprint,
   nextRot,
   isOutsideYard,
@@ -756,6 +757,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         for (let dy = 0; dy < height; dy += 1)
           occupied.add(`${placement.gx + dx},${placement.gy + dy}`);
       }
+      // An engine's exhaust and a weapon's muzzle stay clear: a part there would be a direction problem.
+      for (const cell of facingEdgeCells(placement, catalog)) occupied.add(`${cell.x},${cell.y}`);
     }
     return emptySlotHints({
       marks: computePortMarks(effectiveLayout, catalogById, connectorsById),

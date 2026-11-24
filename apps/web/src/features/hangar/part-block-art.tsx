@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { PartCatalogStats } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
 import { PortGlyph } from '../parts/connector-grid';
-import { kindLabelKey, partKindOf } from '../parts/part-kind';
+import { kindLabelOf, partKindOf } from '../parts/part-kind';
 import { PartKindIcon } from '../parts/part-kind-icon';
 import type { PortMark } from './connectors';
 import { facingOf, footprint, type Rot } from './hangar.geometry';
@@ -182,7 +182,7 @@ export function PartBlockArt({
   const { t } = useTranslation();
   const { width, height } = footprint(catalog, rot);
   const kind = partKindOf(catalog);
-  const kindLabel = t(kindLabelKey(kind));
+  const kindLabel = kindLabelOf(catalog, t);
   const broken = look?.broken === true;
   const nameLineCount = broken ? Math.min(lines.length, 1) + 1 : lines.length;
   // The bridge's name is its type; a ghost is dimmed and carries no row.

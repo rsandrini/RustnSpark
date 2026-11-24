@@ -176,6 +176,8 @@
      MOB, RNG) except the structure budget, which the yard does not show, so that one stays as the summary. The long
      list is behind its own toggle. The newcomer hints ("your ship needs...") are out. */
   .needs-row,
+  /* The dashed slot hints on the yard are the same newcomer hint (and only the chip's x dismisses them). */
+  .yard-slots,
   .sheet-headline-tile:not(.sheet-headline-structure) {
     display: none;
   }

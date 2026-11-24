@@ -3,6 +3,7 @@ import directionVectors from '../../../../../packages/contract/fixtures/directio
 import {
   canPlace,
   directionViolations,
+  facingEdgeCells,
   facingOf,
   footprint,
   isOutsideYard,
@@ -131,5 +132,19 @@ describe('rotation and placementIssue', () => {
     // the engine can be dropped anywhere too, in any facing
     const behind: Placement[] = [{ partInstanceId: 'p', gx: 0, gy: 0, rot: 0 }];
     expect(placementIssue(behind, byId, 'e', 1, 0, 0, cells)).toBeNull();
+  });
+});
+
+describe('facingEdgeCells (the exhaust / muzzle cells a slot hint must avoid)', () => {
+  it('is the column behind an engine and the cells in front of a weapon, nothing for other parts', () => {
+    const at = (rot: Rot): Placement => ({ partInstanceId: 'p', gx: 2, gy: 2, rot });
+    const engine = { ...catalog(1, 2), partClass: 'ENGINE' as const };
+    expect(facingEdgeCells(at(0), engine)).toEqual([
+      { x: 1, y: 2 },
+      { x: 1, y: 3 },
+    ]);
+    const weapon = { ...catalog(1, 1), partClass: 'WEAPON' as const };
+    expect(facingEdgeCells(at(90), weapon)).toEqual([{ x: 2, y: 1 }]);
+    expect(facingEdgeCells(at(0), catalog(1, 1))).toEqual([]);
   });
 });

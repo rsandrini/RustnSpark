@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PartCatalogStats } from '../../api/generated';
-import { kindLabelKey, partKindOf } from './part-kind';
+import { kindLabelOf, partKindOf } from './part-kind';
 import { PartKindIcon } from './part-kind-icon';
 
 type KindSource = Pick<PartCatalogStats, 'partClass' | 'partType'>;
@@ -10,10 +10,7 @@ type KindSource = Pick<PartCatalogStats, 'partClass' | 'partType'>;
 export function PartKindTag({ catalog }: { catalog: KindSource }): ReactNode {
   const { t } = useTranslation();
   const kind = partKindOf(catalog);
-  const label =
-    kind === 'other'
-      ? t(`hangar.partClasses.${catalog.partClass}`, { defaultValue: catalog.partClass })
-      : t(kindLabelKey(kind));
+  const label = kindLabelOf(catalog, t);
   return (
     <span className="kind-tag">
       <PartKindIcon kind={kind} size={12} />

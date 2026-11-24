@@ -82,6 +82,18 @@ export function partKindOf(
   return CLASS_KIND[catalog.partClass] ?? 'other';
 }
 
+/** The label of a part's kind; an unknown family (kind 'other') shows its class word instead of "Part". */
+export function kindLabelOf(
+  catalog: Pick<PartCatalogStats, 'partClass' | 'partType'>,
+  t: (key: string, options?: { defaultValue?: string }) => string,
+): string {
+  const kind = partKindOf(catalog);
+  if (kind === 'other') {
+    return t(`hangar.partClasses.${catalog.partClass}`, { defaultValue: catalog.partClass });
+  }
+  return t(kindLabelKey(kind));
+}
+
 export function kindLabelKey(kind: PartKind): string {
   return `hangar.partKinds.${kind}`;
 }

@@ -49,6 +49,21 @@ function cellsOf(placement: Placement, catalog: PartCatalogStats): Array<{ x: nu
   return out;
 }
 
+/** The cells right behind an engine's exhaust or in front of a weapon's muzzle (one step out of its facing
+    edge): filling one makes a direction problem. Empty for any other part. */
+export function facingEdgeCells(
+  placement: Placement,
+  catalog: PartCatalogStats,
+): Array<{ x: number; y: number }> {
+  if (catalog.partClass !== 'ENGINE' && catalog.partClass !== 'WEAPON') return [];
+  const f = FACING_VECTOR[facingOf(placement.rot)];
+  const own = cellsOf(placement, catalog);
+  const ownKeys = new Set(own.map((cell) => `${cell.x},${cell.y}`));
+  return own
+    .map((cell) => ({ x: cell.x + f.x, y: cell.y + f.y }))
+    .filter((cell) => !ownKeys.has(`${cell.x},${cell.y}`));
+}
+
 export interface DirectionViolation {
   /** The engine/weapon whose rear/firing half-plane is not empty. */
   partInstanceId: string;

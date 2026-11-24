@@ -1,4 +1,3 @@
-import type { PartKind } from '../parts/part-kind';
 import type { ShipNeed } from '../market/ship-needs';
 import type { PortMark, Side } from './connectors';
 
@@ -17,20 +16,6 @@ const OFFSETS: Record<Side, { dx: number; dy: number }> = {
   S: { dx: 0, dy: 1 },
   W: { dx: -1, dy: 0 },
 };
-
-const NEED_KIND: Record<string, PartKind> = {
-  weapon: 'weapon',
-  defense: 'armor',
-  shield: 'shield',
-  battery: 'battery',
-  power: 'reactor',
-  cargo: 'cargo',
-};
-
-/** The kind of part (and so the icon) a need asks for. */
-export function kindOfNeed(needId: string): PartKind {
-  return NEED_KIND[needId] ?? 'other';
-}
 
 /**
  * Where a needed part could go: for each need in order, the first free port whose neighbouring cell is

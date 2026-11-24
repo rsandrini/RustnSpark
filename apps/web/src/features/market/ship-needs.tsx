@@ -33,20 +33,22 @@ function sameSet(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
   return a.size === b.size && [...a].every((id) => b.has(id));
 }
 
+function onStorage(event: StorageEvent) {
+  if (event.key === null || event.key === DISMISSED_KEY) emitDismissed(readDismissedNeeds());
+}
+
 function subscribeDismissed(listener: () => void): () => void {
-  // The first subscriber resyncs with the storage (it may have changed while nobody was listening).
   if (dismissedListeners.size === 0) {
+    // The first subscriber resyncs with the storage (it may have changed while nobody was listening)
+    // and starts the one shared cross-tab listener.
     const stored = readDismissedNeeds();
     if (!sameSet(stored, dismissedSnapshot)) emitDismissed(stored);
+    window.addEventListener('storage', onStorage);
   }
   dismissedListeners.add(listener);
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === null || event.key === DISMISSED_KEY) emitDismissed(readDismissedNeeds());
-  };
-  window.addEventListener('storage', onStorage);
   return () => {
     dismissedListeners.delete(listener);
-    window.removeEventListener('storage', onStorage);
+    if (dismissedListeners.size === 0) window.removeEventListener('storage', onStorage);
   };
 }
 
@@ -114,6 +116,11 @@ const NEED_KIND: Record<string, PartKind> = {
   cargo: 'cargo',
 };
 
+/** The kind of part (and so the icon) a need asks for. */
+export function kindOfNeed(needId: string): PartKind {
+  return NEED_KIND[needId] ?? 'other';
+}
+
 /** How many chips show before the rest collapse into "+N". */
 export const MAX_NEED_CHIPS = 4;
 
@@ -144,7 +151,7 @@ export function ShipNeedsList({
           label={t(`market.needChip.${need.id}`)}
           title={t(`market.needs.${need.id}`)}
           description={t(`market.needs.${need.id}`)}
-          icon={<PartKindIcon kind={NEED_KIND[need.id] ?? 'other'} size={14} />}
+          icon={<PartKindIcon kind={kindOfNeed(need.id)} size={14} />}
           onShow={() => onShow(need)}
           onDismiss={() => onDismiss(need)}
           dismissLabel={t('market.needsDismiss', { need: t(`market.needChip.${need.id}`) })}

@@ -2,7 +2,8 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { kindLabelKey } from '../parts/part-kind';
 import { PartKindIcon } from '../parts/part-kind-icon';
-import { kindOfNeed, type SlotHint } from './empty-slot-hints';
+import { kindOfNeed } from '../market/ship-needs';
+import type { SlotHint } from './empty-slot-hints';
 
 const ICON = 0.5;
 
@@ -37,7 +38,7 @@ export function EmptySlotsLayer({
             role="button"
             tabIndex={0}
             aria-label={label}
-            style={{ pointerEvents: 'all', cursor: 'pointer' }}
+            style={{ pointerEvents: 'all', cursor: 'pointer', color: 'var(--brass)' }}
             onClick={() => onPick(hint)}
             onKeyDown={onKeyDown}
           >
@@ -49,17 +50,17 @@ export function EmptySlotsLayer({
               height={0.88}
               rx={0.12}
             />
-            <foreignObject
+            <svg
+              data-testid="yard-slot-icon"
               x={hint.x + (1 - ICON) / 2}
               y={hint.y + (1 - ICON) / 2}
               width={ICON}
               height={ICON}
+              overflow="visible"
               style={{ pointerEvents: 'none' }}
             >
-              <div className="yard-slot-icon">
-                <PartKindIcon kind={kind} size={20} />
-              </div>
-            </foreignObject>
+              <PartKindIcon kind={kind} size={ICON} />
+            </svg>
           </g>
         );
       })}

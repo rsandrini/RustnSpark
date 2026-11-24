@@ -67,6 +67,16 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
     expect(container.querySelector('text.block-label')?.textContent).toContain('Cannon');
   });
 
+  it('an unknown-family part reads its class word in the type row and the title', () => {
+    const { container } = art({
+      catalog: { ...cannon, partType: 'mystery_common', partClass: 'UTILITY', w: 2, h: 2 },
+    });
+    expect(container.querySelector('[data-testid="block-kind-label"]')?.textContent).toBe(
+      'Utility',
+    );
+    expect(container.querySelector('title')?.textContent).toContain('Utility');
+  });
+
   it('passes the interactive props to the block rect (the yard hangs its drag handlers there)', () => {
     let pressed = false;
     const { container } = art({
@@ -215,8 +225,9 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
         look: { rarity: 'Rare', condition: 0, broken: true },
         lines: ['Cannon'],
       });
-      expect(container.querySelector('text.block-label')?.textContent).toMatch(/\S/);
-      expect(container.querySelector('text.block-label')?.textContent).not.toBe('Cannon');
+      const text = container.querySelector('text.block-label')?.textContent ?? '';
+      expect(text).toContain('BROKEN');
+      expect(text).not.toContain('Cannon');
       expect(container.querySelector('[data-testid="block-kind-icon"]')).not.toBeNull();
     });
 
