@@ -246,6 +246,10 @@
   .mrow-expires {
     display: none;
   }
+  /* the taken mission keeps its countdown: it is the one that runs out */
+  .mrow.pinned .mrow-expires {
+    display: inline;
+  }
   .mrow-main {
     grid-template-columns: minmax(0, 1fr);
   }
