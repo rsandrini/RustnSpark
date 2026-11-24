@@ -58,6 +58,24 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 
 - [ ] The option to refuel between ports (today the pilot refuels docked at a port).
 
+## 6. The ship's type names its main point, and a spider chart shows its profile (owner, 2026-11-24)
+
+- [ ] The type is too often "Multirole" (the fallback when no cost share reaches a threshold: cargo 30%, cabin 20%, combat 45%; any
+  one mining part makes a Miner). Make it name what the ship is mainly good at, and call it balanced only when it really is.
+- [ ] A spider (radar) chart on the ship sheet (and a small one on the pilot card): cargo, passengers, firepower, defense, mobility,
+  range, mining (sensors maybe), with a before/after ghost when a part is considered.
+- Plan and open questions (a passenger-capacity stat, which types, how many axes): `docs/superpowers/plans/2026-11-24-ship-identity-and-spider-chart.md`.
+  Best built with UI slice 1.5 (type subtitle and Needs chips).
+
+## 7. The map badge shows the pilots anchored at a place, not the missions (owner, 2026-11-24)
+
+- [ ] On the map, the number on each place now counts the missions on offer. Make it the number of pilots anchored (docked) there.
+- Small, web only: the server already sends `pilotCount` per place (`apps/api/src/world/world.service.ts`, distinct pilots with a
+  docked ship, suspended accounts excluded) and the place dialog already shows it. Change the badge in `apps/web/src/features/map/map.page.tsx`
+  (`miss-badge`, near line 587) to `pilotCount`, its tooltip (`map.missionsHere` becomes a pilots-here text, en AND pt-BR), and the map specs.
+  The mission count stays in the place dialog. Do it with UI slice 1.4 (the map).
+- Decide: hide the badge at 0 (as today), and whether the pilot's own ship counts (it does today: it is docked there).
+
 ## Bugs found testing v0.1.4 in prod
 
 - [ ] (the owner will add them here as they are found; each ships in v0.1.5, or as a `v0.1.4b` hotfix if it blocks play)
