@@ -1,9 +1,13 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 
 export interface NeedChipProps {
   label: string;
   /** The longer explanation, as a hover hint. */
   title?: string;
+  /** The explanation for screen readers and touch: the chip's accessible description (its name stays the label). */
+  description?: string;
+  /** Overrides the accessible name, for a label that says too little alone ("+2"). */
+  ariaLabel?: string;
   /** The icon of what is missing; a plus mark when omitted. */
   icon?: ReactNode;
   /** The whole chip is this button: the way to what fixes the need. */
@@ -23,6 +27,8 @@ export interface NeedChipProps {
 export function NeedChip({
   label,
   title,
+  description,
+  ariaLabel,
   icon,
   onShow,
   onDismiss,
@@ -30,9 +36,17 @@ export function NeedChip({
   dismissMark = '×',
   testId,
 }: NeedChipProps) {
+  const descId = useId();
   return (
     <span className="kit-need" data-testid={testId}>
-      <button type="button" className="kit-need-main" title={title} onClick={onShow}>
+      <button
+        type="button"
+        className="kit-need-main"
+        title={title}
+        aria-label={ariaLabel}
+        aria-describedby={description === undefined ? undefined : descId}
+        onClick={onShow}
+      >
         {icon ?? (
           <svg
             width="12"
@@ -49,6 +63,11 @@ export function NeedChip({
         )}
         {label}
       </button>
+      {description !== undefined && (
+        <span id={descId} className="sr-only">
+          {description}
+        </span>
+      )}
       {onDismiss !== undefined && (
         <button
           type="button"

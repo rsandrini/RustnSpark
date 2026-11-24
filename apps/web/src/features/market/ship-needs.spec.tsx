@@ -89,7 +89,7 @@ describe('ShipNeedsList chips', () => {
     const needs = ['weapon', 'defense', 'shield', 'battery', 'power'].map(need);
     render(<ShipNeedsList needs={needs} onShow={onShow} onDismiss={vi.fn()} />);
     expect(screen.queryByRole('button', { name: 'Low power' })).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: '+1' }));
+    await userEvent.click(screen.getByRole('button', { name: '+1: More needs' }));
     expect(onShow).toHaveBeenCalledWith(needs[4]);
     expect(screen.getAllByRole('button', { name: /^Dismiss/ })).toHaveLength(4);
   });
@@ -144,6 +144,23 @@ describe('ShipNeedsNote', () => {
       <ShipNeedsNote sheet={lacking} installedParts={[]} canShop={false} onShow={vi.fn()} />,
     );
     expect(screen.queryByTestId('ship-needs')).toBeNull();
+  });
+});
+
+describe('need chip explanation', () => {
+  it('the accessible name stays short and the description carries the long text', () => {
+    render(<ShipNeedsList needs={[need('weapon')]} onShow={vi.fn()} onDismiss={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'No weapon' })).toHaveAccessibleDescription(
+      en.market.needs.weapon,
+    );
+  });
+
+  it('every need has a long text in en and pt-BR for that description', () => {
+    for (const locale of [en, ptBR]) {
+      const long = (locale as unknown as { market: { needs: Record<string, string> } }).market
+        .needs;
+      for (const id of IDS) expect(long[id], id).toBeTruthy();
+    }
   });
 });
 

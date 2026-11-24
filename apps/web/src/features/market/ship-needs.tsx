@@ -111,6 +111,7 @@ export function ShipNeedsList({
           key={need.id}
           label={t(`market.needChip.${need.id}`)}
           title={t(`market.needs.${need.id}`)}
+          description={t(`market.needs.${need.id}`)}
           icon={<PartKindIcon kind={NEED_KIND[need.id] ?? 'other'} size={14} />}
           onShow={() => onShow(need)}
           onDismiss={() => onDismiss(need)}
@@ -122,6 +123,7 @@ export function ShipNeedsList({
         <NeedChip
           label={`+${hidden.length}`}
           title={t('market.needChip.more')}
+          ariaLabel={`+${hidden.length}: ${t('market.needChip.more')}`}
           onShow={() => onShow(hidden[0] as ShipNeed)}
         />
       )}
@@ -129,7 +131,7 @@ export function ShipNeedsList({
   );
 }
 
-/** The same note on the Ship screen, where the pilot also buys parts and dispatches: "Show parts"
+/** The same note on the Ship screen, where the pilot also buys parts and dispatches: the chip
     opens the Store with that class of part. Hidden when the ship is not in port (nothing to buy). */
 export function ShipNeedsNote({
   sheet,
