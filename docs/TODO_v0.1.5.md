@@ -77,6 +77,21 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
   The mission count stays in the place dialog. Do it with UI slice 1.4 (the map).
 - Decide: hide the badge at 0 (as today), and whether the pilot's own ship counts (it does today: it is docked there).
 
+## 8. People transport has no capacity: one small life support carries any number of passengers (owner, 2026-11-24)
+
+- [ ] Confirmed in the code (2026-11-24): a TRANSPORT mission only checks two yes/no flags, a pressurized part AND a life-support part
+  installed (`missionRequirementChecklist`, `apps/api/src/missions/requirements.checker.ts`; `pressurized` and `lifeSupport` are
+  booleans in the part's `specialProp`). A mission carries no number of people, a cabin has no seats, and a life-support module
+  has no limit, so the smallest of each moves any group. The same two flags also gate flying (`viability.ts`).
+- Design: a mission carries a head count (like the delivery `cargo` hint); a cabin gives seats (`pax`, the same new stat as the spider
+  chart, item 6); a life-support module gives a capacity (`lifeCap`: how many people it keeps alive) that scales with tier and
+  size, and costs power in proportion. A ship takes the job when `pax >= people` AND `lifeCap >= people`; the blocker chip says
+  which one is short. Bigger groups pay more, per person, and take the board's short/long mix into account (item 5a).
+- Needs: the generator (`apps/api/src/missions/generator`), the checker and its blocker reasons (en AND pt-BR), the part catalog
+  (`pax`, `lifeCap` on cabin and life-support parts, seed + MIGRATION for prod + admin editor), the prologue sandbox (its passenger
+  job), the sim for pay per person. Existing accepted/flying TRANSPORT missions must keep working (default head count when none is stored).
+- Plan: with item 6's task A0 (the `pax` stat); see `docs/superpowers/plans/2026-11-24-ship-identity-and-spider-chart.md`.
+
 ## Bugs found testing v0.1.4 in prod
 
 - [ ] (the owner will add them here as they are found; each ships in v0.1.5, or as a `v0.1.4b` hotfix if it blocks play)
