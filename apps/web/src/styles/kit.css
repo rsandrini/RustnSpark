@@ -181,6 +181,9 @@
 }
 
 /* blocker chip --------------------------------------------------------------- */
+.kit-blocker svg {
+  flex: none;
+}
 .kit-blocker {
   display: inline-flex;
   align-items: center;

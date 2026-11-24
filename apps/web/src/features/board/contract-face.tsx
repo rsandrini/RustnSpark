@@ -75,7 +75,7 @@ export function ContractFace({
             const name = t(`board.requirements.${req.code}`, { defaultValue: req.message });
             const numbers =
               req.needed !== undefined && req.actual !== undefined
-                ? ` ${t('board.requirementNumbers', {
+                ? `: ${t('board.requirementNumbers', {
                     actual: number(req.actual, req.unit),
                     needed: number(req.needed, req.unit),
                   })}`

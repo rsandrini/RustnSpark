@@ -69,6 +69,7 @@ export function MissionRow({
   return (
     <li
       className={`mrow type-${offer.type.toLowerCase()} state-${state}${tag !== undefined ? ' pinned' : ''}`}
+      data-faction={offer.factionId}
       data-testid={tag !== undefined ? 'board-active-mission' : undefined}
     >
       <div className="mrow-main">

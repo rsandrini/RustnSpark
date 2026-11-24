@@ -745,7 +745,7 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 .mrow-main {
   display: grid;
   /* the card's text on the left; the route takes the whole right column, top to bottom */
-  grid-template-columns: minmax(0, 1fr) minmax(190px, 44%);
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 34%);
   align-items: stretch;
 }
 .mrow-body {
@@ -831,9 +831,32 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 }
 .mrow-who {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px 10px;
   min-width: 0;
+}
+.mrow-who .giver-text {
+  min-width: 6.5rem;
+}
+.mrow-who .mrow-head {
+  flex: 1 1 9rem;
+}
+/* the ring around the portrait is the sender's faction colour, also around an uploaded picture */
+.mrow[data-faction='luna'] .mrow-giver {
+  color: var(--luna);
+}
+.mrow[data-faction='sun'] .mrow-giver {
+  color: var(--sun);
+}
+.mrow[data-faction='explorers'] .mrow-giver {
+  color: var(--explorers);
+}
+.mrow[data-faction='pirata'] .mrow-giver {
+  color: var(--pirata);
+}
+.mrow[data-faction='neutro'] .mrow-giver {
+  color: var(--neutro);
 }
 .mrow-who .giver-badge {
   flex: none;
