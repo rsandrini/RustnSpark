@@ -242,17 +242,18 @@
     flex: 0 0 auto;
   }
 
-  /* the missions board: title, route, time, risk, reward and the two buttons. The sender, the faction, the
-     countdown and the "eligible" pills are inside Details; what blocks you stays in red. */
-  .mrow-expires,
-  .mrow-giver {
+  /* the missions board: one column; the face, then the route. The countdown and the "eligible" pills are inside Details; what blocks you stays in red. */
+  .mrow-expires {
     display: none;
   }
   .mrow-main {
-    grid-template-columns: minmax(0, 1fr) 40%;
+    grid-template-columns: minmax(0, 1fr);
   }
   .mrow-map {
-    min-height: 130px;
+    min-height: 110px;
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+    border-radius: 0 0 var(--radius) var(--radius);
   }
   .fuel-chip.fuel-ok {
     display: none;

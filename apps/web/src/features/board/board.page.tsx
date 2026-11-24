@@ -342,7 +342,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
             ? t('board.busyScavenging')
             : offer.eligibility.eligible
               ? t('board.accept')
-              : t('board.notEligible');
+              : t('board.locked');
           return (
             <MissionRow
               key={offer.id}

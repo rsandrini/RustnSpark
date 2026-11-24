@@ -77,8 +77,11 @@ describe('board (S10.6)', () => {
   it('hovers the destination place name to show its controlling faction', async () => {
     await renderBoard();
     // b-1 (Corporate Delivery) goes to 'gate', which the fixture world controls under 'sun'.
-    const destinationName = await screen.findByText('Portão Kessler');
-    expect(destinationName).toHaveAttribute('title', 'Controlled by Sun Traders');
+    // the row's route and the card behind Details both name it; the card carries the faction title
+    const names = await screen.findAllByText('Portão Kessler');
+    expect(names.some((name) => name.getAttribute('title') === 'Controlled by Sun Traders')).toBe(
+      true,
+    );
   });
 
   // Round-10 owner request: "show the requirements for the mission, in a clear way, not
@@ -112,7 +115,7 @@ describe('board (S10.6)', () => {
     // by the checklist entry for that same code, not duplicated alongside it.
     expect(screen.queryByText('Needs a mining system')).toBeNull();
     // once as the row's chip, once in the card behind Details
-    expect(screen.getAllByText('A mining rig installed')).toHaveLength(2);
+    expect(screen.getAllByText(/A mining rig installed/)).toHaveLength(2);
   });
 
   it('shows mining contract time, odds and a cargo warning when the contract exceeds ore space', async () => {
@@ -259,9 +262,9 @@ describe('board (S10.6)', () => {
     // "Only eligible" defaults on and would hide the blocked offer this test's count expects.
     fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
 
-    const acceptButtons = await screen.findAllByRole('button', { name: /Accept|Not eligible/ });
+    const acceptButtons = await screen.findAllByRole('button', { name: /Accept|Locked/ });
     expect(acceptButtons).toHaveLength(4);
-    expect(screen.getAllByRole('button', { name: 'Not eligible' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Locked' })).toHaveLength(1);
     // The board is sorted by reward now, so the first row may be the blocked one: take an enabled one.
     fireEvent.click(acceptButtons.find((button) => !button.hasAttribute('disabled')) as Element);
 

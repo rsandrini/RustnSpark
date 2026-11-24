@@ -1,11 +1,30 @@
+import { Link } from 'react-router';
+
 export interface BlockerChipProps {
   label: string;
   onFix?: () => void;
+  /** An external or full-page address (a plain link: the page reloads). */
   href?: string;
+  /** An in-app path: a router link, so the app is not reloaded. Needs a router around it. */
+  to?: string;
+  /** Extra classes, for a caller that styles its own kind of chip. */
+  className?: string;
+  testId?: string;
+  state?: string;
 }
 
 /** What blocks an action, as a chip. With `onFix` or `href` the whole chip is the way to the fix. */
-export function BlockerChip({ label, onFix, href }: BlockerChipProps) {
+export function BlockerChip({
+  label,
+  onFix,
+  href,
+  to,
+  className,
+  testId,
+  state,
+}: BlockerChipProps) {
+  const cls = className === undefined ? 'kit-blocker' : `kit-blocker ${className}`;
+  const attrs = { 'data-testid': testId, 'data-state': state };
   const body = (
     <>
       <svg
@@ -23,19 +42,30 @@ export function BlockerChip({ label, onFix, href }: BlockerChipProps) {
       {label}
     </>
   );
+  if (to !== undefined) {
+    return (
+      <Link className={cls} to={to} {...attrs}>
+        {body}
+      </Link>
+    );
+  }
   if (href !== undefined) {
     return (
-      <a className="kit-blocker" href={href}>
+      <a className={cls} href={href} {...attrs}>
         {body}
       </a>
     );
   }
   if (onFix !== undefined) {
     return (
-      <button type="button" className="kit-blocker" onClick={onFix}>
+      <button type="button" className={cls} onClick={onFix} {...attrs}>
         {body}
       </button>
     );
   }
-  return <span className="kit-blocker">{body}</span>;
+  return (
+    <span className={cls} {...attrs}>
+      {body}
+    </span>
+  );
 }

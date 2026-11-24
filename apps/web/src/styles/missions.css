@@ -759,28 +759,6 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   letter-spacing: 0;
   text-transform: none;
 }
-.mrow-pip {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--brass);
-}
-/* every type has its own clear colour (no grey: it read as disabled) */
-.mrow.type-transport .mrow-pip {
-  background: var(--sun);
-}
-.mrow.type-mining .mrow-pip {
-  background: oklch(72% 0.14 305);
-}
-.mrow.type-rescue .mrow-pip {
-  background: var(--coral);
-}
-.mrow.type-escort .mrow-pip {
-  background: oklch(74% 0.12 200);
-}
-.mrow.type-race .mrow-pip {
-  background: var(--ok);
-}
 .mrow-title {
   margin: 6px 0 0;
   font-size: var(--text-md);
@@ -819,19 +797,60 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   width: 100%;
   height: 100%;
 }
-/* the decision: what it pays, how long, how much fuel */
-.mrow-key {
+/* the contract face: sender, what and where, risk and time, chips, and what it pays */
+.mrow-face {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: start;
+  min-width: 0;
+}
+.mrow-face > .mrow-type,
+.mrow-face > .mrow-who,
+.mrow-face > .mrow-meta,
+.mrow-face > .mrow-chips {
+  grid-column: 1;
+}
+.mrow-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.mrow-who .giver-badge {
+  flex: none;
+}
+.mrow-giver {
+  margin: 0;
+}
+.mrow-who .giver-portrait,
+.mrow-who .giver-fac {
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px var(--paper-2),
+    0 0 0 4px currentColor;
+}
+.mrow-arrow {
+  display: inline-block;
+  margin: 0 4px;
+  color: var(--brass);
+}
+.mrow-meta {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 16px;
+  align-items: center;
+  gap: 4px 14px;
 }
-.mrow-reward {
-  color: var(--brass);
-  font-family: var(--font-display, var(--font-mono));
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.1;
+.mrow-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.mrow-kind svg {
+  width: 16px;
+  height: 16px;
 }
 .mrow-fig {
   color: var(--ink);
@@ -841,23 +860,48 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 .mrow-fig.warn {
   color: var(--risk-md);
 }
-/* what stops the pilot, said once */
-.mrow-why {
+.mrow-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mrow-chips .fuel-chip {
+  white-space: normal;
+}
+.mrow-chips .fuel-chip.fuel-short {
+  background: color-mix(in oklab, var(--risk-md) 16%, transparent);
+  color: var(--risk-md);
+}
+.mrow-pay {
+  grid-column: 2;
+  grid-row: 1 / span 3;
   display: grid;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--text-sm);
-  text-align: left;
+  justify-items: end;
+  align-content: start;
+  gap: 8px;
 }
-.mrow-why.bad {
-  color: var(--coral);
+.mrow-reward {
+  color: var(--brass);
+  font-family: var(--font-display, var(--font-mono));
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
 }
-.mrow-why small {
-  font-family: var(--font-mono);
-  font-size: inherit;
-  opacity: 0.85;
+/* phones: one column, the reward and the action come under the title, chips wrap */
+@media (max-width: 600px) {
+  .mrow-face {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mrow-pay {
+    grid-column: 1;
+    grid-row: auto;
+    order: 3;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 .mrow-foot {
   display: flex;
