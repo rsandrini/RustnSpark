@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ShipSheet } from '../../api/generated';
+import { NeedChip } from '../../ui/kit/NeedChip';
+import { PartKindIcon } from '../parts/part-kind-icon';
+import type { PartKind } from '../parts/part-kind';
 import type { InstalledPartForCompare } from '../parts/part-compare-match';
 
 const DISMISSED_KEY = 'rs.dismissedShipNeeds';
@@ -70,7 +73,20 @@ export function lackingParts(
   return lacking;
 }
 
-/** The "Your ship needs" note: each need, a button to see the parts that fix it, and a dismiss mark. */
+const NEED_KIND: Record<string, PartKind> = {
+  weapon: 'weapon',
+  defense: 'armor',
+  shield: 'shield',
+  battery: 'battery',
+  power: 'reactor',
+  cargo: 'cargo',
+};
+
+/** How many chips show before the rest collapse into "+N". */
+export const MAX_NEED_CHIPS = 4;
+
+/** The "Your ship needs" note as chips: each need is a chip that leads to the part (the whole chip is the
+    button), with a small dismiss mark. Past four, the rest collapse into a "+N" chip that opens the first hidden. */
 export function ShipNeedsList({
   needs,
   onShow,
@@ -82,27 +98,33 @@ export function ShipNeedsList({
 }) {
   const { t } = useTranslation();
   if (needs.length === 0) return null;
+  const hidden = needs.slice(MAX_NEED_CHIPS);
   return (
-    <div className="needs-row" role="note" data-testid="ship-needs">
-      <span className="label needs-tag">{t('market.needsTitle')}</span>
-      <ul>
-        {needs.map((need) => (
-          <li key={need.id}>
-            <span>{t(`market.needs.${need.id}`)}</span>
-            <button type="button" className="btn tiny" onClick={() => onShow(need)}>
-              {t('market.needsShow')}
-            </button>
-            <button
-              type="button"
-              className="needs-dismiss"
-              aria-label={t('market.needsDismiss', { need: t(`market.needs.${need.id}`) })}
-              onClick={() => onDismiss(need)}
-            >
-              {t('market.needsDismissMark')}
-            </button>
-          </li>
-        ))}
-      </ul>
+    <div
+      className="needs-row"
+      role="group"
+      aria-label={t('market.needsTitle')}
+      data-testid="ship-needs"
+    >
+      {needs.slice(0, MAX_NEED_CHIPS).map((need) => (
+        <NeedChip
+          key={need.id}
+          label={t(`market.needChip.${need.id}`)}
+          title={t(`market.needs.${need.id}`)}
+          icon={<PartKindIcon kind={NEED_KIND[need.id] ?? 'other'} size={14} />}
+          onShow={() => onShow(need)}
+          onDismiss={() => onDismiss(need)}
+          dismissLabel={t('market.needsDismiss', { need: t(`market.needChip.${need.id}`) })}
+          dismissMark={t('market.needsDismissMark')}
+        />
+      ))}
+      {hidden.length > 0 && (
+        <NeedChip
+          label={`+${hidden.length}`}
+          title={t('market.needChip.more')}
+          onShow={() => onShow(hidden[0] as ShipNeed)}
+        />
+      )}
     </div>
   );
 }

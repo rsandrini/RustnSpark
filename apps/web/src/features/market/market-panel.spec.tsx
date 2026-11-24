@@ -356,15 +356,15 @@ describe('market panel: descriptions and filters', () => {
 
     // The default ship has armor and cargo but no firepower.
     const needs = await screen.findByTestId('ship-needs');
-    expect(within(needs).getByText(/A weapon/)).toBeInTheDocument();
-    expect(within(needs).queryByText(/cargo hold/)).toBeNull();
+    expect(within(needs).getByText('No weapon')).toBeInTheDocument();
+    expect(within(needs).queryByText('No cargo hold')).toBeNull();
 
-    fireEvent.click(within(needs).getByRole('button', { name: 'Show parts' }));
+    fireEvent.click(within(needs).getByRole('button', { name: 'No weapon' }));
     const list = () => document.querySelectorAll('.market-panel .pcard-grid .pcard');
     expect(list()).toHaveLength(1);
     expect(within(panel()).getByText('Cannon')).toBeInTheDocument();
 
-    fireEvent.click(within(needs).getByRole('button', { name: /^Dismiss: A weapon/ }));
+    fireEvent.click(within(needs).getByRole('button', { name: 'Dismiss: No weapon' }));
     expect(screen.queryByTestId('ship-needs')).toBeNull();
     // kept in this browser: a dismissed tip stays gone on the next visit
     expect(JSON.parse(localStorage.getItem('rs.dismissedShipNeeds') ?? '[]')).toHaveLength(1);
@@ -401,9 +401,9 @@ describe('market panel: descriptions and filters', () => {
     await renderPortMarket();
     await screen.findByText('Plated Hull');
     const needs = await screen.findByTestId('ship-needs');
-    expect(within(needs).getByText(/Recommended: a shield/)).toBeInTheDocument();
+    expect(within(needs).getByText('No shield')).toBeInTheDocument();
     // the mock ship already carries a battery, so only the shield is recommended
-    expect(within(needs).queryByText(/Recommended: a battery/)).toBeNull();
+    expect(within(needs).queryByText('No battery')).toBeNull();
   });
 
   it('shows the pilot balance in the Hangar store', async () => {

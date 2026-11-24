@@ -2857,7 +2857,15 @@
     "clearFilters": "Limpar",
     "applyFilters": "Ver peças",
     "needsTitle": "Sua nave precisa de",
-    "needsShow": "Ver peças",
+    "needChip": {
+      "weapon": "Sem arma",
+      "defense": "Sem blindagem",
+      "shield": "Sem escudo",
+      "battery": "Sem bateria",
+      "power": "Pouca energia",
+      "cargo": "Sem porão",
+      "more": "Mais necessidades"
+    },
     "needsDismiss": "Dispensar: {{need}}",
     "needsDismissMark": "×",
     "chipClear": " ×",

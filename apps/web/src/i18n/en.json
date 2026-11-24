@@ -2857,7 +2857,15 @@
     "clearFilters": "Clear",
     "applyFilters": "Show parts",
     "needsTitle": "Your ship needs",
-    "needsShow": "Show parts",
+    "needChip": {
+      "weapon": "No weapon",
+      "defense": "No armor",
+      "shield": "No shield",
+      "battery": "No battery",
+      "power": "Low power",
+      "cargo": "No cargo hold",
+      "more": "More needs"
+    },
     "needsDismiss": "Dismiss: {{need}}",
     "needsDismissMark": "×",
     "chipClear": " ×",

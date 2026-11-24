@@ -186,44 +186,11 @@
   font-size: var(--text-xs);
 }
 .needs-row {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 16px;
-  padding: 14px 16px;
-  border: 1px solid color-mix(in oklab, var(--brass) 35%, transparent);
-  border-radius: var(--radius);
-  background: var(--paper-2);
-}
-.needs-row .needs-tag {
-  color: var(--brass);
-}
-.needs-row ul {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.needs-row li {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 12px;
-}
-.needs-row li > span {
-  flex: 1 1 260px;
-  min-width: 0;
-}
-.needs-dismiss {
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-size: var(--text-lg);
-  line-height: 1;
-  cursor: pointer;
-}
-.needs-dismiss:hover {
-  color: var(--ink);
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 /* the part card (Market, Your goods and Upgrade): hairline, rarity pip, mono numbers */

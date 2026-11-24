@@ -45,7 +45,7 @@ test('a new pilot sees the recommended shield and battery on the Ship screen', a
   await page.goto('/ship');
   const needs = page.getByTestId('ship-needs');
   await expect(needs).toBeVisible();
-  await expect(needs).toContainText('Recommended: a shield');
+  await expect(needs).toContainText('No shield');
 });
 
 test('the checklist ticks "Take a mission", "Dispatch it" and "Read your report" after the first flight', async ({
