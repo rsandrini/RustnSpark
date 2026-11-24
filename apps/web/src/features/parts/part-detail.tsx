@@ -13,6 +13,7 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { sheetStat, useDisplay } from '../../ui/display';
 import { ConnectorGrid } from './connector-grid';
+import { PartKindTag, MetaLine } from './part-kind-tag';
 
 // What every screen that shows a part (market, hangar tray, ship grid) needs to explain it.
 // Inventory items and market listings both satisfy this shape.
@@ -466,16 +467,16 @@ export function PartDetail({
       {!hideMeta && (
         <>
           <p className="sub">
-            {[
-              t(`hangar.partClasses.${catalog.partClass}`),
-              t(`parts.rarities.${part.rarity}`, { defaultValue: part.rarity }),
-              `${t('parts.size')} ${catalog.w}×${catalog.h}`,
-              part.condition !== undefined
-                ? `${t('parts.condition')} ${format(part.condition)}%`
-                : null,
-            ]
-              .filter((piece) => piece !== null)
-              .join(' · ')}
+            <MetaLine
+              pieces={[
+                <PartKindTag key="kind" catalog={catalog} />,
+                t(`parts.rarities.${part.rarity}`, { defaultValue: part.rarity }),
+                `${t('parts.size')} ${catalog.w}×${catalog.h}`,
+                part.condition !== undefined
+                  ? `${t('parts.condition')} ${format(part.condition)}%`
+                  : null,
+              ]}
+            />
             {infoText !== '' && (
               <button
                 type="button"
@@ -692,13 +693,13 @@ export function PartStatsCard({
         <RarityBadge rarity={part.rarity} />
       </div>
       <p className="sub">
-        {[
-          t(`hangar.partClasses.${catalog.partClass}`),
-          `${catalog.w}×${catalog.h}`,
-          part.condition !== undefined ? `${format(part.condition)}%` : null,
-        ]
-          .filter((piece) => piece !== null)
-          .join(' · ')}
+        <MetaLine
+          pieces={[
+            <PartKindTag key="kind" catalog={catalog} />,
+            `${catalog.w}×${catalog.h}`,
+            part.condition !== undefined ? `${format(part.condition)}%` : null,
+          ]}
+        />
       </p>
       {part.connectors !== undefined && part.connectors.length > 0 && (
         <div className="part-ports">

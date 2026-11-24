@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { pickLocalized } from '../../i18n/localized';
+import { PartKindTag, MetaLine } from './part-kind-tag';
 import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
 import {
@@ -85,11 +86,15 @@ export function PartCard({
   const name = pickLocalized(part.displayName, i18n.language);
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const condition = part.condition === undefined ? undefined : Math.round(part.condition);
-  const meta = [
-    t(`hangar.partClasses.${part.catalog.partClass}`),
-    t(`parts.rarities.${part.rarity}`, { defaultValue: part.rarity }),
-    `${part.catalog.w}×${part.catalog.h}`,
-  ].join(' · ');
+  const meta = (
+    <MetaLine
+      pieces={[
+        <PartKindTag key="kind" catalog={part.catalog} />,
+        t(`parts.rarities.${part.rarity}`, { defaultValue: part.rarity }),
+        `${part.catalog.w}×${part.catalog.h}`,
+      ]}
+    />
+  );
 
   const groups = portGroups(part.connectors ?? []);
   const verdict = fitView(fit);

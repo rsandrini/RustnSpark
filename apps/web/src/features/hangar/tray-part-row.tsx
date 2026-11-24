@@ -15,6 +15,7 @@ import { fitView } from '../parts/fit-view';
 import type { PortFit } from '../parts/port-fit';
 import { ConnectorGrid } from '../parts/connector-grid';
 import { PartInfoButton } from '../parts/part-info-button';
+import { PartKindTag, MetaLine } from '../parts/part-kind-tag';
 import {
   hoverAnchor,
   useClampedPosition,
@@ -89,10 +90,12 @@ export function TrayPartRow({
           <RarityBadge rarity={part.rarity} />
         </span>
         <span className="meta">
-          {[
-            t(`hangar.partClasses.${part.catalog.partClass}`),
-            `${part.catalog.w}×${part.catalog.h}`,
-          ].join(' · ')}
+          <MetaLine
+            pieces={[
+              <PartKindTag key="kind" catalog={part.catalog} />,
+              `${part.catalog.w}×${part.catalog.h}`,
+            ]}
+          />
         </span>
         <span className="meta">{partSummary(part.catalog, t, format)}</span>
         {(part.storedFuel ?? 0) > 0 && (

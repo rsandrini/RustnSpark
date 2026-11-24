@@ -52,6 +52,7 @@ import { readinessOf, upgradeNeeds, firstMissing, type UpgradeReadiness } from '
 import { useBridgeResize } from './bridge-resize-panel';
 import { usePrologueMode } from '../prologue/prologue-mode';
 import { PartDetail, type PartInfoData } from '../parts/part-detail';
+import { PartKindTag } from '../parts/part-kind-tag';
 
 // The seven tabs sit under three groups: what you buy, what the workshop does for the ship, and the
 // jobs the ship does at this port. The tab state stays one `PortTabId`; the group is derived from it.
@@ -981,9 +982,11 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                         {rowName}
                         {item.broken && <span className="pcard-note">{t('parts.broken')}</span>}
                         <small>
-                          {item.broken
-                            ? t('port.repairDestroyed')
-                            : t(`hangar.partClasses.${item.catalog.partClass}`)}
+                          {item.broken ? (
+                            t('port.repairDestroyed')
+                          ) : (
+                            <PartKindTag catalog={item.catalog} />
+                          )}
                         </small>
                       </div>
                       <Gauge

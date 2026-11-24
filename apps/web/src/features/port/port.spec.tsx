@@ -913,7 +913,7 @@ describe('port (S10.9)', () => {
     expect(screen.getAllByText('Cargo Rack')).toHaveLength(2);
     expect(screen.queryByText('Small Chemical Engine')).toBeNull();
     // The bridge is always here: its card carries the size controls even with no next tier.
-    expect(await screen.findByText('Bridge')).toBeInTheDocument();
+    expect((await screen.findAllByText('Bridge')).length).toBeGreaterThan(0);
   });
 
   // Round-10 owner request: "Upgrade UI should show diff between current part and upgraded

@@ -1486,3 +1486,10 @@ svg .yard-ghost .conn-mark {
   transform-origin: center;
   transform: scale(1.35);
 }
+
+.kind-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  vertical-align: middle;
+}
