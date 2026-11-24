@@ -43,7 +43,8 @@ import { EngineTuning } from './engine-tuning';
 import { YardCallouts } from './yard-callouts';
 import { ShipSheetPanel } from './ship-sheet-panel';
 import { usePrologueMode } from '../prologue/prologue-mode';
-import { ShipNeedsNote } from '../market/ship-needs';
+import { lackingParts, ShipNeedsNote, useDismissedNeeds } from '../market/ship-needs';
+import { emptySlotHints } from './empty-slot-hints';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
 import { RescueBanner } from '../rescue/rescue-banner';
@@ -729,6 +730,41 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
   // In the opening there is no Save button: a part dropped on the ship is saved a moment later (when the ship is sound).
   const opening = usePrologueMode().active;
+  // Dashed slots on the ship where a needed part could go: only in port, never in the opening.
+  const [dismissedNeeds] = useDismissedNeeds();
+  const slotHints = useMemo(() => {
+    if (opening || ship === undefined || ship.status !== 'IN_PORT') return [];
+    const needs = lackingParts(
+      ship.sheet,
+      parts.filter((part) => part.location === 'INSTALLED'),
+    ).filter((need) => !dismissedNeeds.has(need.id));
+    if (needs.length === 0 || connectorsById === undefined) return [];
+    const occupied = new Set<string>();
+    for (const placement of effectiveLayout) {
+      const catalog = catalogById.get(placement.partInstanceId);
+      if (catalog === undefined) continue;
+      const { width, height } = footprint(catalog, placement.rot);
+      for (let dx = 0; dx < width; dx += 1) {
+        for (let dy = 0; dy < height; dy += 1)
+          occupied.add(`${placement.gx + dx},${placement.gy + dy}`);
+      }
+    }
+    return emptySlotHints({
+      marks: computePortMarks(effectiveLayout, catalogById, connectorsById),
+      occupied,
+      inBounds: (x, y) => yardCellSet.has(`${x},${y}`),
+      needs,
+    });
+  }, [
+    opening,
+    ship,
+    parts,
+    dismissedNeeds,
+    yardCellSet,
+    connectorsById,
+    effectiveLayout,
+    catalogById,
+  ]);
   const autoSaveBlocked =
     save.isPending ||
     modifyBlocked ||
@@ -1051,6 +1087,16 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 onDragEnd={() => setDraggingId(null)}
                 onHoverPart={setHoveredId}
                 editable={!modifyBlocked}
+                slotHints={slotHints}
+                onSlotPick={(needId) => {
+                  const need = lackingParts(
+                    ship.sheet,
+                    parts.filter((part) => part.location === 'INSTALLED'),
+                  ).find((n) => n.id === needId);
+                  if (need === undefined) return;
+                  setStoreClass(need.partClass);
+                  setSideTab('store');
+                }}
                 callouts={<YardCallouts sheet={sheet} layers={preview?.layers} />}
               />
               {/* Hover a placed part: numbers only, no popup (owner request, round-3 follow-up —

@@ -131,6 +131,25 @@ describe('ShipYard port marks', () => {
     expect(container.querySelectorAll('.conn-connected')).toHaveLength(0);
   });
 
+  it('shows the empty-slot hints, and hides them while a part from the list is being carried over the yard', () => {
+    const slotProps = {
+      ...baseProps,
+      layout: [{ partInstanceId: 'a', gx: 0, gy: 0, rot: 0 as const }],
+      slotHints: [{ needId: 'weapon', x: 1, y: 0, side: 'E' as const }],
+      onSlotPick: () => undefined,
+    };
+    const shown = renderWithProviders(<ShipYard {...slotProps} />);
+    expect(shown.container.querySelectorAll('.yard-slot')).toHaveLength(1);
+    shown.unmount();
+    const carrying = renderWithProviders(
+      <ShipYard
+        {...slotProps}
+        dropPreview={{ partInstanceId: 'b', gx: 2, gy: 0, width: 1, height: 1, valid: true }}
+      />,
+    );
+    expect(carrying.container.querySelectorAll('.yard-slot')).toHaveLength(0);
+  });
+
   it('draws the drop preview edges connected or incorrect against the neighbours', () => {
     const { container } = renderWithProviders(
       <ShipYard

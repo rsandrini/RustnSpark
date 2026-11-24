@@ -680,6 +680,7 @@
       "SHIP_ADRIFT": "A nave está flutuando no espaço: ela não pode ser alterada até ser resgatada.",
       "generic": "Não foi possível salvar o layout."
     },
+    "slotHint": "Adicionar {{kind}} aqui",
     "yardLabel": "Área de montagem",
     "zoom": {
       "label": "Zoom",

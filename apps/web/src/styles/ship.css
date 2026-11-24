@@ -1493,3 +1493,35 @@ svg .yard-ghost .conn-mark {
   gap: 0.25em;
   vertical-align: middle;
 }
+
+svg .yard-slot .yard-slot-box {
+  fill: color-mix(in oklab, var(--brass) 8%, transparent);
+  stroke: var(--brass);
+  stroke-width: 0.05;
+  stroke-dasharray: 0.16 0.12;
+  opacity: 0.75;
+}
+
+svg .yard-slot:hover .yard-slot-box,
+svg .yard-slot:focus-visible .yard-slot-box {
+  opacity: 1;
+  fill: color-mix(in oklab, var(--brass) 18%, transparent);
+}
+
+svg .yard-slot:focus-visible {
+  outline: none;
+}
+
+.yard-slot-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brass);
+}
+
+.yard-slot-icon svg {
+  width: 100%;
+  height: 100%;
+}

@@ -15,6 +15,8 @@ import type { ConnectorCell, PartCatalogStats, Placement } from '../../api/gener
 import { PortGlyph } from '../parts/connector-grid';
 import { computePortMarks, previewPortMarks } from './connectors';
 import { PartBlockArt } from './part-block-art';
+import { EmptySlotsLayer } from './empty-slots-layer';
+import type { SlotHint } from './empty-slot-hints';
 import {
   directionViolations,
   footprint,
@@ -188,6 +190,10 @@ export interface ShipYardProps {
   editable?: boolean;
   /** Read-only figures pinned on the yard's bottom edge (the sheet's key numbers). */
   callouts?: ReactNode;
+  /** Dashed empty slots where a needed part could go (hidden while a part is dragged). */
+  slotHints?: readonly SlotHint[];
+  /** A slot was picked: the need whose part the pilot wants (opens the Store with that class). */
+  onSlotPick?: (needId: string) => void;
 }
 
 /** How long a landing plays. */
@@ -262,6 +268,8 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
     onDragStart,
     onDragEnd,
     onDropPart,
+    slotHints,
+    onSlotPick,
     onRemovePart,
     onHoverPart,
     editable = true,
@@ -857,6 +865,10 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
             }}
           />
         ))}
+        {ghost === null &&
+          dropPreview == null &&
+          slotHints !== undefined &&
+          onSlotPick !== undefined && <EmptySlotsLayer hints={slotHints} onPick={onSlotPick} />}
         {layout.map((placement) => {
           const catalog = catalogById.get(placement.partInstanceId);
           if (catalog === undefined) return null;

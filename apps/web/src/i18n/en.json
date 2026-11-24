@@ -680,6 +680,7 @@
       "SHIP_ADRIFT": "The ship is floating in space: it cannot be changed until it is rescued.",
       "generic": "Could not save the layout."
     },
+    "slotHint": "Add {{kind}} here",
     "yardLabel": "Assembly yard",
     "zoom": {
       "label": "Zoom",
