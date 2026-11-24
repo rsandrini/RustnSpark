@@ -105,6 +105,19 @@ describe('Hud', () => {
     expect(screen.queryAllByRole('progressbar')).toHaveLength(0);
   });
 
+  it('collapses after the pending state when the settled ships are empty: no permanent empty strip', async () => {
+    server.use(
+      http.get('/v1/ships', async () => {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return HttpResponse.json([]);
+      }),
+    );
+    const { container } = renderWithProviders(<Hud />);
+    expect(container.querySelector('.hud.hud--pending')).not.toBeNull();
+    await waitFor(() => expect(container.querySelector('.hud')).toBeNull());
+    expect(container.querySelector('.hud--pending')).toBeNull();
+  });
+
   it('the fuel gauge is missing for an ion-only ship', async () => {
     server.use(withShip({ fuelUse: 0 }));
     renderWithProviders(<Hud />);

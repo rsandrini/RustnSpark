@@ -22,15 +22,7 @@ const FOCUSABLE =
 // damage cascades on the report — S10.8/S10.9). Escape and backdrop dismiss it. Keyboard
 // contract of a modal: focus moves into the dialog on open, Tab/Shift+Tab stay inside it,
 // and focus returns to whatever opened it when it closes.
-export function Popup({
-  open,
-  title,
-  onClose,
-  children,
-  actions,
-  titleBadge,
-  className,
-}: PopupProps) {
+export function Popup({ open, title, onClose, children, actions, titleBadge, className }: PopupProps) {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   // Latest onClose without re-running the focus effect: callers pass a fresh closure every render,

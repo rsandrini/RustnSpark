@@ -197,8 +197,6 @@
   margin: 0 auto;
   padding: 4px 14px;
   border-bottom: 1px solid var(--rule);
-  /* the loaded row (4 + 18 gauge + 4 padding + 1 rule): reserved while the ships load, so nothing jumps */
-  min-height: 27px;
 }
 .ship-identity {
   display: flex;
@@ -314,6 +312,8 @@
   margin: 0 auto;
   padding: 4px 14px;
   border-bottom: 1px solid var(--rule);
+  /* the loaded row (4 + 18 gauge + 4 padding + 1 rule): also reserved by .hud--pending while the ships load */
+  min-height: 27px;
 }
 .hud-cell {
   flex: 0 1 190px;
@@ -334,7 +334,7 @@
 .hud--compact {
   gap: 8px;
   padding: 6px 16px;
-  /* the loaded phone row measured 48px in the browser */
+  /* 48px is the value measured in the browser for the loaded phone row; re-verify it */
   min-height: 48px;
 }
 .hud--compact .hud-cell {

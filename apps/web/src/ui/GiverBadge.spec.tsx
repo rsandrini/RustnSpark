@@ -8,12 +8,7 @@ import { GiverBadge } from './GiverBadge';
 describe('GiverBadge (quest givers)', () => {
   it('shows the uploaded portrait with the name and the localized title', () => {
     renderWithProviders(
-      <GiverBadge
-        name="Ines Moura"
-        title="Dockmaster"
-        portraitUrl="/art/ines.png"
-        factionId="luna"
-      />,
+      <GiverBadge name="Ines Moura" title="Dockmaster" portraitUrl="/art/ines.png" factionId="luna" />,
     );
     const portrait = document.querySelector('.giver-portrait');
     expect(portrait).toHaveAttribute('src', '/art/ines.png');
