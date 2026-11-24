@@ -1,3 +1,50 @@
+/* Ports legend: a collapsed "Ports?" help (kinds, states, what joins what). */
+.ports-legend {
+  font-size: 0.85rem;
+  max-width: 100%;
+}
+.ports-legend-summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.ports-legend-body {
+  margin-top: 6px;
+  display: grid;
+  gap: 8px;
+}
+.ports-legend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.ports-legend-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.ports-legend-list .kind-icon {
+  width: 28px;
+  height: 14px;
+  flex: none;
+}
+.ports-legend-count {
+  color: var(--muted);
+}
+.ports-legend-heading {
+  margin: 0;
+  font-weight: 600;
+}
+.ports-legend-yes {
+  color: var(--ok);
+}
+.ports-legend-no {
+  color: var(--bad);
+}
+
 .rarity-name.rarity-uncommon {
   color: var(--rar-uncommon);
 }

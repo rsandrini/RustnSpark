@@ -3146,5 +3146,24 @@
       "hull": "Casco {{value}}%",
       "cargo": "Carga {{used}} de {{max}}"
     }
+  },
+  "portsLegend": {
+    "summary": "Portas?",
+    "kinds": {
+      "central": "Central",
+      "split": "Dividida",
+      "universal": "Universal"
+    },
+    "dots": "{{count}} pontos",
+    "dots_one": "{{count}} ponto",
+    "dots_other": "{{count}} pontos",
+    "states": {
+      "connected": "Conectada",
+      "available": "Porta livre",
+      "incorrect": "Incompatível"
+    },
+    "joinsTitle": "O que encaixa em quê",
+    "joins": "encaixa",
+    "doesNotJoin": "não encaixa"
   }
 }

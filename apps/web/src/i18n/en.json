@@ -3146,5 +3146,24 @@
       "hull": "Hull {{value}}%",
       "cargo": "Cargo {{used}} of {{max}}"
     }
+  },
+  "portsLegend": {
+    "summary": "Ports?",
+    "kinds": {
+      "central": "Central",
+      "split": "Split",
+      "universal": "Universal"
+    },
+    "dots": "{{count}} dots",
+    "dots_one": "{{count}} dot",
+    "dots_other": "{{count}} dots",
+    "states": {
+      "connected": "Connected",
+      "available": "Free port",
+      "incorrect": "Incompatible"
+    },
+    "joinsTitle": "What joins what",
+    "joins": "joins",
+    "doesNotJoin": "does not join"
   }
 }
