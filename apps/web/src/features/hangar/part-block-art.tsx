@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import type { PartCatalogStats } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
 import { PortGlyph } from '../parts/connector-grid';
+import { kindLabelKey, partKindOf } from '../parts/part-kind';
+import { PartKindIcon } from '../parts/part-kind-icon';
 import type { PortMark } from './connectors';
 import { facingOf, footprint, type Rot } from './hangar.geometry';
 import type { PartLook } from './ship-yard';
@@ -49,6 +51,60 @@ export function FacingArrow({
       <title>{label}</title>
     </polygon>
   );
+}
+
+const KIND_ROW_TOP = 0.2;
+const KIND_ROW_GAP = 0.03;
+const KIND_ROW_MAX_FONT = 0.17;
+/** Room kept above the condition bar (it starts 0.24 above the bottom edge). */
+const BAR_CLEARANCE = 0.26;
+
+export interface BlockTextLayout {
+  /** The type row, or null when the block has none (the bridge, a ghost, or no room for it). */
+  row: { top: number; height: number; font: number; icon: number; showLabel: boolean } | null;
+  /** How many name lines are drawn. */
+  lineCount: number;
+  /** Centre of the first name line, in yard cells. */
+  firstY: number;
+}
+
+/**
+ * Where the type row and the name go inside one block (cell units, `gy` = top of the footprint).
+ * The row sits at the top, below the connector dots (inset 0.13): icon + label when the footprint is at least 2
+ * cells tall, the icon alone when it is 1 cell tall (the name then keeps at most 1 line). The name block is
+ * pushed down just enough to clear the row; when even that would hit the condition bar the row is dropped and the
+ * name keeps its classic place.
+ */
+export function blockTextLayout(
+  gy: number,
+  height: number,
+  labelFont: number,
+  nameLines: number,
+  withRow: boolean,
+): BlockTextLayout {
+  const lineHeight = labelFont * 1.15;
+  const classic = (n: number) => gy + height / 2 - 0.1 - ((n - 1) * lineHeight) / 2;
+  if (!withRow) return { row: null, lineCount: nameLines, firstY: classic(nameLines) };
+  const font = Math.min(labelFont * 0.85, KIND_ROW_MAX_FONT);
+  const rowHeight = font * 1.3;
+  const top = gy + KIND_ROW_TOP;
+  const lineCount = height < 2 ? Math.min(nameLines, 1) : nameLines;
+  const firstY = Math.max(classic(lineCount), top + rowHeight + KIND_ROW_GAP + lineHeight / 2);
+  const lastBottom = firstY + (lineCount - 1) * lineHeight + lineHeight / 2;
+  if (lastBottom > gy + height - BAR_CLEARANCE) {
+    return { row: null, lineCount: nameLines, firstY: classic(nameLines) };
+  }
+  return {
+    row: { top, height: rowHeight, font, icon: font * 1.25, showLabel: height >= 2 },
+    lineCount,
+    firstY,
+  };
+}
+
+/** Shortens a label with an ellipsis so it fits `maxWidth` cells at `font` (average glyph ~0.56 em). */
+export function fitKindLabel(label: string, maxWidth: number, font: number): string {
+  const maxChars = Math.max(1, Math.floor(maxWidth / (font * 0.56)));
+  return label.length <= maxChars ? label : `${label.slice(0, Math.max(1, maxChars - 1))}…`;
 }
 
 export interface PartBlockArtProps {
@@ -104,9 +160,15 @@ export function PartBlockArt({
   const { t } = useTranslation();
   const { width, height } = footprint(catalog, rot);
   const lineHeight = labelFont * 1.15;
-  // Nudged up so the condition bar along the bottom edge never sits on the text.
-  const firstY = gy + height / 2 - 0.1 - ((lines.length - 1) * lineHeight) / 2;
+  const kind = partKindOf(catalog);
+  const kindLabel = t(kindLabelKey(kind));
   const shownLines = look?.broken === true ? [...lines.slice(0, 1), t('parts.broken')] : lines;
+  // The bridge's name is its type; a ghost is dimmed and carries no row.
+  const withRow = kind !== 'bridge' && flags.ghosting !== true;
+  // The name is nudged up so the condition bar never sits on the text, and down to clear the type row.
+  const layout = blockTextLayout(gy, height, labelFont, shownLines.length, withRow);
+  const firstY = layout.firstY;
+  const drawnLines = shownLines.slice(0, layout.lineCount);
   return (
     <>
       <rect
@@ -139,6 +201,7 @@ export function PartBlockArt({
           look === undefined
             ? name
             : `${name} — ${t('parts.condition')} ${Math.round(look.condition)}%`,
+          kind === 'bridge' ? '' : kindLabel,
           ...extraTitle,
         ]
           .filter(Boolean)
@@ -191,12 +254,37 @@ export function PartBlockArt({
           title={`${t(`connectors.kinds.${mark.kind}`)} — ${t(`connectors.states.${mark.state}`)}`}
         />
       ))}
+      {layout.row !== null && (
+        <g className="block-kind" data-testid="block-kind" style={{ pointerEvents: 'none' }}>
+          <svg
+            data-testid="block-kind-icon"
+            x={gx + 0.16}
+            y={layout.row.top + (layout.row.height - layout.row.icon) / 2}
+            width={layout.row.icon}
+            height={layout.row.icon}
+            overflow="visible"
+          >
+            <PartKindIcon kind={kind} size={layout.row.icon} />
+          </svg>
+          {layout.row.showLabel && (
+            <text
+              className="block-kind-label"
+              data-testid="block-kind-label"
+              x={gx + 0.16 + layout.row.icon + 0.05}
+              y={layout.row.top + layout.row.height / 2 + layout.row.font * 0.35}
+              style={{ fontSize: `${layout.row.font}px` }}
+            >
+              {fitKindLabel(kindLabel, width - 0.32 - layout.row.icon - 0.05, layout.row.font)}
+            </text>
+          )}
+        </g>
+      )}
       <text
         className="block-label"
         x={gx + width / 2}
         style={{ pointerEvents: 'none', fontSize: `${labelFont}px` }}
       >
-        {shownLines.map((line, index) => (
+        {drawnLines.map((line, index) => (
           <tspan
             key={line + String(index)}
             x={gx + width / 2}

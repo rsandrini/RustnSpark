@@ -314,6 +314,19 @@ svg .yard-ghost .ghost-label {
   fill-opacity: 0.95;
 }
 
+/* The type row (icon + label) at the top of a block, below the connector dots. */
+.block-kind {
+  color: var(--ink);
+  opacity: 0.8;
+}
+
+.block-kind-label {
+  fill: var(--ink);
+  text-anchor: start;
+  pointer-events: none;
+  user-select: none;
+}
+
 .block-label {
   fill: var(--ink);
   /* User units of the yard viewBox (1 = one cell). A unitless value is invalid CSS and falls
