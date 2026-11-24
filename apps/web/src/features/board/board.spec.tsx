@@ -583,6 +583,11 @@ describe('board (S10.6)', () => {
     const faults = await screen.findByTestId('ship-faults');
     expect(within(faults).getByRole('button', { name: /Structure budget exceeded/ })).toBeVisible();
     expect(within(faults).getAllByRole('button')).toHaveLength(1);
+    // the chips keep their context: a labelled group (not an alert)
+    expect(faults).toHaveAttribute('role', 'group');
+    expect(faults).toHaveAccessibleName(
+      'Your ship cannot take missions. Fix it on the Ship screen.',
+    );
     expect(screen.queryByText(/Your ship cannot take missions right now/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Fix it on the Ship screen/ })).toBeNull();
   });

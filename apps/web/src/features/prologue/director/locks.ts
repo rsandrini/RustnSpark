@@ -4,9 +4,9 @@ import { useEffect } from 'react';
 const CONTROLS =
   'button, a[href], input, select, textarea, summary, [role="tab"], [role="button"], [role="switch"], [draggable="true"], .hangar-scene';
 
-/** Always alive: the story's own boxes and bar, the account menu (language, Sign out), and any popup the real screens open. */
+/** Always alive: the story's own boxes and bar, the account menu (language, Sign out), and any popup the real screens open. The HUD only opens read-only cards and the ship-fault chips lead to the Ship screen, as the old notice did. */
 const FREE =
-  '[data-dialogue], [data-opening-free], [role="dialog"], [role="alertdialog"], .shell-top .brand, .shell-account, .toast, .notice';
+  '[data-dialogue], [data-opening-free], [role="dialog"], [role="alertdialog"], .shell-top .brand, .shell-account, .toast, .notice, .hud, .board-faults';
 
 const LOCKED = 'data-opening-locked';
 const ALLOWED = 'data-opening-allowed';

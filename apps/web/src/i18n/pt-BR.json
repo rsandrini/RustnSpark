@@ -2360,7 +2360,8 @@
     "mobile": {
       "details": "Detalhes",
       "unmet": "{{count}} requisito(s) não atendido(s)"
-    }
+    },
+    "shipFaultsGroup": "Sua nave não pode aceitar missões. Resolva na tela da Nave."
   },
   "escort": {
     "title": "Preso? Uma escolta pode levar você para casa",
@@ -3118,12 +3119,12 @@
     "cargo": "Carga",
     "group": "Estado da nave",
     "tip": {
-      "fuel": "Combustível: {{value}} de {{max}}. Voar gasta; reabasteça no porto.",
+      "fuel": "Voar queima combustível; reabasteça no porto.",
       "fuelReserve": "A missão aceita precisa de {{reserve}}: a marca âmbar.",
       "fuelEmpty": "O tanque está vazio.",
-      "hull": "Casco: {{value}}% de condição. Repare no porto.",
-      "cargo": "Carga: {{used}} de {{max}} de espaço em uso.",
-      "cargoNone": "Esta nave não tem espaço de carga."
+      "hull": "Conserte-a no porto.",
+      "cargo": "Espaço ocupado por carga de missão e minério.",
+      "fuelReserveOver": "A missão aceita precisa de {{reserve}}, mais do que o tanque comporta."
     },
     "aria": {
       "fuel": "Combustível {{value}} de {{max}}",

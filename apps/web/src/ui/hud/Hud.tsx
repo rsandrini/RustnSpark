@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import type { ActiveMission, ShipResponse } from '../../api/generated';
 import { useAuth } from '../../features/auth/auth.hooks';
+import { usePrologueMode } from '../../features/prologue/prologue-mode';
 import { Gauge } from '../Gauge';
 import { Tooltip } from '../kit/Tooltip';
 import { useIsPhone } from '../useIsPhone';
@@ -47,6 +48,7 @@ export function Hud() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const phone = useIsPhone();
+  const opening = usePrologueMode();
   const shipsQuery = useQuery({
     queryKey: ['ships'],
     queryFn: () => client.get<ShipResponse[]>('/v1/ships'),
@@ -56,7 +58,7 @@ export function Hud() {
     queryFn: () => client.get<ActiveMission[]>('/v1/missions/active'),
   });
   const ship = shipsQuery.data?.[0];
-  if (user?.factionId == null || ship === undefined) return null;
+  if ((user?.factionId == null && !opening.active) || ship === undefined) return null;
 
   const accepted = (activeQuery.data ?? []).find((entry) => entry.status === 'ACCEPTED');
   const model = hudModel(ship, accepted);
@@ -68,8 +70,12 @@ export function Hud() {
   if (model.fuel !== null) {
     const { value, max, reserve, tone } = model.fuel;
     const tip = [
-      value <= 0 ? t('hud.tip.fuelEmpty') : t('hud.tip.fuel', { value: n(value), max: n(max) }),
-      reserve === undefined ? '' : t('hud.tip.fuelReserve', { reserve: n(reserve) }),
+      value <= 0 ? t('hud.tip.fuelEmpty') : t('hud.tip.fuel'),
+      reserve === undefined
+        ? ''
+        : t(reserve <= max ? 'hud.tip.fuelReserve' : 'hud.tip.fuelReserveOver', {
+            reserve: n(reserve),
+          }),
     ]
       .filter((part) => part !== '')
       .join(' ');
@@ -96,7 +102,7 @@ export function Hud() {
     gauges.push({
       key: 'hull',
       node: (
-        <Tooltip content={t('hud.tip.hull', { value: n(value) })} describe align="start">
+        <Tooltip content={t('hud.tip.hull')} describe align="start">
           <Gauge
             value={value}
             max={max}
@@ -115,13 +121,7 @@ export function Hud() {
     gauges.push({
       key: 'cargo',
       node: (
-        <Tooltip
-          content={
-            max > 0 ? t('hud.tip.cargo', { used: n(used), max: n(max) }) : t('hud.tip.cargoNone')
-          }
-          describe
-          align="end"
-        >
+        <Tooltip content={t('hud.tip.cargo')} describe align="end">
           <Gauge
             value={used}
             max={max}

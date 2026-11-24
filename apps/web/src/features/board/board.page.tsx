@@ -212,7 +212,12 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
       <EscortNotice />
 
       {shipFaults.length > 0 && (
-        <div className="board-faults" data-testid="ship-faults">
+        <div
+          className="board-faults"
+          data-testid="ship-faults"
+          role="group"
+          aria-label={t('board.shipFaultsGroup')}
+        >
           {shipFaults.map((fault) => (
             <BlockerChip
               key={fault.code}

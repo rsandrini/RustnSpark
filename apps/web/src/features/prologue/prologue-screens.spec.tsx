@@ -50,10 +50,9 @@ describe('the real Board and Port screens on the sandbox', () => {
   it('says what the ship lacks while there is no engine, and shows the race card once the engine is fitted', async () => {
     const view = renderWithRouter(routes, { initialEntries: ['/missions'] });
     // no engine yet: the real board hides what the ship cannot take and says why
-    expect(
-      await screen.findByText(/your ship cannot take missions right now/i),
-    ).toBeInTheDocument();
-    expect((await screen.findAllByText(/no engine/i)).length).toBeGreaterThan(0);
+    const faults = await screen.findByTestId('ship-faults');
+    expect(within(faults).getByRole('button', { name: /no engine/i })).toBeInTheDocument();
+    expect(faults).toHaveAccessibleName(/cannot take missions/i);
 
     await client.post('/v1/ships/prologue-ship/assemble', {
       layout: [

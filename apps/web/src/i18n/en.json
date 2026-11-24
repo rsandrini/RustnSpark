@@ -2360,7 +2360,8 @@
     "mobile": {
       "details": "Details",
       "unmet": "{{count}} requirement(s) not met"
-    }
+    },
+    "shipFaultsGroup": "Your ship cannot take missions. Fix it on the Ship screen."
   },
   "escort": {
     "title": "Stuck? An escort can take you home",
@@ -3118,12 +3119,12 @@
     "cargo": "Cargo",
     "group": "Ship status",
     "tip": {
-      "fuel": "Fuel: {{value}} of {{max}}. Flying burns it; refuel in port.",
+      "fuel": "Flying burns it; refuel in port.",
       "fuelReserve": "The accepted mission needs {{reserve}}: the amber mark.",
       "fuelEmpty": "The tank is empty.",
-      "hull": "Hull: {{value}}% condition. Repair it in port.",
-      "cargo": "Cargo: {{used}} of {{max}} space in use.",
-      "cargoNone": "This ship has no cargo space."
+      "hull": "Repair it in port.",
+      "cargo": "Space in use by mission cargo and ore.",
+      "fuelReserveOver": "The accepted mission needs {{reserve}}, more than the tank holds."
     },
     "aria": {
       "fuel": "Fuel {{value}} of {{max}}",

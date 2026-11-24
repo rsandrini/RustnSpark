@@ -7,22 +7,32 @@ import { server } from '../../test/msw/server';
 import { ship } from '../../test/msw/handlers';
 import { Hud } from './Hud';
 
+const auth = { factionId: 'luna' as string | null };
 vi.mock('../../features/auth/auth.hooks', () => ({
-  useAuth: () => ({ user: { factionId: 'luna' } }),
+  useAuth: () => ({ user: { factionId: auth.factionId } }),
+}));
+const opening = { active: false };
+vi.mock('../../features/prologue/prologue-mode', () => ({
+  usePrologueMode: () => ({ active: opening.active }),
 }));
 
 const phone = { on: false };
 vi.mock('../useIsPhone', () => ({ useIsPhone: () => phone.on }));
 
-const withShip = (over: { fuelUse?: number; fuel?: number; hold?: boolean }) => {
+const withShip = (over: { fuelUse?: number; fuel?: number; fuelCap?: number; crg?: number }) => {
   const base = ship();
   return http.get('/v1/ships', () =>
     HttpResponse.json([
       {
         ...base,
         fuel: over.fuel ?? 30,
-        sheet: { ...base.sheet, fuelUse: over.fuelUse ?? 1, fuelCap: 40, condition: 80 },
-        hold: { used: 2, capacity: 10 },
+        sheet: {
+          ...base.sheet,
+          fuelUse: over.fuelUse ?? 1,
+          fuelCap: over.fuelCap ?? 40,
+          condition: 80,
+        },
+        hold: { used: 2, capacity: over.crg ?? 10 },
       },
     ]),
   );
@@ -30,10 +40,19 @@ const withShip = (over: { fuelUse?: number; fuel?: number; hold?: boolean }) => 
 
 beforeEach(() => {
   phone.on = false;
+  auth.factionId = 'luna';
+  opening.active = false;
 });
 afterEach(() => {
   phone.on = false;
+  auth.factionId = 'luna';
+  opening.active = false;
 });
+
+const accepted = (status: string, fuelNeeded: number) =>
+  http.get('/v1/missions/active', () =>
+    HttpResponse.json([{ id: 'm1', status, info: { estimate: { fuelNeeded } } }]),
+  );
 
 describe('Hud', () => {
   it('renders three gauges for a normal ship and no wallet', async () => {
@@ -67,11 +86,12 @@ describe('Hud', () => {
     renderWithProviders(<Hud />);
     const fuel = await screen.findByRole('progressbar', { name: 'Fuel 30 of 40' });
     await userEvent.click(fuel);
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Fuel: 30 of 40');
-    expect(fuel).toHaveAccessibleDescription(/Fuel: 30 of 40/);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Flying burns it');
+    expect(fuel).toHaveAccessibleDescription(/Flying burns it/);
+    expect(fuel).not.toHaveAccessibleDescription(/30 of 40/);
     const cargo = screen.getByRole('progressbar', { name: 'Cargo 2 of 10' });
     await userEvent.click(cargo);
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Cargo: 2 of 10');
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Space in use by mission cargo');
   });
 
   it('phone layout renders the compact row', async () => {
@@ -86,15 +106,57 @@ describe('Hud', () => {
   });
 
   it('marks the reserve while a mission is accepted', async () => {
-    server.use(
-      withShip({}),
-      http.get('/v1/missions/active', () =>
-        HttpResponse.json([
-          { id: 'm1', status: 'ACCEPTED', info: { estimate: { fuelNeeded: 12 } } },
-        ]),
-      ),
-    );
+    server.use(withShip({}), accepted('ACCEPTED', 12));
     const { container } = renderWithProviders(<Hud />);
     await waitFor(() => expect(container.querySelector('.gauge-tick')).not.toBeNull());
+  });
+
+  it.each([
+    ['a mission that is not accepted', 'ACTIVE', 12],
+    ['no fuel needed', 'ACCEPTED', 0],
+    ['more fuel needed than the tank holds', 'ACCEPTED', 60],
+  ])('draws no reserve mark for %s', async (_name, status, needed) => {
+    server.use(withShip({}), accepted(status, needed));
+    const { container } = renderWithProviders(<Hud />);
+    const fuel = await screen.findByRole('progressbar', { name: /Fuel/ });
+    await waitFor(() => expect(container.querySelector('.hud')).not.toBeNull());
+    expect(container.querySelector('.gauge-tick')).toBeNull();
+    await userEvent.click(fuel);
+    const tip = await screen.findByRole('tooltip');
+    if (needed > 40) expect(tip).toHaveTextContent(/more than the tank holds/i);
+    expect(tip).not.toHaveTextContent(/amber mark/i);
+  });
+
+  it('the tooltip names the amber mark when the reserve is inside the tank', async () => {
+    server.use(withShip({}), accepted('ACCEPTED', 12));
+    renderWithProviders(<Hud />);
+    await userEvent.click(await screen.findByRole('progressbar', { name: /Fuel/ }));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(/amber mark/i);
+  });
+
+  it('draws no gauge with nothing to fill (no cargo space, no tank)', async () => {
+    server.use(withShip({ fuelCap: 0, crg: 0 }));
+    renderWithProviders(<Hud />);
+    expect(await screen.findByRole('progressbar', { name: /Hull/ })).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar', { name: /Fuel/ })).toBeNull();
+    expect(screen.queryByRole('progressbar', { name: /Cargo/ })).toBeNull();
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+  });
+
+  it('shows in the opening, when the pilot has no faction yet', async () => {
+    auth.factionId = null;
+    opening.active = true;
+    server.use(withShip({}));
+    renderWithProviders(<Hud />);
+    expect(await screen.findByRole('progressbar', { name: /Fuel/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('progressbar')).toHaveLength(3);
+  });
+
+  it('stays away with no faction and no opening', async () => {
+    auth.factionId = null;
+    server.use(withShip({}));
+    const { container } = renderWithProviders(<Hud />);
+    await waitFor(() => expect(container.querySelector('.hud')).toBeNull());
+    expect(screen.queryAllByRole('progressbar')).toHaveLength(0);
   });
 });

@@ -46,9 +46,10 @@ describe('hudModel', () => {
 
   it('no NaN or division by zero when max is 0', () => {
     const model = hudModel(ship({ fuel: 0, fuelCap: 0, crg: 0, hold: null }), undefined);
-    expect(model.fuel?.max).toBe(0);
-    expect(model.fuel?.tone).toBe('bad');
-    expect(model.cargo).toEqual({ used: 0, max: 0 });
+    expect(model.fuel).toBeNull();
+    expect(model.cargo).toBeNull();
+    expect(hudModel(ship({ fuelCap: 0, fuelUse: 1 }), undefined).fuel).toBeNull();
+    expect(hudModel(ship({ crg: 0, hold: { used: 0, capacity: 0 } }), undefined).cargo).toBeNull();
     expect(JSON.stringify(model)).not.toContain('null,null');
     expect(Number.isNaN(model.hull?.value)).toBe(false);
   });

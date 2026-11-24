@@ -11,7 +11,7 @@ export interface HudModel {
 
 /**
  * What the HUD shows, from the ship and the accepted mission. Pure: no ship gives nothing, a ship
- * whose engines burn no fuel has no fuel gauge, a zero maximum never divides. The hull is the ship
+ * whose engines burn no fuel (or whose tank is zero) has no fuel gauge, and a hold of zero has no cargo gauge: no 0/0 bar. The hull is the ship
  * sheet's condition (percent, same bands as the sheet); the cargo is the hold's mission cargo over
  * the cargo space (no hold in the response reads as empty space of the sheet's size).
  */
@@ -31,15 +31,14 @@ export function hudModel(
       : max > 0 && value < max / 4
         ? 'warn'
         : 'ok';
+  const cargoMax = ship.hold ? ship.hold.capacity : Math.max(0, sheet.crg);
   const condition = Math.max(0, Math.min(100, Math.round(sheet.condition)));
   return {
     fuel:
-      sheet.fuelUse > 0
+      sheet.fuelUse > 0 && max > 0
         ? { value, max, ...(reserve === undefined ? {} : { reserve }), tone }
         : null,
     hull: { value: condition, max: 100, tone: conditionTone(condition) },
-    cargo: ship.hold
-      ? { used: ship.hold.used, max: ship.hold.capacity }
-      : { used: 0, max: Math.max(0, sheet.crg) },
+    cargo: cargoMax > 0 ? { used: ship.hold ? ship.hold.used : 0, max: cargoMax } : null,
   };
 }
