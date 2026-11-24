@@ -8,6 +8,8 @@ import { useIntentKey } from '../../api/intent-key';
 import type { BuyResponse, MarketListing, MarketResponse, ShipSheet } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
+import { IconTabs } from '../../ui/kit/IconTabs';
+import { ALL_ICON, partClassIcon } from './part-class-icon';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
 import { ConnectorGrid } from '../parts/connector-grid';
@@ -82,6 +84,7 @@ export function MarketPanel({
   const [condition, setCondition] = useState<Condition>('all');
   const [sort, setSort] = useState<SortKey>('priceAsc');
   const [affordableOnly, setAffordableOnly] = useState(false);
+  const [fitsOnly, setFitsOnly] = useState(false);
   const [moreFilters, setMoreFilters] = useState(false);
   const [dismissedNeeds, dismissNeed] = useDismissedNeeds();
   const [rarity, setRarity] = useState<string>('all');
@@ -181,6 +184,11 @@ export function MarketPanel({
         return false;
       }
       if (affordableOnly && listing.price > wallet) return false;
+      if (fitsOnly && freePorts !== undefined && !opening) {
+        // a part we cannot judge (no data, or no ports at all) is never hidden
+        const level = portFit(listing.connectors, freePorts).level;
+        if (level === 'none' || level === 'none-free') return false;
+      }
       if (rarity !== 'all' && listing.rarity !== rarity) return false;
       if (size !== 'all' && sizeOf(listing) !== size) return false;
       if (condition === 'new' && listing.kind !== 'catalog') return false;
@@ -205,6 +213,9 @@ export function MarketPanel({
     search,
     sort,
     affordableOnly,
+    fitsOnly,
+    freePorts,
+    opening,
     wallet,
     i18n.language,
   ]);
@@ -299,20 +310,35 @@ export function MarketPanel({
           >
             {t('market.affordable')}
           </button>
+          {freePorts !== undefined && !opening && (
+            <button
+              type="button"
+              className={`chip${fitsOnly ? ' on' : ''}`}
+              aria-pressed={fitsOnly}
+              onClick={() => setFitsOnly((was) => !was)}
+            >
+              {t('market.fitsFreePorts')}
+            </button>
+          )}
           <button type="button" className="btn" onClick={() => setMoreFilters(true)}>
             {t('market.moreFilters')}
             {extraFilters > 0 && <span className="count">{extraFilters}</span>}
           </button>
         </div>
-        <div className="chips" role="group" aria-label={t('market.filterByType')}>
-          <button
-            type="button"
-            className={`chip${partClass === null ? ' on' : ''}`}
-            aria-pressed={partClass === null}
-            onClick={() => setPartClass(null)}
-          >
-            {t('market.all')}
-          </button>
+        <div className="market-types" role="group" aria-label={t('market.filterByType')}>
+          <IconTabs
+            tabs={[
+              { id: 'all', icon: ALL_ICON, label: t('market.all') },
+              ...classes.map((cls) => {
+                const label = t(`hangar.partGroups.${cls}`, {
+                  defaultValue: t(`hangar.partClasses.${cls}`),
+                });
+                return { id: cls, icon: partClassIcon(cls, label), label };
+              }),
+            ]}
+            value={partClass ?? 'all'}
+            onChange={(id) => setPartClass(id === 'all' ? null : id)}
+          />
           {partClass !== null && !classes.includes(partClass) && (
             <button
               type="button"
@@ -324,17 +350,6 @@ export function MarketPanel({
               {t('market.chipClear')}
             </button>
           )}
-          {classes.map((cls) => (
-            <button
-              key={cls}
-              type="button"
-              className={`chip${partClass === cls ? ' on' : ''}`}
-              aria-pressed={partClass === cls}
-              onClick={() => setPartClass(cls)}
-            >
-              {t(`hangar.partGroups.${cls}`, { defaultValue: t(`hangar.partClasses.${cls}`) })}
-            </button>
-          ))}
         </div>
       </div>
 

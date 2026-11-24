@@ -782,3 +782,19 @@
     padding-block: 10px;
   }
 }
+
+/* the class tabs: icons that slide sideways inside their own box on a phone, never widening the page */
+.market-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.market-types .kit-tabs {
+  max-width: 100%;
+}
+.kit-tab-text {
+  font-size: 12px;
+  font-weight: 600;
+}

@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { renderWithRouter } from '../../test/utils';
+import { renderWithProviders, renderWithRouter } from '../../test/utils';
+import { AuthProvider } from '../auth/auth.context';
+import { MarketPanel } from './market-panel';
 import { server } from '../../test/msw/server';
 import { economyState, resetEconomyState, setWallet } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
@@ -76,6 +78,77 @@ describe('market panel: port verdict', () => {
   });
 });
 
+describe('market panel: type tabs and the free-ports filter', () => {
+  beforeEach(() => {
+    resetEconomyState();
+    server.use(onboarded());
+  });
+
+  it('has an icon tab per class with All first and the selected one marked', async () => {
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    const tabs = within(screen.getByRole('group', { name: 'Filter by part type' })).getAllByRole(
+      'tab',
+    );
+    expect(tabs[0]).toHaveAccessibleName('All');
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+    for (const tab of tabs) expect(tab.querySelector('svg, .kit-tab-text')).not.toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'Cargo' }));
+    expect(screen.getByRole('tab', { name: 'Cargo' })).toHaveAttribute('aria-selected', 'true');
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('"Fits my free ports" hides parts that cannot join the ship but never one it cannot judge', async () => {
+    const shelf = (await (await fetch('/v1/locations/ceres/market')).json()) as {
+      listings: Array<Record<string, unknown> & { catalog: Record<string, unknown> }>;
+    };
+    const hull = shelf.listings[0]!;
+    server.use(
+      http.get('/v1/locations/:id/market', ({ params }) =>
+        HttpResponse.json({
+          locationId: String(params.id),
+          listings: [
+            ...shelf.listings,
+            {
+              ...hull,
+              listingId: 'catalog:ceres:plain',
+              displayName: { en: 'Plain Plate' },
+              connectors: [],
+            },
+          ],
+          sellMinCondition: 1,
+          sellOffers: [],
+        }),
+      ),
+    );
+    await renderPortMarket();
+    await screen.findByText('Plain Plate');
+    const list = () => document.querySelectorAll('.market-panel .pcard-grid .pcard');
+    const total = list().length;
+    // the fixture ship has no free port: every part with ports reads "none-free"
+    const toggle = screen.getByRole('button', { name: 'Fits my free ports' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(list().length).toBeLessThan(total);
+    expect(within(panel()).queryByText('Plated Hull')).toBeNull();
+    expect(within(panel()).getByText('Plain Plate')).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(list()).toHaveLength(total);
+  });
+
+  it('shows neither verdict nor toggle when the host passes no free ports', async () => {
+    renderWithProviders(
+      <AuthProvider>
+        <MarketPanel locationId="ceres" />
+      </AuthProvider>,
+    );
+    await screen.findByText('Plated Hull');
+    expect(screen.queryByTestId('part-fit')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Fits my free ports' })).toBeNull();
+  });
+});
+
 describe('market panel: descriptions and filters', () => {
   beforeEach(() => {
     resetEconomyState();
@@ -119,12 +192,12 @@ describe('market panel: descriptions and filters', () => {
     const total = list().length;
 
     // Defense is split by kind: the Plated Hull sits under Hull, not under a Defense chip.
-    expect(screen.queryByRole('button', { name: 'Defense' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Hull' }));
+    expect(screen.queryByRole('tab', { name: 'Defense' })).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'Hull' }));
     expect(list()).toHaveLength(1);
     expect(within(panel()).queryByText('Cargo Rack')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'All' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'All' }));
     expect(list()).toHaveLength(total);
 
     // New / used lives under "More filters".

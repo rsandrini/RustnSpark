@@ -2784,6 +2784,7 @@
   "market": {
     "all": "Todas",
     "filterByType": "Filtrar por tipo de peça",
+    "fitsFreePorts": "Cabem nas minhas portas livres",
     "search": "Buscar peças",
     "searchPlaceholder": "Buscar peças…",
     "condition": "Condição",
