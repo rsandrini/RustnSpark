@@ -666,6 +666,13 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+/* What blocks every offer: one chip per fault, each a way to the fix. */
+.board-faults {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
 .board-sort {
   display: inline-flex;
   align-items: center;

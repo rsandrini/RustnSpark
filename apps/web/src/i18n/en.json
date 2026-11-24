@@ -2357,8 +2357,6 @@
       "fixed": "Fixed load: {{need}} units of cargo, taking that much of your cargo space.",
       "open": "Open load: at least {{need}} units, and you take all the cargo space you have. Every unit beyond {{need}} pays {{pay}} ¢."
     },
-    "shipFaults": "Your ship cannot take missions right now. Fix this first, then every offer opens again:",
-    "fixShip": "Fix it on the Ship screen",
     "mobile": {
       "details": "Details",
       "unmet": "{{count}} requirement(s) not met"

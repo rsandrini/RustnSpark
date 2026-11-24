@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useFeedback } from '../../ui/feedback';
+import { BlockerChip } from '../../ui/kit/BlockerChip';
 import { PlaceBanner } from '../../ui/PlaceArt';
 import { activeAsOffer } from './active-offer';
 import { MissionRow } from './mission-row';
@@ -211,27 +212,19 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
       <EscortNotice />
 
       {shipFaults.length > 0 && (
-        <div className="notice warn" role="alert" data-testid="ship-faults">
-          <b>{t('board.shipFaults')}</b>
-          <ul>
-            {shipFaults.map((fault) => (
-              <li key={fault.code}>
-                {t(`board.reasons.${fault.code}`, {
-                  defaultValue: t(`hangar.problems.${fault.code}`),
-                })}
-              </li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              if (embedded && onGoToShip !== undefined) onGoToShip();
-              else void navigate('/ship');
-            }}
-          >
-            {t('board.fixShip')}
-          </button>
+        <div className="board-faults" data-testid="ship-faults">
+          {shipFaults.map((fault) => (
+            <BlockerChip
+              key={fault.code}
+              label={t(`board.reasons.${fault.code}`, {
+                defaultValue: t(`hangar.problems.${fault.code}`),
+              })}
+              onFix={() => {
+                if (embedded && onGoToShip !== undefined) onGoToShip();
+                else void navigate('/ship');
+              }}
+            />
+          ))}
         </div>
       )}
 

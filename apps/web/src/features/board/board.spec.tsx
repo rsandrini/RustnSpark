@@ -531,7 +531,7 @@ describe('board (S10.6)', () => {
     expect(screen.getAllByText('uses 8 fuel').length).toBeGreaterThan(0);
   });
 
-  it('says once, above the list, what is wrong with the ship when that blocks every offer', async () => {
+  it('the board shows a blocker chip per ship fault instead of the paragraph', async () => {
     server.use(
       http.get('/v1/locations/:id/missions', () =>
         HttpResponse.json(
@@ -581,9 +581,74 @@ describe('board (S10.6)', () => {
     );
     await renderBoard();
     const faults = await screen.findByTestId('ship-faults');
-    expect(faults).toHaveTextContent('Your ship cannot take missions right now');
-    expect(faults).toHaveTextContent('Structure budget exceeded');
-    expect(within(faults).getByRole('button', { name: /Fix it on the Ship screen/ })).toBeVisible();
+    expect(within(faults).getByRole('button', { name: /Structure budget exceeded/ })).toBeVisible();
+    expect(within(faults).getAllByRole('button')).toHaveLength(1);
+    expect(screen.queryByText(/Your ship cannot take missions right now/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Fix it on the Ship screen/ })).toBeNull();
+  });
+
+  it('a chip jumps to the screen that fixes it', async () => {
+    server.use(
+      http.get('/v1/locations/:id/missions', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'b-bad',
+              templateId: 'tpl-b-bad',
+              type: 'DELIVERY',
+              factionId: 'luna',
+              originId: 'ceres',
+              destinationId: 'gate',
+              legs: [],
+              cargo: {},
+              reward: 900,
+              expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+              status: 'AVAILABLE',
+              playerId: null,
+              privatePlayerId: null,
+              shipId: null,
+              acceptedAt: null,
+              arrivalAt: null,
+              deadlineAt: null,
+              seed: 'seed-bad',
+              version: 1,
+              rewardEstimate: 900,
+              eligibility: {
+                eligible: false,
+                reasons: [{ code: 'STRUCTURE_EXCEEDED', message: 'Structure budget exceeded' }],
+              },
+              info: {
+                title: { en: 'Blocked Run', 'pt-BR': 'Corrida Bloqueada' },
+                description: { en: 'A run.', 'pt-BR': '' },
+                legCount: 1,
+                totalDistance: 300,
+                peakDanger: 2,
+                peakZone: 0,
+                estimate: { durationSeconds: 100, fuelNeeded: 8 },
+                material: null,
+                requirements: [],
+                race: null,
+              },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    const faults = await screen.findByTestId('ship-faults');
+    fireEvent.click(within(faults).getByRole('button', { name: /Structure budget exceeded/ }));
+    await waitFor(() => {
+      expect(screen.queryByTestId('ship-faults')).toBeNull();
+    });
+  });
+
+  it('no fault, no chips', async () => {
+    server.use(
+      http.get('/v1/locations/:id/missions', () => HttpResponse.json([], { status: 200 })),
+    );
+    await renderBoard();
+    expect(screen.queryByTestId('ship-faults')).toBeNull();
   });
 
   it('keeps the fuel block out of the cramped facts grid, and hides a redundant equal estimate', async () => {
