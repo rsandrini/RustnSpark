@@ -2484,6 +2484,21 @@
       "SCAVENGE": "Scavenging",
       "MINING": "Mining"
     },
+    "search": "Search places",
+    "sheet": {
+      "contracts": "{{count}} contract",
+      "contracts_other": "{{count}} contracts",
+      "plan": "Plan trip",
+      "details": "Details",
+      "hideDetails": "Hide details",
+      "risk": "Risk",
+      "fuelOk": "{{needed}} fuel",
+      "fuelNeeded": "Needs {{needed}}, have {{have}}: refuel",
+      "fuelShort": "Not enough fuel: {{missing}} more needed. Refuel at the port first.",
+      "tankSmall": "The trip needs more fuel than the tank holds: a bigger tank or a shorter route.",
+      "noShip": "You have no ship.",
+      "flying": "The ship is flying: wait for it to land."
+    },
     "layers": {
       "range": "Fuel range",
       "trips": "Planned trip"

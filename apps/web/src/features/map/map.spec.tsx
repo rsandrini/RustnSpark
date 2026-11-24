@@ -28,6 +28,13 @@ function node(svg: SVGSVGElement, name: string): SVGGElement {
   return match;
 }
 
+/** The sheet's Details toggle: mining, services, missions and the full trip box live behind it. */
+async function openDetails(name: string) {
+  const sheet = await screen.findByRole('region', { name });
+  fireEvent.click(within(sheet).getByRole('button', { name: 'Details' }));
+  return sheet;
+}
+
 async function renderMap() {
   server.use(onboarded());
   const view = renderWithRouter(routes, { initialEntries: ['/map'] });
@@ -193,7 +200,7 @@ describe('map (S10.5)', () => {
     const { svg } = await renderMap();
 
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    const dialog = await screen.findByRole('region', { name: 'Porto Ceres' });
+    const dialog = await openDetails('Porto Ceres');
     expect(withinText(dialog, /Porto Ceres — a node/i)).toBeInTheDocument();
     // The top bar's own faction badge (ShipIdentity) also says "Luna Authority" now; this one
     // is the popup's own.
@@ -208,19 +215,27 @@ describe('map (S10.5)', () => {
     await waitFor(() =>
       expect(screen.queryByRole('region', { name: 'Porto Ceres' })).not.toBeInTheDocument(),
     );
-    // nothing selected: the places list is back
-    expect(screen.getByRole('region', { name: 'Places' })).toBeInTheDocument();
+    // nothing selected: the chart is clear and the Places drawer is one click away
+    expect(screen.getByRole('button', { name: 'Places' })).toBeInTheDocument();
   });
 
-  it('lists the places, nearest first, until one is selected; a place can be picked from the list', async () => {
+  it('the Places drawer is collapsed; it lists the places, nearest first, and picking one opens its sheet', async () => {
     await renderMap();
+    expect(screen.queryByRole('region', { name: 'Places' })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Places' }));
     const list = await screen.findByRole('region', { name: 'Places' });
-    const buttons = within(list).getAllByRole('button');
+    const buttons = within(list)
+      .getAllByRole('button', { name: /\S/ })
+      .filter((b) => b.classList.contains('map-place'));
     // every place is listed, whether or not the map shows it at this zoom
     expect(buttons).toHaveLength(14);
     expect(buttons[0]).toHaveTextContent('Porto Ceres'); // the ship's own place is the nearest
-    fireEvent.click(buttons[1] as Element);
-    expect(await screen.findByRole('button', { name: 'Close' })).toBeInTheDocument();
+    // the search narrows the list
+    fireEvent.change(within(list).getByRole('searchbox'), { target: { value: 'tycho' } });
+    expect(list.querySelectorAll('.map-place')).toHaveLength(1);
+    fireEvent.change(within(list).getByRole('searchbox'), { target: { value: '' } });
+    fireEvent.click(list.querySelectorAll('.map-place')[1] as Element);
+    expect(await screen.findByTestId('place-sheet')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Places' })).not.toBeInTheDocument();
   });
 
@@ -233,7 +248,7 @@ describe('map (S10.5)', () => {
   it('"Open mission board" actually opens the Board tab, not the Ship tab', async () => {
     const { svg } = await renderMap();
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    const dialog = await screen.findByRole('region', { name: 'Porto Ceres' });
+    const dialog = await openDetails('Porto Ceres');
     fireEvent.click(within(dialog).getByRole('link', { name: 'Open mission board' }));
 
     await screen.findByRole('heading', { name: 'My Ship' });
@@ -246,7 +261,7 @@ describe('map (S10.5)', () => {
     const { svg } = await renderMap();
 
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    const dialog = await screen.findByRole('region', { name: 'Porto Ceres' });
+    const dialog = await openDetails('Porto Ceres');
     expect(await within(dialog).findByText('Needs a mining system')).toBeInTheDocument();
     expect(within(dialog).getByText('Mobility too low')).toBeInTheDocument();
   });
@@ -254,6 +269,7 @@ describe('map (S10.5)', () => {
   it('offers a trip to another place: route, time, fuel, and a button that starts it', async () => {
     const { svg } = await renderMap();
     fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
+    await openDetails('Estaleiro Tycho');
     // Only how many pilots are docked at the place (never who).
     expect(await screen.findByTestId('place-pilots')).toHaveTextContent('Pilots docked here: 3');
     const box = await screen.findByTestId('travel');
@@ -270,6 +286,7 @@ describe('map (S10.5)', () => {
   it('a place card lists what is available and what can be mined, with only ore names and rarity', async () => {
     const { svg } = await renderMap();
     fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
+    await openDetails('Estaleiro Tycho');
     const services = await screen.findByTestId('place-services');
     expect(within(services).getByText('Market')).toBeInTheDocument();
     expect(within(services).getByText('Repair')).toBeInTheDocument();
@@ -288,6 +305,7 @@ describe('map (S10.5)', () => {
     );
     const { svg } = await renderMap();
     fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
+    await openDetails('Estaleiro Tycho');
     const box = await screen.findByTestId('travel');
     expect(await within(box).findByText('2m 30s')).toBeInTheDocument();
     expect(within(box).queryByTestId('mcard-fuel')).toBeNull();
@@ -376,7 +394,7 @@ describe('map (S10.5)', () => {
     const { svg } = await renderMap();
 
     fireEvent.click(node(svg, 'Estaleiro Tycho'));
-    const dialog = await screen.findByRole('region', { name: 'Estaleiro Tycho' });
+    const dialog = await openDetails('Estaleiro Tycho');
     expect(await within(dialog).findByText('Missions to here')).toBeInTheDocument();
     expect(within(dialog).getByText('Parts Run')).toBeInTheDocument();
     expect(within(dialog).queryByText('Elsewhere Run')).toBeNull();
@@ -572,6 +590,7 @@ describe('map (S10.5)', () => {
   it('keeps the mission count in the place dialog', async () => {
     const { svg } = await renderMap();
     fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
+    await openDetails('Estaleiro Tycho');
     expect(await screen.findByTestId('place-missions-count')).toHaveTextContent('2 missions here');
   });
 
@@ -591,7 +610,7 @@ describe('map (S10.5)', () => {
     );
     const { svg } = await renderMap();
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    const dialog = await screen.findByRole('region', { name: 'Porto Ceres' });
+    const dialog = await openDetails('Porto Ceres');
     expect(
       await within(dialog).findByText(/Life support does not get enough power/),
     ).toBeInTheDocument();

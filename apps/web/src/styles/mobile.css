@@ -386,6 +386,18 @@
     min-height: 44px;
   }
 
+  /* a place's sheet sits above the tab bar, like the other phone sheets */
+  .place-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    z-index: 60;
+    max-width: none;
+    max-height: 68vh;
+    border-radius: 16px 16px 0 0;
+  }
+
   /* refuel: the gauge on top says it all; one slider, one price line, the buttons */
   .refuel-summary {
     display: none;

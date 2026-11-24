@@ -2484,6 +2484,21 @@
       "SCAVENGE": "Vasculhando",
       "MINING": "Minerando"
     },
+    "search": "Buscar lugares",
+    "sheet": {
+      "contracts": "{{count}} contrato",
+      "contracts_other": "{{count}} contratos",
+      "plan": "Planejar viagem",
+      "details": "Detalhes",
+      "hideDetails": "Ocultar detalhes",
+      "risk": "Risco",
+      "fuelOk": "{{needed}} de combustível",
+      "fuelNeeded": "Precisa de {{needed}}, tem {{have}}: reabasteça",
+      "fuelShort": "Combustível insuficiente: faltam {{missing}}. Reabasteça no porto antes.",
+      "tankSmall": "A viagem precisa de mais combustível do que o tanque comporta: um tanque maior ou uma rota mais curta.",
+      "noShip": "Você não tem nave.",
+      "flying": "A nave está voando: espere ela pousar."
+    },
     "layers": {
       "range": "Alcance do combustível",
       "trips": "Viagem planejada"
