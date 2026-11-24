@@ -283,7 +283,7 @@ describe('the director: the story on the real screens', () => {
     const open = await screen.findByRole('button', { name: 'Open on My Ship' });
     // the story has locked the rest of the screen (the filter chips), and left this button alone
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Only eligible' })).toHaveAttribute('inert'),
+      expect(screen.getByRole('tab', { name: /^All missions/ })).toHaveAttribute('inert'),
     );
     expect(open).not.toHaveAttribute('inert');
   });
@@ -294,7 +294,7 @@ describe('the director: the story on the real screens', () => {
     renderWithRouter(routes, { initialEntries: ['/missions'] });
     await screen.findByTestId('opening-bar');
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Only eligible' })).toHaveAttribute('inert'),
+      expect(screen.getByRole('tab', { name: /^All missions/ })).toHaveAttribute('inert'),
     );
     expect(screen.getByRole('button', { name: 'Account menu' })).not.toHaveAttribute('inert');
   });

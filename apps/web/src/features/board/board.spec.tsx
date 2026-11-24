@@ -28,7 +28,7 @@ async function renderBoard(extra = ''): Promise<void> {
   renderWithRouter(routes, { initialEntries: [`/hangar/board${extra}`] });
   await screen.findByRole('heading', { name: 'My Ship' });
   // Board's own type-filter chips only render once its offers have loaded.
-  await screen.findByRole('button', { name: 'All missions' });
+  await screen.findByRole('tab', { name: /^All missions/ });
 }
 
 describe('board (S10.6)', () => {
@@ -66,9 +66,9 @@ describe('board (S10.6)', () => {
     expect(screen.getAllByText('1,200 ¢').length).toBeGreaterThan(0);
 
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
-    fireEvent.click(screen.getByRole('button', { name: 'Mining' }));
+    fireEvent.click(screen.getByRole('tab', { name: /^Mining/ }));
     expect(document.querySelectorAll('.mcard')).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'All missions' }));
+    fireEvent.click(screen.getByRole('tab', { name: /^All missions/ }));
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
   });
 
@@ -589,7 +589,7 @@ describe('board (S10.6)', () => {
     // the chips keep their context: a labelled group (not an alert)
     expect(faults).toHaveAttribute('role', 'group');
     expect(faults).toHaveAccessibleName(
-      'Your ship cannot take missions. Fix it on the Ship screen.',
+      'Your ship cannot take missions. Each problem below leads to its fix.',
     );
     expect(screen.queryByText(/Your ship cannot take missions right now/)).toBeNull();
     expect(screen.queryByRole('button', { name: /Fix it on the Ship screen/ })).toBeNull();
@@ -649,6 +649,71 @@ describe('board (S10.6)', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('ship-faults')).toBeNull();
     });
+  });
+
+  it('each ship-wide chip leads to its own fix: a ship fault switches to the ship tab, a missing module goes to the store', async () => {
+    const offer = (id: string, type: string, code: string) => ({
+      id,
+      templateId: `tpl-${id}`,
+      type,
+      factionId: 'luna',
+      originId: 'ceres',
+      destinationId: 'gate',
+      legs: [],
+      cargo: {},
+      reward: 900,
+      expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      status: 'AVAILABLE',
+      playerId: null,
+      privatePlayerId: null,
+      shipId: null,
+      acceptedAt: null,
+      arrivalAt: null,
+      deadlineAt: null,
+      seed: `seed-${id}`,
+      version: 1,
+      rewardEstimate: 900,
+      eligibility: { eligible: false, reasons: [{ code, message: code }] },
+      info: {
+        title: { en: id, 'pt-BR': id },
+        description: { en: 'A run.', 'pt-BR': '' },
+        legCount: 1,
+        totalDistance: 300,
+        peakDanger: 2,
+        peakZone: 0,
+        estimate: { durationSeconds: 100, fuelNeeded: 8 },
+        material: null,
+        requirements: [],
+        race: null,
+      },
+    });
+    server.use(
+      http.get('/v1/locations/:id/missions', () =>
+        HttpResponse.json(
+          [
+            offer('x-1', 'DELIVERY', 'NO_BRIDGE'),
+            offer('x-2', 'TRANSPORT', 'NO_LIFE_SUPPORT'),
+            offer('x-3', 'TRAVEL', 'NO_BRIDGE'),
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    const faults = await screen.findByTestId('ship-faults');
+    // the ship screen is the host's own tab here: a button that switches to it
+    expect(within(faults).getByRole('button', { name: /No bridge/ })).toBeVisible();
+    expect(within(faults).getByRole('link', { name: /No life support/ })).toHaveAttribute(
+      'href',
+      '/ship?store=UTILITY',
+    );
+    // the group says it once: no second paragraph repeating it
+    expect(screen.queryByText(/cannot take missions right now/i)).toBeNull();
+    expect(screen.queryAllByText(/Your ship cannot take missions/)).toHaveLength(0);
+    // tabs: a count per kind, and the travel offer (no tab) still counted under All
+    expect(screen.getByRole('tab', { name: 'All missions (3)' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Delivery (1)' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Travel/ })).toBeNull();
   });
 
   it('no fault, no chips', async () => {
@@ -887,7 +952,7 @@ describe('board (S10.6)', () => {
     expect(within(field).getByText(/1º 1,600 ¢/)).toBeInTheDocument();
     expect(within(field).getByText(/2º 800 ¢/)).toBeInTheDocument();
     expect(document.querySelector('.mcard-type')).toHaveTextContent('Race');
-    expect(screen.getByRole('button', { name: 'Race' })).toBeInTheDocument(); // the type filter chip
+    expect(screen.getByRole('tab', { name: /^Race/ })).toBeInTheDocument(); // the type filter tab
   });
 
   it("labels the player's private start-safe mission (D43) and no shared offer", async () => {

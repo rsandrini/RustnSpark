@@ -2227,6 +2227,7 @@
       "expires": "Soonest to expire"
     },
     "title": "Mission board",
+    "tabLabel": "{{kind}} ({{count}})",
     "filterAll": "All missions",
     "onlyEligible": "Only eligible",
     "accept": "Accept",
@@ -2378,7 +2379,7 @@
       "details": "Details",
       "unmet": "{{count}} requirement(s) not met"
     },
-    "shipFaultsGroup": "Your ship cannot take missions. Fix it on the Ship screen."
+    "shipFaultsGroup": "Your ship cannot take missions. Each problem below leads to its fix."
   },
   "escort": {
     "title": "Stuck? An escort can take you home",

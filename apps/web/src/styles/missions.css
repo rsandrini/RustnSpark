@@ -673,6 +673,24 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   gap: 8px;
   margin: 12px 0;
 }
+.board-tabs {
+  min-width: 0;
+  max-width: 100%;
+}
+.board-tabs .kit-tabs {
+  max-width: 100%;
+}
+.board-tabs .kit-tab {
+  position: relative;
+}
+.board-tab-count {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+}
 .board-sort {
   display: inline-flex;
   align-items: center;

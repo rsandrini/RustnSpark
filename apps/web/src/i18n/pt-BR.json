@@ -2227,6 +2227,7 @@
       "expires": "Expira primeiro"
     },
     "title": "Quadro de missões",
+    "tabLabel": "{{kind}} ({{count}})",
     "filterAll": "Todas as missões",
     "onlyEligible": "Só elegíveis",
     "accept": "Aceitar",
@@ -2378,7 +2379,7 @@
       "details": "Detalhes",
       "unmet": "{{count}} requisito(s) não atendido(s)"
     },
-    "shipFaultsGroup": "Sua nave não pode aceitar missões. Resolva na tela da Nave."
+    "shipFaultsGroup": "Sua nave não pode aceitar missões. Cada problema abaixo leva ao conserto."
   },
   "escort": {
     "title": "Preso? Uma escolta pode levar você para casa",

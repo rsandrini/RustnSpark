@@ -7,7 +7,8 @@ import { BlockerChip } from '../../ui/kit/BlockerChip';
 import { PlaceBanner } from '../../ui/PlaceArt';
 import { activeAsOffer } from './active-offer';
 import { MissionRow } from './mission-row';
-import { EmptyShipNotice } from '../ship/empty-ship-notice';
+import { BoardFilters, type SortKey } from './board-filters';
+import { fixHref, fixOf } from './requirement-fix';
 import { EscortNotice } from '../ship/escort-notice';
 import { client } from '../../api/client';
 import { errorText } from '../../api/errors';
@@ -25,18 +26,6 @@ import { PendingStrip } from '../ship/pending-strip';
 import { usePrologueMode } from '../prologue/prologue-mode';
 
 const BOARD_REFETCH_MS = 15000;
-
-const MISSION_TYPES: readonly MissionType[] = [
-  'DELIVERY',
-  'TRANSPORT',
-  'ESCORT',
-  'MINING',
-  'RESCUE',
-  'RACE',
-];
-
-type SortKey = 'reward' | 'time' | 'risk' | 'expires';
-const SORT_KEYS: readonly SortKey[] = ['reward', 'time', 'risk', 'expires'];
 
 /** Sorting happens here over the offers already loaded; the server's order is only the tie-break. */
 function compareOffers(key: SortKey, a: MissionOffer, b: MissionOffer): number {
@@ -176,6 +165,8 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
     .filter((offer) => !onlyEligible || offer.eligibility.eligible)
     .sort((a, b) => compareOffers(sortKey, a, b));
   const hiddenCount = ofType.length - offers.length;
+  const counts: Partial<Record<MissionType, number>> = {};
+  for (const offer of boardQuery.data ?? []) counts[offer.type] = (counts[offer.type] ?? 0) + 1;
   const takeableCount = ofType.filter((offer) => offer.eligibility.eligible).length;
   // What is wrong with the SHIP itself (structure over budget, no engine, an unpowered system...):
   // it blocks every offer at once, so it is said once, above the list, not only inside each card.
@@ -208,7 +199,6 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
           {t('board.summary', { open: ofType.length, can: takeableCount })}
         </p>
       )}
-      <EmptyShipNotice />
       <EscortNotice />
 
       {shipFaults.length > 0 && (
@@ -218,18 +208,20 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
           role="group"
           aria-label={t('board.shipFaultsGroup')}
         >
-          {shipFaults.map((fault) => (
-            <BlockerChip
-              key={fault.code}
-              label={t(`board.reasons.${fault.code}`, {
-                defaultValue: t(`hangar.problems.${fault.code}`),
-              })}
-              onFix={() => {
-                if (embedded && onGoToShip !== undefined) onGoToShip();
-                else void navigate('/ship');
-              }}
-            />
-          ))}
+          {shipFaults.map((fault) => {
+            const target = fixOf(fault.code);
+            const label = t(`board.reasons.${fault.code}`, {
+              defaultValue: t(`hangar.problems.${fault.code}`),
+            });
+            // embedded, the ship screen is the host's own tab: switch to it instead of navigating
+            if (target.kind === 'ship' && embedded && onGoToShip !== undefined) {
+              return <BlockerChip key={fault.code} label={label} onFix={onGoToShip} />;
+            }
+            const to = fixHref(target);
+            return (
+              <BlockerChip key={fault.code} label={label} {...(to !== undefined ? { to } : {})} />
+            );
+          })}
         </div>
       )}
 
@@ -237,50 +229,16 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
 
       <PendingStrip />
 
-      {/* Filter chips, same layout as the Parts/Store side panel's filters (owner request) —
-          small pill buttons instead of a tab strip, which these never really were (picking one
-          doesn't navigate anywhere, it just narrows the list below). */}
-      <div className="board-filters">
-        <div className="chips" role="group" aria-label={t('board.title')}>
-          <button
-            type="button"
-            className={`chip${typeFilter === 'all' ? ' on' : ''}`}
-            aria-pressed={typeFilter === 'all'}
-            onClick={() => setTypeFilter('all')}
-          >
-            {t('board.filterAll')}
-          </button>
-          {MISSION_TYPES.map((type) => (
-            <button
-              key={type}
-              type="button"
-              className={`chip${typeFilter === type ? ' on' : ''}`}
-              aria-pressed={typeFilter === type}
-              onClick={() => setTypeFilter(type)}
-            >
-              {t(`board.type.${type}`)}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          className={`chip${onlyEligible ? ' on' : ''}`}
-          aria-pressed={onlyEligible}
-          onClick={() => setOnlyEligible((current) => !current)}
-        >
-          {t('board.onlyEligible')}
-        </button>
-        <label className="board-sort">
-          <span>{t('board.sort.label')}</span>
-          <select value={sortKey} onChange={(event) => setSortKey(event.target.value as SortKey)}>
-            {SORT_KEYS.map((key) => (
-              <option key={key} value={key}>
-                {t(`board.sort.${key}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <BoardFilters
+        type={typeFilter}
+        onType={setTypeFilter}
+        counts={counts}
+        onlyEligible={onlyEligible}
+        onOnlyEligible={setOnlyEligible}
+        sort={sortKey}
+        onSort={setSortKey}
+        showEligibleToggle={!opening}
+      />
 
       {takenOffer !== null && (
         <ul className="mrow-list">

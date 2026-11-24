@@ -54,8 +54,8 @@ const pilotWithTutorial = () => [
 
 async function openFullBoard(): Promise<void> {
   renderWithRouter(routes, { initialEntries: ['/hangar/board'] });
-  await screen.findByRole('button', { name: 'All missions' });
-  fireEvent.click(screen.getByRole('button', { name: 'All missions' }));
+  await screen.findByRole('tab', { name: /^All missions/ });
+  fireEvent.click(screen.getByRole('tab', { name: /^All missions/ }));
 }
 
 describe('quest givers in the pilot screens', () => {
