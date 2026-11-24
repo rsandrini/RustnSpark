@@ -4,6 +4,8 @@ import type { PortMark, Side } from './connectors';
 
 export interface SlotHint {
   needId: string;
+  /** The class of part that fixes the need (what the Store opens with). */
+  partClass: string;
   x: number;
   y: number;
   side: Side;
@@ -54,9 +56,29 @@ export function emptySlotHints(input: {
       const key = `${x},${y}`;
       if (occupied.has(key) || taken.has(key) || !inBounds(x, y)) continue;
       taken.add(key);
-      hints.push({ needId: need.id, x, y, side: mark.side });
+      hints.push({ needId: need.id, partClass: need.partClass, x, y, side: mark.side });
       break;
     }
   }
   return hints;
+}
+
+/** Whether the dashed slots show: only for a docked ship outside the opening with something lacking, and never
+    while a part is dragged, carried over the yard or picked from the tray (a tap on a cell places it). */
+export function showSlotHints(input: {
+  ghost: boolean;
+  dropPreview: boolean;
+  pendingPartId: string | null;
+  needsCount: number;
+  docked: boolean;
+  opening: boolean;
+}): boolean {
+  return (
+    !input.ghost &&
+    !input.dropPreview &&
+    input.pendingPartId === null &&
+    input.needsCount > 0 &&
+    input.docked &&
+    !input.opening
+  );
 }

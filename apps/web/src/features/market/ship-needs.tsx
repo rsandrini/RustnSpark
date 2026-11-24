@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ShipSheet } from '../../api/generated';
 import { NeedChip } from '../../ui/kit/NeedChip';
@@ -19,19 +19,51 @@ function readDismissedNeeds(): ReadonlySet<string> {
   }
 }
 
+// One store for every caller: a dismissal made in one component (the chips) is seen at once by the others
+// (the slot hints on the yard). The browser's storage is the source of truth across tabs and visits.
+let dismissedSnapshot: ReadonlySet<string> = readDismissedNeeds();
+const dismissedListeners = new Set<() => void>();
+
+function emitDismissed(next: ReadonlySet<string>) {
+  dismissedSnapshot = next;
+  for (const listener of dismissedListeners) listener();
+}
+
+function sameSet(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
+  return a.size === b.size && [...a].every((id) => b.has(id));
+}
+
+function subscribeDismissed(listener: () => void): () => void {
+  // The first subscriber resyncs with the storage (it may have changed while nobody was listening).
+  if (dismissedListeners.size === 0) {
+    const stored = readDismissedNeeds();
+    if (!sameSet(stored, dismissedSnapshot)) emitDismissed(stored);
+  }
+  dismissedListeners.add(listener);
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === DISMISSED_KEY) emitDismissed(readDismissedNeeds());
+  };
+  window.addEventListener('storage', onStorage);
+  return () => {
+    dismissedListeners.delete(listener);
+    window.removeEventListener('storage', onStorage);
+  };
+}
+
+function dismissNeed(need: ShipNeed) {
+  const next = new Set([...dismissedSnapshot, need.id]);
+  try {
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify([...next]));
+  } catch {
+    // Storage unavailable: the tip comes back on the next visit.
+  }
+  emitDismissed(next);
+}
+
 /** The needs the pilot dismissed, kept in this browser so a dismissed tip stays gone on every visit. */
 export function useDismissedNeeds(): [ReadonlySet<string>, (need: ShipNeed) => void] {
-  const [dismissed, setDismissed] = useState<ReadonlySet<string>>(readDismissedNeeds);
-  const dismiss = (need: ShipNeed) => {
-    const next = new Set([...dismissed, need.id]);
-    setDismissed(next);
-    try {
-      localStorage.setItem(DISMISSED_KEY, JSON.stringify([...next]));
-    } catch {
-      // Storage unavailable: the tip comes back on the next visit.
-    }
-  };
-  return [dismissed, dismiss];
+  const dismissed = useSyncExternalStore(subscribeDismissed, () => dismissedSnapshot);
+  return [dismissed, dismissNeed];
 }
 
 export interface ShipNeed {

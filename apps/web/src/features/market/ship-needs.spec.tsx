@@ -132,6 +132,31 @@ describe('dismissing a need chip', () => {
   });
 });
 
+describe('the dismissed needs are shared between every consumer', () => {
+  beforeEach(() => localStorage.clear());
+
+  function Reader({ label }: { label: string }) {
+    const [dismissed] = useDismissedNeeds();
+    return <p>{[label, [...dismissed].join(',')].join(':')}</p>;
+  }
+
+  it('a dismissal in one consumer shows in another at once, and persists', async () => {
+    const view = render(
+      <>
+        <Reader label="reader" />
+        <Dismissable onShow={vi.fn()} />
+      </>,
+    );
+    expect(screen.getByText('reader:')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss: No weapon' }));
+    expect(screen.getByText('reader:weapon')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('rs.dismissedShipNeeds') ?? '[]')).toEqual(['weapon']);
+    view.unmount();
+    render(<Reader label="again" />);
+    expect(screen.getByText('again:weapon')).toBeInTheDocument();
+  });
+});
+
 describe('ShipNeedsNote', () => {
   beforeEach(() => localStorage.clear());
   const lacking = { pdf: 0, bli: 3, esc: 0, energyCont: 1, crg: 4 } as unknown as ShipSheet;

@@ -4,8 +4,8 @@ import { renderWithProviders } from '../../test/utils';
 import { EmptySlotsLayer } from './empty-slots-layer';
 
 const hints = [
-  { needId: 'weapon', x: 1, y: 0, side: 'E' as const },
-  { needId: 'shield', x: 0, y: 1, side: 'S' as const },
+  { needId: 'weapon', partClass: 'WEAPON', x: 1, y: 0, side: 'E' as const },
+  { needId: 'shield', partClass: 'DEFENSE', x: 0, y: 1, side: 'S' as const },
 ];
 
 function mount(onPick = vi.fn()) {
@@ -28,13 +28,13 @@ describe('EmptySlotsLayer', () => {
     expect(slots[0]?.querySelector('.yard-slot-box')).not.toBeNull();
   });
 
-  it('calls onPick with the need id on click, Enter and Space', () => {
+  it('calls onPick with the hint on click, Enter and Space', () => {
     const onPick = mount();
     const [first, second] = screen.getAllByRole('button');
     fireEvent.click(first as Element);
     fireEvent.keyDown(second as Element, { key: 'Enter' });
     fireEvent.keyDown(first as Element, { key: ' ' });
-    expect(onPick.mock.calls).toEqual([['weapon'], ['shield'], ['weapon']]);
+    expect(onPick.mock.calls).toEqual([[hints[0]], [hints[1]], [hints[0]]]);
   });
 
   it('lets pointers through except on the slots themselves', () => {

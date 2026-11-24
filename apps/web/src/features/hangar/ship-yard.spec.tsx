@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { fireEvent, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { ConnectorCell, PartCatalogStats } from '../../api/generated';
 import { renderWithProviders } from '../../test/utils';
 import { ShipYard, labelAreaFactor, labelLines, showsHoverCard } from './ship-yard';
@@ -135,7 +135,7 @@ describe('ShipYard port marks', () => {
     const slotProps = {
       ...baseProps,
       layout: [{ partInstanceId: 'a', gx: 0, gy: 0, rot: 0 as const }],
-      slotHints: [{ needId: 'weapon', x: 1, y: 0, side: 'E' as const }],
+      slotHints: [{ needId: 'weapon', partClass: 'WEAPON', x: 1, y: 0, side: 'E' as const }],
       onSlotPick: () => undefined,
     };
     const shown = renderWithProviders(<ShipYard {...slotProps} />);
@@ -148,6 +148,25 @@ describe('ShipYard port marks', () => {
       />,
     );
     expect(carrying.container.querySelectorAll('.yard-slot')).toHaveLength(0);
+  });
+
+  it('hides the slots while a tray part is picked, so tapping the hinted cell places it', () => {
+    const onCellClick = vi.fn();
+    const onSlotPick = vi.fn();
+    const { container } = renderWithProviders(
+      <ShipYard
+        {...baseProps}
+        layout={[{ partInstanceId: 'a', gx: 0, gy: 0, rot: 0 }]}
+        slotHints={[{ needId: 'weapon', partClass: 'WEAPON', x: 1, y: 0, side: 'E' }]}
+        onSlotPick={onSlotPick}
+        placingPartId="b"
+        onCellClick={onCellClick}
+      />,
+    );
+    expect(container.querySelectorAll('.yard-slot')).toHaveLength(0);
+    fireEvent.click(container.querySelector('[data-gx="1"][data-gy="0"]') as Element);
+    expect(onCellClick).toHaveBeenCalledWith(1, 0);
+    expect(onSlotPick).not.toHaveBeenCalled();
   });
 
   it('draws the drop preview edges connected or incorrect against the neighbours', () => {

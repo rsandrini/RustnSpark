@@ -44,7 +44,7 @@ import { YardCallouts } from './yard-callouts';
 import { ShipSheetPanel } from './ship-sheet-panel';
 import { usePrologueMode } from '../prologue/prologue-mode';
 import { lackingParts, ShipNeedsNote, useDismissedNeeds } from '../market/ship-needs';
-import { emptySlotHints } from './empty-slot-hints';
+import { emptySlotHints, showSlotHints } from './empty-slot-hints';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
 import { RescueBanner } from '../rescue/rescue-banner';
@@ -733,12 +733,20 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // Dashed slots on the ship where a needed part could go: only in port, never in the opening.
   const [dismissedNeeds] = useDismissedNeeds();
   const slotHints = useMemo(() => {
-    if (opening || ship === undefined || ship.status !== 'IN_PORT') return [];
+    if (ship === undefined) return [];
     const needs = lackingParts(
       ship.sheet,
       parts.filter((part) => part.location === 'INSTALLED'),
     ).filter((need) => !dismissedNeeds.has(need.id));
-    if (needs.length === 0 || connectorsById === undefined) return [];
+    const shown = showSlotHints({
+      ghost: false,
+      dropPreview: false,
+      pendingPartId,
+      needsCount: needs.length,
+      docked: ship.status === 'IN_PORT',
+      opening,
+    });
+    if (!shown || connectorsById === undefined) return [];
     const occupied = new Set<string>();
     for (const placement of effectiveLayout) {
       const catalog = catalogById.get(placement.partInstanceId);
@@ -757,6 +765,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     });
   }, [
     opening,
+    pendingPartId,
     ship,
     parts,
     dismissedNeeds,
@@ -1088,13 +1097,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 onHoverPart={setHoveredId}
                 editable={!modifyBlocked}
                 slotHints={slotHints}
-                onSlotPick={(needId) => {
-                  const need = lackingParts(
-                    ship.sheet,
-                    parts.filter((part) => part.location === 'INSTALLED'),
-                  ).find((n) => n.id === needId);
-                  if (need === undefined) return;
-                  setStoreClass(need.partClass);
+                placingPartId={pendingPartId}
+                onSlotPick={(hint) => {
+                  setStoreClass(hint.partClass);
                   setSideTab('store');
                 }}
                 callouts={<YardCallouts sheet={sheet} layers={preview?.layers} />}

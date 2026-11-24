@@ -411,6 +411,15 @@ export function setWallet(value: number): void {
 }
 
 /** Destroys the installed engine (condition 0): the workshop cannot repair it. */
+/** The starter bridge gets a free central port on its east side (so the yard has a spot to hint at). */
+export function giveBridgeFreePort(): void {
+  inventoryState = inventoryState.map((entry) =>
+    entry.id === 'part-bridge'
+      ? { ...entry, connectors: [{ dx: 1, dy: 0, side: 'E' as const, kind: 'central' as const }] }
+      : entry,
+  );
+}
+
 export function destroyEngine(): void {
   const engine = inventoryState.find((entry) => entry.id === 'part-engine');
   if (engine !== undefined) {

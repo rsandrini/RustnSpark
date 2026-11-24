@@ -15,7 +15,7 @@ export function EmptySlotsLayer({
   onPick,
 }: {
   hints: readonly SlotHint[];
-  onPick: (needId: string) => void;
+  onPick: (hint: SlotHint) => void;
 }): ReactNode {
   const { t } = useTranslation();
   if (hints.length === 0) return null;
@@ -27,18 +27,18 @@ export function EmptySlotsLayer({
         const onKeyDown = (event: KeyboardEvent<SVGGElement>) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            onPick(hint.needId);
+            onPick(hint);
           }
         };
         return (
           <g
-            key={hint.needId}
+            key={`${hint.x},${hint.y}`}
             className="yard-slot"
             role="button"
             tabIndex={0}
             aria-label={label}
             style={{ pointerEvents: 'all', cursor: 'pointer' }}
-            onClick={() => onPick(hint.needId)}
+            onClick={() => onPick(hint)}
             onKeyDown={onKeyDown}
           >
             <rect

@@ -1,9 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, onTestFinished, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { classicSquareCells, setShipStatus } from '../../test/msw/handlers';
+import {
+  classicSquareCells,
+  giveBridgeFreePort,
+  resetEconomyState,
+  setShipStatus,
+} from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import type { Placement, ShipSheet } from '../../api/generated';
 
@@ -1692,5 +1697,18 @@ describe('hangar (S10.4)', () => {
     expect(await screen.findByTestId('rotate-hint')).toHaveTextContent('turned twice');
     const after = block(container, 'part-cargo-a') as SVGRectElement;
     expect([after.getAttribute('data-gx'), after.getAttribute('data-gy')]).toEqual(before);
+  });
+
+  it('dismissing a need chip takes its slot hint off the yard at once', async () => {
+    server.use(onboarded());
+    giveBridgeFreePort();
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    onTestFinished(() => resetEconomyState());
+    const dismiss = await screen.findAllByRole('button', { name: /^Dismiss: / });
+    await waitFor(() => expect(container.querySelectorAll('.yard-slot').length).toBeGreaterThan(0));
+    const before = container.querySelectorAll('.yard-slot').length;
+    for (const button of dismiss) fireEvent.click(button);
+    await waitFor(() => expect(container.querySelectorAll('.yard-slot')).toHaveLength(0));
+    expect(before).toBeGreaterThan(0);
   });
 });

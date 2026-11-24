@@ -16,7 +16,7 @@ import { PortGlyph } from '../parts/connector-grid';
 import { computePortMarks, previewPortMarks } from './connectors';
 import { PartBlockArt } from './part-block-art';
 import { EmptySlotsLayer } from './empty-slots-layer';
-import type { SlotHint } from './empty-slot-hints';
+import { showSlotHints, type SlotHint } from './empty-slot-hints';
 import {
   directionViolations,
   footprint,
@@ -193,7 +193,9 @@ export interface ShipYardProps {
   /** Dashed empty slots where a needed part could go (hidden while a part is dragged). */
   slotHints?: readonly SlotHint[];
   /** A slot was picked: the need whose part the pilot wants (opens the Store with that class). */
-  onSlotPick?: (needId: string) => void;
+  onSlotPick?: (hint: SlotHint) => void;
+  /** The part picked from the tray, waiting for a tap on a cell: the slots step aside so the tap places it. */
+  placingPartId?: string | null;
 }
 
 /** How long a landing plays. */
@@ -270,6 +272,7 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
     onDropPart,
     slotHints,
     onSlotPick,
+    placingPartId,
     onRemovePart,
     onHoverPart,
     editable = true,
@@ -865,10 +868,16 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
             }}
           />
         ))}
-        {ghost === null &&
-          dropPreview == null &&
-          slotHints !== undefined &&
-          onSlotPick !== undefined && <EmptySlotsLayer hints={slotHints} onPick={onSlotPick} />}
+        {slotHints !== undefined &&
+          onSlotPick !== undefined &&
+          showSlotHints({
+            ghost: ghost !== null,
+            dropPreview: dropPreview != null,
+            pendingPartId: placingPartId ?? null,
+            needsCount: slotHints.length,
+            docked: true,
+            opening: false,
+          }) && <EmptySlotsLayer hints={slotHints} onPick={onSlotPick} />}
         {layout.map((placement) => {
           const catalog = catalogById.get(placement.partInstanceId);
           if (catalog === undefined) return null;
