@@ -12,7 +12,8 @@ import { RiskPips } from '../../ui/kit/RiskPips';
 import { usePrologueMode } from '../prologue/prologue-mode';
 import type { FuelStatus } from './fuel-status';
 import { missionKind } from './mission-kinds';
-import { fixHref, fixOf, fuelFix, type FixTarget } from './requirement-fix';
+import { fixHref, fixOf, fuelFix } from './requirement-fix';
+import { reasonLabel } from './reason-label';
 
 const DOT = ' · ';
 const RISK_LEVEL = { lo: 1, md: 2, hi: 3 } as const;
@@ -30,11 +31,6 @@ export interface ContractFaceProps {
   tag?: string | undefined;
   /** Accept / Hold / Release (or "Go to ship"), shown under the reward. */
   actions: ReactNode;
-}
-
-/** The path a chip links to: an in-app path (client-side navigation), or nothing to fix. */
-function toOf(target: FixTarget): string | undefined {
-  return fixHref(target);
 }
 
 /** The face of a contract card: who sent it, what and where, how risky and long, what it pays, and
@@ -71,6 +67,8 @@ export function ContractFace({
     : [
         ...info.requirements
           .filter((req) => !req.met)
+          // a trip longer than the tank is told once, by the fuel chip
+          .filter((req) => !(req.code === 'FUEL_CAPACITY' && fuel?.state === 'tank'))
           .map((req) => {
             const name = t(`board.requirements.${req.code}`, { defaultValue: req.message });
             const numbers =
@@ -80,19 +78,17 @@ export function ContractFace({
                     needed: number(req.needed, req.unit),
                   })}`
                 : '';
-            return { key: req.code, label: `${name}${numbers}`, to: toOf(fixOf(req.code)) };
+            return { key: req.code, label: `${name}${numbers}`, to: fixHref(fixOf(req.code)) };
           }),
         ...offer.eligibility.reasons
           .filter((reason) => !requirementCodes.has(reason.code))
           .map((reason, index) => ({
             key: `${reason.code}-${index}`,
-            label: t(`board.reasons.${reason.code}`, {
-              defaultValue: t(`error.${reason.code}`, { defaultValue: reason.message }),
-            }),
-            to: toOf(fixOf(reason.code)),
+            label: reasonLabel(t, reason.code, reason.message),
+            to: fixHref(fixOf(reason.code)),
           })),
       ];
-  const fuelTo = fuel === null ? undefined : toOf(fuelFix(fuel.state));
+  const fuelTo = fuel === null ? undefined : fixHref(fuelFix(fuel.state));
   const risk = destination?.risk;
 
   return (
@@ -133,7 +129,10 @@ export function ContractFace({
           <h2 className="mrow-title">{pickLocalized(info.title, i18n.language)}</h2>
           <p className="mrow-route">
             <span>{place(origin, offer.originId)}</span>
-            <span className="mrow-arrow"> {t('board.arrow')} </span>
+            <span className="mrow-arrow" aria-hidden="true">
+              {' '}
+              {t('board.arrow')}{' '}
+            </span>
             <span>{place(destination, offer.destinationId)}</span>
             <span className="mrow-dist">
               {DOT}

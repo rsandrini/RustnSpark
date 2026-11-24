@@ -38,10 +38,12 @@ const SHIP_CODES = new Set([
   'EXHAUST_BLOCKED',
   'FACING_BLOCKED',
   'FACING_CONNECTOR',
+  // the part is owned: what is missing is power
+  'LIFE_SUPPORT_UNPOWERED',
 ]);
 
-// The life-support module is a UTILITY part: missing or unpowered, the store is where it comes from.
-const LIFE_SUPPORT_CODES = new Set(['NO_LIFE_SUPPORT', 'LIFE_SUPPORT_UNPOWERED']);
+// The life-support module is a UTILITY part: when there is none, the store is where it comes from.
+const LIFE_SUPPORT_CODES = new Set(['NO_LIFE_SUPPORT']);
 
 /** What fixes a blocker code (a mission requirement or a ship viability fault). */
 export function fixOf(code: string): FixTarget {

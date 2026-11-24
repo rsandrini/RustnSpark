@@ -10,6 +10,7 @@ import { MissionRow } from './mission-row';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
 import { BoardFilters, type SortKey } from './board-filters';
 import { fixHref, fixOf } from './requirement-fix';
+import { reasonLabel } from './reason-label';
 import { EscortNotice } from '../ship/escort-notice';
 import { client } from '../../api/client';
 import { errorText } from '../../api/errors';
@@ -211,9 +212,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
         >
           {shipFaults.map((fault) => {
             const target = fixOf(fault.code);
-            const label = t(`board.reasons.${fault.code}`, {
-              defaultValue: t(`hangar.problems.${fault.code}`),
-            });
+            const label = reasonLabel(t, fault.code, fault.message);
             // embedded, the ship screen is the host's own tab: switch to it instead of navigating
             if (target.kind === 'ship' && embedded && onGoToShip !== undefined) {
               return <BlockerChip key={fault.code} label={label} onFix={onGoToShip} />;

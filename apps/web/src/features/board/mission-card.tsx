@@ -17,6 +17,7 @@ import { RiskBadge } from '../../ui/RiskBadge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
 import { FuelBlock } from './fuel-block';
+import { reasonLabel } from './reason-label';
 import { factionName, useFactions } from '../../ui/factions';
 import { useNow } from '../../ui/useNow';
 import { usePrologueMode } from '../prologue/prologue-mode';
@@ -388,11 +389,7 @@ export function MissionCard({
         {!taken && otherReasons.length > 0 && (
           <ul className="reasons">
             {otherReasons.map((reason, index) => (
-              <li key={`${reason.code}-${index}`}>
-                {t(`board.reasons.${reason.code}`, {
-                  defaultValue: t(`error.${reason.code}`, { defaultValue: reason.message }),
-                })}
-              </li>
+              <li key={`${reason.code}-${index}`}>{reasonLabel(t, reason.code, reason.message)}</li>
             ))}
           </ul>
         )}

@@ -22,12 +22,13 @@ describe('fixOf', () => {
     },
   );
 
-  it.each(['NO_LIFE_SUPPORT', 'LIFE_SUPPORT_UNPOWERED'])(
-    '%s leads to the UTILITY store tab',
-    (code) => {
-      expect(fixOf(code)).toEqual({ kind: 'store', partClass: 'UTILITY' });
-    },
-  );
+  it('NO_LIFE_SUPPORT leads to the UTILITY store tab', () => {
+    expect(fixOf('NO_LIFE_SUPPORT')).toEqual({ kind: 'store', partClass: 'UTILITY' });
+  });
+
+  it('LIFE_SUPPORT_UNPOWERED leads to the ship (the part is owned; power is the problem)', () => {
+    expect(fixOf('LIFE_SUPPORT_UNPOWERED')).toEqual({ kind: 'ship' });
+  });
 
   it('does not invent a fuel code', () => {
     expect(fixOf('fuel-short')).toEqual({ kind: 'none' });

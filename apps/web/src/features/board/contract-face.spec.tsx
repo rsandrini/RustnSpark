@@ -172,4 +172,27 @@ describe('ContractFace', () => {
     show(<ContractFace {...props({ fuel })} />);
     expect(screen.getByTestId('fuel-chip')).toHaveAttribute('href', '/ship?store=TANK');
   });
+
+  it('tells a trip longer than the tank once: the fuel chip, not also the capacity requirement', () => {
+    const blocked = offer(
+      { eligibility: { eligible: false, reasons: [] } },
+      { requirements: [unmet('FUEL_CAPACITY', { needed: 9, actual: 5, unit: 'fuel' })] },
+    );
+    show(
+      <ContractFace
+        {...props({
+          offer: blocked,
+          fuel: { state: 'tank', missing: 4 } as ContractFaceProps['fuel'],
+        })}
+      />,
+    );
+    const chips = screen.getByRole('group').querySelectorAll('.kit-blocker');
+    expect(chips).toHaveLength(1);
+    expect(screen.getByTestId('fuel-chip')).toBeInTheDocument();
+  });
+
+  it('hides the route arrow from assistive tech', () => {
+    const { container } = show(<ContractFace {...props()} />);
+    expect(container.querySelector('.mrow-arrow')).toHaveAttribute('aria-hidden', 'true');
+  });
 });

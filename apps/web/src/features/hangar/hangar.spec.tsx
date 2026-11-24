@@ -131,6 +131,19 @@ describe('hangar (S10.4)', () => {
     expect(screen.getByRole('tab', { name: 'Parts' })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('shows the Store from a store link even when the side column was hidden', async () => {
+    window.localStorage.setItem('rs.hangar.sideHidden', '1');
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/ship?store=CARGO'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+    expect(await screen.findByRole('tab', { name: 'Store' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(container.querySelector('.hangar-layout')).not.toHaveClass('side-hidden');
+    expect(window.localStorage.getItem('rs.hangar.sideHidden')).toBe('0');
+  });
+
   it('opens the Store from a link followed while the page is already up (the board to the ship)', async () => {
     server.use(onboarded());
     const { router } = renderWithRouter(routes, { initialEntries: ['/missions'] });

@@ -238,6 +238,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       setSideTab('store');
       setStoreClass(wanted);
       setPartsOpen(true);
+      // the Store lives in the side column: a pilot who hid it must see it now
+      setSideHidden(false);
+      try {
+        window.localStorage.setItem(SIDE_HIDDEN_KEY, '0');
+      } catch {
+        // the choice still applies for this session
+      }
     }
     const next = new URLSearchParams(searchParams);
     next.delete('store');
