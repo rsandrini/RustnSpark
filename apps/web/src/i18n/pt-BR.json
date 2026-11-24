@@ -3117,7 +3117,7 @@
     "fuel": "Combustível",
     "hull": "Casco",
     "cargo": "Carga",
-    "group": "Estado da nave",
+    "label": "Combustível, casco e carga",
     "tip": {
       "fuel": "Voar queima combustível; reabasteça no porto.",
       "fuelReserve": "A missão aceita precisa de {{reserve}}: a marca âmbar.",

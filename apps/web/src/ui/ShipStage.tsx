@@ -204,7 +204,7 @@ export function ShipStage({
             ))}
           </div>
         )}
-        <div className="scene-ship"{...(still ? { hidden: true } : {})}>
+        <div className="scene-ship" {...(still ? { hidden: true } : {})}>
           <svg viewBox="0 0 120 60" width="160" height="80">
             <path className="ship-flame" d="M14,30 L-6,22 L2,30 L-6,38 Z" />
             <path className="ship-hull" d="M118,30 L84,10 L30,14 L14,24 L14,36 L30,46 L84,50 Z" />

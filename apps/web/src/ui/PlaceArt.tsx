@@ -20,7 +20,11 @@ export function usePlaceArt(): PlaceArtMap {
 
 /** Where a place's art lives: the uploaded image if any, else the built-in file (generated SVG
     placeholders; replacing them keeps every screen). */
-export function placeArtUrl(placeId: string, variant: PlaceArtVariant, art: PlaceArtMap = {}): string {
+export function placeArtUrl(
+  placeId: string,
+  variant: PlaceArtVariant,
+  art: PlaceArtMap = {},
+): string {
   return art[placeId]?.[variant] ?? `/places/${placeId}.${variant}.svg`;
 }
 

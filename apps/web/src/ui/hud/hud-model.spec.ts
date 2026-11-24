@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ActiveMission, ShipResponse } from '../../api/generated';
-import { hudModel } from './hud-model';
+import { hudModel, formatHudNumber } from './hud-model';
 
 function ship(over: {
   fuel?: number;
@@ -63,5 +63,27 @@ describe('hudModel', () => {
     expect(model.cargo).toEqual({ used: 2, max: 10 });
     expect(model.hull).toEqual({ value: 55, max: 100, tone: 'warn' });
     expect(hudModel(ship({ condition: 20 }), undefined).hull?.tone).toBe('bad');
+  });
+});
+
+describe('formatHudNumber', () => {
+  it.each(['en', 'pt-BR'])(
+    'keeps the full number below 10,000 and compacts from there in %s',
+    (lang) => {
+      const full = new Intl.NumberFormat(lang);
+      const compact = new Intl.NumberFormat(lang, {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      });
+      expect(formatHudNumber(999, lang, true)).toBe(full.format(999));
+      expect(formatHudNumber(9_999, lang, true)).toBe(full.format(9_999));
+      expect(formatHudNumber(10_000, lang, true)).toBe(compact.format(10_000));
+      expect(formatHudNumber(1_234_567, lang, true)).toBe(compact.format(1_234_567));
+      expect(formatHudNumber(9_999_999, lang, true)).toBe(compact.format(9_999_999));
+    },
+  );
+  it('en gives 1.2M, and desktop keeps the full number', () => {
+    expect(formatHudNumber(1_234_567, 'en', true)).toBe('1.2M');
+    expect(formatHudNumber(1_234_567, 'en', false)).toBe('1,234,567');
   });
 });

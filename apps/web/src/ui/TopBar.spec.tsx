@@ -41,7 +41,7 @@ describe('TopBar', () => {
     server.use(me());
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
-    const hud = await screen.findByRole('group', { name: 'Ship status' });
+    const hud = await screen.findByRole('region', { name: 'Fuel, hull and cargo' });
     expect(within(hud).getAllByRole('progressbar')).toHaveLength(3);
     expect(hud.closest('.shell-top')).toBeNull();
     expect(within(hud).queryByTestId('topbar-wallet')).toBeNull();

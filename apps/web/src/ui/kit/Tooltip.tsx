@@ -27,10 +27,17 @@ export function Tooltip({ content, children, align = 'start', describe = true }:
   // True while the card was opened by hover or focus and the click that finishes the same gesture has not come yet:
   // that click keeps it open, the next one closes it.
   const opener = useRef(false);
+  // The pointer type of the last pointer event on the trigger. A touch tap makes some browsers send a `mouseleave` right
+  // after the compatibility mouse events; that one must not close the card (a second tap, Escape or a tap outside does).
+  const pointer = useRef('');
 
   const show = () => {
     opener.current = true;
     setOpen(true);
+  };
+  const leave = () => {
+    if (pointer.current === 'touch') return;
+    hide();
   };
   const hide = () => {
     opener.current = false;
@@ -66,7 +73,13 @@ export function Tooltip({ content, children, align = 'start', describe = true }:
       ref={root}
       className="kit-tip"
       onMouseEnter={show}
-      onMouseLeave={hide}
+      onMouseLeave={leave}
+      onPointerEnter={(event) => {
+        pointer.current = event.pointerType;
+      }}
+      onPointerDown={(event) => {
+        pointer.current = event.pointerType;
+      }}
       onFocus={show}
       onBlur={hide}
       onClick={toggle}

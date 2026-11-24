@@ -25,13 +25,19 @@ export function useFactions(): FactionsData {
 }
 
 /** The faction's name in the player's language, or undefined when the server has no such faction. */
-export function factionName(faction: PublicFaction | undefined, language: string): string | undefined {
+export function factionName(
+  faction: PublicFaction | undefined,
+  language: string,
+): string | undefined {
   if (faction === undefined) return undefined;
   const name = pickLocalized(faction.displayName, language);
   return name === '' ? undefined : name;
 }
 
-export function factionBlurb(faction: PublicFaction | undefined, language: string): string | undefined {
+export function factionBlurb(
+  faction: PublicFaction | undefined,
+  language: string,
+): string | undefined {
   if (faction === undefined) return undefined;
   const blurb = pickLocalized(faction.description, language);
   return blurb === '' ? undefined : blurb;

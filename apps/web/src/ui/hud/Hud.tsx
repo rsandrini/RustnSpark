@@ -8,7 +8,7 @@ import { usePrologueMode } from '../../features/prologue/prologue-mode';
 import { Gauge } from '../Gauge';
 import { Tooltip } from '../kit/Tooltip';
 import { useIsPhone } from '../useIsPhone';
-import { hudModel } from './hud-model';
+import { formatHudNumber, hudModel } from './hud-model';
 
 const Glyph = ({ children }: { children: ReactNode }) => (
   <svg
@@ -58,12 +58,24 @@ export function Hud() {
     queryFn: () => client.get<ActiveMission[]>('/v1/missions/active'),
   });
   const ship = shipsQuery.data?.[0];
-  if ((user?.factionId == null && !opening.active) || ship === undefined) return null;
+  if (user?.factionId == null && !opening.active) return null;
+  const rowClass = `hud${phone ? ' hud--compact' : ''}`;
+  // The ships are on their way: keep the row's height from the first paint (no gauges, no placeholder) so the page does
+  // not jump when they land. No ship once settled collapses the row.
+  if (ship === undefined) {
+    return shipsQuery.isPending ? (
+      <section
+        className={`${rowClass} hud--pending`}
+        aria-label={t('hud.label')}
+        aria-busy="true"
+      />
+    ) : null;
+  }
 
   const accepted = (activeQuery.data ?? []).find((entry) => entry.status === 'ACCEPTED');
   const model = hudModel(ship, accepted);
-  const num = new Intl.NumberFormat(i18n.language);
-  const n = (value: number) => num.format(value);
+  const n = (value: number) => formatHudNumber(value, i18n.language, false);
+  const short = (value: number) => formatHudNumber(value, i18n.language, phone);
   const pill = (name: string, text: string) => (phone ? text : `${name} ${text}`);
 
   const gauges: { key: string; node: ReactNode }[] = [];
@@ -89,7 +101,7 @@ export function Hud() {
             reserve={reserve}
             tone={tone}
             icon={FUEL_ICON}
-            label={pill(t('hud.fuel'), `${n(value)}/${n(max)}`)}
+            label={pill(t('hud.fuel'), `${short(value)}/${short(max)}`)}
             ariaLabel={t('hud.aria.fuel', { value: n(value), max: n(max) })}
             tabIndex={0}
           />
@@ -127,7 +139,7 @@ export function Hud() {
             max={max}
             tone="ok"
             icon={CARGO_ICON}
-            label={pill(t('hud.cargo'), `${n(used)}/${n(max)}`)}
+            label={pill(t('hud.cargo'), `${short(used)}/${short(max)}`)}
             ariaLabel={t('hud.aria.cargo', { used: n(used), max: n(max) })}
             tabIndex={0}
           />
@@ -137,12 +149,12 @@ export function Hud() {
   }
 
   return (
-    <div className={`hud${phone ? ' hud--compact' : ''}`} role="group" aria-label={t('hud.group')}>
+    <section className={rowClass} aria-label={t('hud.label')}>
       {gauges.map(({ key, node }) => (
         <div key={key} className="hud-cell">
           {node}
         </div>
       ))}
-    </div>
+    </section>
   );
 }

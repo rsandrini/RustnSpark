@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { Tooltip } from './Tooltip';
 import { Gauge } from '../Gauge';
 import { ResourceChip } from './ResourceChip';
 
 const THRUST = 'Thrust';
+
+// jsdom has no PointerEvent (the test setup aliases MouseEvent), so the pointer type is set by hand.
+const pointerDown = (target: Element, pointerType: string) => {
+  const event = createEvent.pointerDown(target);
+  Object.defineProperty(event, 'pointerType', { value: pointerType });
+  fireEvent(target, event);
+};
 
 describe('Tooltip', () => {
   it('opens its content on focus and on click, is described by aria-describedby, closes on Escape', () => {
@@ -107,5 +114,36 @@ describe('Tooltip', () => {
     expect(chip).toHaveAttribute('tabindex', '0');
     fireEvent.focus(chip);
     expect(chip.getAttribute('aria-describedby')).toBe(screen.getByRole('tooltip').id);
+  });
+
+  it('a touch tap keeps the card open when the browser sends a mouseleave right after', () => {
+    render(
+      <Tooltip content="Card">
+        <button type="button">{THRUST}</button>
+      </Tooltip>,
+    );
+    const trigger = screen.getByRole('button', { name: THRUST });
+    pointerDown(trigger, 'touch');
+    fireEvent.mouseEnter(trigger);
+    fireEvent.click(trigger);
+    fireEvent.mouseLeave(trigger);
+    expect(screen.getByRole('tooltip')).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+
+  it('a mouse still closes the card on mouseleave', () => {
+    render(
+      <Tooltip content="Card">
+        <button type="button">{THRUST}</button>
+      </Tooltip>,
+    );
+    const trigger = screen.getByRole('button', { name: THRUST });
+    pointerDown(trigger, 'mouse');
+    fireEvent.mouseEnter(trigger);
+    fireEvent.click(trigger);
+    expect(screen.getByRole('tooltip')).toBeInTheDocument();
+    fireEvent.mouseLeave(trigger);
+    expect(screen.queryByRole('tooltip')).toBeNull();
   });
 });

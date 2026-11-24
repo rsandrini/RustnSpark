@@ -42,3 +42,16 @@ export function hudModel(
     cargo: cargoMax > 0 ? { used: ship.hold ? ship.hold.used : 0, max: cargoMax } : null,
   };
 }
+
+/**
+ * A number for a HUD pill: the full figure, or on the compact phone row a compact one (1.2M, 1,2 mi) from 10,000 up so
+ * it fits the pill. The accessible name and the tooltip always carry the full figure.
+ */
+export function formatHudNumber(value: number, locale: string, compact: boolean): string {
+  if (compact && Math.abs(value) >= 10_000) {
+    return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(
+      value,
+    );
+  }
+  return new Intl.NumberFormat(locale).format(value);
+}

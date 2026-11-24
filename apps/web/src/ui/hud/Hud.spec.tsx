@@ -66,6 +66,38 @@ describe('Hud', () => {
     expect(document.querySelector('.wallet-chip')).toBeNull();
   });
 
+  it('is a labelled region landmark', async () => {
+    server.use(withShip({}));
+    renderWithProviders(<Hud />);
+    const region = await screen.findByRole('region', { name: 'Fuel, hull and cargo' });
+    expect(region.tagName).toBe('SECTION');
+    expect(region).not.toHaveAttribute('role');
+  });
+
+  it('reserves the row while the ships load, with no gauges, then fills it', async () => {
+    server.use(
+      http.get('/v1/ships', async () => {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return HttpResponse.json([ship()]);
+      }),
+    );
+    const { container } = renderWithProviders(<Hud />);
+    const row = container.querySelector('.hud.hud--pending');
+    expect(row).not.toBeNull();
+    expect(screen.queryAllByRole('progressbar')).toHaveLength(0);
+    await screen.findByRole('progressbar', { name: /Hull/ });
+    expect(container.querySelector('.hud--pending')).toBeNull();
+  });
+
+  it('shows the compact numbers on the phone pill and the full ones in the name', async () => {
+    phone.on = true;
+    server.use(withShip({ fuel: 1_234_567, fuelCap: 9_999_999 }));
+    renderWithProviders(<Hud />);
+    const fuel = await screen.findByRole('progressbar', { name: /Fuel/ });
+    expect(fuel).toHaveTextContent('1.2M/10M');
+    expect(fuel).toHaveAccessibleName('Fuel 1,234,567 of 9,999,999');
+  });
+
   it('renders nothing while there is no ship', async () => {
     server.use(http.get('/v1/ships', () => HttpResponse.json([])));
     const { container } = renderWithProviders(<Hud />);

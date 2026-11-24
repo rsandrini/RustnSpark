@@ -26,7 +26,9 @@ export function FactionBadge({ factionId }: FactionBadgeProps) {
   return (
     <span
       className={`fac ${className}`}
-      style={faction === undefined ? undefined : { color: faction.color, borderColor: faction.color }}
+      style={
+        faction === undefined ? undefined : { color: faction.color, borderColor: faction.color }
+      }
     >
       {logo !== null && <img className="fac-logo" src={logo} alt="" />}
       {label}

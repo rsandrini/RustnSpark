@@ -197,6 +197,8 @@
   margin: 0 auto;
   padding: 4px 14px;
   border-bottom: 1px solid var(--rule);
+  /* the loaded row (4 + 18 gauge + 4 padding + 1 rule): reserved while the ships load, so nothing jumps */
+  min-height: 27px;
 }
 .ship-identity {
   display: flex;
@@ -332,6 +334,8 @@
 .hud--compact {
   gap: 8px;
   padding: 6px 16px;
+  /* the loaded phone row measured 48px in the browser */
+  min-height: 48px;
 }
 .hud--compact .hud-cell {
   flex: 1 1 0;
