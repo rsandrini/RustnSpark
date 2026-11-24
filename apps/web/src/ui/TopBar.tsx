@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { GameNav } from './GameNav';
 import { AccountMenu } from './AccountMenu';
 import { StatusStrip } from './ShipIdentity';
+import { Hud } from './hud/Hud';
 import { useIsPhone } from './useIsPhone';
 
 /** The wordmark, split so the "n" can take the accent colour (it is a brand, not a translation). */
@@ -29,6 +30,7 @@ export function TopBar() {
         </div>
       </header>
       <StatusStrip />
+      <Hud />
       {phone && <GameNav bar />}
     </>
   );

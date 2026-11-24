@@ -302,3 +302,40 @@
 .shell-menu-guest {
   color: var(--brass);
 }
+
+/* the HUD: the ship's fuel, hull and cargo under the top bar */
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 4px 14px;
+  border-bottom: 1px solid var(--rule);
+}
+.hud-cell {
+  flex: 0 1 190px;
+  min-width: 0;
+}
+.hud .kit-tip {
+  display: block;
+}
+.hud .gauge {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.hud .gauge:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+/* a phone: one compact row of icon + number mini gauges, 16px gutters, nothing scrolls sideways */
+.hud--compact {
+  gap: 8px;
+  padding: 6px 16px;
+}
+.hud--compact .hud-cell {
+  flex: 1 1 0;
+}
+.hud--compact .gauge-label {
+  padding: 0 6px;
+}

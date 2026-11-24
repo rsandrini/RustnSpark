@@ -37,6 +37,17 @@ describe('TopBar', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows the HUD (fuel, hull, cargo) under the status strip, with the wallet only in the account menu', async () => {
+    server.use(me());
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
+    const hud = await screen.findByRole('group', { name: 'Ship status' });
+    expect(within(hud).getAllByRole('progressbar')).toHaveLength(3);
+    expect(hud.closest('.shell-top')).toBeNull();
+    expect(within(hud).queryByTestId('topbar-wallet')).toBeNull();
+    expect(screen.getAllByTestId('topbar-wallet')).toHaveLength(1);
+  });
+
   it('shows the last mission link in the status strip when no mission is active', async () => {
     server.use(
       me(),

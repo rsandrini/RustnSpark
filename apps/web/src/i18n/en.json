@@ -3113,5 +3113,24 @@
       "up": "{{label}}: {{value}}, up {{diff}}",
       "down": "{{label}}: {{value}}, down {{diff}}"
     }
+  },
+  "hud": {
+    "fuel": "Fuel",
+    "hull": "Hull",
+    "cargo": "Cargo",
+    "group": "Ship status",
+    "tip": {
+      "fuel": "Fuel: {{value}} of {{max}}. Flying burns it; refuel in port.",
+      "fuelReserve": "The accepted mission needs {{reserve}}: the amber mark.",
+      "fuelEmpty": "The tank is empty.",
+      "hull": "Hull: {{value}}% condition. Repair it in port.",
+      "cargo": "Cargo: {{used}} of {{max}} space in use.",
+      "cargoNone": "This ship has no cargo space."
+    },
+    "aria": {
+      "fuel": "Fuel {{value}} of {{max}}",
+      "hull": "Hull {{value}}%",
+      "cargo": "Cargo {{used}} of {{max}}"
+    }
   }
 }

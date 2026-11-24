@@ -3113,5 +3113,24 @@
       "up": "{{label}}: {{value}}, mais {{diff}}",
       "down": "{{label}}: {{value}}, menos {{diff}}"
     }
+  },
+  "hud": {
+    "fuel": "Combustível",
+    "hull": "Casco",
+    "cargo": "Carga",
+    "group": "Estado da nave",
+    "tip": {
+      "fuel": "Combustível: {{value}} de {{max}}. Voar gasta; reabasteça no porto.",
+      "fuelReserve": "A missão aceita precisa de {{reserve}}: a marca âmbar.",
+      "fuelEmpty": "O tanque está vazio.",
+      "hull": "Casco: {{value}}% de condição. Repare no porto.",
+      "cargo": "Carga: {{used}} de {{max}} de espaço em uso.",
+      "cargoNone": "Esta nave não tem espaço de carga."
+    },
+    "aria": {
+      "fuel": "Combustível {{value}} de {{max}}",
+      "hull": "Casco {{value}}%",
+      "cargo": "Carga {{used}} de {{max}}"
+    }
   }
 }
