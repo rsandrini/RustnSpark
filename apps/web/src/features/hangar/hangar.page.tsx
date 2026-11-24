@@ -13,7 +13,7 @@ import type {
   ShipFormat,
   ShipResponse,
 } from '../../api/generated';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook, type ShipYardHandle } from './ship-yard';
 import {
@@ -227,6 +227,22 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [partsOpen, setPartsOpen] = useState(false);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
+  // `/ship?store=CLASS` (a mission blocker's fix link) opens the Store on that class. Read once on
+  // mount, then dropped, so a later tab change is not undone; an unknown class is ignored.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const wanted = searchParams.get('store');
+    if (wanted === null) return;
+    if (i18n.exists(`hangar.partClasses.${wanted}`)) {
+      setSideTab('store');
+      setStoreClass(wanted);
+      setPartsOpen(true);
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('store');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on mount
+  }, []);
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
 
   // Seed the editing layout once per ship; later syncs come from save/auto responses.

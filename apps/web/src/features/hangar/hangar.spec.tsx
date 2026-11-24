@@ -116,6 +116,32 @@ describe('hangar (S10.4)', () => {
     ).toBe('1%');
   });
 
+  it('opens the Store side tab with the class from /ship?store=CARGO', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/ship?store=CARGO'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    expect(await screen.findByRole('tab', { name: 'Store' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(await screen.findByRole('tab', { name: 'Cargo', selected: true })).toBeInTheDocument();
+    // The param is spent: choosing the Parts tab afterwards sticks.
+    fireEvent.click(screen.getByRole('tab', { name: 'Parts' }));
+    expect(screen.getByRole('tab', { name: 'Parts' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('keeps the Parts side tab without a store param, and ignores an invalid class', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/ship?store=NOPE'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+    expect(await screen.findByRole('tab', { name: 'Parts' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tab', { name: 'Store' })).toHaveAttribute('aria-selected', 'false');
+  });
+
   it('opens straight to the Port tab from /port, with its two levels of tabs', async () => {
     server.use(onboarded());
     renderWithRouter(routes, { initialEntries: ['/port'] });
