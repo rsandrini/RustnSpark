@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MAX_SCALE,
   centreAbove,
+  visibleHeight,
   boxOf,
   clampView,
   clientToMap,
@@ -66,5 +67,19 @@ describe('centreAbove', () => {
   });
   it('stays inside the map', () => {
     expect(centreAbove(bounds, { x: 500, y: 790 }, 4, 0.25).cy).toBe(800);
+  });
+  it('takes the fraction of a known view height', () => {
+    expect(centreAbove(bounds, { x: 500, y: 400 }, 4, 0.25, 400).cy).toBe(500);
+  });
+});
+
+describe('visibleHeight', () => {
+  const bounds = { minX: 0, minY: 0, width: 1000, height: 800 };
+  it('shows more height than the box on a tall stage', () => {
+    // box 250 x 200 in a 100 x 200 stage: width limits, so the stage shows 200 / (100 / 250) = 500 units
+    expect(visibleHeight(bounds, 4, { width: 100, height: 200 })).toBe(500);
+  });
+  it('is the box height when the stage has no size yet', () => {
+    expect(visibleHeight(bounds, 4, { width: 0, height: 0 })).toBe(200);
   });
 });

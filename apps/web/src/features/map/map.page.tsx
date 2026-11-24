@@ -30,7 +30,7 @@ import { useNow } from '../../ui/useNow';
 import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
 import { transitPollInterval } from '../transit/poll';
 import { PageTitle } from '../../ui/PageTitle';
-import { DETAIL_MIN_SCALE, MAX_SCALE, MIN_SCALE, centreAbove } from './map-view';
+import { DETAIL_MIN_SCALE, MAX_SCALE, MIN_SCALE, centreAbove, visibleHeight } from './map-view';
 
 /** The radius of the dot that marks a place hidden at this zoom. */
 const HINT_RADIUS = 3;
@@ -318,7 +318,18 @@ export function MapPage({ guided = false }: MapPageProps) {
   const selectedPlace = selected;
   useEffect(() => {
     if (!phone || selectedPlace === undefined || bounds === null) return;
-    const view = centreAbove(bounds, selectedPlace, Math.max(camera.scale, 2), SHEET_CENTRE_SHIFT);
+    const scale = Math.max(camera.scale, 2);
+    // Aim for the middle of the strip of map the sheet leaves free: measured, because the sheet's height varies.
+    const stage = document.querySelector('.map-stage')?.getBoundingClientRect();
+    const sheet = document.querySelector('.place-sheet')?.getBoundingClientRect();
+    let fraction = SHEET_CENTRE_SHIFT;
+    let viewHeight: number | undefined;
+    if (stage !== undefined && sheet !== undefined && stage.height > 0) {
+      const free = Math.max(stage.top, Math.min(sheet.top, stage.bottom));
+      fraction = Math.max(0, (stage.bottom - free) / (2 * stage.height));
+      viewHeight = visibleHeight(bounds, scale, stage);
+    }
+    const view = centreAbove(bounds, selectedPlace, scale, fraction, viewHeight);
     centreOn({ x: view.cx, y: view.cy }, view.scale);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone, selectedPlace?.id]);

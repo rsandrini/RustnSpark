@@ -113,13 +113,30 @@ export function clientToMap(
 export const unitsPerPixel = (box: Box, rect: { width: number; height: number }): number =>
   1 / Math.min(rect.width / box.w, rect.height / box.h);
 
-/** A view centred on a point, nudged so the point sits in the upper part of the screen (a sheet covers the lower part). */
+/**
+ * A view centred on a point, nudged so the point sits in the upper part of the screen (a sheet covers the lower part).
+ * `fraction` is of the view's height in map units: `viewHeight` when the caller knows it (a portrait stage shows more
+ * height than the box does, because the chart fits the box inside the stage), else the box height.
+ */
 export function centreAbove(
   bounds: Bounds,
   point: { x: number; y: number },
   scale: number,
   fraction: number,
+  viewHeight?: number,
 ): View {
-  const h = bounds.height / Math.max(scale, MIN_SCALE);
+  const h = viewHeight ?? bounds.height / Math.max(scale, MIN_SCALE);
   return clampView(bounds, { scale, cx: point.x, cy: point.y + h * fraction });
+}
+
+/** The map height the stage shows at a scale, in map units (the chart is fitted inside the stage, so a tall stage shows more than the box). */
+export function visibleHeight(
+  bounds: Bounds,
+  scale: number,
+  rect: { width: number; height: number },
+): number {
+  const s = Math.max(scale, MIN_SCALE);
+  const box = { w: bounds.width / s, h: bounds.height / s };
+  if (rect.width <= 0 || rect.height <= 0) return box.h;
+  return rect.height / Math.min(rect.width / box.w, rect.height / box.h);
 }
