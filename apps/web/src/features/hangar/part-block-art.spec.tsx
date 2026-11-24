@@ -57,6 +57,8 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
   it('colours by condition when asked, and marks a broken part', () => {
     const { container } = art({
       colorBy: 'condition',
+      catalog: { ...cannon, w: 2, h: 2 },
+      rot: 0,
       look: { rarity: 'Common', condition: 10, broken: true },
     });
     const block = container.querySelector('rect.block');
@@ -121,7 +123,9 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
       const { getByTestId } = art({ catalog: engine2x1, rot: 0, gx: 3, gy: 5 });
       const icon = getByTestId('block-kind-icon');
       expect(Number(icon.getAttribute('x'))).toBeCloseTo(3.16);
-      expect(Number(icon.getAttribute('y'))).toBeGreaterThanOrEqual(5.2);
+      const layout = blockTextLayout(5, 1, 0.2, 1, true);
+      const row = layout.row!;
+      expect(Number(icon.getAttribute('y'))).toBeCloseTo(5.2 + (row.height - row.icon) / 2);
     });
 
     it('the bridge and a ghost show no row', () => {
@@ -137,7 +141,7 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
       expect(fitKindLabel('Suporte de vida', 5, 0.17)).toBe('Suporte de vida');
       const cut = fitKindLabel('Suporte de vida', 0.6, 0.17);
       expect(cut.endsWith('…')).toBe(true);
-      expect(cut.length * 0.17 * 0.56).toBeLessThanOrEqual(0.6 + 0.17);
+      expect(cut.length * 0.17 * 0.56).toBeLessThanOrEqual(0.6);
     });
 
     it.each([
@@ -146,18 +150,74 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
       ['2x1', 1, 2],
       ['2x2', 2, 3],
       ['3x1', 1, 1],
+      ['1x2 at rot 90 (the 2x1 footprint)', 1, 2],
     ])('%s: the row never overlaps the name lines', (_n, height, wantedLines) => {
-      for (const font of [0.14, 0.2, 0.28]) {
+      for (const font of [0.14, 0.2, 0.28, 0.42]) {
         const layout = blockTextLayout(10, height, font, wantedLines, true);
-        if (layout.row === null) continue;
-        const firstTop = layout.firstY - (font * 1.15) / 2;
-        expect(layout.row.top + layout.row.height).toBeLessThanOrEqual(firstTop);
-        const lastBottom = layout.firstY + (layout.lineCount - 0.5) * font * 1.15;
+        expect(layout.row).not.toBeNull();
+        const row = layout.row!;
+        const lh = layout.nameFont * 1.15;
+        expect(row.top + row.height).toBeLessThanOrEqual(layout.firstY - lh / 2 + 1e-9);
+        const lastBottom = layout.firstY + (layout.lineCount - 0.5) * lh;
         expect(lastBottom).toBeLessThanOrEqual(10 + height - 0.24);
-        expect(layout.row.showLabel).toBe(height >= 2);
+        expect(row.showLabel).toBe(height >= 2);
         if (height < 2) expect(layout.lineCount).toBe(1);
       }
-      expect(blockTextLayout(10, height, 0.2, wantedLines, true).row).not.toBeNull();
+    });
+
+    it('a 1x1 at a large label font keeps the icon and shrinks the name instead of overlapping it', () => {
+      const layout = blockTextLayout(0, 1, 0.42, 1, true);
+      expect(layout.row).not.toBeNull();
+      expect(layout.nameFont).toBeLessThan(0.42);
+      expect(layout.row!.top + layout.row!.height).toBeLessThanOrEqual(
+        layout.firstY - (layout.nameFont * 1.15) / 2 + 1e-9,
+      );
+      const { container } = art({ labelFont: 0.42 });
+      const icon = container.querySelector('[data-testid="block-kind-icon"]')!;
+      const tspan = container.querySelector('text.block-label tspan')!;
+      const fontSize = parseFloat(
+        (container.querySelector('text.block-label') as SVGElement).style.fontSize,
+      );
+      const nameTop = Number(tspan.getAttribute('y')) - fontSize * 0.35 - (fontSize * 1.15) / 2;
+      expect(
+        Number(icon.getAttribute('y')) + Number(icon.getAttribute('height')),
+      ).toBeLessThanOrEqual(nameTop + 1e-9);
+    });
+
+    it('drops the row only when even a squeezed name cannot clear it', () => {
+      expect(blockTextLayout(0, 0.6, 0.2, 1, true).row).toBeNull();
+    });
+
+    it.each([
+      ['2x1', 'engine_common', 'ENGINE', 2, 1, 0],
+      ['2x2', 'tank_common', 'TANK', 2, 2, 0],
+      ['1x2 at rot 90', 'tank_common', 'TANK', 1, 2, 90],
+    ])('%s: in the render the icon ends above the first name line', (_n, type, cls, w, h, rot) => {
+      const { container } = art({
+        catalog: part(type, cls, w, h),
+        rot: rot as 0 | 90,
+        gy: 4,
+        lines: ['Name'],
+      });
+      const icon = container.querySelector('[data-testid="block-kind-icon"]')!;
+      const fontSize = parseFloat(
+        (container.querySelector('text.block-label') as SVGElement).style.fontSize,
+      );
+      const tspan = container.querySelector('text.block-label tspan')!;
+      const nameTop = Number(tspan.getAttribute('y')) - fontSize * 0.35 - (fontSize * 1.15) / 2;
+      expect(
+        Number(icon.getAttribute('y')) + Number(icon.getAttribute('height')),
+      ).toBeLessThanOrEqual(nameTop + 1e-9);
+    });
+
+    it('a broken 1x1 with the type row still shows its Broken text and the icon', () => {
+      const { container } = art({
+        look: { rarity: 'Rare', condition: 0, broken: true },
+        lines: ['Cannon'],
+      });
+      expect(container.querySelector('text.block-label')?.textContent).toMatch(/\S/);
+      expect(container.querySelector('text.block-label')?.textContent).not.toBe('Cannon');
+      expect(container.querySelector('[data-testid="block-kind-icon"]')).not.toBeNull();
     });
 
     it('with no row the name keeps its classic place', () => {

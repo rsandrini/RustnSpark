@@ -66,14 +66,22 @@ export interface BlockTextLayout {
   lineCount: number;
   /** Centre of the first name line, in yard cells. */
   firstY: number;
+  /** The name's font size, in cells (smaller than the label font only when a 1-cell block is short of room). */
+  nameFont: number;
 }
+
+const MIN_NAME_FONT = 0.12;
 
 /**
  * Where the type row and the name go inside one block (cell units, `gy` = top of the footprint).
- * The row sits at the top, below the connector dots (inset 0.13): icon + label when the footprint is at least 2
- * cells tall, the icon alone when it is 1 cell tall (the name then keeps at most 1 line). The name block is
- * pushed down just enough to clear the row; when even that would hit the condition bar the row is dropped and the
- * name keeps its classic place.
+ * The row sits at the top, below the connector dots: icon + label when the footprint is at least 2 cells tall,
+ * the icon alone when it is 1 cell tall (the name then keeps at most 1 line). Why gy + 0.2 and not gy + 0.3: the
+ * dots sit on the edge at inset 0.13 with radius <= 0.075 (central) or 0.05 (the two small ones), so the top-edge
+ * dots end at gy + 0.205 at the lowest, and the side dots (centred at half the height, from gy + 0.425 on a 1-cell
+ * footprint) start below the icon (its bottom is <= gy + 0.42); 0.3 would leave a 1x1 no room for any name.
+ * The name block is pushed down just enough to clear the row. When room runs short it degrades in steps: all the
+ * name lines, then one line, then one line in a smaller font; only when even that does not fit is the whole row
+ * dropped and the name keeps its classic place.
  */
 export function blockTextLayout(
   gy: number,
@@ -82,23 +90,37 @@ export function blockTextLayout(
   nameLines: number,
   withRow: boolean,
 ): BlockTextLayout {
-  const lineHeight = labelFont * 1.15;
-  const classic = (n: number) => gy + height / 2 - 0.1 - ((n - 1) * lineHeight) / 2;
-  if (!withRow) return { row: null, lineCount: nameLines, firstY: classic(nameLines) };
+  const classic = (n: number, font: number) => gy + height / 2 - 0.1 - ((n - 1) * font * 1.15) / 2;
+  const noRow = (): BlockTextLayout => ({
+    row: null,
+    lineCount: nameLines,
+    firstY: classic(nameLines, labelFont),
+    nameFont: labelFont,
+  });
+  if (!withRow) return noRow();
   const font = Math.min(labelFont * 0.85, KIND_ROW_MAX_FONT);
   const rowHeight = font * 1.3;
   const top = gy + KIND_ROW_TOP;
-  const lineCount = height < 2 ? Math.min(nameLines, 1) : nameLines;
-  const firstY = Math.max(classic(lineCount), top + rowHeight + KIND_ROW_GAP + lineHeight / 2);
-  const lastBottom = firstY + (lineCount - 1) * lineHeight + lineHeight / 2;
-  if (lastBottom > gy + height - BAR_CLEARANCE) {
-    return { row: null, lineCount: nameLines, firstY: classic(nameLines) };
+  const free = top + rowHeight + KIND_ROW_GAP;
+  const limit = gy + height - BAR_CLEARANCE;
+  const n0 = height < 2 ? Math.min(nameLines, 1) : nameLines;
+  const squeezed = Math.max(MIN_NAME_FONT, (limit - free) / 1.15);
+  const attempts: Array<[number, number]> = [[n0, labelFont]];
+  if (n0 > 1) attempts.push([1, labelFont]);
+  if (squeezed < labelFont) attempts.push([1, squeezed]);
+  for (const [lineCount, nameFont] of attempts) {
+    const lineHeight = nameFont * 1.15;
+    const firstY = Math.max(classic(lineCount, nameFont), free + lineHeight / 2);
+    if (firstY + (lineCount - 1) * lineHeight + lineHeight / 2 <= limit + 1e-9) {
+      return {
+        row: { top, height: rowHeight, font, icon: font * 1.25, showLabel: height >= 2 },
+        lineCount,
+        firstY,
+        nameFont,
+      };
+    }
   }
-  return {
-    row: { top, height: rowHeight, font, icon: font * 1.25, showLabel: height >= 2 },
-    lineCount,
-    firstY,
-  };
+  return noRow();
 }
 
 /** Shortens a label with an ellipsis so it fits `maxWidth` cells at `font` (average glyph ~0.56 em). */
@@ -159,16 +181,20 @@ export function PartBlockArt({
 }: PartBlockArtProps) {
   const { t } = useTranslation();
   const { width, height } = footprint(catalog, rot);
-  const lineHeight = labelFont * 1.15;
   const kind = partKindOf(catalog);
   const kindLabel = t(kindLabelKey(kind));
-  const shownLines = look?.broken === true ? [...lines.slice(0, 1), t('parts.broken')] : lines;
+  const broken = look?.broken === true;
+  const nameLineCount = broken ? Math.min(lines.length, 1) + 1 : lines.length;
   // The bridge's name is its type; a ghost is dimmed and carries no row.
   const withRow = kind !== 'bridge' && flags.ghosting !== true;
   // The name is nudged up so the condition bar never sits on the text, and down to clear the type row.
-  const layout = blockTextLayout(gy, height, labelFont, shownLines.length, withRow);
+  const layout = blockTextLayout(gy, height, labelFont, nameLineCount, withRow);
   const firstY = layout.firstY;
-  const drawnLines = shownLines.slice(0, layout.lineCount);
+  const lineHeight = layout.nameFont * 1.15;
+  // A broken part always keeps its "Broken" line; the name lines give way to it when the block is short of room.
+  const drawnLines = broken
+    ? [...lines.slice(0, layout.lineCount - 1), t('parts.broken')]
+    : lines.slice(0, layout.lineCount);
   return (
     <>
       <rect
@@ -282,13 +308,13 @@ export function PartBlockArt({
       <text
         className="block-label"
         x={gx + width / 2}
-        style={{ pointerEvents: 'none', fontSize: `${labelFont}px` }}
+        style={{ pointerEvents: 'none', fontSize: `${layout.nameFont}px` }}
       >
         {drawnLines.map((line, index) => (
           <tspan
             key={line + String(index)}
             x={gx + width / 2}
-            y={firstY + index * lineHeight + labelFont * 0.35}
+            y={firstY + index * lineHeight + layout.nameFont * 0.35}
           >
             {line}
           </tspan>
