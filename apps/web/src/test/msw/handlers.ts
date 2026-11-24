@@ -1802,7 +1802,7 @@ const boardOffer = (
   ...over,
 });
 
-const boardState: MissionOffer[] = [
+export const boardState: MissionOffer[] = [
   // b-1 carries the giver (the first offer a newcomer sees on a real board); the others stay
   // giver-less, like offers made before the feature existed — the web must handle both.
   boardOffer(

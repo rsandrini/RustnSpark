@@ -1,10 +1,11 @@
 import { beforeEach, describe, it, expect } from 'vitest';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
-import { resetActiveState, setShipStatus, ship, world } from '../../test/msw/handlers';
+import i18n from '../../i18n';
+import { boardState, resetActiveState, setShipStatus, ship, world } from '../../test/msw/handlers';
 
 const onboarded = () =>
   http.get('/v1/players/me', () =>
@@ -513,6 +514,88 @@ describe('map (S10.5)', () => {
     const hot = svg.querySelectorAll('line.edge.hot').length;
     expect(hot).toBeGreaterThan(0);
     expect(hot).toBeLessThan(17);
+  });
+  describe('the pilot badge', () => {
+    const withCounts = (counts: Record<string, number>) =>
+      server.use(
+        http.get('/v1/locations', () =>
+          HttpResponse.json({
+            ...world(),
+            locations: world().locations.map((place) => ({
+              ...place,
+              pilotCount: counts[place.id] ?? 0,
+            })),
+          }),
+        ),
+      );
+    const badges = (svg: SVGSVGElement) =>
+      Array.from(svg.querySelectorAll('.pilot-badge')).map((badge) => ({
+        text: badge.querySelector('text')?.textContent,
+        title: badge.querySelector('title')?.textContent,
+      }));
+
+    it('shows the pilots anchored, not the missions, and nothing at 0', async () => {
+      withCounts({ ceres: 5, tycho: 100 });
+      const { svg } = await renderWholeMap();
+      await waitFor(() => expect(badges(svg)).toHaveLength(2));
+      expect(
+        badges(svg)
+          .map((badge) => badge.text)
+          .sort(),
+      ).toEqual(['5', '99+']);
+    });
+
+    it('reads as a plural in English', async () => {
+      withCounts({ ceres: 1, tycho: 2 });
+      const { svg } = await renderWholeMap();
+      await waitFor(() => expect(badges(svg)).toHaveLength(2));
+      expect(
+        badges(svg)
+          .map((badge) => badge.title)
+          .sort(),
+      ).toEqual(['1 pilot anchored here', '2 pilots anchored here']);
+    });
+
+    it('reads as a plural in Portuguese', async () => {
+      withCounts({ ceres: 1, tycho: 2 });
+      const { svg } = await renderWholeMap();
+      await act(() => i18n.changeLanguage('pt-BR'));
+      await waitFor(() => expect(badges(svg)).toHaveLength(2));
+      expect(
+        badges(svg)
+          .map((badge) => badge.title)
+          .sort(),
+      ).toEqual(['1 piloto ancorado aqui', '2 pilotos ancorados aqui']);
+    });
+  });
+
+  it('keeps the mission count in the place dialog', async () => {
+    const { svg } = await renderMap();
+    fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
+    expect(await screen.findByTestId('place-missions-count')).toHaveTextContent('2 missions here');
+  });
+
+  it('translates a blocker code that only the ship problems know', async () => {
+    server.use(
+      http.get('/v1/locations/:id/missions', () =>
+        HttpResponse.json([
+          {
+            ...boardState[0]!,
+            eligibility: {
+              eligible: false,
+              reasons: [{ code: 'LIFE_SUPPORT_UNPOWERED', message: 'raw server text' }],
+            },
+          },
+        ]),
+      ),
+    );
+    const { svg } = await renderMap();
+    fireEvent.click(node(svg, 'Porto Ceres — You are here'));
+    const dialog = await screen.findByRole('region', { name: 'Porto Ceres' });
+    expect(
+      await within(dialog).findByText(/Life support does not get enough power/),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByText('raw server text')).not.toBeInTheDocument();
   });
 });
 

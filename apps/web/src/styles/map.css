@@ -243,12 +243,12 @@
   stroke: var(--brass);
   opacity: 1;
 }
-.miss-badge circle {
+.pilot-badge circle {
   fill: var(--brass);
   stroke: var(--paper);
   stroke-width: 1.5;
 }
-.miss-badge text {
+.pilot-badge text {
   fill: var(--paper);
   font-family: var(--font-mono);
   font-size: 9.5px;

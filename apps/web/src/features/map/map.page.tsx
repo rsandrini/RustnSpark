@@ -22,6 +22,7 @@ import { FactionBadge } from '../../ui/FactionBadge';
 import { formatDuration } from '../../ui/duration';
 import { Gauge } from '../../ui/Gauge';
 import { FuelBlock } from '../board/fuel-block';
+import { reasonLabel } from '../board/reason-label';
 import { errorText } from '../../api/errors';
 import { PlaceArt } from '../../ui/PlaceArt';
 import { pathOfLegs } from '../../ui/RouteMap';
@@ -634,15 +635,17 @@ export function MapPage({ guided = false }: MapPageProps) {
                   <text className="nsub" x={location.x} y={location.y + 35}>
                     {t(`map.types.${location.type}`, { defaultValue: location.type })}
                   </text>
-                  {location.missionCount > 0 && (
-                    // a badge on the place: the number of missions on offer there
+                  {(location.pilotCount ?? 0) > 0 && (
+                    // a badge on the place: how many pilots are anchored there
                     <g
-                      className="miss-badge"
+                      className="pilot-badge"
                       transform={`translate(${location.x + 13} ${location.y - 13})`}
                     >
-                      <title>{t('map.missionsHere', { count: location.missionCount })}</title>
+                      <title>{t('map.pilotsHere', { count: location.pilotCount })}</title>
                       <circle r={7.5} />
-                      <text y={3.5}>{location.missionCount}</text>
+                      <text y={3.5}>
+                        {(location.pilotCount ?? 0) > 99 ? '99+' : location.pilotCount}
+                      </text>
                     </g>
                   )}
                 </g>
@@ -920,6 +923,14 @@ function PlaceDetails({
               </span>
             </>
           )}
+          {place.missionCount > 0 && (
+            <>
+              {DOT_SEPARATOR}
+              <span data-testid="place-missions-count">
+                {t('map.missionsHere', { count: place.missionCount })}
+              </span>
+            </>
+          )}
         </p>
         <p className="help-text">{description}</p>
         <div className="row-between">
@@ -960,9 +971,7 @@ function PlaceDetails({
                 <ul className="reasons">
                   {offer.eligibility.reasons.map((reason, index) => (
                     <li key={`${reason.code}-${index}`}>
-                      {t(`board.reasons.${reason.code}`, {
-                        defaultValue: t(`error.${reason.code}`, { defaultValue: reason.message }),
-                      })}
+                      {reasonLabel(t, reason.code, reason.message)}
                     </li>
                   ))}
                 </ul>
