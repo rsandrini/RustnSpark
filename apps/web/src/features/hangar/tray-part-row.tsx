@@ -11,6 +11,7 @@ import {
   useNumberFormat,
   type PartCompareContext,
 } from '../parts/part-detail';
+import type { PortFit } from '../parts/port-fit';
 import { ConnectorGrid } from '../parts/connector-grid';
 import { PartInfoButton } from '../parts/part-info-button';
 import {
@@ -30,6 +31,8 @@ export interface TrayPartRowProps {
   /** Pointer down on the row: the page starts a drag out of the list once the pointer has moved far enough. */
   onPointerDragStart?: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   compare: PartCompareContext | undefined;
+  /** Whether the part's ports join a free port of the ship; absent where there is no ship to compare to. */
+  fit?: PortFit;
 }
 
 // One tray row: its own button, the (i) popup, and (owner request, round 5/6) a hover card
@@ -43,11 +46,27 @@ export function TrayPartRow({
   onSelect,
   onPointerDragStart,
   compare,
+  fit,
 }: TrayPartRowProps) {
   const { t } = useTranslation();
   const format = useNumberFormat();
   const [anchor, setAnchor] = useState<HoverAnchor | null>(null);
   const { ref: cardRef, style: cardStyle } = useClampedPosition(anchor);
+
+  let chip: { tone: 'ok' | 'bad'; text: string; sentence: string } | undefined;
+  if (fit?.level === 'full' || fit?.level === 'partial') {
+    chip = {
+      tone: 'ok',
+      text: t('connectors.fit.chipJoins', { count: fit.matching }),
+      sentence: t(`connectors.fit.${fit.level}`, { matching: fit.matching, total: fit.total }),
+    };
+  } else if (fit?.level === 'none' || fit?.level === 'none-free') {
+    chip = {
+      tone: 'bad',
+      text: t('connectors.fit.chipNone'),
+      sentence: t(`connectors.fit.${fit.level === 'none' ? 'none' : 'noneFree'}`),
+    };
+  }
 
   return (
     <div
@@ -80,6 +99,20 @@ export function TrayPartRow({
         {(part.storedFuel ?? 0) > 0 && (
           <span className="meta" data-testid="stored-fuel">
             {t('hangar.storedFuel', { value: format(Math.round(part.storedFuel ?? 0)) })}
+          </span>
+        )}
+        {chip !== undefined && (
+          <span
+            className={`tray-fit ${chip.tone}`}
+            data-testid="tray-fit"
+            role="img"
+            aria-label={chip.sentence}
+            title={chip.sentence}
+          >
+            <span aria-hidden="true">
+              {chip.tone === 'ok' ? '✓ ' : '✕ '}
+              {chip.text}
+            </span>
           </span>
         )}
         {part.connectors.length > 0 && (

@@ -691,3 +691,25 @@
   color: var(--bad);
   background: color-mix(in oklch, var(--bad) 14%, transparent);
 }
+
+.tray-fit {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 3px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid currentColor;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tray-fit.ok {
+  color: var(--ok-hi);
+  background: color-mix(in oklch, var(--ok) 14%, transparent);
+}
+.tray-fit.bad {
+  color: var(--bad);
+  background: color-mix(in oklch, var(--bad) 14%, transparent);
+}

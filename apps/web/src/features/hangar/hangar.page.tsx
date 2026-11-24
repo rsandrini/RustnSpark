@@ -54,7 +54,7 @@ import { useProblemText } from './problem-text';
 import { insideBox } from './drag-geometry';
 import { CarriedPart } from './carried-part';
 import { computePortMarks } from './connectors';
-import { freeShipPorts } from '../parts/port-fit';
+import { freeShipPorts, portFit } from '../parts/port-fit';
 import { useCarriedPointer } from './use-carried-pointer';
 import { useRotateKey } from './use-rotate-key';
 import { useTrayDrag } from './use-tray-drag';
@@ -943,6 +943,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       part={part}
                       arrived={arrived.has(part.id)}
                       name={nameById.get(part.id) ?? part.partType}
+                      fit={opening ? undefined : portFit(part.connectors, storeFreePorts)}
                       disabled={modifyBlocked}
                       selected={pendingPartId === part.id}
                       onPointerDragStart={(event) => trayDrag.begin(part.id, event)}
