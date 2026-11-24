@@ -39,6 +39,7 @@ Original questions, for the record:
 ## Tasks (outline; each its own subagent task with TDD once the questions are answered)
 
 ### Task A0: the `pax` stat (first)
+Also expose the `pressurized` and `lifeSupport` flags (and `lifeCap`) on the catalog the web receives: today the web's generated `PartCatalogStats` has none of them, so `partKindOf` (slice 1.5) tells cabins and life-support modules by their family name only.
 - Add a passenger-capacity stat to the part catalog (cabin / pressurized parts), the sheet (`ShipSheetSchema.pax`, sum over installed connected parts), the admin part editor, the seed (family tables, per the parts-catalog rules) and a MIGRATION for prod (the seed only fills empty tables); en + pt-BR labels; the part detail and compare card show it. Tests first: a cabin part adds its `pax` to the sheet, a ship without a cabin has 0, the migration sets values for existing cabin parts. Numbers per cabin tier: owner/sim.
 
 Note (owner, 2026-11-24, TODO item 8): the same task also adds `lifeCap` (people a life-support module keeps alive, scaling with tier and size) and a head count per TRANSPORT mission; the `pax` axis of the chart is the ship's seats. Today a passenger mission checks only the two flags (a pressurized part and a life-support part), so any group fits any ship.
