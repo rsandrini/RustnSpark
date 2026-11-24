@@ -52,6 +52,7 @@ export function PortsLegend() {
                 key={`${a}-${b}`}
                 data-testid={`legend-join-${a}-${b}`}
                 data-joins={String(joins)}
+                aria-label={`${t(`portsLegend.kinds.${a}`)} + ${t(`portsLegend.kinds.${b}`)}: ${t(joins ? 'portsLegend.joins' : 'portsLegend.doesNotJoin')}`}
               >
                 <KindIcon kind={a} />
                 <span aria-hidden="true">{PLUS}</span>

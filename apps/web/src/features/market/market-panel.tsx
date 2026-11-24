@@ -9,6 +9,7 @@ import type { BuyResponse, MarketListing, MarketResponse, ShipSheet } from '../.
 import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
 import { IconTabs } from '../../ui/kit/IconTabs';
+import { PortsLegend } from '../parts/ports-legend';
 import { ALL_ICON, partClassIcon } from './part-class-icon';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
@@ -325,6 +326,7 @@ export function MarketPanel({
             {extraFilters > 0 && <span className="count">{extraFilters}</span>}
           </button>
         </div>
+        {freePorts !== undefined && !opening && <PortsLegend />}
         <div className="market-types" role="group" aria-label={t('market.filterByType')}>
           <IconTabs
             tabs={[
