@@ -227,8 +227,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [partsOpen, setPartsOpen] = useState(false);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
-  // `/ship?store=CLASS` (a mission blocker's fix link) opens the Store on that class. Read once on
-  // mount, then dropped, so a later tab change is not undone; an unknown class is ignored.
+  // `/ship?store=CLASS` (a mission blocker's fix link) opens the Store on that class. It is read when
+  // it appears (the page stays mounted between Ship, Port and Missions, so a link from the board does
+  // not remount it), then dropped so a later tab change is not undone; an unknown class is ignored.
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     const wanted = searchParams.get('store');
@@ -241,8 +242,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     const next = new URLSearchParams(searchParams);
     next.delete('store');
     setSearchParams(next, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on mount
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to the query string only
+  }, [searchParams]);
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
 
   // Seed the editing layout once per ship; later syncs come from save/auto responses.

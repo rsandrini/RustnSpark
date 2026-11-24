@@ -943,6 +943,10 @@ main:has(.transit-aside) .ship-stage-overlay-host {
     align-items: center;
     justify-content: space-between;
   }
+  /* the reward and the action stay above a long stack of chips */
+  .mrow-chips {
+    order: 4;
+  }
 }
 .mrow-foot {
   display: flex;

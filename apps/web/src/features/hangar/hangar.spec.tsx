@@ -131,6 +131,17 @@ describe('hangar (S10.4)', () => {
     expect(screen.getByRole('tab', { name: 'Parts' })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('opens the Store from a link followed while the page is already up (the board to the ship)', async () => {
+    server.use(onboarded());
+    const { router } = renderWithRouter(routes, { initialEntries: ['/missions'] });
+    await screen.findByText(/missions board/i);
+    await router.navigate('/ship?store=CARGO');
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Store' })).toHaveAttribute('aria-selected', 'true'),
+    );
+    expect(await screen.findByRole('tab', { name: 'Cargo', selected: true })).toBeInTheDocument();
+  });
+
   it('keeps the Parts side tab without a store param, and ignores an invalid class', async () => {
     server.use(onboarded());
     renderWithRouter(routes, { initialEntries: ['/ship?store=NOPE'] });
