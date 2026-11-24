@@ -616,6 +616,23 @@
       "SENSOR": "Sensor",
       "UTILITY": "Utilidade"
     },
+    "partKinds": {
+      "bridge": "Ponte",
+      "engine": "Motor",
+      "tank": "Tanque",
+      "battery": "Bateria",
+      "reactor": "Reator",
+      "weapon": "Arma",
+      "shield": "Escudo",
+      "armor": "Blindagem",
+      "hull": "Casco",
+      "cargo": "Carga",
+      "cabin": "Cabine",
+      "sensor": "Sensor",
+      "life": "Suporte de vida",
+      "mining": "Mineração",
+      "other": "Peça"
+    },
     "actions": {
       "save": "Salvar layout",
       "auto": "Layout automático",
