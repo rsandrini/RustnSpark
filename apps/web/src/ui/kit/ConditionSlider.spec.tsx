@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { ConditionSlider } from './ConditionSlider';
+import { ConditionSlider, thumbCentre } from './ConditionSlider';
 
 const LABEL = 'Hull repair';
 const props = { current: 62, value: 90, label: LABEL, onChange: () => undefined };
@@ -15,12 +15,37 @@ describe('ConditionSlider', () => {
     expect(input.value).toBe('90');
   });
 
-  it('draws the current fill and a segment proportional to the difference', () => {
+  it('hands the track the fractions its fill, segment, tick and thumb are placed from', () => {
     render(<ConditionSlider {...props} />);
-    expect(screen.getByTestId('cslider-fill').style.width).toBe('62%');
-    const add = screen.getByTestId('cslider-add');
-    expect(add.style.left).toBe('62%');
-    expect(add.style.width).toBe('28%');
+    const track = screen.getByTestId('cslider-fill').parentElement!;
+    // current 62, value 90, max 100: the input starts at 62%; now is its start, to is (90-62)/38
+    expect(track.style.getPropertyValue('--from')).toBe('62%');
+    expect(track.style.getPropertyValue('--now')).toBe('0');
+    expect(Number(track.style.getPropertyValue('--to'))).toBeCloseTo(28 / 38, 10);
+  });
+
+  it('places a value in a refuel bar (current 25, value 30, max 120)', () => {
+    render(<ConditionSlider current={25} value={30} max={120} label="Fuel" onChange={() => 0} />);
+    const track = screen.getByTestId('cslider-fill').parentElement!;
+    expect(Number(track.style.getPropertyValue('--from').replace('%', ''))).toBeCloseTo(
+      (25 / 120) * 100,
+      10,
+    );
+    expect(track.style.getPropertyValue('--now')).toBe('0');
+    expect(Number(track.style.getPropertyValue('--to'))).toBeCloseTo(5 / 95, 10);
+  });
+
+  it('keeps the segment empty and the fractions finite when nothing can be added', () => {
+    render(<ConditionSlider {...props} current={100} value={100} />);
+    const track = screen.getByTestId('cslider-fill').parentElement!;
+    expect(track.style.getPropertyValue('--to')).toBe('0');
+  });
+
+  it('puts the thumb centre on the tick at the minimum and on the segment end at the maximum', () => {
+    // W = 300, T = 12, input from 62%: at f = 0 the centre is at the tick, at f = 1 at W - T/2
+    expect(thumbCentre(62, 0, 12, 300)).toBeCloseTo(186 + 6, 10);
+    expect(thumbCentre(62, 1, 12, 300)).toBeCloseTo(294, 10);
+    expect(thumbCentre(0, 0.5, 12, 300)).toBeCloseTo(150, 10);
   });
 
   it('shows now and to captions, and no target caption when nothing is added', () => {
@@ -49,8 +74,10 @@ describe('ConditionSlider', () => {
     render(<ConditionSlider {...props} current={0} value={40} />);
     const input = screen.getByRole<HTMLInputElement>('slider');
     expect(input.min).toBe('0');
-    expect(screen.getByTestId('cslider-fill').style.width).toBe('0%');
-    expect(screen.getByTestId('cslider-add').style.width).toBe('40%');
+    const track = screen.getByTestId('cslider-fill').parentElement!;
+    expect(track.style.getPropertyValue('--from')).toBe('0%');
+    expect(track.style.getPropertyValue('--now')).toBe('0');
+    expect(track.style.getPropertyValue('--to')).toBe('0.4');
   });
 
   it('can be disabled', () => {

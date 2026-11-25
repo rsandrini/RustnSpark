@@ -26,6 +26,19 @@ export interface ConditionSliderProps {
 // One control to read a level and to drag its target: a track filled to the current value, a hatched
 // segment from there to the target (what will be added) and a real range input layered over it, so
 // keyboard, touch and assistive tech come with the browser.
+//
+// Geometry. The input spans from L = from% of the track to its right edge (width W - L). A native
+// thumb of border-box width T has its centre travel from L + T/2 to W - T/2, so for a value with
+// fraction f = (value - min) / (max - min) the centre sits at
+//   x(f) = L + T/2 + (W - L - T) * f
+// The fill ends at x(fNow), the hatched segment runs x(fNow)..x(fTo) and the tick sits at x(fNow),
+// so the thumb lies exactly on them. CSS builds x from the custom properties --from, --now, --to
+// (see kit.css, `--thumb` = T); `thumbCentre` is the same formula in pixels, for the spec.
+export function thumbCentre(fromPct: number, fraction: number, thumb: number, width: number) {
+  const left = (width * fromPct) / 100;
+  return left + thumb / 2 + (width - left - thumb) * fraction;
+}
+
 export function ConditionSlider({
   current,
   value,
@@ -41,24 +54,24 @@ export function ConditionSlider({
   id,
 }: ConditionSliderProps) {
   const pct = (amount: number) => (max <= 0 ? 0 : Math.min(100, Math.max(0, (amount / max) * 100)));
-  const now = pct(current);
-  const to = Math.max(now, pct(value));
-  const from = pct(min);
+  const fraction = (amount: number) =>
+    max <= min ? 0 : Math.min(1, Math.max(0, (amount - min) / (max - min)));
+  const now = fraction(current);
+  const to = Math.max(now, fraction(value));
+  const from = `${pct(min)}%`;
   return (
     <div className={`cslider ${tone}${disabled ? ' disabled' : ''}`} data-testid="condition-slider">
-      <div className="cslider-track">
-        <div className="cslider-fill" data-testid="cslider-fill" style={{ width: `${now}%` }} />
-        <div
-          className="cslider-add"
-          data-testid="cslider-add"
-          style={{ left: `${now}%`, width: `${to - now}%` }}
-        />
-        <div className="cslider-tick" aria-hidden="true" style={{ left: `${now}%` }} />
+      <div
+        className="cslider-track"
+        style={{ '--from': from, '--now': now, '--to': to } as CSSProperties}
+      >
+        <div className="cslider-fill" data-testid="cslider-fill" />
+        <div className="cslider-add" data-testid="cslider-add" />
+        <div className="cslider-tick" aria-hidden="true" />
         <input
           id={id}
           type="range"
           className="cslider-input"
-          style={{ '--from': `${from}%` } as CSSProperties}
           min={min}
           max={max}
           step={step}

@@ -396,6 +396,11 @@ button.kit-blocker:hover {
   background: var(--paper-3, var(--rule));
   border: 1px solid var(--rule);
   overflow: hidden;
+  /* the native thumb's border-box width; the positions below put its centre on the fill and tick */
+  --thumb: 12px;
+  --span: calc(100% - var(--from, 0%) - var(--thumb));
+  --x-now: calc(var(--from, 0%) + var(--thumb) / 2 + var(--span) * var(--now, 0));
+  --x-to: calc(var(--from, 0%) + var(--thumb) / 2 + var(--span) * var(--to, 0));
 }
 .cslider-fill,
 .cslider-add {
@@ -405,6 +410,7 @@ button.kit-blocker:hover {
   left: 0;
 }
 .cslider-fill {
+  width: var(--x-now);
   background: var(--good);
 }
 .cslider.warn .cslider-fill {
@@ -417,6 +423,8 @@ button.kit-blocker:hover {
   background: var(--brass);
 }
 .cslider-add {
+  left: var(--x-now);
+  width: calc(var(--x-to) - var(--x-now));
   background: repeating-linear-gradient(
     45deg,
     rgb(255 255 255 / 0.5) 0 4px,
@@ -428,6 +436,7 @@ button.kit-blocker:hover {
   position: absolute;
   top: 0;
   bottom: 0;
+  left: var(--x-now);
   width: 2px;
   margin-left: -1px;
   background: var(--ink);
@@ -455,15 +464,17 @@ button.kit-blocker:hover {
 }
 .cslider-input::-webkit-slider-thumb {
   appearance: none;
-  width: 8px;
-  height: 20px;
+  box-sizing: border-box;
+  width: var(--thumb);
+  height: 18px; /* the track's inner height: 20px less its two 1px borders */
   border-radius: 2px;
   background: var(--paper);
   border: 2px solid var(--ink);
 }
 .cslider-input::-moz-range-thumb {
-  width: 8px;
-  height: 20px;
+  box-sizing: border-box;
+  width: var(--thumb);
+  height: 18px; /* the track's inner height: 20px less its two 1px borders */
   border-radius: 2px;
   background: var(--paper);
   border: 2px solid var(--ink);
