@@ -26,7 +26,7 @@ Notes:
 - Firepower reads `sheet.pdf` (the weapons' stat), not `sheet.pot` (engine thrust, which feeds mobility).
 - Range counts fuel-free ion ships as 0 (`autonomy` is 0 when no engine burns fuel); range never names a type.
 - Mobility 35 is far above what early ships do (reference_mob 3). That only scales the radar: a ship with
-  mobility 0.13 is still a Racer, because the type is named from the relative shape (below).
+  mobility 0.13 is still a Racer (from `racer_min` 0.08), because the type is named from the relative shape (below).
 
 ## How the type uses the profile
 
@@ -37,14 +37,21 @@ least `min_share` (0.5) and lead the second share by `lead_margin` (0.15), else 
 strongest remaining axis that is at least `second_min` (0.5) absolute, or a type axis holding `second_share`
 (0.25) of the sum. This keeps early Common ships from all reading Balanced (the old "every ship is Multirole" bug).
 
-Results from the seed catalog (the specs in `ship-class.spec.ts` pin them):
+Mobility only takes part in the type decision from `racer_min` (0.08) up: any hull with an engine has some mobility,
+so a small value would otherwise make every lightly engined ship a Racer. Mobility is a modifier only through the
+absolute `second_min` rule, never through the share rule.
+
+Results from the seed catalog, derived by `ship-class-seed.spec.ts` through the real `deriveSheet`,
+`deriveShipProfile` and `deriveShipIdentity` (values rounded to 3 decimals):
 
 | Ship | cargo | defense | firepower | mobility | Type (modifier) |
 | --- | --- | --- | --- | --- | --- |
-| starter kit (sum 0.044) | 0.018 | 0 | 0 | 0.026 | Balanced (nearly empty) |
+| starter kit | 0.018 | 0 | 0 | 0.026 | Balanced (nearly empty) |
+| starter, medium engine and one gun | 0.018 | 0 | 0.014 | 0.044 | Balanced (nearly empty) |
+| starter plus one cargo bay | 0.064 | 0 | 0 | 0.020 | Hauler |
 | 14 Common cargo bays | 0.636 | 0 | 0 | 0.006 | Hauler |
 | 8 Common cannons | 0 | 0 | 0.114 | 0.019 | Warship |
-| light fast Common chem ship (2 medium engines) | 0 | 0 | 0 | 0.134 | Racer |
+| light fast Common chem ship (2 medium engines, tank, reactor) | 0 | 0 | 0 | 0.134 | Racer |
 | Rare ion racer (3 medium ion + nuclear) | 0 | 0 | 0 | 0.456 | Racer |
 | 8 Uncommon cargo bays | 0.436 | 0 | 0 | 0.013 | Hauler |
 | Rare 4 cargo bays + 3 large armor | 0.291 | 0.325 | 0 | 0.017 | Balanced (shares 0.48 / 0.52) |

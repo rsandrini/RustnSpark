@@ -2411,6 +2411,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'ship_profile.racer_min',
+    group: 'ship_profile',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.racer_min),
+    description: {
+      en: 'A ship counts as a Racer only when its mobility axis reaches this value; below it, mobility does not count towards the ship type.',
+      'pt-BR':
+        'Uma nave só conta como Velocista quando o eixo de mobilidade chega a este valor; abaixo disso, a mobilidade não conta para o tipo da nave.',
+    },
+  },
+  {
     key: 'missions.hold_max',
     group: 'missions',
     type: 'integer',

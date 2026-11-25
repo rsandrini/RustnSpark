@@ -225,6 +225,7 @@ export type ConfigKey =
   | 'ship_profile.min_share'
   | 'ship_profile.min_total'
   | 'ship_profile.second_share'
+  | 'ship_profile.racer_min'
   | 'ship_profile.ref_cargo'
   | 'ship_profile.ref_defense'
   | 'ship_profile.ref_firepower'
@@ -635,6 +636,7 @@ export type GameRules = Readonly<{
     lead_margin: number;
     second_min: number;
     second_share: number;
+    racer_min: number;
   }>;
   missions: Readonly<{
     hold_max: number;

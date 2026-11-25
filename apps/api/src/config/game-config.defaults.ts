@@ -465,6 +465,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     lead_margin: 0.15,
     second_min: 0.5,
     second_share: 0.25,
+    racer_min: 0.08,
   },
   missions: {
     hold_max: 1,

@@ -54,9 +54,12 @@ const EPSILON = 1e-9;
  */
 export function deriveShipIdentity(profile: ShipProfile, rules: GameRules): ShipIdentity {
   const cfg = rules.ship_profile;
+  // A ship is only a Racer when it is really fast: any hull with an engine has some mobility, so below
+  // `racer_min` the mobility axis does not take part in the type decision at all.
+  const racing = profile.mobility >= cfg.racer_min - EPSILON;
   const scored = TYPE_ORDER.map((entry, index) => ({
     ...entry,
-    value: entry.score(profile),
+    value: entry.type === 'RACER' && !racing ? 0 : entry.score(profile),
     index,
   }));
   const total = scored.reduce((sum, entry) => sum + entry.value, 0);
@@ -84,7 +87,9 @@ export function deriveShipIdentity(profile: ShipProfile, rules: GameRules): Ship
     if (key === named) continue;
     const value = profile[key];
     const strong = value >= cfg.second_min - EPSILON;
-    const sizeable = typeAxes.has(key) && value / total >= cfg.second_share - EPSILON;
+    // Mobility is a modifier only when strong in absolute terms: its share of a small sum means nothing.
+    const sizeable =
+      key !== 'mobility' && typeAxes.has(key) && value / total >= cfg.second_share - EPSILON;
     // Strictly greater: the earlier axis in PROFILE_AXES wins a tie.
     if ((strong || sizeable) && value > 0 && value > best) {
       modifier = key;

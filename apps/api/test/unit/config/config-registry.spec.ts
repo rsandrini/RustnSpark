@@ -212,6 +212,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'ship_profile.lead_margin',
   'ship_profile.min_share',
   'ship_profile.min_total',
+  'ship_profile.racer_min',
   'ship_profile.ref_cargo',
   'ship_profile.ref_defense',
   'ship_profile.ref_firepower',

@@ -105,6 +105,31 @@ describe('early ships have a type', () => {
   });
 });
 
+describe('racer_min', () => {
+  it('counts mobility towards the type only from racer_min up', () => {
+    expect(deriveShipClass(profile({ mobility: 0.07 }), rules)).toBe('BALANCED');
+    expect(deriveShipClass(profile({ mobility: 0.08 }), rules)).toBe('RACER');
+    expect(
+      deriveShipClass(profile({ mobility: 0.07 }), withProfileRules({ racer_min: 0.05 })),
+    ).toBe('RACER');
+  });
+
+  it('a slow engine does not turn a hauler into a racer or give it a modifier', () => {
+    expect(deriveShipIdentity(profile({ cargo: 0.07, mobility: 0.023 }), rules)).toEqual({
+      shipClass: 'HAULER',
+      modifier: null,
+    });
+    expect(deriveShipClass(profile({ cargo: 0.018, mobility: 0.048 }), rules)).toBe('BALANCED');
+  });
+
+  it('mobility is a modifier only through second_min (absolute)', () => {
+    expect(deriveShipIdentity(profile({ cargo: 0.5, mobility: 0.2 }), rules).modifier).toBeNull();
+    expect(deriveShipIdentity(profile({ cargo: 0.9, mobility: 0.5 }), rules).modifier).toBe(
+      'mobility',
+    );
+  });
+});
+
 describe('deriveShipIdentity modifier', () => {
   it('returns a strong second axis (absolute) as the modifier', () => {
     expect(deriveShipIdentity(profile({ cargo: 0.9, firepower: 0.55 }), rules)).toEqual({
