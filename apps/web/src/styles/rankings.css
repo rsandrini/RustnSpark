@@ -1,30 +1,9 @@
-.rankings-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+.rankings-boards {
   margin: 12px 0;
-  border-bottom: 1px solid var(--line, var(--faint));
-}
-
-.rankings-tabs button {
-  min-height: 40px;
-  padding: 8px 12px;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  font-size: var(--text-sm);
-  cursor: pointer;
-}
-
-.rankings-tabs button.active {
-  color: var(--text);
-  border-bottom-color: var(--accent);
 }
 
 .rankings-windows {
-  border-bottom: none;
-  margin-top: 0;
+  margin: 0 0 12px;
 }
 
 .rankings-route {

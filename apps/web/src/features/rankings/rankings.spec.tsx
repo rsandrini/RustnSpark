@@ -196,6 +196,36 @@ describe('rankings page', () => {
     expect(asked).toContain('/v1/rankings/ship_speed?window=lifetime');
   });
 
+  it('each board is a selectable tab with a name and an aria-hidden icon; the period toggle is one pressed pill', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/rankings'] });
+    await screen.findByTestId('ranking-podium');
+    const tabs = within(screen.getByRole('tablist')).getAllByRole('tab');
+    expect(tabs).toHaveLength(6);
+    for (const tab of tabs) {
+      expect(tab).toHaveAccessibleName();
+      expect(tab.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    }
+    expect(screen.getByRole('tab', { name: 'Distance' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: 'Race wins' }));
+    expect(screen.getByRole('tab', { name: 'Race wins' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('button', { name: 'This week' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'All time' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'All time' }));
+    expect(screen.getByRole('button', { name: 'All time' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    fireEvent.click(screen.getByRole('tab', { name: 'Ship power' }));
+    expect(screen.queryByRole('group', { name: 'Period' })).not.toBeInTheDocument();
+  });
+
   it('reads in Portuguese', async () => {
     server.use(onboarded('pt-BR'));
     await i18n.changeLanguage('pt-BR');

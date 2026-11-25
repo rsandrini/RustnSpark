@@ -13,7 +13,9 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { PageTitle } from '../../ui/PageTitle';
+import { IconTabs } from '../../ui/kit/IconTabs';
 import { useWorld } from '../ship/use-world';
+import { boardIcon } from './board-icons';
 import { gapToNext, podiumOf } from './podium';
 import { OwnPlace, Podium } from './podium-view';
 
@@ -83,34 +85,27 @@ export function RankingsPage() {
     <main className="app rankings">
       <PageTitle title={t('rankings.title')} />
 
-      <div className="rankings-tabs" role="tablist" aria-label={t('rankings.boards')}>
-        {BOARDS.map((name) => (
-          <button
-            key={name}
-            type="button"
-            role="tab"
-            aria-selected={board === name}
-            className={board === name ? 'active' : undefined}
-            onClick={() => setBoard(name)}
-          >
-            {t(`rankings.board.${name}`)}
-          </button>
-        ))}
+      <div className="rankings-boards" role="group" aria-label={t('rankings.boards')}>
+        <IconTabs
+          tabs={BOARDS.map((name) => ({
+            id: name,
+            icon: boardIcon(name),
+            label: t(`rankings.board.${name}`),
+          }))}
+          value={board}
+          onChange={(id) => setBoard(id as RankingBoard)}
+        />
       </div>
 
       {shipBoard && <p className="sub">{t('rankings.shipNote')}</p>}
       {!shipBoard && (
-        <div
-          className="rankings-tabs rankings-windows"
-          role="group"
-          aria-label={t('rankings.period')}
-        >
+        <div className="segment rankings-windows" role="group" aria-label={t('rankings.period')}>
           {WINDOWS.map((name) => (
             <button
               key={name}
               type="button"
               aria-pressed={window === name}
-              className={window === name ? 'active' : undefined}
+              className={window === name ? 'seg on' : 'seg'}
               onClick={() => setWindow(name)}
             >
               {t(`rankings.window.${name}`)}
