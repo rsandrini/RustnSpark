@@ -303,3 +303,41 @@ button.kit-blocker:hover {
     min-height: 44px;
   }
 }
+
+/* ship radar ----------------------------------------------------------------- */
+.kit-radar {
+  display: inline-block;
+  position: relative;
+  color: var(--muted);
+}
+
+.kit-radar > svg {
+  display: block;
+  overflow: visible;
+}
+
+.kit-radar-ring,
+.kit-radar-spoke {
+  fill: none;
+  stroke: var(--rule-2);
+  stroke-width: 1;
+}
+
+.kit-radar-shape {
+  fill: color-mix(in oklch, var(--brass) 35%, transparent);
+  stroke: var(--brass);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.kit-radar-ghost {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.kit-radar-label {
+  fill: var(--ink-2);
+  font-size: 10px;
+}

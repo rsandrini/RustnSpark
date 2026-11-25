@@ -790,6 +790,18 @@
       "WEAPON_LASER": "Laser",
       "WEAPON_MISSILE": "Missile"
     },
+    "profile": {
+      "title": "Ship profile",
+      "axis": {
+        "cargo": "Cargo",
+        "passengers": "Pax",
+        "firepower": "Fire",
+        "defense": "Def",
+        "mobility": "Speed",
+        "range": "Range",
+        "mining": "Mining"
+      }
+    },
     "shipName": "Ship name",
     "overBudget": {
       "title": "Over the structure budget",
