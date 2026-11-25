@@ -1644,6 +1644,11 @@
     },
     "loading": "Loading..."
   },
+  "account": {
+    "hapticsOn": "Haptics: on",
+    "hapticsOff": "Haptics: off",
+    "hapticsHelp": "A short buzz on your main actions (phones that support it)."
+  },
   "nav": {
     "guide": "Guide",
     "gettingStarted": "Getting started",

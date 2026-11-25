@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { haptic } from './haptics';
 
 /** What a pilot sees after an action: the button answers, the numbers move, and one short message says what next. */
 export interface FeedbackNext {
@@ -41,8 +42,6 @@ export const FEEDBACK_MS = 3200;
 export const ANSWER_MS = 1200;
 /** How long the ship takes to cross the line. */
 export const TAKEOFF_MS = 1000;
-/** A very short buzz where the browser allows it (Android; iPhones do not support it). */
-const VIBRATE_MS = 25;
 const TICK = '\u2713';
 const CROSS = '\u00d7';
 
@@ -79,11 +78,8 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
       unit: options.unit,
     });
     if (options.takeoff === true) setTakeoff(counter.current);
-    try {
-      navigator.vibrate?.(VIBRATE_MS);
-    } catch {
-      // not available here
-    }
+    // the one buzz of an action: a cost is a short warning, anything else a small success
+    haptic(options.amount !== undefined && options.amount < 0 ? 'warn' : 'success');
     if (timer.current !== null) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setToast(null), FEEDBACK_MS);
   }, []);

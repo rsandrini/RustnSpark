@@ -14,6 +14,7 @@ import { BugReportDialog } from './BugReportDialog';
 import { ClaimPopup } from '../features/auth/claim-popup';
 import { SAVE_PILOT_PARAM } from '../features/auth/guest-reminder';
 import { Popup } from './Popup';
+import { useHapticsSetting } from './use-haptics-setting';
 import { usePrologueMode } from '../features/prologue/prologue-mode';
 
 /** Two letters for the avatar button: the pilot's initials, never empty. */
@@ -45,6 +46,7 @@ export function AccountMenu() {
   const dialogueOn = dialogue.data?.enabled !== false;
   // The list is folded away until the pilot opens it: it is rarely needed.
   const [talkOpen, setTalkOpen] = useState(false);
+  const [hapticsOn, setHapticsOn] = useHapticsSetting();
   const [reporting, setReporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -214,6 +216,16 @@ export function AccountMenu() {
               </button>
             </>
           )}
+          <button
+            type="button"
+            className="shell-menu-item"
+            aria-pressed={hapticsOn}
+            title={t('account.hapticsHelp')}
+            data-testid="menu-haptics"
+            onClick={() => setHapticsOn(!hapticsOn)}
+          >
+            {t(hapticsOn ? 'account.hapticsOn' : 'account.hapticsOff')}
+          </button>
           <div className="shell-menu-lang">
             <LanguageSwitcher />
           </div>

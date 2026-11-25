@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateShip } from '../ship/invalidate-ship';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
+import { haptic } from '../../ui/haptics';
 import { errorCodeOf, errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
 import type { BuyResponse, MarketListing, MarketResponse, ShipSheet } from '../../api/generated';
@@ -142,6 +143,7 @@ export function MarketPanel({
         setConfirm(null);
         void queryClient.invalidateQueries({ queryKey: ['market'] });
       }
+      haptic('error');
       setActionError(errorText(t, error, t('port.failed')));
     },
   });

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
@@ -73,5 +73,21 @@ describe('AccountMenu wallet', () => {
     expect(animated).toHaveTextContent('1,100 ¢');
     expect(wallet).toHaveAttribute('aria-label', 'Credits: 1,100 ¢');
     expect(wallet).toHaveTextContent(/^1,100 ¢$/);
+  });
+});
+
+describe('AccountMenu haptics toggle', () => {
+  beforeEach(() => localStorage.removeItem('rs.haptics'));
+
+  it('shows the setting as pressed and flips it', () => {
+    render(tree());
+    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }));
+    const toggle = screen.getByTestId('menu-haptics');
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(toggle).toHaveTextContent('Haptics: on');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(toggle).toHaveTextContent('Haptics: off');
+    expect(localStorage.getItem('rs.haptics')).toBe('off');
   });
 });

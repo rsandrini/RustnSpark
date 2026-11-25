@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
@@ -299,6 +299,8 @@ describe('board (S10.6)', () => {
   });
 
   it('accepts an eligible offer and moves on to the transit screen', async () => {
+    const vibrate = vi.fn(() => true);
+    Object.defineProperty(navigator, 'vibrate', { value: vibrate, configurable: true });
     await renderBoard();
     // "Only eligible" defaults on and would hide the blocked offer this test's count expects.
     fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
@@ -315,6 +317,10 @@ describe('board (S10.6)', () => {
       () => expect(screen.getByRole('group', { name: 'Assembly yard' })).toBeInTheDocument(),
       { timeout: 4000 },
     );
+    // the toast's one buzz, not a second one from the call site
+    expect(vibrate).toHaveBeenCalledTimes(1);
+    expect(vibrate).toHaveBeenCalledWith([20, 40, 30]);
+    delete (navigator as { vibrate?: unknown }).vibrate;
   });
 
   it('holds an offer and releases it again', async () => {

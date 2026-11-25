@@ -1644,6 +1644,11 @@
     },
     "loading": "Carregando..."
   },
+  "account": {
+    "hapticsOn": "Vibração: ligada",
+    "hapticsOff": "Vibração: desligada",
+    "hapticsHelp": "Uma vibração curta nas ações principais (celulares que suportam)."
+  },
   "nav": {
     "guide": "Guia",
     "gettingStarted": "Primeiros passos",

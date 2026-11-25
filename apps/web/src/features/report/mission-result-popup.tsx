@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import '../../styles/mission-result.css';
 import { CountUp } from '../../ui/CountUp';
 import { prefersReducedMotion } from '../../ui/use-count-up';
+import { haptic } from '../../ui/haptics';
 import { noteResultCardShown } from './result-card-gate';
 
 /** The secondary lines slide in one after another, this far apart, after the figure has started. */
@@ -73,6 +74,13 @@ export function MissionResultPopup({
     ) : (
       <CountUp value={creditsValue} from={0} animateOnMount format={creditsFormat} />
     );
+  // one buzz when the card opens: a reward is a success, a loss a warning (no pay, no buzz)
+  useEffect(() => {
+    if (tone === 'bad' || creditsValue < 0) haptic('warn');
+    else if (creditsValue > 0) haptic('success');
+    // once per card
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     noteResultCardShown();
     button.current?.focus();

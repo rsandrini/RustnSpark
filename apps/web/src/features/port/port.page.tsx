@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { invalidateShip } from '../ship/invalidate-ship';
 import { Trans, useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
+import { haptic } from '../../ui/haptics';
 import { errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
 import { useAnswer, useFeedback, useNotice } from '../../ui/feedback';
@@ -355,6 +356,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       void queryClient.invalidateQueries({ queryKey: ['market'] });
       return;
     }
+    haptic('error');
     setActionError(errorText(t, error, t('port.failed')));
   };
 
@@ -446,7 +448,10 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       tutorialTick('refuelled');
       afterTrade();
     },
-    onError: (error) => setActionError(errorText(t, error, t('port.failed'))),
+    onError: (error) => {
+      haptic('error');
+      setActionError(errorText(t, error, t('port.failed')));
+    },
   });
 
   const refuelAnswer = useAnswer(refuel.isPending, refuel.isSuccess);
@@ -478,6 +483,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       afterTrade();
     },
     onError: (error) => {
+      haptic('error');
       setRepairPlan(null);
       setActionError(errorText(t, error, t('port.failed')));
     },
@@ -499,6 +505,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       afterTrade();
     },
     onError: (error) => {
+      haptic('error');
       setUpgradeConfirm(null);
       setActionError(errorText(t, error, t('port.failed')));
     },
@@ -531,6 +538,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       afterTrade();
     },
     onError: (error) => {
+      haptic('error');
       setDiscardOpen(false);
       setActionError(errorText(t, error, t('port.failed')));
     },
@@ -572,6 +580,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       }
     },
     onError: (error) => {
+      haptic('error');
       setActionError(errorText(t, error, t('port.failed')));
       void queryClient.invalidateQueries({ queryKey: ['scavenge'] });
     },
@@ -599,6 +608,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       }
     },
     onError: (error) => {
+      haptic('error');
       setActionError(errorText(t, error, t('port.failed')));
     },
   });

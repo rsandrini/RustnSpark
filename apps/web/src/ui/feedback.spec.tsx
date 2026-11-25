@@ -10,6 +10,7 @@ import {
   useFeedback,
   useNotice,
 } from './feedback';
+import * as haptics from './haptics';
 import { useWalletAnswer } from './use-wallet-answer';
 
 const ACT = 'act';
@@ -178,5 +179,43 @@ describe('feedback', () => {
       expect(screen.queryByTestId('feedback-amount')).toBeNull();
       expect(container.ownerDocument.querySelector('.feedback-ship')).not.toBeNull();
     });
+  });
+});
+
+const L_PLAIN = 'plain';
+const L_GAIN = 'gain';
+const L_COST = 'cost';
+
+describe('feedback haptics', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  function Amounts() {
+    const { notify } = useFeedback();
+    return (
+      <>
+        <button type="button" onClick={() => notify('plain')}>
+          {L_PLAIN}
+        </button>
+        <button type="button" onClick={() => notify('gain', { amount: 5 })}>
+          {L_GAIN}
+        </button>
+        <button type="button" onClick={() => notify('cost', { amount: -5 })}>
+          {L_COST}
+        </button>
+      </>
+    );
+  }
+
+  it('a plain message or a gain buzzes success, a cost buzzes warn, and nothing calls vibrate directly', () => {
+    const spy = vi.spyOn(haptics, 'haptic').mockImplementation(() => undefined);
+    const vibrate = vi.fn(() => true);
+    Object.defineProperty(navigator, 'vibrate', { value: vibrate, configurable: true });
+    render(<Amounts />, { wrapper: wrap });
+    fireEvent.click(screen.getByText(L_PLAIN));
+    fireEvent.click(screen.getByText(L_GAIN));
+    fireEvent.click(screen.getByText(L_COST));
+    expect(spy.mock.calls).toEqual([['success'], ['success'], ['warn']]);
+    expect(vibrate).not.toHaveBeenCalled();
+    delete (navigator as { vibrate?: unknown }).vibrate;
   });
 });

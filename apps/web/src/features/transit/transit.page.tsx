@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useFeedback } from '../../ui/feedback';
 import { formatDuration } from '../../ui/duration';
 import { client, serverNow } from '../../api/client';
+import { haptic } from '../../ui/haptics';
 import { errorText } from '../../api/errors';
 import type {
   ActiveMission,
@@ -131,6 +132,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
       invalidateActive();
     },
     onError: (error) => {
+      haptic('error');
       setActionError(errorText(t, error, t('transit.failed')));
       // A refusal (requirements not met, ship not viable) means the card was stale: show the truth.
       invalidateActive();
@@ -150,7 +152,10 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
       invalidateActive();
       void queryClient.invalidateQueries({ queryKey: ['board'] });
     },
-    onError: (error) => setActionError(errorText(t, error, t('transit.failed'))),
+    onError: (error) => {
+      haptic('error');
+      setActionError(errorText(t, error, t('transit.failed')));
+    },
   });
 
   if (

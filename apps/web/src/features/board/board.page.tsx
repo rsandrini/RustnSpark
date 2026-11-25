@@ -13,6 +13,7 @@ import { fixHref, fixOf } from './requirement-fix';
 import { reasonLabel } from './reason-label';
 import { EscortNotice } from '../ship/escort-notice';
 import { client } from '../../api/client';
+import { haptic } from '../../ui/haptics';
 import { errorText } from '../../api/errors';
 import type {
   ActiveMission,
@@ -106,6 +107,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
     void queryClient.invalidateQueries({ queryKey: ['active'] });
   };
   const onError = (error: unknown) => {
+    haptic('error');
     setActionError(errorText(t, error, t('board.failed')));
   };
 
