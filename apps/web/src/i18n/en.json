@@ -139,13 +139,6 @@
       "split": "Split connector",
       "universal": "Universal connector"
     },
-    "sides": {
-      "N": "North",
-      "E": "East",
-      "S": "South",
-      "W": "West"
-    },
-    "portLine": "{{side}} · {{count}} × {{kind}}",
     "portsLabel": "Ports of this part",
     "fit": {
       "full": "All ports match free ports on your ship",
@@ -838,13 +831,13 @@
     "sheetView": {
       "stats": "Stats",
       "profile": "Profile",
-      "label": "Sheet view"
+      "label": "Sheet view",
+      "previewChanges": "Preview changes the profile"
     },
     "profileBreakdown": {
       "main": "main",
       "second": "second",
-      "help": "Each bar is the ship's stat over a reference value. The type is the axis that leads.",
-      "row": "{{axis}}: {{percent}}% of the reference"
+      "help": "Each bar is the ship's stat over a reference value. The type is the axis that leads."
     }
   },
   "home": {
@@ -2915,6 +2908,11 @@
     "sortCondition": "Best condition",
     "noMatches": "No parts match these filters.",
     "used": "Used",
+    "view": {
+      "label": "View",
+      "cards": "Cards",
+      "list": "List"
+    },
     "youPay": "You pay",
     "sizeCells": "Size: {{w}}×{{h}} cells",
     "rarity": "Rarity",

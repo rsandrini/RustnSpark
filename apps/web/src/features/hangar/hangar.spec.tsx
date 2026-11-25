@@ -776,7 +776,7 @@ describe('hangar (S10.4)', () => {
       fireEvent.click(await screen.findByRole('button', { name: /^cargo/i }));
       fireEvent.click(cell(container, 4, 0));
       await waitFor(() => expect(screen.getByText('999')).toBeInTheDocument(), { timeout: 3000 });
-      fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
+      fireEvent.click(screen.getByRole('button', { name: /^Profile/ }));
       expect(container.querySelector('.kit-radar-ghost') !== null).toBe(ghost);
       window.localStorage.clear();
     },

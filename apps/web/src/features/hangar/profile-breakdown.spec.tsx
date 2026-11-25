@@ -100,11 +100,11 @@ describe('ProfileBreakdown', () => {
   });
 
   it('has pt-BR labels', () => {
-    for (const k of ['main', 'second', 'help', 'row'] as const) {
+    for (const k of ['main', 'second', 'help'] as const) {
       expect(en.hangar.profileBreakdown[k]).toBeTruthy();
       expect(ptBR.hangar.profileBreakdown[k]).toBeTruthy();
     }
-    for (const k of ['stats', 'profile', 'label'] as const) {
+    for (const k of ['stats', 'profile', 'label', 'previewChanges'] as const) {
       expect(ptBR.hangar.sheetView[k]).toBeTruthy();
     }
   });

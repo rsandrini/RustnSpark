@@ -221,7 +221,6 @@ describe('ShipSheetPanel ship identity', () => {
     expect(screen.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('img', { name: 'Ship profile' })).toBeInTheDocument();
     expect(screen.getByTestId('profile-breakdown')).toBeInTheDocument();
-    expect(screen.queryByTestId('sheet-headline')).toBeNull();
     expect(first.container.querySelector('.kit-radar-ghost')).toBeNull();
     first.unmount();
     renderWithProviders(<ShipSheetPanel {...base} profile={profile} />);
@@ -229,6 +228,45 @@ describe('ShipSheetPanel ship identity', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Stats' }));
     expect(screen.getByTestId('sheet-headline')).toBeInTheDocument();
     window.localStorage.clear();
+  });
+
+  it('keeps warnings, engine tuning and structure reachable in the Profile view', () => {
+    window.localStorage.setItem('hangar.sheetView', 'profile');
+    const onShowWarnings = vi.fn();
+    const onTuneEngines = vi.fn();
+    renderWithProviders(
+      <ShipSheetPanel
+        {...base}
+        profile={profile}
+        warningCount={2}
+        onShowWarnings={onShowWarnings}
+        onTuneEngines={onTuneEngines}
+      />,
+    );
+    expect(screen.getByTestId('profile-breakdown')).toBeInTheDocument();
+    expect(headlineTile('Structure')).toHaveTextContent('10 / 40');
+    fireEvent.click(screen.getByRole('button', { name: /warning/i }));
+    expect(onShowWarnings).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /engine/i }));
+    expect(onTuneEngines).toHaveBeenCalled();
+    window.localStorage.clear();
+  });
+
+  it('badges the Profile segment only while a differing preview exists, in either view', () => {
+    window.localStorage.clear();
+    const badge = () => screen.queryByRole('img', { name: 'Preview changes the profile' });
+    const a = renderWithProviders(<ShipSheetPanel {...base} profile={profile} />);
+    expect(badge()).toBeNull();
+    a.unmount();
+    const b = renderWithProviders(
+      <ShipSheetPanel {...base} profile={profile} ghostProfile={{ ...profile }} />,
+    );
+    expect(badge()).toBeNull();
+    b.unmount();
+    renderWithProviders(
+      <ShipSheetPanel {...base} profile={profile} ghostProfile={{ ...profile, cargo: 0.3 }} />,
+    );
+    expect(badge()).not.toBeNull();
   });
 
   it('shows the bare type without a modifier', () => {

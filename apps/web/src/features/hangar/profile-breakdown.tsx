@@ -60,11 +60,7 @@ export function ProfileBreakdown({
           const delta = ghost ? percent - pct(ghost[key]) : 0;
           const name = t(`hangar.profile.axis.${key}`);
           return (
-            <li
-              key={key}
-              className="pb-row"
-              aria-label={t('hangar.profileBreakdown.row', { axis: name, percent })}
-            >
+            <li key={key} className="pb-row">
               <span className="pb-name">{name}</span>
               <span className="pb-icon" aria-hidden="true">
                 <PartKindIcon kind={kind} size={16} />

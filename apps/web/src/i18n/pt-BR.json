@@ -139,13 +139,6 @@
       "split": "Conector dividido",
       "universal": "Conector universal"
     },
-    "sides": {
-      "N": "Norte",
-      "E": "Leste",
-      "S": "Sul",
-      "W": "Oeste"
-    },
-    "portLine": "{{side}} · {{count}} × {{kind}}",
     "portsLabel": "Portas desta peça",
     "fit": {
       "full": "Todas as portas combinam com portas livres da sua nave",
@@ -838,13 +831,13 @@
     "sheetView": {
       "stats": "Atributos",
       "profile": "Perfil",
-      "label": "Visão da ficha"
+      "label": "Visão da ficha",
+      "previewChanges": "A prévia muda o perfil"
     },
     "profileBreakdown": {
       "main": "principal",
       "second": "secundário",
-      "help": "Cada barra é o atributo da nave sobre um valor de referência. O tipo é o eixo que lidera.",
-      "row": "{{axis}}: {{percent}}% da referência"
+      "help": "Cada barra é o atributo da nave sobre um valor de referência. O tipo é o eixo que lidera."
     }
   },
   "home": {
@@ -2915,6 +2908,11 @@
     "sortCondition": "Melhor condição",
     "noMatches": "Nenhuma peça combina com esses filtros.",
     "used": "Usada",
+    "view": {
+      "label": "Visualização",
+      "cards": "Cartões",
+      "list": "Lista"
+    },
     "youPay": "Você paga",
     "sizeCells": "Tamanho: {{w}}×{{h}} células",
     "rarity": "Raridade",
