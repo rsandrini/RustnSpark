@@ -3045,8 +3045,12 @@
         "name": "Mineradora",
         "text": "Uma plataforma de mineração a bordo, e espaço para o minério."
       },
-      "multirole": {
-        "name": "Multifunção",
+      "racer": {
+        "name": "Velocista",
+        "text": "Leve e veloz. Feita para a velocidade."
+      },
+      "balanced": {
+        "name": "Equilibrado",
         "text": "Nenhuma especialidade única. Um pouco de tudo."
       }
     },

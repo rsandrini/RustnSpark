@@ -2346,16 +2346,29 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
-    key: 'ship_profile.min_main',
+    key: 'ship_profile.min_total',
+    group: 'ship_profile',
+    type: 'number',
+    min: 0,
+    max: 5,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.min_total),
+    description: {
+      en: 'Sum of the type axes (cargo, passengers, the better of firepower and defense, mining, mobility) at or below which the ship is nearly empty and has no type: it is Balanced.',
+      'pt-BR':
+        'Soma dos eixos de tipo (carga, passageiros, o melhor entre poder de fogo e defesa, mineração, mobilidade) igual ou abaixo da qual a nave está quase vazia e não tem tipo: é Equilibrado.',
+    },
+  },
+  {
+    key: 'ship_profile.min_share',
     group: 'ship_profile',
     type: 'number',
     min: 0,
     max: 1,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.min_main),
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.min_share),
     description: {
-      en: 'A ship whose strongest axis is below this share of a full axis has no main point: it is Balanced.',
+      en: 'Share of the type axes the strongest one must hold to name the ship type; below it the ship has no main point and is Balanced.',
       'pt-BR':
-        'Uma nave cujo eixo mais forte fica abaixo desta fração de um eixo cheio não tem ponto principal: é Equilibrada.',
+        'Fração dos eixos de tipo que o mais forte precisa ter para nomear o tipo da nave; abaixo disso a nave não tem ponto principal e é Equilibrado.',
     },
   },
   {
@@ -2366,9 +2379,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 1,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.lead_margin),
     description: {
-      en: 'How far the strongest axis must lead the second one to name the ship type; closer than this and the ship is Balanced.',
+      en: 'How far (in share of the type axes) the strongest axis must lead the second one to name the ship type; closer than this and the ship is Balanced.',
       'pt-BR':
-        'Quanto o eixo mais forte precisa liderar o segundo para nomear o tipo da nave; mais perto que isso, a nave é Equilibrada.',
+        'Quanto (em fração dos eixos de tipo) o eixo mais forte precisa liderar o segundo para nomear o tipo da nave; mais perto que isso, a nave é Equilibrado.',
     },
   },
   {
@@ -2381,7 +2394,20 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'A second axis at or above this share of a full axis is shown as the ship modifier (for example Hauler, armed).',
       'pt-BR':
-        'Um segundo eixo igual ou acima desta fração de um eixo cheio aparece como modificador da nave (por exemplo Cargueira, armada).',
+        'Um segundo eixo igual ou acima desta fração de um eixo cheio aparece como modificador da nave (por exemplo Cargueiro, armado).',
+    },
+  },
+  {
+    key: 'ship_profile.second_share',
+    group: 'ship_profile',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.second_share),
+    description: {
+      en: 'A second type axis holding at least this share of the type axes is shown as the ship modifier, even when it is small in absolute terms.',
+      'pt-BR':
+        'Um segundo eixo de tipo com pelo menos esta fração dos eixos de tipo aparece como modificador da nave, mesmo que seja pequeno em termos absolutos.',
     },
   },
   {

@@ -137,7 +137,7 @@ describe('auth flow', () => {
     ).toBeInTheDocument();
     // facts from the server plus the constant counts
     expect(await screen.findByTestId('landing-facts')).toHaveTextContent('220 parts to build with');
-    expect(screen.getByTestId('landing-facts')).toHaveTextContent('5 ship classes');
+    expect(screen.getByTestId('landing-facts')).toHaveTextContent('6 ship classes');
     expect(screen.getByTestId('landing-facts')).toHaveTextContent('8 kinds of mission');
     // no mention of the old powers section, factions or free pilots
     expect(screen.queryByRole('heading', { name: 'Four powers, one sector' })).toBeNull();
@@ -168,7 +168,7 @@ describe('auth flow', () => {
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     // server facts are gone, but the constant counts still show
     const facts = screen.getByTestId('landing-facts');
-    expect(facts).toHaveTextContent('5 ship classes');
+    expect(facts).toHaveTextContent('6 ship classes');
     expect(facts).toHaveTextContent('8 kinds of mission');
     expect(facts).not.toHaveTextContent('parts to build with');
     // every showcase block still renders without the server

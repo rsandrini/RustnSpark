@@ -305,9 +305,11 @@ const shipProfileSchema = z.object({
   ref_mobility: z.number().min(0.1).max(1000000),
   ref_range: z.number().min(1).max(100000000),
   ref_mining: z.number().min(0.1).max(1000000),
-  min_main: z.number().min(0).max(1),
+  min_total: z.number().min(0).max(5),
+  min_share: z.number().min(0).max(1),
   lead_margin: z.number().min(0).max(1),
   second_min: z.number().min(0).max(1),
+  second_share: z.number().min(0).max(1),
 });
 
 const missionsSchema = z.object({

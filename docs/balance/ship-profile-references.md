@@ -25,6 +25,27 @@ Notes:
   warship reads about 0.3 on each, and the WARSHIP type takes the better of the two).
 - Firepower reads `sheet.pdf` (the weapons' stat), not `sheet.pot` (engine thrust, which feeds mobility).
 - Range counts fuel-free ion ships as 0 (`autonomy` is 0 when no engine burns fuel); range never names a type.
-- Mobility 35 is far above what early ships do (reference_mob 3); the Racer type needs a dedicated ion build to
-  reach `min_main` (0.25 of 54 = 13.5). If playtests show Racers never appear, lower `ref_mobility` in the Admin.
-- Every number is an Admin knob (`ship_profile.*`); the DB wins over these defaults and takes effect at once.
+- Mobility 35 is far above what early ships do (reference_mob 3). That only scales the radar: a ship with
+  mobility 0.13 is still a Racer, because the type is named from the relative shape (below).
+
+## How the type uses the profile
+
+The refs only scale the radar (absolute values, 0..1) and the modifier. The **type** is named from the relative
+shape: the type axes (cargo, passengers, the better of firepower and defense, mining, mobility; range excluded)
+are summed; a nearly empty ship (sum at most `min_total` 0.05) is Balanced; otherwise the top share must be at
+least `min_share` (0.5) and lead the second share by `lead_margin` (0.15), else Balanced. The modifier is the
+strongest remaining axis that is at least `second_min` (0.5) absolute, or a type axis holding `second_share`
+(0.25) of the sum. This keeps early Common ships from all reading Balanced (the old "every ship is Multirole" bug).
+
+Results from the seed catalog (the specs in `ship-class.spec.ts` pin them):
+
+| Ship | cargo | defense | firepower | mobility | Type (modifier) |
+| --- | --- | --- | --- | --- | --- |
+| starter kit (sum 0.044) | 0.018 | 0 | 0 | 0.026 | Balanced (nearly empty) |
+| 14 Common cargo bays | 0.636 | 0 | 0 | 0.006 | Hauler |
+| 8 Common cannons | 0 | 0 | 0.114 | 0.019 | Warship |
+| light fast Common chem ship (2 medium engines) | 0 | 0 | 0 | 0.134 | Racer |
+| Rare ion racer (3 medium ion + nuclear) | 0 | 0 | 0 | 0.456 | Racer |
+| 8 Uncommon cargo bays | 0.436 | 0 | 0 | 0.013 | Hauler |
+| Rare 4 cargo bays + 3 large armor | 0.291 | 0.325 | 0 | 0.017 | Balanced (shares 0.48 / 0.52) |
+| Rare 6 cargo bays + 2 large shields | 0.436 | 0.221 | 0 | 0.022 | Hauler (defense) |

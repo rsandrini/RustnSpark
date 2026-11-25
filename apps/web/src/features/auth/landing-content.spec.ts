@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { MISSION_KINDS, SHIP_CLASSES, SHOWCASE } from './landing-content';
 
 describe('landing content', () => {
-  it('has five ship classes in the agreed order', () => {
-    expect(SHIP_CLASSES).toEqual(['hauler', 'transport', 'warship', 'miner', 'multirole']);
+  it('has six ship classes in the agreed order', () => {
+    expect(SHIP_CLASSES).toEqual(['hauler', 'transport', 'warship', 'miner', 'racer', 'balanced']);
   });
 
   it('has eight mission kinds, the first six board-started and the last two player-started', () => {

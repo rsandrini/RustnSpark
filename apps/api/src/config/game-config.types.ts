@@ -222,7 +222,9 @@ export type ConfigKey =
   | 'scavenging.quality_max'
   | 'scavenging.quality_min'
   | 'ship_profile.lead_margin'
-  | 'ship_profile.min_main'
+  | 'ship_profile.min_share'
+  | 'ship_profile.min_total'
+  | 'ship_profile.second_share'
   | 'ship_profile.ref_cargo'
   | 'ship_profile.ref_defense'
   | 'ship_profile.ref_firepower'
@@ -628,9 +630,11 @@ export type GameRules = Readonly<{
     ref_mobility: number;
     ref_range: number;
     ref_mining: number;
-    min_main: number;
+    min_total: number;
+    min_share: number;
     lead_margin: number;
     second_min: number;
+    second_share: number;
   }>;
   missions: Readonly<{
     hold_max: number;

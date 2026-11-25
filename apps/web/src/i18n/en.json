@@ -3045,8 +3045,12 @@
         "name": "Miner",
         "text": "A mining rig on board, and room for the ore."
       },
-      "multirole": {
-        "name": "Multirole",
+      "racer": {
+        "name": "Racer",
+        "text": "Light and fast. Built for speed."
+      },
+      "balanced": {
+        "name": "Balanced",
         "text": "No single specialty. A bit of everything."
       }
     },

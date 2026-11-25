@@ -460,9 +460,11 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     ref_mobility: 54,
     ref_range: 105000,
     ref_mining: 50,
-    min_main: 0.25,
-    lead_margin: 0.1,
+    min_total: 0.05,
+    min_share: 0.5,
+    lead_margin: 0.15,
     second_min: 0.5,
+    second_share: 0.25,
   },
   missions: {
     hold_max: 1,

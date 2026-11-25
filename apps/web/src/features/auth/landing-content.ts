@@ -1,4 +1,11 @@
-export const SHIP_CLASSES = ['hauler', 'transport', 'warship', 'miner', 'multirole'] as const;
+export const SHIP_CLASSES = [
+  'hauler',
+  'transport',
+  'warship',
+  'miner',
+  'racer',
+  'balanced',
+] as const;
 export type ShipClass = (typeof SHIP_CLASSES)[number];
 
 export const MISSION_KINDS = [

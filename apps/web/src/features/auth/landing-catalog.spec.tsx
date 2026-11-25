@@ -4,7 +4,7 @@ import { renderWithProviders } from '../../test/utils';
 import { ShipClasses, MissionKinds } from './landing-catalog';
 
 describe('ShipClasses', () => {
-  it('renders the heading and five class cards', () => {
+  it('renders the heading and six class cards', () => {
     renderWithProviders(<ShipClasses />);
 
     expect(
@@ -13,9 +13,9 @@ describe('ShipClasses', () => {
 
     const list = screen.getByRole('list');
     const items = list.querySelectorAll('li');
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(6);
 
-    const names = ['Hauler', 'Transport', 'Warship', 'Miner', 'Multirole'];
+    const names = ['Hauler', 'Transport', 'Warship', 'Miner', 'Racer', 'Balanced'];
     for (const name of names) {
       expect(screen.getByText(name)).toBeInTheDocument();
     }
@@ -24,6 +24,7 @@ describe('ShipClasses', () => {
     expect(screen.getByText(/Pressurized cabins/i)).toBeInTheDocument();
     expect(screen.getByText(/Weapons and defense first/i)).toBeInTheDocument();
     expect(screen.getByText(/A mining rig on board/i)).toBeInTheDocument();
+    expect(screen.getByText(/Light and fast/i)).toBeInTheDocument();
     expect(screen.getByText(/No single specialty/i)).toBeInTheDocument();
   });
 });
