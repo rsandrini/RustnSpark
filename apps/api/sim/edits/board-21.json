@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "missions.board_min_by_detail": { "main": 10, "regional": 8, "local": 6 },
+    "missions.board_core_types": ["DELIVERY", "TRANSPORT", "ESCORT", "MINING"],
+    "missions.board_min_races": 2,
+    "missions.board_short_max_seconds": 600,
+    "missions.board_long_min_seconds": 3600,
+    "missions.board_reference_mob": 3
+  }
+}

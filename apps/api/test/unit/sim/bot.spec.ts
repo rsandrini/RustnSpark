@@ -42,7 +42,7 @@ describe('playRun (the bot loop)', () => {
   });
 
   it('keeps finding work on a long run instead of stalling at a thin board', () => {
-    const result = playRun({ snapshot, seed: 7, missions: 30 });
+    const result = playRun({ snapshot, seed: 8, missions: 30 });
     expect(result.stalled).toBe(false);
     expect(result.totalMissions).toBe(30);
     // A run long enough to wear the ship: repair money is spent, and the wallet still

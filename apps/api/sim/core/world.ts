@@ -21,6 +21,8 @@ import {
   eligibleTypesAt,
   fillMission,
   MissionGenerationError,
+  reachByType,
+  referenceSeconds,
 } from '../../src/missions/generator/template.filler.js';
 import type {
   FillerEnvironment,
@@ -35,7 +37,14 @@ import type {
 import { missionSeed } from '../../src/missions/generator/mission.generator.js';
 import { boardSize, maxOffersOfOneType } from '../../src/missions/board-size.js';
 import {
+  boardTarget,
+  lengthBounds,
+  nextSlot,
+  type BoardSlot,
+} from '../../src/missions/board-composition.js';
+import {
   giverShapeOf,
+  offersAnyOf,
   pickGiver,
   type GiverShape,
 } from '../../src/missions/generator/giver.picker.js';
@@ -312,6 +321,7 @@ function fillOne(args: {
   readonly giver?: GiverShape;
   readonly avoidTypes?: ReadonlySet<MissionTypeName>;
   readonly preferTypes?: ReadonlySet<MissionTypeName>;
+  readonly lengthTarget?: { readonly minSeconds?: number; readonly maxSeconds?: number };
   readonly starter?: {
     readonly types: readonly MissionTypeName[];
     readonly maxZone: number;
@@ -327,6 +337,7 @@ function fillOne(args: {
     ...(args.giver === undefined ? {} : { giver: args.giver }),
     ...(args.avoidTypes === undefined ? {} : { avoidTypes: args.avoidTypes }),
     ...(args.preferTypes === undefined ? {} : { preferTypes: args.preferTypes }),
+    ...(args.lengthTarget === undefined ? {} : { lengthTarget: args.lengthTarget }),
     ...(args.starter === undefined
       ? {}
       : {
@@ -413,45 +424,67 @@ export function boardAt(input: BoardAtInput): Offer[] {
   // regional / local), a type holds at most half of it, the types the board lacks come first and
   // the next offer is posted by one of the faction's quest givers.
   const place = snapshot.locations.find((row) => row.id === locationId);
-  const boardMin =
+  const baseSize =
     place === undefined
       ? rules.missions.board_min_per_location
       : boardSize({ type: place.type, detail: place.detail ?? null }, rules);
+  if (live.length >= baseSize) return withStarter(boardState, live);
+  // What this place can post, measured once per top-up (a test pad keeps today's path).
+  const planned = origin.type !== 'test_pad';
+  const reach = planned ? reachByType(origin, world, rules) : new Map();
+  const boardMin = planned ? boardTarget(baseSize, reach, rules) : baseSize;
+  const bounds = planned ? lengthBounds(reach, rules) : null;
   const maxSameType = maxOffersOfOneType(boardMin, rules);
   const eligibleTypes = eligibleTypesAt(origin, world);
   const givers = giversOf(snapshot, origin.factionId);
+  const secondsOf = (offer: Offer): number =>
+    referenceSeconds(
+      offer.legs.reduce((sum, leg) => sum + leg.distance, 0),
+      rules,
+    );
+  const liveShape = (): (Offer & { seconds: number })[] =>
+    live.map((offer) => ({ ...offer, seconds: secondsOf(offer) }));
   while (live.length < boardMin) {
     let draft: MissionDraft;
     try {
       let attempt = 0;
       for (;;) {
-        const missingTypes = new Set(
-          [...eligibleTypes].filter((type) => !live.some((offer) => offer.type === type)),
-        );
         const avoidTypes = new Set(
           [...eligibleTypes].filter(
             (type) => live.filter((offer) => offer.type === type).length >= maxSameType,
           ),
         );
-        const preferTypes =
-          missingTypes.size > 0 && missingTypes.size < eligibleTypes.size
-            ? missingTypes
-            : undefined;
+        const wanted = planned
+          ? nextSlot({ reach, live: liveShape(), capped: avoidTypes, rules })
+          : {};
+        const slot: BoardSlot =
+          wanted.types !== undefined && [...wanted.types].every((t) => avoidTypes.has(t))
+            ? {}
+            : wanted;
         const seed = missionSeed({
           locationId,
           epoch: boardState.epoch,
           configVersion: SIM_CONFIG_VERSION,
         });
-        const giver = pickGiver({
+        let giver = pickGiver({
           givers,
           locationId,
           liveGiverIds: live.map((offer) => offer.giverId ?? null),
           boardSize: boardMin,
           eligibleTypes,
-          ...(preferTypes === undefined ? {} : { wantTypes: preferTypes }),
+          ...(slot.types === undefined ? {} : { wantTypes: slot.types }),
           avoidTypes,
           rng: createRng(seed).child('giver'),
         });
+        if (giver !== undefined && slot.types !== undefined && !offersAnyOf(giver, slot.types)) {
+          giver = undefined;
+        }
+        const lengthTarget =
+          bounds === null || slot.length === undefined
+            ? undefined
+            : slot.length === 'short'
+              ? { maxSeconds: bounds.shortMax }
+              : { minSeconds: bounds.longMin };
         draft = fillOne({
           world,
           rules,
@@ -460,10 +493,20 @@ export function boardAt(input: BoardAtInput): Offer[] {
           nowMs,
           ...(giver === undefined ? {} : { giver }),
           avoidTypes,
-          ...(preferTypes === undefined ? {} : { preferTypes }),
+          ...(slot.types === undefined ? {} : { preferTypes: slot.types }),
+          ...(lengthTarget === undefined ? {} : { lengthTarget }),
         });
         const strictness = strictnessAt(attempt);
-        if (isVariedEnough(draft, live, maxSameType, strictness)) break;
+        const draftSeconds = referenceSeconds(
+          legsOf(draft).reduce((sum, leg) => sum + leg.distance, 0),
+          rules,
+        );
+        const lengthOk =
+          lengthTarget === undefined ||
+          attempt >= STRICT_ATTEMPTS ||
+          (draftSeconds <= (lengthTarget.maxSeconds ?? Number.POSITIVE_INFINITY) &&
+            draftSeconds >= (lengthTarget.minSeconds ?? 0));
+        if (lengthOk && isVariedEnough(draft, live, maxSameType, strictness)) break;
         attempt += 1;
         boardState.epoch += 1;
       }
@@ -476,6 +519,10 @@ export function boardAt(input: BoardAtInput): Offer[] {
     boardState.epoch += 1;
   }
 
+  return withStarter(boardState, live);
+}
+
+function withStarter(boardState: BoardLocationState, live: Offer[]): Offer[] {
   const starter = boardState.starterOffer;
   return starter === null ? live : [starter, ...live];
 }
