@@ -581,7 +581,7 @@ button.kit-blocker:hover {
   .help-tip::after {
     content: '';
     position: absolute;
-    inset: -11px;
+    inset: -11px -4px;
   }
 }
 /* a row that puts a heading, a label or a control next to its help tip */

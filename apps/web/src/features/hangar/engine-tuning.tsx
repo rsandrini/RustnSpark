@@ -187,6 +187,9 @@ export function EngineTuning({
             </button>
           ))}
         </div>
+        <small className="sub" data-testid="engine-push-risk">
+          {t('engineTuning.pushRisk')}
+        </small>
         {sliderFor('chem')}
         {sliderFor('ion')}
         <label className="engine-energy">

@@ -40,7 +40,7 @@ const ACT = 'act';
 const FAIL = { statusCode: 500, message: 'boom' };
 
 beforeEach(() => {
-  haptics.haptic.mockClear();
+  haptics.haptic.mockReset();
   resetEconomyState();
   setShipActivity(null);
   resetBoardState();

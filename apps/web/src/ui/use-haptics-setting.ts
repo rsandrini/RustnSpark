@@ -50,11 +50,11 @@ function setHaptics(on: boolean) {
 export function hapticsEnabled(): boolean {
   // Storage is the truth across tabs and visits; when it cannot be read the session's own value stands.
   try {
-    emit(localStorage.getItem(KEY) !== 'off');
+    // Read into a local and only report it: a getter must not notify subscribers (the `storage` event does that).
+    return localStorage.getItem(KEY) !== 'off';
   } catch {
-    // keep the snapshot
+    return snapshot;
   }
-  return snapshot;
 }
 
 /** The pilot's haptics choice (default on), kept in this browser. */

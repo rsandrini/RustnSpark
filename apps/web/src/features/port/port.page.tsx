@@ -1765,6 +1765,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               {t('port.mine.rule', { units: mineSpaceUnits })}
             </p>
           )}
+          <p className="sub" data-testid="mine-nopay">
+            {t('port.mine.noPay')}
+          </p>
           {mineTickSeconds > 0 && (
             <fieldset className="mine-lengths" data-testid="mine-lengths">
               <legend>{t('port.mine.length')}</legend>

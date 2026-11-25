@@ -98,6 +98,10 @@ describe('TopBar', () => {
     const tuning = await screen.findByRole('group', { name: 'Engine tuning' });
     // the intro sits behind the "?" tip
     expect(tuning.querySelector('p.sub')).toBeNull();
+    // the risk of pushing the engines stays visible next to the presets, not in the tip
+    expect(within(tuning).getByTestId('engine-push-risk')).toHaveTextContent(
+      'Pushing risks an engine failure on each leg.',
+    );
     fireEvent.focus(within(tuning).getByRole('button', { name: 'Help' }));
     expect(within(tuning).getByRole('tooltip')).toHaveTextContent(
       /Run the engines at their listed power/,

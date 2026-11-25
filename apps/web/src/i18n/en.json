@@ -1790,7 +1790,8 @@
     },
     "mine": {
       "title": "Mine the field",
-      "what": "Send the ship to dig where it sits. It digs in 5-minute ticks for the whole time you pick. Ore space is twice your cargo for the whole trip, whatever the time: if you find more, the cheapest ore is dropped first. No pay up front: you see what it turned up when the job ends.",
+      "what": "Send the ship to dig where it sits. It digs in 5-minute ticks for the whole time you pick. Ore space is set by your cargo for the whole trip, whatever the time.",
+      "noPay": "No pay up front: you see the haul when the job ends.",
       "action": "Send the ship mining",
       "length": "How long to dig",
       "option": "up to {{fuel}} fuel",
@@ -3012,7 +3013,8 @@
   },
   "engineTuning": {
     "title": "Engine tuning",
-    "intro": "Run the engines at their listed power, or push them for speed. Pushing risks an engine failure on each leg. The battery management is set here too.",
+    "intro": "Run the engines at their listed power, or push them for speed. The battery management is set here too.",
+    "pushRisk": "Pushing risks an engine failure on each leg.",
     "locked": "The engines can only be tuned while the ship is in port.",
     "presets": "Quick settings",
     "preset": {

@@ -17,7 +17,7 @@ export interface HelpTipProps {
 
 /**
  * A small "?" that holds an explanation: on hover, focus and tap it shows the kit tooltip card, which the button is
- * described by, so assistive technology reads the text too. Use it for text that only explains; a state or a warning
+ * described by while it is open, so assistive technology hears the text on focus. Use it for text that only explains; a state or a warning
  * the pilot must act on stays on the screen.
  */
 export function HelpTip({ label, children, align = 'start', 'data-tour': tour }: HelpTipProps) {

@@ -1790,7 +1790,8 @@
     },
     "mine": {
       "title": "Minerar o campo",
-      "what": "Mande a nave cavar onde ela está. Ela cava em ticks de 5 minutos durante todo o tempo escolhido. O espaço de minério é o dobro da carga para toda a viagem, seja qual for o tempo: se achar mais, o minério mais barato é descartado primeiro. Sem pagamento adiantado: você vê o que ela achou quando o trabalho termina.",
+      "what": "Mande a nave cavar onde ela está. Ela cava em ticks de 5 minutos durante todo o tempo escolhido. O espaço de minério depende da carga para toda a viagem, seja qual for o tempo.",
+      "noPay": "Sem pagamento adiantado: você vê o que foi extraído quando o trabalho termina.",
       "action": "Enviar a nave para minerar",
       "length": "Por quanto tempo cavar",
       "option": "até {{fuel}} de combustível",
@@ -3012,7 +3013,8 @@
   },
   "engineTuning": {
     "title": "Ajuste dos motores",
-    "intro": "Rode os motores na potência listada, ou force-os por velocidade. Forçar arrisca uma falha de motor em cada trecho. O gerenciamento de bateria também é ajustado aqui.",
+    "intro": "Rode os motores na potência listada, ou force-os por velocidade. O gerenciamento de bateria também é ajustado aqui.",
+    "pushRisk": "Forçar arrisca uma falha de motor em cada trecho.",
     "locked": "Os motores só podem ser ajustados com a nave no porto.",
     "presets": "Ajustes rápidos",
     "preset": {
