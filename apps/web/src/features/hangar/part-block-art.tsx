@@ -61,7 +61,19 @@ const BAR_CLEARANCE = 0.26;
 
 export interface BlockTextLayout {
   /** The type row, or null when the block has none (the bridge, a ghost, or no room for it). */
-  row: { top: number; height: number; font: number; icon: number; showLabel: boolean } | null;
+  row: {
+    top: number;
+    height: number;
+    font: number;
+    icon: number;
+    showLabel: boolean;
+    /** Left edge of the row (icon, then label), in yard cells: the group is centred in the footprint. */
+    x: number;
+    /** Icon + gap + fitted label (just the icon when there is no label). The label width is an estimate. */
+    groupWidth: number;
+    /** The label, already fitted (ellipsized) to the block width; empty when the row is icon only. */
+    label: string;
+  } | null;
   /** How many name lines are drawn. */
   lineCount: number;
   /** Centre of the first name line, in yard cells. */
@@ -71,6 +83,8 @@ export interface BlockTextLayout {
 }
 
 const MIN_NAME_FONT = 0.12;
+/** Space between the type icon and its label, in cells. */
+const ROW_GAP = 0.05;
 
 /**
  * Where the type row and the name go inside one block (cell units, `gy` = top of the footprint).
@@ -89,6 +103,9 @@ export function blockTextLayout(
   labelFont: number,
   nameLines: number,
   withRow: boolean,
+  width = 1,
+  kindLabel = '',
+  gx = 0,
 ): BlockTextLayout {
   const classic = (n: number, font: number) => gy + height / 2 - 0.1 - ((n - 1) * font * 1.15) / 2;
   const noRow = (): BlockTextLayout => ({
@@ -112,8 +129,22 @@ export function blockTextLayout(
     const lineHeight = nameFont * 1.15;
     const firstY = Math.max(classic(lineCount, nameFont), free + lineHeight / 2);
     if (firstY + (lineCount - 1) * lineHeight + lineHeight / 2 <= limit + 1e-9) {
+      const icon = font * 1.25;
+      const showLabel = height >= 2;
+      // The label width is the same ~0.56 em/glyph estimate fitKindLabel uses, so the group centre is approximate.
+      const label = showLabel ? fitKindLabel(kindLabel, width - 0.32 - icon - ROW_GAP, font) : '';
+      const groupWidth = showLabel ? icon + ROW_GAP + label.length * font * 0.56 : icon;
       return {
-        row: { top, height: rowHeight, font, icon: font * 1.25, showLabel: height >= 2 },
+        row: {
+          top,
+          height: rowHeight,
+          font,
+          icon,
+          showLabel,
+          x: gx + (width - groupWidth) / 2,
+          groupWidth,
+          label,
+        },
         lineCount,
         firstY,
         nameFont,
@@ -188,7 +219,16 @@ export function PartBlockArt({
   // The bridge's name is its type; a ghost is dimmed and carries no row.
   const withRow = kind !== 'bridge' && flags.ghosting !== true;
   // The name is nudged up so the condition bar never sits on the text, and down to clear the type row.
-  const layout = blockTextLayout(gy, height, labelFont, nameLineCount, withRow);
+  const layout = blockTextLayout(
+    gy,
+    height,
+    labelFont,
+    nameLineCount,
+    withRow,
+    width,
+    kindLabel,
+    gx,
+  );
   const firstY = layout.firstY;
   const lineHeight = layout.nameFont * 1.15;
   // A broken part always keeps its "Broken" line; the name lines give way to it when the block is short of room.
@@ -284,7 +324,7 @@ export function PartBlockArt({
         <g className="block-kind" data-testid="block-kind" style={{ pointerEvents: 'none' }}>
           <svg
             data-testid="block-kind-icon"
-            x={gx + 0.16}
+            x={layout.row.x}
             y={layout.row.top + (layout.row.height - layout.row.icon) / 2}
             width={layout.row.icon}
             height={layout.row.icon}
@@ -296,11 +336,12 @@ export function PartBlockArt({
             <text
               className="block-kind-label"
               data-testid="block-kind-label"
-              x={gx + 0.16 + layout.row.icon + 0.05}
+              x={layout.row.x + layout.row.icon + ROW_GAP}
+              textAnchor="start"
               y={layout.row.top + layout.row.height / 2 + layout.row.font * 0.35}
               style={{ fontSize: `${layout.row.font}px` }}
             >
-              {fitKindLabel(kindLabel, width - 0.32 - layout.row.icon - 0.05, layout.row.font)}
+              {layout.row.label}
             </text>
           )}
         </g>

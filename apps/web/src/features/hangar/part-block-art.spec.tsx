@@ -132,10 +132,48 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
     it('the row starts at the top of the footprint (gy + 0.2), shifted with the part', () => {
       const { getByTestId } = art({ catalog: engine2x1, rot: 0, gx: 3, gy: 5 });
       const icon = getByTestId('block-kind-icon');
-      expect(Number(icon.getAttribute('x'))).toBeCloseTo(3.16);
       const layout = blockTextLayout(5, 1, 0.2, 1, true);
       const row = layout.row!;
       expect(Number(icon.getAttribute('y'))).toBeCloseTo(5.2 + (row.height - row.icon) / 2);
+    });
+
+    describe('the row is centred in the footprint', () => {
+      it.each([
+        ['1x1 (icon only)', 1, 1, 0, 'Weapon'],
+        ['1x2', 1, 2, 0, 'Tank'],
+        ['2x1', 2, 1, 0, 'Engine'],
+        ['2x2', 2, 2, 0, 'Tank'],
+        ['3x1', 3, 1, 0, 'Engine'],
+        ['1x2 rotated 90', 1, 2, 90, 'Tank'],
+      ])('%s: the row centre x is the footprint centre x', (_n, w, h, rot, label) => {
+        const fw = rot === 90 ? h : w;
+        const fh = rot === 90 ? w : h;
+        const gx = 4;
+        const layout = blockTextLayout(0, fh, 0.2, 1, true, fw, label, gx);
+        const row = layout.row!;
+        expect(row.x + row.groupWidth / 2).toBeCloseTo(gx + fw / 2, 2);
+        if (!row.showLabel) expect(row.groupWidth).toBeCloseTo(row.icon);
+        else expect(row.groupWidth).toBeGreaterThan(row.icon);
+      });
+
+      it('render: the icon svg is centred on the block (2x1) and the group on the 2x2', () => {
+        const wide = art({ catalog: engine2x1, rot: 0, gx: 3 });
+        const icon = wide.getByTestId('block-kind-icon');
+        expect(Number(icon.getAttribute('x')) + Number(icon.getAttribute('width')) / 2).toBeCloseTo(
+          4,
+          2,
+        );
+        wide.unmount();
+        const sq = art({ catalog: part('tank_common', 'TANK', 2, 2), rot: 0, gx: 3 });
+        const ic = sq.getByTestId('block-kind-icon');
+        const label = sq.getByTestId('block-kind-label');
+        const left = Number(ic.getAttribute('x'));
+        const labelX = Number(label.getAttribute('x'));
+        expect(label.getAttribute('text-anchor')).toBe('start');
+        const lay = blockTextLayout(0, 2, 0.2, 1, true, 2, 'Tank', 3).row!;
+        const right = labelX + (label.textContent ?? '').length * lay.font * 0.56;
+        expect((left + right) / 2).toBeCloseTo(4, 1);
+      });
     });
 
     it('the bridge and a ghost show no row', () => {
