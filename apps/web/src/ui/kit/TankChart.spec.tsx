@@ -39,6 +39,12 @@ describe('TankChart', () => {
     expect(screen.getAllByTestId('tank-target')).toHaveLength(3);
   });
 
+  it('clamps a target above the capacity to the top of the tank', () => {
+    render(<TankChart {...base} tanks={[{ id: 'a', capacity: 120 }]} target={500} />);
+    const line = screen.getByTestId('tank-target');
+    expect(line.getAttribute('y1')).toBe('1');
+  });
+
   it('works with one tank', () => {
     render(<TankChart {...base} tanks={[{ id: 'a', capacity: 120 }]} />);
     expect(screen.getAllByTestId('tank-glyph')).toHaveLength(1);

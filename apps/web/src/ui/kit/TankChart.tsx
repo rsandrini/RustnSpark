@@ -18,11 +18,9 @@ export interface TankChartProps {
   format?: (value: number) => string;
 }
 
-const SEP = ' / ';
 const MAX_HEIGHT = 64;
 const MIN_HEIGHT = 20;
 const WIDTH = 28;
-const GAP = 14;
 
 const fraction = (amount: number, capacity: number) =>
   capacity <= 0 ? 0 : Math.min(1, Math.max(0, amount / capacity));
@@ -92,8 +90,8 @@ export function TankChart({
           );
         })}
       </div>
-      <figcaption className="tank-chart-caption" style={{ minWidth: tanks.length * GAP }}>
-        <b data-testid="tank-total">{[format(fuel), format(capacity)].join(SEP)}</b>
+      <figcaption className="tank-chart-caption">
+        <b data-testid="tank-total">{[format(fuel), format(capacity)].join(' / ')}</b>
         <span className="sub">{caption}</span>
       </figcaption>
     </figure>

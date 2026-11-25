@@ -664,8 +664,10 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   // fuelCap 0 "the UI is broken and I cannot buy more" — the real story is there is nowhere
   // to put fuel, not that the tank is already full.
   const noTank = fuelCap <= 0;
+  // Live tanks only (a dead one holds no fuel, as in the sheet's capacity). Fuel capacity can also
+  // come from non-TANK parts, so the glyphs may not add up to it: the total always uses the ship's.
   const tankParts = installed.flatMap((entry) =>
-    entry.catalog.partClass === 'TANK' && entry.catalog.fuelCap > 0
+    entry.catalog.partClass === 'TANK' && entry.catalog.fuelCap > 0 && !entry.broken
       ? [{ id: entry.id, capacity: entry.catalog.fuelCap }]
       : [],
   );

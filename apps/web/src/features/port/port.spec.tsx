@@ -904,6 +904,7 @@ describe('port (S10.9)', () => {
     const panel = await screen.findByTestId('refuel-panel');
     expect(panel.querySelectorAll('input[type=range]')).toHaveLength(1);
     expect(screen.queryByLabelText('Fuel tank')).toBeNull();
+    expect(panel.querySelectorAll('input[type=range]')).toHaveLength(1);
     const slider = screen.getByRole<HTMLInputElement>('slider', { name: 'How much fuel to buy' });
     expect(slider.id).toBe('refuel-amount');
     // never below what is in the tank, never above the tank space
@@ -912,6 +913,52 @@ describe('port (S10.9)', () => {
     expect(screen.getByTestId('tank-chart')).toHaveAccessibleName('Tanks: 25 of 40 fuel, 1 tank');
     expect(screen.getByText('Fuel is shared by all tanks')).toBeInTheDocument();
     expect(screen.getAllByTestId('tank-glyph')).toHaveLength(1);
+  });
+
+  // A second small tank next to the starter's, worn to nothing or not.
+  const withSecondTank = async (dead: boolean, deadStarter = false) => {
+    const base = (await (await fetch('/v1/inventory')).json()) as {
+      id: string;
+      condition: number;
+      broken: boolean;
+      catalog: { partClass: string };
+    }[];
+    const starter = base.find((entry) => entry.catalog.partClass === 'TANK')!;
+    const items = base.map((entry) =>
+      entry === starter && deadStarter ? { ...entry, condition: 0, broken: true } : entry,
+    );
+    items.push({
+      ...starter,
+      id: 'part-tank-2',
+      condition: dead ? 0 : 100,
+      broken: dead,
+    });
+    server.use(http.get('/v1/inventory', () => HttpResponse.json(items)));
+  };
+
+  it('the tank chart does not draw a dead tank', async () => {
+    await withSecondTank(true);
+    await renderPort();
+    openPortTab('Refuel');
+    await screen.findByTestId('refuel-panel');
+    expect(screen.getAllByTestId('tank-glyph')).toHaveLength(1);
+    expect(screen.getByTestId('tank-total')).toHaveTextContent('25 / 40');
+  });
+
+  it('the tank chart draws every live tank', async () => {
+    await withSecondTank(false);
+    await renderPort();
+    openPortTab('Refuel');
+    await screen.findByTestId('refuel-panel');
+    expect(screen.getAllByTestId('tank-glyph')).toHaveLength(2);
+  });
+
+  it('the tank chart is hidden when every tank is dead', async () => {
+    await withSecondTank(true, true);
+    await renderPort();
+    openPortTab('Refuel');
+    await screen.findByTestId('refuel-panel');
+    expect(screen.queryByTestId('tank-chart')).toBeNull();
   });
 
   it('refuel: moving the bar updates the summary, Fill goes back to the top', async () => {
