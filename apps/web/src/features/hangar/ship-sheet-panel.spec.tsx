@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { renderWithProviders } from '../../test/utils';
 import { ShipSheetPanel } from './ship-sheet-panel';
-import type { ShipSheet } from '../../api/generated';
+import type { ShipProfile, ShipSheet } from '../../api/generated';
 
 const sheet: ShipSheet = {
   pot: 25,
@@ -186,5 +186,57 @@ describe('ShipSheetPanel name', () => {
     expect(row).toHaveTextContent('LUN-NOVA');
     fireEvent.click(within(row).getByRole('button', { name: /Rename the ship/ }));
     expect(onRename).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ShipSheetPanel ship identity', () => {
+  const profile: ShipProfile = {
+    cargo: 0.8,
+    passengers: 0,
+    firepower: 0.5,
+    defense: 0.1,
+    mobility: 0.1,
+    range: 0.1,
+    mining: 0,
+  };
+  const base = { shipClass: 'HAULER', sheet, problemCount: 0, installedCatalogs: [] };
+
+  it('shows the type with its modifier and a radar with the profile values', () => {
+    const { container } = renderWithProviders(
+      <ShipSheetPanel {...base} profile={profile} profileModifier="firepower" />,
+    );
+    expect(screen.getByText('Hauler, armed')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Ship profile' })).toBeInTheDocument();
+    const cargo = screen.getByText('Cargo', { selector: 'th' }).closest('tr') as HTMLElement;
+    expect(cargo).toHaveTextContent('80%');
+    expect(container.querySelector('.kit-radar-ghost')).toBeNull();
+  });
+
+  it('shows the bare type without a modifier', () => {
+    renderWithProviders(<ShipSheetPanel {...base} profile={profile} profileModifier={null} />);
+    expect(screen.getByText('Hauler')).toBeInTheDocument();
+  });
+
+  it('draws the preview profile as the ghost only when it differs', () => {
+    const first = renderWithProviders(
+      <ShipSheetPanel {...base} profile={profile} ghostProfile={{ ...profile, cargo: 0.3 }} />,
+    );
+    expect(first.container.querySelector('.kit-radar-ghost')).not.toBeNull();
+    first.unmount();
+    const second = renderWithProviders(
+      <ShipSheetPanel {...base} profile={profile} ghostProfile={{ ...profile }} />,
+    );
+    expect(second.container.querySelector('.kit-radar-ghost')).toBeNull();
+  });
+
+  it('renders no radar and does not crash without a profile', () => {
+    renderWithProviders(<ShipSheetPanel {...base} />);
+    expect(screen.queryByRole('img', { name: 'Ship profile' })).toBeNull();
+    expect(screen.getByText('Hauler')).toBeInTheDocument();
+  });
+
+  it('hides the radar in the opening (compact sheet)', () => {
+    renderWithProviders(<ShipSheetPanel {...base} compact profile={profile} />);
+    expect(screen.queryByRole('img', { name: 'Ship profile' })).toBeNull();
   });
 });

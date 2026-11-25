@@ -34,4 +34,15 @@ describe('detectInitialLng', () => {
     window.localStorage.removeItem(LANGUAGE_STORAGE_KEY);
     lang.mockRestore();
   });
+
+  it('has every ship class modifier and the composing template in both locales', () => {
+    const axes = ['cargo', 'passengers', 'firepower', 'defense', 'mobility', 'range', 'mining'];
+    for (const locale of [en, ptBR] as unknown as {
+      hangar: { classModifier: Record<string, string>; classWithModifier: string };
+    }[]) {
+      for (const axis of axes) expect(locale.hangar.classModifier[axis]).toBeTruthy();
+      expect(locale.hangar.classWithModifier).toContain('{{type}}');
+      expect(locale.hangar.classWithModifier).toContain('{{modifier}}');
+    }
+  });
 });

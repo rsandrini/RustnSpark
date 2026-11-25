@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { PublicProfileResponse } from '../../api/generated';
+import { ShipRadar } from '../../ui/kit/ShipRadar';
 import { FactionBadge } from '../../ui/FactionBadge';
 
 export interface PilotCardProps {
@@ -20,9 +21,16 @@ export function PilotCard({ profile }: PilotCardProps) {
   const missions = totals['missions.started'] ?? 0;
   const hasFlown = missions > 0;
 
-  const classLabel = t(`hangar.classes.${profile.ship?.shipClass ?? ''}`, {
+  const typeName = t(`hangar.classes.${profile.ship?.shipClass ?? ''}`, {
     defaultValue: profile.ship?.shipClass ?? '',
   });
+  const modifier = profile.ship?.profileModifier;
+  const classLabel = modifier
+    ? t('hangar.classWithModifier', {
+        type: typeName,
+        modifier: t(`hangar.classModifier.${modifier}`),
+      })
+    : typeName;
   const bridgeRarityLabel = t(`market.rarities.${profile.ship?.bridgeRarity ?? ''}`, {
     defaultValue: profile.ship?.bridgeRarity ?? '',
   });
@@ -36,12 +44,17 @@ export function PilotCard({ profile }: PilotCardProps) {
 
       {profile.ship !== null && (
         <section className="pilot-ship">
-          <h3 className="pilot-ship-title">{profile.ship.title}</h3>
-          <p className="pilot-ship-meta">
-            {classLabel}
-            {SEPARATOR}
-            {bridgeRarityLabel} {t('profile.stats.bridge')}
-          </p>
+          <div className="pilot-ship-text">
+            <h3 className="pilot-ship-title">{profile.ship.title}</h3>
+            <p className="pilot-ship-meta">
+              {classLabel}
+              {SEPARATOR}
+              {bridgeRarityLabel} {t('profile.stats.bridge')}
+            </p>
+          </div>
+          {profile.ship.profile !== undefined && (
+            <ShipRadar values={profile.ship.profile} size={96} label={t('hangar.profile.title')} />
+          )}
         </section>
       )}
 

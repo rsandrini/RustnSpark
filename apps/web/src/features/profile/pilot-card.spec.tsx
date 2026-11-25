@@ -57,4 +57,12 @@ describe('PilotCard', () => {
     expect(screen.queryByText('42')).not.toBeInTheDocument();
     expect(screen.queryByText(/Bridge/)).not.toBeInTheDocument();
   });
+
+  it('shows a small radar and the type with its modifier', () => {
+    const profile = publicProfileFixture();
+    profile.ship = { ...profile.ship!, shipClass: 'RACER', profileModifier: 'range' };
+    renderWithProviders(<PilotCard profile={profile} />, { withRouter: false });
+    expect(screen.getByRole('img', { name: 'Ship profile' })).toBeInTheDocument();
+    expect(screen.getByText(/Racer, long-range/)).toBeInTheDocument();
+  });
 });

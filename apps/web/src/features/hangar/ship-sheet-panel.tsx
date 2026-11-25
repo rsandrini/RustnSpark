@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { scaleSpeed, sheetStat, useDisplay } from '../../ui/display';
 import { useTranslation } from 'react-i18next';
-import type { PartCatalogStats, RouteCoverage, ShipSheet } from '../../api/generated';
+import type { PartCatalogStats, RouteCoverage, ShipProfile, ShipSheet } from '../../api/generated';
+import { ShipRadar, RADAR_AXES } from '../../ui/kit/ShipRadar';
 import { conditionTone } from '../../ui/Gauge';
 import { enginePercent } from '../../ui/engine-level';
 
@@ -9,6 +10,12 @@ export interface ShipSheetPanelProps {
   /** Only the headline tiles: no "show all stats" (the new-pilot opening). */
   compact?: boolean;
   shipClass: string | undefined;
+  /** The ship's seven-axis profile (the spider chart); absent = no chart. */
+  profile?: ShipProfile | undefined;
+  /** The ship's strong second axis ("Hauler, armed"), or null. */
+  profileModifier?: keyof ShipProfile | null | undefined;
+  /** The profile of a layout being considered (a preview): drawn as a dashed ghost when it differs. */
+  ghostProfile?: ShipProfile | undefined;
   /** Shown instead of the class's own name (the opening's ship has no class yet). */
   classLabel?: string | undefined;
   /** The ship's own name, shown at the top of the sheet; click it to rename the ship (when `onRename` is given). */
@@ -111,9 +118,16 @@ export function defensePools(
   };
 }
 
+function differs(a: ShipProfile, b: ShipProfile): boolean {
+  return RADAR_AXES.some(({ key }) => a[key] !== b[key]);
+}
+
 export function ShipSheetPanel({
   compact = false,
   shipClass,
+  profile,
+  profileModifier,
+  ghostProfile,
   classLabel,
   shipName,
   onRename,
@@ -142,6 +156,25 @@ export function ShipSheetPanel({
   const mobilityTone: Tone =
     sheet !== undefined && sheetStat(sheet, 'mob', display) < scaleSpeed(1, display) ? 'bad' : 'ok';
 
+  const typeName = shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : '—';
+  const typeLabel =
+    shipClass !== undefined && profileModifier
+      ? t('hangar.classWithModifier', {
+          type: typeName,
+          modifier: t(`hangar.classModifier.${profileModifier}`),
+        })
+      : typeName;
+  const ghost =
+    profile !== undefined && ghostProfile !== undefined && differs(profile, ghostProfile)
+      ? ghostProfile
+      : undefined;
+  const radar =
+    profile !== undefined && !compact ? (
+      <div className="sheet-radar">
+        <ShipRadar values={profile} ghost={ghost} label={t('hangar.profile.title')} />
+      </div>
+    ) : null;
+
   const classRow = (
     <>
       {shipName !== undefined && (
@@ -169,7 +202,7 @@ export function ShipSheetPanel({
       )}
       <div className="statrow" title={t('hangar.statHelp.class')}>
         <span>{t('hangar.class')}</span>
-        <b>{classLabel ?? (shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : '—')}</b>
+        <b>{classLabel ?? typeLabel}</b>
       </div>
     </>
   );
@@ -322,87 +355,91 @@ export function ShipSheetPanel({
           : t('hangar.summary.ready')}
       </div>
       {!showAll && (
-        <div className="sheet-headline" data-testid="sheet-headline">
-          <div
-            className="sheet-headline-tile sheet-headline-structure"
-            title={t('hangar.statHelp.structure')}
-          >
-            <span>{t('hangar.headline.structure')}</span>
-            <b className={`tone-${structureBand}`}>{structureText}</b>
-          </div>
-          <div className="sheet-headline-tile" title={t('hangar.statHelp.pdf')}>
-            <span>{t('hangar.headline.firepower')}</span>
-            <b>{number(sheet.pdf)}</b>
-          </div>
-          <div className="sheet-headline-tile" title={t('hangar.statHelp.esc')}>
-            <span>{t('hangar.headline.shield')}</span>
-            <b>{number(shieldPool)}</b>
-          </div>
-          <div className="sheet-headline-tile" title={t('hangar.statHelp.bli')}>
-            <span>{t('hangar.headline.armor')}</span>
-            <b>{number(armorPool)}</b>
-          </div>
-          <div className="sheet-headline-tile" title={t('hangar.statHelp.crg')}>
-            <span>{t('hangar.headline.cargo')}</span>
-            <b>{number(sheet.crg)}</b>
-          </div>
-          <div className="sheet-headline-tile" title={t('hangar.statHelp.mob')}>
-            <span>{t('hangar.headline.mobility')}</span>
-            <b className={`tone-${mobilityTone}`}>
-              {mobilityNumber(sheetStat(sheet, 'mob', display))}
-              {engineLevels !== undefined && Math.max(engineLevels.chem, engineLevels.ion) > 1 && (
-                <span
-                  className="tile-push"
-                  data-testid="engines-pushed"
-                  title={t('hangar.headline.pushed', {
-                    chem: enginePercent(engineLevels.chem, i18n.language),
-                    ion: enginePercent(engineLevels.ion, i18n.language),
-                  })}
-                >
-                  {t('hangar.headline.pushedBadge', {
-                    value: enginePercent(
-                      Math.max(engineLevels.chem, engineLevels.ion),
-                      i18n.language,
-                    ),
-                  })}
-                </span>
-              )}
-              {onTuneEngines !== undefined && (
-                <button
-                  type="button"
-                  className="tile-icon"
-                  aria-label={t('hangar.headline.tuneEngines')}
-                  title={t('hangar.headline.tuneEngines')}
-                  onClick={onTuneEngines}
-                >
-                  <span className="tile-icon-dot">{GEAR_GLYPH}</span>
-                </button>
-              )}
-            </b>
-          </div>
-          <div className="sheet-headline-tile" title={t('hangar.statHelp.condition')}>
-            <span>{t('hangar.headline.condition')}</span>
-            <b className={`tone-${conditionBand}`}>
-              {conditionText}
-              {warningCount > 0 && onShowWarnings !== undefined && (
-                <button
-                  type="button"
-                  className="tile-icon tile-icon-warn"
-                  aria-label={t('hangar.warnings.open', { count: warningCount })}
-                  title={t('hangar.warnings.open', { count: warningCount })}
-                  onClick={onShowWarnings}
-                >
-                  <span className="tile-icon-bare">{WARN_GLYPH}</span>
-                </button>
-              )}
-            </b>
-          </div>
-          <div className="sheet-headline-tile" title={t('hangar.statHelp.energyCont')}>
-            <span>{t('hangar.headline.energy')}</span>
-            <b className={`tone-${energyGenerate - energyConsume >= 0 ? 'ok' : 'bad'}`}>
-              {energyGenerate - energyConsume >= 0 ? '+' : ''}
-              {number(energyGenerate - energyConsume)}
-            </b>
+        <div className="sheet-top">
+          {radar}
+          <div className="sheet-headline" data-testid="sheet-headline">
+            <div
+              className="sheet-headline-tile sheet-headline-structure"
+              title={t('hangar.statHelp.structure')}
+            >
+              <span>{t('hangar.headline.structure')}</span>
+              <b className={`tone-${structureBand}`}>{structureText}</b>
+            </div>
+            <div className="sheet-headline-tile" title={t('hangar.statHelp.pdf')}>
+              <span>{t('hangar.headline.firepower')}</span>
+              <b>{number(sheet.pdf)}</b>
+            </div>
+            <div className="sheet-headline-tile" title={t('hangar.statHelp.esc')}>
+              <span>{t('hangar.headline.shield')}</span>
+              <b>{number(shieldPool)}</b>
+            </div>
+            <div className="sheet-headline-tile" title={t('hangar.statHelp.bli')}>
+              <span>{t('hangar.headline.armor')}</span>
+              <b>{number(armorPool)}</b>
+            </div>
+            <div className="sheet-headline-tile" title={t('hangar.statHelp.crg')}>
+              <span>{t('hangar.headline.cargo')}</span>
+              <b>{number(sheet.crg)}</b>
+            </div>
+            <div className="sheet-headline-tile" title={t('hangar.statHelp.mob')}>
+              <span>{t('hangar.headline.mobility')}</span>
+              <b className={`tone-${mobilityTone}`}>
+                {mobilityNumber(sheetStat(sheet, 'mob', display))}
+                {engineLevels !== undefined &&
+                  Math.max(engineLevels.chem, engineLevels.ion) > 1 && (
+                    <span
+                      className="tile-push"
+                      data-testid="engines-pushed"
+                      title={t('hangar.headline.pushed', {
+                        chem: enginePercent(engineLevels.chem, i18n.language),
+                        ion: enginePercent(engineLevels.ion, i18n.language),
+                      })}
+                    >
+                      {t('hangar.headline.pushedBadge', {
+                        value: enginePercent(
+                          Math.max(engineLevels.chem, engineLevels.ion),
+                          i18n.language,
+                        ),
+                      })}
+                    </span>
+                  )}
+                {onTuneEngines !== undefined && (
+                  <button
+                    type="button"
+                    className="tile-icon"
+                    aria-label={t('hangar.headline.tuneEngines')}
+                    title={t('hangar.headline.tuneEngines')}
+                    onClick={onTuneEngines}
+                  >
+                    <span className="tile-icon-dot">{GEAR_GLYPH}</span>
+                  </button>
+                )}
+              </b>
+            </div>
+            <div className="sheet-headline-tile" title={t('hangar.statHelp.condition')}>
+              <span>{t('hangar.headline.condition')}</span>
+              <b className={`tone-${conditionBand}`}>
+                {conditionText}
+                {warningCount > 0 && onShowWarnings !== undefined && (
+                  <button
+                    type="button"
+                    className="tile-icon tile-icon-warn"
+                    aria-label={t('hangar.warnings.open', { count: warningCount })}
+                    title={t('hangar.warnings.open', { count: warningCount })}
+                    onClick={onShowWarnings}
+                  >
+                    <span className="tile-icon-bare">{WARN_GLYPH}</span>
+                  </button>
+                )}
+              </b>
+            </div>
+            <div className="sheet-headline-tile" title={t('hangar.statHelp.energyCont')}>
+              <span>{t('hangar.headline.energy')}</span>
+              <b className={`tone-${energyGenerate - energyConsume >= 0 ? 'ok' : 'bad'}`}>
+                {energyGenerate - energyConsume >= 0 ? '+' : ''}
+                {number(energyGenerate - energyConsume)}
+              </b>
+            </div>
           </div>
         </div>
       )}

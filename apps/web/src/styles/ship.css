@@ -651,6 +651,28 @@ details.collapsible > summary h2 {
   color: var(--bad);
 }
 
+.sheet-top {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .sheet-top {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .sheet-top .sheet-headline {
+    justify-self: stretch;
+  }
+}
+
+.sheet-radar {
+  display: flex;
+  justify-content: center;
+}
+
 .sheet-headline {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));

@@ -605,6 +605,16 @@
       "RACER": "Racer",
       "BALANCED": "Balanced"
     },
+    "classWithModifier": "{{type}}, {{modifier}}",
+    "classModifier": {
+      "cargo": "loaded",
+      "passengers": "with passengers",
+      "firepower": "armed",
+      "defense": "armored",
+      "mobility": "fast",
+      "range": "long-range",
+      "mining": "mining rig"
+    },
     "partClasses": {
       "BRIDGE": "Bridge",
       "ENGINE": "Engine",
