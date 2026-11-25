@@ -185,6 +185,7 @@ describe('feedback', () => {
 const L_PLAIN = 'plain';
 const L_GAIN = 'gain';
 const L_COST = 'cost';
+const L_GO = 'go';
 
 describe('feedback haptics', () => {
   afterEach(() => vi.restoreAllMocks());
@@ -217,5 +218,21 @@ describe('feedback haptics', () => {
     expect(spy.mock.calls).toEqual([['success'], ['success'], ['warn']]);
     expect(vibrate).not.toHaveBeenCalled();
     delete (navigator as { vibrate?: unknown }).vibrate;
+  });
+
+  it('a quiet notice shows the message without a buzz', () => {
+    const spy = vi.spyOn(haptics, 'haptic').mockImplementation(() => undefined);
+    function Quiet() {
+      const { notify } = useFeedback();
+      return (
+        <button type="button" onClick={() => notify('passive', { quiet: true })}>
+          {L_GO}
+        </button>
+      );
+    }
+    render(<Quiet />, { wrapper: wrap });
+    fireEvent.click(screen.getByText('go'));
+    expect(screen.getByText('passive')).toBeInTheDocument();
+    expect(spy).not.toHaveBeenCalled();
   });
 });

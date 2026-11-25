@@ -22,6 +22,12 @@ describe('useCountUp', () => {
     delete (window as { matchMedia?: unknown }).matchMedia;
   });
 
+  it('with reduced motion and animateOnMount the first render already shows the final value', () => {
+    setReducedMotion(true);
+    const { result } = renderHook(() => useCountUp(500, { animateOnMount: true }));
+    expect(result.current.shown).toBe(500);
+  });
+
   it('returns the value on the first render, without animation', () => {
     const { result } = renderHook(() => useCountUp(500));
     expect(result.current).toEqual({ shown: 500, direction: null });

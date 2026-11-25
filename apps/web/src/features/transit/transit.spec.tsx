@@ -83,6 +83,8 @@ describe('transit (S10.7)', () => {
     renderWithRouter(routes, { initialEntries: ['/transit'] });
     fireEvent.click(await screen.findByRole('button', { name: 'Engine tuning' }));
     const tuning = await screen.findByTestId('engine-tuning');
+    fireEvent.focus(within(tuning).getByRole('button', { name: 'Help' }));
+    expect(within(tuning).getByRole('tooltip')).toHaveClass('kit-tip-card--end');
     const slider = await within(tuning).findByRole('slider', { name: 'Ion engines' });
     fireEvent.change(slider, { target: { value: '2.5' } });
     // launched at once, well before the slider's own delayed save would fire

@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as haptics from '../../ui/haptics';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -23,10 +24,13 @@ describe('the reminder to save a guest pilot', () => {
   });
 
   it('shows once, when a guest reads a report, and opens the save popup from its button', async () => {
+    const buzz = vi.spyOn(haptics, 'haptic').mockImplementation(() => undefined);
     server.use(http.get('/v1/players/me', () => HttpResponse.json(guest(true))));
     const { unmount } = renderWithRouter(routes, { initialEntries: ['/report/some-mission'] });
 
     expect(await screen.findByRole('status')).toHaveTextContent(/only kept by this browser/i);
+    // a passive notice: the report's own popup is the one buzz
+    expect(buzz).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: 'Save your pilot' }));
     expect(await screen.findByRole('dialog')).toHaveTextContent(/clearing your browser/i);
 

@@ -171,7 +171,7 @@ export function EngineTuning({
       </summary>
       <div className="engine-tuning-body">
         <div className="help-corner">
-          <HelpTip>{t('engineTuning.intro')}</HelpTip>
+          <HelpTip align="end">{t('engineTuning.intro')}</HelpTip>
         </div>
         {!editable && <p className="notice warn">{t('engineTuning.locked')}</p>}
         <div className="chips" role="group" aria-label={t('engineTuning.presets')}>

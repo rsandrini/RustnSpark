@@ -37,6 +37,7 @@ export function GuestReminder() {
     }
     feedback.notify(t('guest.reminder'), {
       next: { label: t('guest.saveMenu'), to: `${pathname}?${SAVE_PILOT_PARAM}=1` },
+      quiet: true,
     });
   }, [isGuest, onReport, feedback, pathname, t]);
 

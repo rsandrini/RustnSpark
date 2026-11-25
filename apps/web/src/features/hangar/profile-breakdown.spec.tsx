@@ -38,6 +38,8 @@ describe('ProfileBreakdown', () => {
     expect(screen.queryByText(help)).toBeNull();
     fireEvent.focus(screen.getByRole('button', { name: 'Help' }));
     expect(screen.getByRole('tooltip')).toHaveTextContent(help);
+    // the tip sits at the right edge: its card hangs from the button's right edge, not off-screen
+    expect(screen.getByRole('tooltip')).toHaveClass('kit-tip-card--end');
     const def = row('Def');
     expect(def).toHaveTextContent('4.2 / 70');
     expect(def).toHaveTextContent('6%');

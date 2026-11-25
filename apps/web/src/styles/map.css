@@ -300,6 +300,13 @@
   gap: 8px;
   margin-bottom: 12px;
 }
+.map-panel-titlerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-right: auto;
+}
 .map-panel-title {
   margin: 0;
   font-family: var(--font-display);

@@ -167,7 +167,7 @@
   .mresult-credits.gain,
   .mresult-prize.gain {
     animation:
-      mresult-up 0.4s ease-out 0.15s both,
+      mresult-up 0.4s ease-out var(--reveal-delay, 0.15s) both,
       mresult-pop 0.5s ease-out 0.6s;
   }
 }

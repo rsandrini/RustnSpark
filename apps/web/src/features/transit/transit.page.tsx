@@ -148,7 +148,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
         : client.post(`/v1/missions/${mission?.id ?? ''}/abandon`),
     onSuccess: () => {
       setActionError(null);
-      feedback.notify(t('feedback.cancelled'));
+      feedback.notify(t('feedback.cancelled'), { quiet: true });
       invalidateActive();
       void queryClient.invalidateQueries({ queryKey: ['board'] });
     },

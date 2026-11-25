@@ -29,8 +29,10 @@ export function PlacesDrawer({ places, onSelect, onClose }: PlacesDrawerProps) {
   return (
     <section className="map-places" aria-label={t('map.places')}>
       <header className="map-panel-head">
-        <h2 className="map-panel-title">{t('map.places')}</h2>
-        <HelpTip>{t('map.hint')}</HelpTip>
+        <div className="map-panel-titlerow">
+          <h2 className="map-panel-title">{t('map.places')}</h2>
+          <HelpTip>{t('map.hint')}</HelpTip>
+        </div>
         <button type="button" className="btn" onClick={onClose}>
           {t('ui.close')}
         </button>

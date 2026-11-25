@@ -53,7 +53,7 @@ export function ProfileBreakdown({
   return (
     <div className="profile-breakdown" data-testid="profile-breakdown">
       <div className="help-corner">
-        <HelpTip>{t('hangar.profileBreakdown.help')}</HelpTip>
+        <HelpTip align="end">{t('hangar.profileBreakdown.help')}</HelpTip>
       </div>
       <p className="sub profile-breakdown-rule" data-testid="pb-type-rule">
         {t('hangar.profileBreakdown.typeRule')}

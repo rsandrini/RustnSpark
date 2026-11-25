@@ -610,6 +610,8 @@ describe('port (S10.9)', () => {
     fireEvent.focus(within(mining).getByRole('button', { name: 'Help' }));
     expect(within(mining).getByRole('tooltip')).toHaveTextContent(/dig where it sits/);
     expect(within(mining).getByRole('tooltip')).not.toHaveTextContent(/No pay up front/);
+    // at the right of the header: the card hangs from the button's right edge
+    expect(within(mining).getByRole('tooltip')).toHaveClass('kit-tip-card--end');
     // the consequence stays on the screen, once
     expect(within(mining).getByTestId('mine-nopay')).toHaveTextContent(
       'No pay up front: you see the haul when the job ends.',

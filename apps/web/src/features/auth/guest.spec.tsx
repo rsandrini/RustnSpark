@@ -115,6 +115,7 @@ describe('playing as a guest', () => {
     expect(within(dialog).queryByText(/Leave empty to keep the name/)).toBeNull();
     fireEvent.focus(within(dialog).getByRole('button', { name: 'Help' }));
     expect(within(dialog).getByRole('tooltip')).toHaveTextContent(/Leave empty to keep the name/);
+    expect(within(dialog).getByRole('tooltip')).toHaveClass('kit-tip-card--end');
     expect(within(dialog).getByText('At least 6 characters')).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Email'), 'me@example.com');
     await userEvent.type(screen.getByLabelText('Password'), 'secret1');

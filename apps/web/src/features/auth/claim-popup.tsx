@@ -80,7 +80,7 @@ export function ClaimPopup({ open, onClose }: ClaimPopupProps) {
             <label className="lbl" htmlFor="claim-name">
               {t('guest.claim.nameLabel')}
             </label>
-            <HelpTip>{t('guest.claim.nameHint')}</HelpTip>
+            <HelpTip align="end">{t('guest.claim.nameHint')}</HelpTip>
           </div>
           <input
             className="input"

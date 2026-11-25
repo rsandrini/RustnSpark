@@ -13,6 +13,8 @@ function read(): boolean {
 // One store for every caller (the menu toggle and `haptic()`): a change is seen at once everywhere, and the
 // browser's storage is the source of truth across tabs and visits.
 let snapshot = read();
+// Set when a write to storage failed: storage then lies about the choice, so the session's own value stands.
+let writeFailed = false;
 const listeners = new Set<() => void>();
 
 function emit(next: boolean) {
@@ -40,7 +42,9 @@ function subscribe(listener: () => void): () => void {
 function setHaptics(on: boolean) {
   try {
     localStorage.setItem(KEY, on ? 'on' : 'off');
+    writeFailed = false;
   } catch {
+    writeFailed = true;
     // Storage unavailable: the choice lasts until the page is closed.
   }
   emit(on);
@@ -48,7 +52,8 @@ function setHaptics(on: boolean) {
 
 /** Whether haptics are on right now (read synchronously by `haptic()`). */
 export function hapticsEnabled(): boolean {
-  // Storage is the truth across tabs and visits; when it cannot be read the session's own value stands.
+  // Storage is the truth across tabs and visits; when it cannot be read or written the session's own value stands.
+  if (writeFailed) return snapshot;
   try {
     // Read into a local and only report it: a getter must not notify subscribers (the `storage` event does that).
     return localStorage.getItem(KEY) !== 'off';

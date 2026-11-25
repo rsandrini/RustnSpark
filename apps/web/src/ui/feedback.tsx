@@ -26,6 +26,8 @@ export interface FeedbackOptions {
   amount?: number;
   /** The unit written after the amount (for example the money sign); the caller gives it translated. */
   unit?: string;
+  /** A passive notice: no buzz (the action or screen that caused it has its own). */
+  quiet?: boolean;
 }
 interface FeedbackApi {
   /** False without a provider (a screen rendered alone): callers then keep their own inline message. */
@@ -79,7 +81,8 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     });
     if (options.takeoff === true) setTakeoff(counter.current);
     // the one buzz of an action: a cost is a short warning, anything else a small success
-    haptic(options.amount !== undefined && options.amount < 0 ? 'warn' : 'success');
+    if (options.quiet !== true)
+      haptic(options.amount !== undefined && options.amount < 0 ? 'warn' : 'success');
     if (timer.current !== null) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setToast(null), FEEDBACK_MS);
   }, []);

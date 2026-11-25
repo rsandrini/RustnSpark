@@ -32,7 +32,8 @@ export function useCountUp(
   options: CountUpOptions = {},
 ): { shown: number; direction: 'rise' | 'fall' | null } {
   const { durationMs = COUNT_MS, stepMs = STEP_MS, from, animateOnMount = false } = options;
-  const start = animateOnMount ? (from ?? 0) : value;
+  // With reduced motion the final value is there from the first paint (no flash of the start number).
+  const start = animateOnMount && !prefersReducedMotion() ? (from ?? 0) : value;
   const [shown, setShown] = useState(start);
   const [direction, setDirection] = useState<'rise' | 'fall' | null>(null);
   const current = useRef(start);

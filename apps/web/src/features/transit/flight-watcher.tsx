@@ -94,6 +94,7 @@ export function FlightWatcher() {
     if (feedback.available && (hasUnsavedLayout() || workingOnShip)) {
       feedback.notify(t('feedback.flightEndedUnsaved'), {
         next: { label: t('feedback.nextReport'), to: `/report/${newest}` },
+        quiet: true,
       });
       return;
     }

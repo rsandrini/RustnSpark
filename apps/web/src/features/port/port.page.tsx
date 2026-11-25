@@ -1732,7 +1732,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             <div>
               <div className="help-row">
                 <h2>{t('port.mine.title')}</h2>
-                <HelpTip>{t('port.mine.what')}</HelpTip>
+                <HelpTip align="end">{t('port.mine.what')}</HelpTip>
               </div>
             </div>
           </header>
