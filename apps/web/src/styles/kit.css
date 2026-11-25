@@ -487,3 +487,43 @@ button.kit-blocker:hover {
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
+
+/* ---- TankChart: one glyph per tank, all filled to the shared fuel level -------------------- */
+.tank-chart {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  justify-items: center;
+}
+.tank-chart-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+.tank-chart-item {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+.tank-body {
+  fill: var(--paper-3, var(--rule));
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.tank-fill {
+  fill: var(--brass);
+}
+.tank-target {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 2;
+}
+.tank-cap {
+  color: var(--ink-3, inherit);
+}
+.tank-chart-caption {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+}

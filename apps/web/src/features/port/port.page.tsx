@@ -36,8 +36,9 @@ import { Popup } from '../../ui/Popup';
 import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
 import { FuelBlock } from '../board/fuel-block';
-import { Gauge, conditionTone } from '../../ui/Gauge';
+import { conditionTone } from '../../ui/Gauge';
 import { ConditionSlider } from '../../ui/kit/ConditionSlider';
+import { TankChart } from '../../ui/kit/TankChart';
 import { ActionArt } from '../../ui/ActionArt';
 import { PartThumb } from '../../ui/PartThumb';
 import { PlaceBanner } from '../../ui/PlaceArt';
@@ -663,6 +664,11 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   // fuelCap 0 "the UI is broken and I cannot buy more" — the real story is there is nowhere
   // to put fuel, not that the tank is already full.
   const noTank = fuelCap <= 0;
+  const tankParts = installed.flatMap((entry) =>
+    entry.catalog.partClass === 'TANK' && entry.catalog.fuelCap > 0
+      ? [{ id: entry.id, capacity: entry.catalog.fuelCap }]
+      : [],
+  );
   const tankFull = !noTank && fuel >= fuelCap;
 
   const sellOfferOf = (partInstanceId: string): number | null =>
@@ -1114,22 +1120,17 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
       {tab === 'refuel' && (
         <section className="stack" data-opening="refuel">
-          <Gauge
-            value={fuel}
-            max={fuelCap}
-            tone="fuel"
-            ariaLabel={t('port.fuelBar')}
-            planned={fuel + wantedUnits}
-            label={
-              wantedUnits > 0
-                ? t('port.refuelGaugeAfter', {
-                    fuel: Math.round(fuel),
-                    add: wantedUnits,
-                    after: Math.round(fuel + wantedUnits),
-                    cap: Math.round(fuelCap),
-                  })
-                : t('port.refuelGauge', { fuel: Math.round(fuel), cap: Math.round(fuelCap) })
-            }
+          <TankChart
+            tanks={tankParts}
+            fuel={fuel}
+            capacity={fuelCap}
+            target={fuel + wantedUnits}
+            caption={t('port.tankChartShared')}
+            label={t('port.tankChartLabel', {
+              fuel: Math.round(fuel),
+              capacity: Math.round(fuelCap),
+              count: tankParts.length,
+            })}
           />
           <p className="sub help-text">{t('port.refuelHint')}</p>
           {noTank ? (
@@ -1141,14 +1142,19 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               <label className="lbl" htmlFor="refuel-amount">
                 {t('port.refuelAmount')}
               </label>
-              <input
+              <ConditionSlider
                 id="refuel-amount"
-                type="range"
-                min={0}
-                max={tankSpace}
+                current={fuel}
+                value={fuel + wantedUnits}
+                min={fuel}
+                max={fuelCap}
                 step={1}
-                value={wantedUnits}
-                onChange={(event) => setRefuelUnits(Number(event.target.value))}
+                tone="fuel"
+                label={t('port.refuelAmount')}
+                format={(amount) => String(Math.round(amount))}
+                onChange={(next) =>
+                  setRefuelUnits(Math.min(tankSpace, Math.max(0, Math.round(next - fuel))))
+                }
               />
               <div className="refuel-summary" data-testid="refuel-summary">
                 <div>

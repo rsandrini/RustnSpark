@@ -543,8 +543,8 @@ describe('port (S10.9)', () => {
     openPortTab('Refuel');
     // The slider defaults to filling the tank; the price shown is the server's quote of that amount.
     await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
-    // The bar shows what the slider adds, and the summary spells it out.
-    expect(screen.getByText('Fuel 25 + 15 → 40 / 40')).toBeInTheDocument();
+    // The one bar shows what the slider adds, and the summary spells it out.
+    expect(screen.getByRole('slider', { name: 'How much fuel to buy' })).toHaveValue('40');
     expect(screen.getByTestId('refuel-summary')).toHaveTextContent('+15');
     fireEvent.click(screen.getByRole('button', { name: 'Buy 15' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Filled 15 units for 45 ¢.');
@@ -891,10 +891,50 @@ describe('port (S10.9)', () => {
     await renderPort();
     openPortTab('Refuel');
     const slider = await screen.findByLabelText('How much fuel to buy');
-    fireEvent.change(slider, { target: { value: '5' } });
+    // The bar holds the level the tank will reach (25 now): 30 buys 5.
+    fireEvent.change(slider, { target: { value: '30' } });
     await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('15 ¢'));
     fireEvent.click(screen.getByRole('button', { name: 'Buy 5' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Filled 5 units for 15 ¢.');
+  });
+
+  it('the refuel tab is one bar and a chart of the tanks', async () => {
+    await renderPort();
+    openPortTab('Refuel');
+    const panel = await screen.findByTestId('refuel-panel');
+    expect(panel.querySelectorAll('input[type=range]')).toHaveLength(1);
+    expect(screen.queryByLabelText('Fuel tank')).toBeNull();
+    const slider = screen.getByRole<HTMLInputElement>('slider', { name: 'How much fuel to buy' });
+    expect(slider.id).toBe('refuel-amount');
+    // never below what is in the tank, never above the tank space
+    expect(slider.min).toBe('25');
+    expect(slider.max).toBe('40');
+    expect(screen.getByTestId('tank-chart')).toHaveAccessibleName('Tanks: 25 of 40 fuel, 1 tank');
+    expect(screen.getByText('Fuel is shared by all tanks')).toBeInTheDocument();
+    expect(screen.getAllByTestId('tank-glyph')).toHaveLength(1);
+  });
+
+  it('refuel: moving the bar updates the summary, Fill goes back to the top', async () => {
+    await renderPort();
+    openPortTab('Refuel');
+    const slider = await screen.findByRole('slider', { name: 'How much fuel to buy' });
+    fireEvent.change(slider, { target: { value: '30' } });
+    await waitFor(() => expect(screen.getByTestId('refuel-summary')).toHaveTextContent('+5'));
+    expect(screen.getByTestId('tank-target')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Fill tank' }));
+    await waitFor(() => expect(slider).toHaveValue('40'));
+    expect(screen.getByTestId('refuel-summary')).toHaveTextContent('+15');
+  });
+
+  it('refuel: an amount the wallet cannot pay is marked over budget', async () => {
+    setWallet(30);
+    await renderPort();
+    openPortTab('Refuel');
+    await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('30 ¢'));
+    const slider = screen.getByRole('slider', { name: 'How much fuel to buy' });
+    fireEvent.change(slider, { target: { value: '40' } });
+    await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
+    expect(screen.getByTestId('refuel-cost')).toHaveClass('over');
   });
 
   it('a too-damaged loose part cannot be sold; discard asks first, then destroys it and sells the scrap', async () => {

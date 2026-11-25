@@ -19,6 +19,8 @@ export interface ConditionSliderProps {
   format?: (value: number) => string;
   step?: number;
   ariaValueText?: string;
+  /** Id of the range input (so a visible label can point at it). */
+  id?: string;
 }
 
 // One control to read a level and to drag its target: a track filled to the current value, a hatched
@@ -36,6 +38,7 @@ export function ConditionSlider({
   format = (amount) => `${amount}%`,
   step = 1,
   ariaValueText,
+  id,
 }: ConditionSliderProps) {
   const pct = (amount: number) => (max <= 0 ? 0 : Math.min(100, Math.max(0, (amount / max) * 100)));
   const now = pct(current);
@@ -52,6 +55,7 @@ export function ConditionSlider({
         />
         <div className="cslider-tick" aria-hidden="true" style={{ left: `${now}%` }} />
         <input
+          id={id}
           type="range"
           className="cslider-input"
           style={{ '--from': `${from}%` } as CSSProperties}
