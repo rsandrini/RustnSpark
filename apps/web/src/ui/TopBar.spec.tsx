@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { screen, within, waitFor } from '@testing-library/react';
+import { fireEvent, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../test/utils';
@@ -96,6 +96,12 @@ describe('TopBar', () => {
     expect(within(identity).queryByRole('combobox')).toBeNull();
     await userEvent.click(await screen.findByRole('button', { name: 'Engine tuning' }));
     const tuning = await screen.findByRole('group', { name: 'Engine tuning' });
+    // the intro sits behind the "?" tip
+    expect(tuning.querySelector('p.sub')).toBeNull();
+    fireEvent.focus(within(tuning).getByRole('button', { name: 'Help' }));
+    expect(within(tuning).getByRole('tooltip')).toHaveTextContent(
+      /Run the engines at their listed power/,
+    );
     const select = within(tuning).getByRole('combobox', { name: 'Energy' });
     expect(select).toHaveValue('FULL');
     await userEvent.selectOptions(select, 'BATTERY');

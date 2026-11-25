@@ -548,3 +548,54 @@ button.kit-blocker:hover {
   gap: 2px;
   text-align: center;
 }
+
+/* help tip: a small "?" that holds an explanation ------------------------------ */
+.help-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--rule-3);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+.help-tip:hover,
+.help-tip:focus-visible {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+@media (pointer: coarse) {
+  .help-tip {
+    position: relative;
+  }
+  /* the glyph stays small; the touch target grows to 44px around it */
+  .help-tip::after {
+    content: '';
+    position: absolute;
+    inset: -11px;
+  }
+}
+/* a row that puts a heading, a label or a control next to its help tip */
+.help-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.help-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+/* a lone help tip at the right end of its own line */
+.help-corner {
+  display: flex;
+  justify-content: flex-end;
+}

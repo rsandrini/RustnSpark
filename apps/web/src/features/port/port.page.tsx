@@ -58,6 +58,7 @@ import { useBridgeResize } from './bridge-resize-panel';
 import { usePrologueMode } from '../prologue/prologue-mode';
 import { PartDetail, type PartInfoData } from '../parts/part-detail';
 import { PartKindTag } from '../parts/part-kind-tag';
+import { HelpTip } from '../../ui/kit/HelpTip';
 
 // The seven tabs sit under three groups: what you buy, what the workshop does for the ship, and the
 // jobs the ship does at this port. The tab state stays one `PortTabId`; the group is derived from it.
@@ -991,7 +992,11 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               {...(repairing ? ({ inert: '' } as object) : {})}
             >
               {damaged.length === 0 && <p className="sub">{t('port.repairNoDamage')}</p>}
-              {damaged.length > 0 && <p className="sub help-text">{t('port.repairHelp')}</p>}
+              {damaged.length > 0 && (
+                <div className="help-corner">
+                  <HelpTip align="end">{t('port.repairHelp')}</HelpTip>
+                </div>
+              )}
               <div className="repair-list">
                 {damaged.map((item) => {
                   const condition = Math.round(item.condition);
@@ -1144,7 +1149,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               count: tankParts.length,
             })}
           />
-          <p className="sub help-text">{t('port.refuelHint')}</p>
+          <div className="help-corner">
+            <HelpTip align="end">{t('port.refuelHint')}</HelpTip>
+          </div>
           {noTank ? (
             <p className="sub">{t('port.refuelNoTank')}</p>
           ) : tankFull ? (
@@ -1235,7 +1242,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
       {tab === 'upgrade' && (
         <section className="stack" data-testid="upgrade" data-opening="upgrade">
-          <p className="sub help-text">{t('port.upgradeHelp')}</p>
+          <div className="help-corner">
+            <HelpTip align="end">{t('port.upgradeHelp')}</HelpTip>
+          </div>
           <details className="upgrade-rules" data-testid="upgrade-rules">
             <summary>{t('port.upgradeRulesTitle')}</summary>
             <ol>
@@ -1721,8 +1730,10 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
           <header className="action-hero">
             <ActionArt kind="mining" />
             <div>
-              <h2>{t('port.mine.title')}</h2>
-              <p className="sub help-text">{t('port.mine.what')}</p>
+              <div className="help-row">
+                <h2>{t('port.mine.title')}</h2>
+                <HelpTip>{t('port.mine.what')}</HelpTip>
+              </div>
             </div>
           </header>
           <ul className="action-tiles" data-testid="mine-tiles">

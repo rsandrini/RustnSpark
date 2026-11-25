@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { renderWithProviders } from '../../test/utils';
 import en from '../../i18n/en.json';
 import ptBR from '../../i18n/pt-BR.json';
@@ -32,11 +32,12 @@ function row(name: string): HTMLElement {
 describe('ProfileBreakdown', () => {
   it('shows name, value over reference and percent per axis, plus the help line', () => {
     renderWithProviders(<ProfileBreakdown profile={profile} detail={detail} shipClass="HAULER" />);
-    expect(
-      screen.getByText(
-        "Each bar is the ship's stat over a reference value. The type is the axis that leads.",
-      ),
-    ).toBeInTheDocument();
+    // the help line sits behind the "?" tip
+    const help =
+      "Each bar is the ship's stat over a reference value. The type is the axis that leads.";
+    expect(screen.queryByText(help)).toBeNull();
+    fireEvent.focus(screen.getByRole('button', { name: 'Help' }));
+    expect(screen.getByRole('tooltip')).toHaveTextContent(help);
     const def = row('Def');
     expect(def).toHaveTextContent('4.2 / 70');
     expect(def).toHaveTextContent('6%');

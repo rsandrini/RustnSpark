@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '../../api/client';
 import { useAuthContext } from './auth.context';
+import { HelpTip } from '../../ui/kit/HelpTip';
 
 /** "Play as guest": a pilot with no email and no password, kept by this browser. */
 export function GuestButton() {
@@ -20,15 +21,17 @@ export function GuestButton() {
 
   return (
     <div className="guest-start">
-      <button
-        type="button"
-        className="btn block"
-        disabled={start.isPending}
-        onClick={() => start.mutate()}
-      >
-        {t('guest.play')}
-      </button>
-      <p className="sub help-text">{t('guest.playHint')}</p>
+      <div className="help-row">
+        <button
+          type="button"
+          className="btn block"
+          disabled={start.isPending}
+          onClick={() => start.mutate()}
+        >
+          {t('guest.play')}
+        </button>
+        <HelpTip align="end">{t('guest.playHint')}</HelpTip>
+      </div>
       {start.isError && (
         <p className="error-text" role="alert">
           {t(errorKey)}

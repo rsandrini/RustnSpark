@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
@@ -40,7 +40,12 @@ describe('playing as a guest', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/login'] });
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Play as guest' }));
+    const play = await screen.findByRole('button', { name: 'Play as guest' });
+    // the explanation is behind the "?" tip, not a paragraph under the button
+    expect(screen.queryByText(/No email or password/)).toBeNull();
+    fireEvent.focus(screen.getByRole('button', { name: 'Help' }));
+    expect(screen.getByRole('tooltip')).toHaveTextContent(/No email or password/);
+    await userEvent.click(play);
 
     expect(
       await screen.findByRole('heading', { name: /choose your faction/i }),
@@ -106,6 +111,11 @@ describe('playing as a guest', () => {
 
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent(/clearing your browser/i);
+    // the name rules sit behind a tip; the password rule is something to act on and stays
+    expect(within(dialog).queryByText(/Leave empty to keep the name/)).toBeNull();
+    fireEvent.focus(within(dialog).getByRole('button', { name: 'Help' }));
+    expect(within(dialog).getByRole('tooltip')).toHaveTextContent(/Leave empty to keep the name/);
+    expect(within(dialog).getByText('At least 6 characters')).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Email'), 'me@example.com');
     await userEvent.type(screen.getByLabelText('Password'), 'secret1');
     await userEvent.click(screen.getByRole('button', { name: 'Save pilot' }));

@@ -8,6 +8,7 @@ import { scaleSpeed, useDisplay } from '../../ui/display';
 import { enginePercent } from '../../ui/engine-level';
 import { formatDuration } from '../../ui/duration';
 import { registerEngineTuningFlush } from './engine-tuning-sync';
+import { HelpTip } from '../../ui/kit/HelpTip';
 
 const SAVE_DELAY_MS = 500;
 const SLIDER_STEP = 0.05;
@@ -169,7 +170,9 @@ export function EngineTuning({
         <b>{t('engineTuning.title')}</b>
       </summary>
       <div className="engine-tuning-body">
-        <p className="sub">{t('engineTuning.intro')}</p>
+        <div className="help-corner">
+          <HelpTip>{t('engineTuning.intro')}</HelpTip>
+        </div>
         {!editable && <p className="notice warn">{t('engineTuning.locked')}</p>}
         <div className="chips" role="group" aria-label={t('engineTuning.presets')}>
           {PRESETS.map((preset) => (

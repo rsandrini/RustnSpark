@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { WorldLocation } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { RiskBadge } from '../../ui/RiskBadge';
+import { HelpTip } from '../../ui/kit/HelpTip';
 
 export interface PlacesDrawerProps {
   /** Every place, in the order to list them (nearest to the ship first). */
@@ -29,6 +30,7 @@ export function PlacesDrawer({ places, onSelect, onClose }: PlacesDrawerProps) {
     <section className="map-places" aria-label={t('map.places')}>
       <header className="map-panel-head">
         <h2 className="map-panel-title">{t('map.places')}</h2>
+        <HelpTip>{t('map.hint')}</HelpTip>
         <button type="button" className="btn" onClick={onClose}>
           {t('ui.close')}
         </button>
@@ -41,7 +43,6 @@ export function PlacesDrawer({ places, onSelect, onClose }: PlacesDrawerProps) {
         placeholder={t('map.search')}
         onChange={(event) => setQuery(event.target.value)}
       />
-      <p className="sub help-text">{t('map.hint')}</p>
       <ul className="map-places-list">
         {shown.map((place) => (
           <li key={place.id}>

@@ -226,6 +226,12 @@ describe('map (S10.5)', () => {
     expect(screen.queryByRole('region', { name: 'Places' })).not.toBeInTheDocument();
     fireEvent.click(await screen.findByRole('button', { name: 'Places' }));
     const list = await screen.findByRole('region', { name: 'Places' });
+    // the hint sits behind the "?" tip in the drawer's header
+    expect(within(list).queryByText('Select a place to see its missions.')).toBeNull();
+    fireEvent.focus(within(list).getByRole('button', { name: 'Help' }));
+    expect(within(list).getByRole('tooltip')).toHaveTextContent(
+      'Select a place to see its missions.',
+    );
     const buttons = within(list)
       .getAllByRole('button', { name: /\S/ })
       .filter((b) => b.classList.contains('map-place'));

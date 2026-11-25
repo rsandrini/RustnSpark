@@ -122,6 +122,24 @@ describe('port (S10.9)', () => {
     expect(await screen.findByTestId('scavenging')).toBeInTheDocument();
   });
 
+  it('the explanations of repair, refuel and upgrade sit behind a help tip; the states stay inline', async () => {
+    await renderPort();
+    const tip = (scope: HTMLElement, text: RegExp) => {
+      expect(within(scope).queryByText(text)).toBeNull();
+      fireEvent.focus(within(scope).getByRole('button', { name: 'Help' }));
+      expect(within(scope).getByRole('tooltip')).toHaveTextContent(text);
+    };
+    openPortTab('Repair');
+    tip(screen.getByTestId('repair'), /Move a slider to choose how far to repair/);
+    openPortTab('Refuel');
+    tip(
+      document.querySelector('[data-opening="refuel"]') as HTMLElement,
+      /Fuel is bought by the unit/,
+    );
+    openPortTab('Upgrade');
+    tip(screen.getByTestId('upgrade'), /Upgrade a part in place/);
+  });
+
   it('a service stop (no market, no upgrades) offers only repair and refuel', async () => {
     const stop = (await import('../../test/msw/handlers')).world();
     server.use(
@@ -587,7 +605,10 @@ describe('port (S10.9)', () => {
     openPortTab('Mining');
 
     const mining = await screen.findByTestId('mining-job');
-    expect(within(mining).getByText(/dig where it sits/)).toBeInTheDocument();
+    // the explanation sits behind the "?" tip, not on the screen
+    expect(within(mining).queryByText(/dig where it sits/)).toBeNull();
+    fireEvent.focus(within(mining).getByRole('button', { name: 'Help' }));
+    expect(within(mining).getByRole('tooltip')).toHaveTextContent(/dig where it sits/);
 
     fireEvent.click(within(mining).getByRole('button', { name: 'Send the ship mining' }));
     await waitFor(() =>

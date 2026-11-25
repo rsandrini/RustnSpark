@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { RADAR_AXES } from '../../ui/kit/ShipRadar';
 import { PartKindIcon } from '../parts/part-kind-icon';
 import type { ShipProfile, ShipProfileDetail } from '../../api/generated';
+import { HelpTip } from '../../ui/kit/HelpTip';
 
 type Axis = keyof ShipProfile;
 
@@ -51,7 +52,9 @@ export function ProfileBreakdown({
   const main = mainAxis(shipClass, profile);
   return (
     <div className="profile-breakdown" data-testid="profile-breakdown">
-      <p className="sub profile-breakdown-help">{t('hangar.profileBreakdown.help')}</p>
+      <div className="help-corner">
+        <HelpTip>{t('hangar.profileBreakdown.help')}</HelpTip>
+      </div>
       <p className="sub profile-breakdown-rule" data-testid="pb-type-rule">
         {t('hangar.profileBreakdown.typeRule')}
       </p>

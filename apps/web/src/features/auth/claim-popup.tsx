@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ApiError } from '../../api/client';
 import { Popup } from '../../ui/Popup';
 import { useAuthContext } from './auth.context';
+import { HelpTip } from '../../ui/kit/HelpTip';
 
 interface ClaimPopupProps {
   open: boolean;
@@ -75,9 +76,12 @@ export function ClaimPopup({ open, onClose }: ClaimPopupProps) {
           <p className="sub help-text">{t('register.passwordHint')}</p>
         </div>
         <div className="field">
-          <label className="lbl" htmlFor="claim-name">
-            {t('guest.claim.nameLabel')}
-          </label>
+          <div className="help-row">
+            <label className="lbl" htmlFor="claim-name">
+              {t('guest.claim.nameLabel')}
+            </label>
+            <HelpTip>{t('guest.claim.nameHint')}</HelpTip>
+          </div>
           <input
             className="input"
             id="claim-name"
@@ -89,7 +93,6 @@ export function ClaimPopup({ open, onClose }: ClaimPopupProps) {
             pattern="[A-Za-z0-9_\-]+"
             autoComplete="nickname"
           />
-          <p className="sub help-text">{t('guest.claim.nameHint')}</p>
         </div>
         <button className="btn primary block" type="submit" disabled={claim.isPending}>
           {t('guest.claim.submit')}

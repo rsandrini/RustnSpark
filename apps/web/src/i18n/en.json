@@ -1631,6 +1631,7 @@
     "offeredBy": "Offered by {{name}}"
   },
   "ui": {
+    "help": "Help",
     "dismiss": "Dismiss",
     "risk": {
       "lo": "Low risk",
