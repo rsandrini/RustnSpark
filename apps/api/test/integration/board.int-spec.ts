@@ -189,7 +189,8 @@ describe('mission board (S6.2)', () => {
     const live = await prisma.missionInstance.count({
       where: { originId: 'hedus', status: 'AVAILABLE' },
     });
-    expect(live).toBe(3);
+    // the board size is a minimum: 3 racers on a plan that needs 4 core types and 2 races end on that plan, never more
+    expect(live).toBe(6);
   }, 15000);
 
   it('fills a port with different offers: no two share template, destination and (for mining) material', async () => {
@@ -352,6 +353,121 @@ describe('mission board (S6.2)', () => {
       expect(firstSeeds.has(row.seed)).toBe(false);
     }
   });
+
+  const pathDistance = (row: { legs: unknown }): number =>
+    (row.legs as { distance: number }[]).reduce((sum, leg) => sum + leg.distance, 0);
+
+  async function expireAll(): Promise<void> {
+    await prisma.missionInstance.updateMany({
+      where: { status: 'AVAILABLE' },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    });
+  }
+
+  it.each(['ceres', 'tycho', 'gate', 'hedus', 'marsa', 'rennick', 'cair'])(
+    'every inner main port posts the four core types, two races, a short and a long offer, over 25 refreshes (%s)',
+    async (locationId) => {
+      for (let round = 0; round < 25; round += 1) {
+        const rows = await board!.getBoard(locationId, 1);
+        expect(rows.length).toBe(10);
+        const types = new Set(rows.map((row) => row.type));
+        for (const type of ['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING'] as const) {
+          expect(types.has(type)).toBe(true);
+        }
+        expect(rows.filter((row) => row.type === 'RACE').length).toBeGreaterThanOrEqual(2);
+        expect(rows.some((row) => pathDistance(row) <= 800)).toBe(true);
+        expect(rows.some((row) => pathDistance(row) >= 4800)).toBe(true);
+        await expireAll();
+      }
+    },
+    60000,
+  );
+
+  it('a local stop holds what it can: delivery, transport, mining, its one race, a short and a long offer', async () => {
+    for (let round = 0; round < 10; round += 1) {
+      const rows = await board!.getBoard('ceres_dock', 1);
+      expect(rows.length).toBe(6);
+      const types = new Set(rows.map((row) => row.type));
+      for (const type of ['DELIVERY', 'TRANSPORT', 'MINING', 'RACE'] as const) {
+        expect(types.has(type)).toBe(true);
+      }
+      expect(rows.some((row) => pathDistance(row) <= 800)).toBe(true);
+      expect(rows.some((row) => pathDistance(row) >= 4800)).toBe(true);
+      await expireAll();
+    }
+  }, 60000);
+
+  it('ziggy has no trip under 10 minutes and still posts its nearest destination as the short one', async () => {
+    for (let round = 0; round < 10; round += 1) {
+      const rows = await board!.getBoard('ziggy', 1);
+      expect(rows.length).toBeGreaterThan(0);
+      expect(Math.min(...rows.map(pathDistance))).toBe(900);
+      await expireAll();
+    }
+  }, 60000);
+
+  it('drift (pirates, no givers, no race) still fills its board', async () => {
+    const rows = await board!.getBoard('drift', 1);
+    expect(rows.length).toBe(10);
+    const types = new Set(rows.map((row) => row.type));
+    expect(types.has('RACE')).toBe(false);
+    expect(types.has('DELIVERY')).toBe(true);
+    expect(types.has('TRANSPORT')).toBe(true);
+  }, 60000);
+
+  it('a held long offer leaves the board and the refill posts another long one', async () => {
+    const first = await board!.getBoard('ceres', 1);
+    const longs = first.filter((row) => pathDistance(row) >= 4800);
+    // keep exactly one long offer, then hold it
+    await prisma.missionInstance.updateMany({
+      where: { id: { in: longs.slice(1).map((row) => row.id) } },
+      data: { status: 'EXPIRED' },
+    });
+    await board!.getBoard('ceres', 1);
+    const only = (
+      await prisma.missionInstance.findMany({ where: { originId: 'ceres', status: 'AVAILABLE' } })
+    ).filter((row) => pathDistance(row) >= 4800);
+    const target = only[0]!;
+    const player = await prisma.account.create({
+      data: {
+        email: `held-${Date.now()}@example.com`,
+        passwordHash: 'x',
+        status: 'ACTIVE',
+        player: { create: { name: `held-${Date.now()}`, locale: 'en' } },
+      },
+      include: { player: true },
+    });
+    await prisma.missionInstance.update({
+      where: { id: target.id },
+      data: { status: 'HELD', playerId: player.player!.id },
+    });
+    const rows = await board!.getBoard('ceres', 1);
+    expect(rows.length).toBe(10);
+    expect(rows.some((row) => row.id !== target.id && pathDistance(row) >= 4800)).toBe(true);
+  }, 60000);
+
+  it('a private starter offer does not count toward the mix', async () => {
+    const account = await prisma.account.create({
+      data: {
+        email: `starter-${Date.now()}@example.com`,
+        passwordHash: 'x',
+        status: 'ACTIVE',
+        player: { create: { name: `starter-${Date.now()}`, locale: 'en' } },
+      },
+      include: { player: true },
+    });
+    const created = await board!.createStarterOffer({
+      playerId: account.player!.id,
+      locationId: 'ceres',
+      types: ['DELIVERY'],
+      isTakeable: () => true,
+    });
+    expect(created).toBe(true);
+    const rows = await board!.getBoard('ceres', 1);
+    const shared = rows.filter((row) => row.privatePlayerId === null);
+    expect(shared.length).toBe(10);
+    expect(shared.some((row) => pathDistance(row) <= 800)).toBe(true);
+  }, 60000);
 
   it('returns an empty board for an unknown location', async () => {
     const rows = await board!.getBoard('no-such-location', 1);

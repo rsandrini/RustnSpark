@@ -4,15 +4,18 @@ import type { GameRules } from '../config/game-config.types.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { createRng } from '../common/rng/rng.js';
-import { giverShapeOf, pickGiver, type GiverShape } from './generator/giver.picker.js';
+import { giverShapeOf, offersAnyOf, pickGiver, type GiverShape } from './generator/giver.picker.js';
 import { missionSeed } from './generator/mission.generator.js';
 import { boardSize, maxOffersOfOneType } from './board-size.js';
 import {
   eligibleTypesAt,
   fillMission,
   MissionGenerationError,
+  reachByType,
+  referenceSeconds,
   type MissionDraft,
 } from './generator/template.filler.js';
+import { boardTarget, lengthBounds, nextSlot, type BoardSlot } from './board-composition.js';
 import { missionReward } from './mission.reward.js';
 import {
   ANYTHING_GOES,
@@ -37,6 +40,17 @@ const STARTER_ATTEMPTS = 12;
 // variety rules, the second half only under the "same type and destination" rule, then anything.
 const STRICT_ATTEMPTS = 12;
 const VARIETY_ATTEMPTS = 24;
+
+/** A trip's length at the reference ship, from the stored legs (a rescue's legs already go out and back). */
+function legsSeconds(legs: unknown, rules: GameRules): number {
+  const total = Array.isArray(legs)
+    ? legs.reduce<number>((sum, leg) => {
+        const distance = (leg as { distance?: unknown } | null)?.distance;
+        return sum + (typeof distance === 'number' ? distance : 0);
+      }, 0)
+    : 0;
+  return referenceSeconds(total, rules);
+}
 
 export type BoardMission = MissionInstance & { readonly rewardEstimate: number };
 
@@ -299,7 +313,7 @@ export class BoardService {
       where: { id: locationId },
       select: { type: true, detail: true },
     });
-    const boardMin =
+    const baseSize =
       place === null ? rules.missions.board_min_per_location : boardSize(place, rules);
 
     await tx.missionInstance.updateMany({
@@ -319,25 +333,37 @@ export class BoardService {
         privatePlayerId: null,
       },
     });
-    if (available >= boardMin) return available;
+    if (available >= baseSize) return available;
 
     const location = await tx.location.findUnique({ where: { id: locationId } });
     if (location === null) return available;
 
     const worldTables = await world();
+    // What this place can post, measured once per top-up. A test pad keeps its one offer and today's path.
+    const planned = location.type !== 'test_pad';
+    const reach = planned ? reachByType(location, worldTables, rules) : new Map();
+    const boardMin = planned ? boardTarget(baseSize, reach, rules) : baseSize;
+    const bounds = planned ? lengthBounds(reach, rules) : null;
+    if (available >= boardMin) return available;
     let epoch = await tx.missionInstance.count({ where: { originId: locationId } });
     // A board of four identical offers is not a board: a new offer must differ from the live ones
     // (see board-variety.ts). A few reseeds are tried; if the world is too small to differ, the
     // rules loosen rather than leaving the board short.
-    const live: OfferShape[] = await tx.missionInstance.findMany({
+    const liveRows = await tx.missionInstance.findMany({
       where: {
         originId: locationId,
         status: 'AVAILABLE',
         expiresAt: { gt: now },
         privatePlayerId: null,
       },
-      select: { type: true, destinationId: true, cargo: true },
+      select: { type: true, destinationId: true, cargo: true, legs: true },
     });
+    const live: (OfferShape & { type: MissionType; seconds: number })[] = liveRows.map((row) => ({
+      type: row.type,
+      destinationId: row.destinationId,
+      cargo: row.cargo,
+      seconds: legsSeconds(row.legs, rules),
+    }));
     const maxSameType = maxOffersOfOneType(boardMin, rules);
     const eligibleTypes = eligibleTypesAt(location, worldTables);
     const givers = await loadGivers(tx, location.factionId);
@@ -352,15 +378,12 @@ export class BoardService {
         select: { giverId: true },
       })
     ).map((row) => row.giverId);
+    const seconds = (draft: MissionDraft): number => legsSeconds(draft.legs, rules);
     while (available < boardMin) {
       try {
-        let draft: MissionDraft;
+        let draft: MissionDraft | undefined;
         let attempt = 0;
         for (;;) {
-          // Every type the place can post appears once before any type repeats.
-          const missingTypes = new Set(
-            [...eligibleTypes].filter((type) => !live.some((offer) => offer.type === type)),
-          );
           // A seed this place already used (a rejected attempt of an earlier top-up burned some epochs) would
           // repeat an old offer: move on to the next epoch instead.
           let seed = missionSeed({ locationId, epoch, configVersion });
@@ -373,20 +396,35 @@ export class BoardService {
               (type) => live.filter((offer) => offer.type === type).length >= maxSameType,
             ),
           );
-          const wantTypes =
-            missingTypes.size > 0 && missingTypes.size < eligibleTypes.size
-              ? missingTypes
-              : undefined;
-          const giver = pickGiver({
+          // The planner says what the board still lacks: a type, a race, a short or a long offer.
+          const slot: BoardSlot = planned
+            ? nextSlot({ reach, live, capped: avoidTypes, rules })
+            : {};
+          // Every type the slot asks for is at its cap: nothing can be posted for it.
+          if (slot.types !== undefined && [...slot.types].every((type) => avoidTypes.has(type))) {
+            draft = undefined;
+            break;
+          }
+          let giver = pickGiver({
             givers,
             locationId,
             liveGiverIds,
             boardSize: boardMin,
             eligibleTypes,
-            ...(wantTypes === undefined ? {} : { wantTypes }),
+            ...(slot.types === undefined ? {} : { wantTypes: slot.types }),
             avoidTypes,
             rng: createRng(seed).child('giver'),
           });
+          // The slot's type and length come before the giver's tastes: no giver rather than the wrong offer.
+          if (giver !== undefined && slot.types !== undefined && !offersAnyOf(giver, slot.types)) {
+            giver = undefined;
+          }
+          const lengthTarget =
+            bounds === null || slot.length === undefined
+              ? undefined
+              : slot.length === 'short'
+                ? { maxSeconds: bounds.shortMax }
+                : { minSeconds: bounds.longMin };
           draft = fillMission({
             seed,
             ...(giver === undefined ? {} : { giver }),
@@ -395,9 +433,8 @@ export class BoardService {
             world: worldTables,
             rules,
             now,
-            ...(missingTypes.size > 0 && missingTypes.size < eligibleTypes.size
-              ? { preferTypes: missingTypes }
-              : {}),
+            ...(slot.types === undefined ? {} : { preferTypes: slot.types }),
+            ...(lengthTarget === undefined ? {} : { lengthTarget }),
           });
           const strictness: Strictness =
             attempt < STRICT_ATTEMPTS
@@ -405,11 +442,24 @@ export class BoardService {
               : attempt < VARIETY_ATTEMPTS
                 ? SAME_JOB_ONLY
                 : ANYTHING_GOES;
-          if (isVariedEnough(draft, live, maxSameType, strictness)) break;
+          // The filler picks the template before the trip, so a template with nothing at the wanted length can still
+          // answer a short or long slot with the wrong one: reseed a few times, then take what comes.
+          const lengthOk =
+            lengthTarget === undefined ||
+            attempt >= STRICT_ATTEMPTS ||
+            (seconds(draft) <= (lengthTarget.maxSeconds ?? Number.POSITIVE_INFINITY) &&
+              seconds(draft) >= (lengthTarget.minSeconds ?? 0));
+          if (lengthOk && isVariedEnough(draft, live, maxSameType, strictness)) break;
           attempt += 1;
           epoch += 1;
         }
-        live.push({ type: draft.type, destinationId: draft.destinationId, cargo: draft.cargo });
+        if (draft === undefined) break;
+        live.push({
+          type: draft.type,
+          destinationId: draft.destinationId,
+          cargo: draft.cargo,
+          seconds: legsSeconds(draft.legs, rules),
+        });
         liveGiverIds.push(draft.giverId ?? null);
         await tx.missionInstance.create({ data: draft });
       } catch (error) {
