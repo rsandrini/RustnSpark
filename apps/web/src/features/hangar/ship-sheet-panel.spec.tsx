@@ -201,15 +201,34 @@ describe('ShipSheetPanel ship identity', () => {
   };
   const base = { shipClass: 'HAULER', sheet, problemCount: 0, installedCatalogs: [] };
 
-  it('shows the type with its modifier and a radar with the profile values', () => {
-    const { container } = renderWithProviders(
+  const showProfile = () => fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
+
+  it('shows the type with its modifier; the Stats view has no radar', () => {
+    renderWithProviders(<ShipSheetPanel {...base} profile={profile} profileModifier="firepower" />);
+    expect(screen.getByText('Hauler, armed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Stats' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('img', { name: 'Ship profile' })).toBeNull();
+    expect(screen.queryByTestId('profile-breakdown')).toBeNull();
+    expect(screen.getByTestId('sheet-headline')).toBeInTheDocument();
+  });
+
+  it('the Profile view shows the radar and the breakdown, and the choice is remembered', () => {
+    window.localStorage.clear();
+    const first = renderWithProviders(
       <ShipSheetPanel {...base} profile={profile} profileModifier="firepower" />,
     );
-    expect(screen.getByText('Hauler, armed')).toBeInTheDocument();
+    showProfile();
+    expect(screen.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('img', { name: 'Ship profile' })).toBeInTheDocument();
-    const cargo = screen.getByText('Cargo', { selector: 'th' }).closest('tr') as HTMLElement;
-    expect(cargo).toHaveTextContent('80%');
-    expect(container.querySelector('.kit-radar-ghost')).toBeNull();
+    expect(screen.getByTestId('profile-breakdown')).toBeInTheDocument();
+    expect(screen.queryByTestId('sheet-headline')).toBeNull();
+    expect(first.container.querySelector('.kit-radar-ghost')).toBeNull();
+    first.unmount();
+    renderWithProviders(<ShipSheetPanel {...base} profile={profile} />);
+    expect(screen.getByTestId('profile-breakdown')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Stats' }));
+    expect(screen.getByTestId('sheet-headline')).toBeInTheDocument();
+    window.localStorage.clear();
   });
 
   it('shows the bare type without a modifier', () => {
@@ -218,6 +237,7 @@ describe('ShipSheetPanel ship identity', () => {
   });
 
   it('draws the preview profile as the ghost only when it differs', () => {
+    window.localStorage.setItem('hangar.sheetView', 'profile');
     const first = renderWithProviders(
       <ShipSheetPanel {...base} profile={profile} ghostProfile={{ ...profile, cargo: 0.3 }} />,
     );
@@ -227,16 +247,22 @@ describe('ShipSheetPanel ship identity', () => {
       <ShipSheetPanel {...base} profile={profile} ghostProfile={{ ...profile }} />,
     );
     expect(second.container.querySelector('.kit-radar-ghost')).toBeNull();
+    window.localStorage.clear();
   });
 
   it('renders no radar and does not crash without a profile', () => {
     renderWithProviders(<ShipSheetPanel {...base} />);
     expect(screen.queryByRole('img', { name: 'Ship profile' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Profile' })).toBeNull();
     expect(screen.getByText('Hauler')).toBeInTheDocument();
   });
 
   it('hides the radar in the opening (compact sheet)', () => {
+    window.localStorage.setItem('hangar.sheetView', 'profile');
     renderWithProviders(<ShipSheetPanel {...base} compact profile={profile} />);
     expect(screen.queryByRole('img', { name: 'Ship profile' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Profile' })).toBeNull();
+    expect(screen.getByTestId('sheet-headline')).toBeInTheDocument();
+    window.localStorage.clear();
   });
 });

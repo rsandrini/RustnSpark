@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { scaleSpeed, sheetStat, useDisplay } from '../../ui/display';
 import { useTranslation } from 'react-i18next';
-import type { PartCatalogStats, RouteCoverage, ShipProfile, ShipSheet } from '../../api/generated';
+import type {
+  PartCatalogStats,
+  RouteCoverage,
+  ShipProfile,
+  ShipProfileDetail,
+  ShipSheet,
+} from '../../api/generated';
 import { ShipRadar, RADAR_AXES } from '../../ui/kit/ShipRadar';
+import { ProfileBreakdown } from './profile-breakdown';
 import { conditionTone } from '../../ui/Gauge';
 import { enginePercent } from '../../ui/engine-level';
 
@@ -14,6 +21,8 @@ export interface ShipSheetPanelProps {
   profile?: ShipProfile | undefined;
   /** The ship's strong second axis ("Hauler, armed"), or null. */
   profileModifier?: keyof ShipProfile | null | undefined;
+  /** The raw value and reference behind each axis, for the profile breakdown. */
+  profileDetail?: ShipProfileDetail | undefined;
   /** The profile of a layout being considered (a preview): drawn as a dashed ghost when it differs. */
   ghostProfile?: ShipProfile | undefined;
   /** Shown instead of the class's own name (the opening's ship has no class yet). */
@@ -124,11 +133,23 @@ function differs(a: ShipProfile, b: ShipProfile): boolean {
   return RADAR_AXES.some(({ key }) => a[key] !== b[key]);
 }
 
+const SHEET_VIEW_KEY = 'hangar.sheetView';
+type SheetView = 'stats' | 'profile';
+
+function readSheetView(): SheetView {
+  try {
+    return window.localStorage.getItem(SHEET_VIEW_KEY) === 'profile' ? 'profile' : 'stats';
+  } catch {
+    return 'stats';
+  }
+}
+
 export function ShipSheetPanel({
   compact = false,
   shipClass,
   profile,
   profileModifier,
+  profileDetail,
   ghostProfile,
   classLabel,
   shipName,
@@ -148,6 +169,15 @@ export function ShipSheetPanel({
   const display = useDisplay();
   // "Show all stats" replaces the headline tiles with the full list, and closing it brings them back.
   const [showAll, setShowAll] = useState(false);
+  const [view, setViewState] = useState<SheetView>(readSheetView);
+  const setView = (next: SheetView) => {
+    setViewState(next);
+    try {
+      window.localStorage.setItem(SHEET_VIEW_KEY, next);
+    } catch {
+      // private mode: the choice just is not remembered
+    }
+  };
   const number = (value: number) =>
     new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
   // Mobility is shown on the admin's display scale (default x10), one decimal at most.
@@ -170,10 +200,36 @@ export function ShipSheetPanel({
     profile !== undefined && ghostProfile !== undefined && differs(profile, ghostProfile)
       ? ghostProfile
       : undefined;
-  const radar =
-    profile !== undefined && !compact ? (
-      <div className="sheet-radar">
-        <ShipRadar values={profile} ghost={ghost} label={t('hangar.profile.title')} />
+  const hasProfile = profile !== undefined && !compact;
+  const profileView = hasProfile && view === 'profile';
+  const viewToggle = hasProfile ? (
+    <div className="segment sheet-view" role="group" aria-label={t('hangar.sheetView.label')}>
+      {(['stats', 'profile'] as const).map((name) => (
+        <button
+          key={name}
+          type="button"
+          aria-pressed={view === name}
+          className={view === name ? 'seg on' : 'seg'}
+          onClick={() => setView(name)}
+        >
+          {t(`hangar.sheetView.${name}`)}
+        </button>
+      ))}
+    </div>
+  ) : null;
+  const profilePane =
+    profileView && profile !== undefined ? (
+      <div className="sheet-profile">
+        <div className="sheet-radar">
+          <ShipRadar values={profile} ghost={ghost} size={220} label={t('hangar.profile.title')} />
+        </div>
+        <ProfileBreakdown
+          profile={profile}
+          detail={profileDetail}
+          ghost={ghost}
+          shipClass={shipClass}
+          profileModifier={profileModifier}
+        />
       </div>
     ) : null;
 
@@ -356,9 +412,10 @@ export function ShipSheetPanel({
           ? t('hangar.summary.problemCount', { count: problemCount })
           : t('hangar.summary.ready')}
       </div>
-      {!showAll && (
+      {viewToggle}
+      {profilePane}
+      {!profileView && !showAll && (
         <div className="sheet-top">
-          {radar}
           <div className="sheet-headline" data-testid="sheet-headline">
             <div
               className="sheet-headline-tile sheet-headline-structure"
@@ -445,7 +502,7 @@ export function ShipSheetPanel({
           </div>
         </div>
       )}
-      {!compact && (
+      {!compact && !profileView && (
         <details className="sheet-details" open={showAll}>
           <summary
             onClick={(event) => {

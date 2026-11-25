@@ -1479,6 +1479,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   shipClass={shipClass}
                   profile={preview?.profile ?? ship?.profile}
                   profileModifier={preview ? preview.profileModifier : ship?.profileModifier}
+                  profileDetail={preview ? preview.profileDetail : ship?.profileDetail}
                   ghostProfile={preview ? ship?.profile : undefined}
                   // the opening's ship is a blank start: no class, and no renaming it yet
                   classLabel={opening ? t('prologue.shipClassNone') : undefined}

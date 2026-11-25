@@ -834,6 +834,17 @@
       "parts": "Peças ({{count}})",
       "more": "Mais",
       "close": "Fechar"
+    },
+    "sheetView": {
+      "stats": "Atributos",
+      "profile": "Perfil",
+      "label": "Visão da ficha"
+    },
+    "profileBreakdown": {
+      "main": "principal",
+      "second": "secundário",
+      "help": "Cada barra é o atributo da nave sobre um valor de referência. O tipo é o eixo que lidera.",
+      "row": "{{axis}}: {{percent}}% da referência"
     }
   },
   "home": {

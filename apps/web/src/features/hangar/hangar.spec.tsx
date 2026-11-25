@@ -770,11 +770,15 @@ describe('hangar (S10.4)', () => {
       const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
       // No preview yet: the saved ship alone, no ghost.
       await screen.findByRole('heading', { name: 'My Ship' });
+      fireEvent.click(await screen.findByRole('button', { name: 'Profile' }));
       expect(container.querySelector('.kit-radar-ghost')).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Stats' }));
       fireEvent.click(await screen.findByRole('button', { name: /^cargo/i }));
       fireEvent.click(cell(container, 4, 0));
       await waitFor(() => expect(screen.getByText('999')).toBeInTheDocument(), { timeout: 3000 });
+      fireEvent.click(screen.getByRole('button', { name: 'Profile' }));
       expect(container.querySelector('.kit-radar-ghost') !== null).toBe(ghost);
+      window.localStorage.clear();
     },
   );
 
