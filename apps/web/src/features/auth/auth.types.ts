@@ -16,6 +16,8 @@ export interface UserProfile {
   prologueOutcome?: 'played' | 'skipped' | null;
   /** Started as a guest: the account menu offers to save the pilot with an email and password. */
   isGuest?: boolean;
+  /** The public handle of the pilot's own card (/pilots/:publicId); absent from an older server. */
+  publicId?: string;
 }
 
 export interface LoginCredentials {

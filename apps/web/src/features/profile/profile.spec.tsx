@@ -124,4 +124,59 @@ describe('profile (S10.9)', () => {
     );
     expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument();
   });
+
+  describe('the pilot card', () => {
+    const withPublicId = () =>
+      http.get('/v1/players/me', () =>
+        HttpResponse.json(
+          {
+            id: 'player-1',
+            name: 'Test Pilot',
+            credits: economyState.wallet,
+            role: 'PLAYER',
+            locale: 'en',
+            factionId: 'luna',
+            publicId: 'a1b2c3d4e5f6',
+          },
+          { status: 200 },
+        ),
+      );
+
+    it('opens with the pilot own card above the stats', async () => {
+      server.use(withPublicId());
+      renderWithRouter(routes, { initialEntries: ['/profile'] });
+      expect(await screen.findByText('LUN-TestPilot-Wren')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Test Pilot' })).toBeInTheDocument();
+      expect(screen.getByTestId('wallet')).toHaveTextContent('4,820 ¢');
+      expect(await screen.findByText('Mission accomplished')).toBeInTheDocument();
+    });
+
+    it('makes no card request without a public id', async () => {
+      let calls = 0;
+      server.use(
+        http.get('/v1/players/profile/:publicId', () => {
+          calls += 1;
+          return HttpResponse.json({}, { status: 200 });
+        }),
+      );
+      renderWithRouter(routes, { initialEntries: ['/profile'] });
+      expect(await screen.findByText('Mission accomplished')).toBeInTheDocument();
+      expect(calls).toBe(0);
+      expect(screen.queryByText('LUN-TestPilot-Wren')).toBeNull();
+    });
+
+    it('leaves the page intact when the card request fails', async () => {
+      server.use(
+        withPublicId(),
+        http.get('/v1/players/profile/:publicId', () =>
+          HttpResponse.json({ statusCode: 500 }, { status: 500 }),
+        ),
+      );
+      renderWithRouter(routes, { initialEntries: ['/profile'] });
+      expect(await screen.findByText('Mission accomplished')).toBeInTheDocument();
+      expect(screen.getByTestId('wallet')).toHaveTextContent('4,820 ¢');
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.queryByText('LUN-TestPilot-Wren')).toBeNull();
+    });
+  });
 });

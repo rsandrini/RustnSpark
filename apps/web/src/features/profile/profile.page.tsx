@@ -3,11 +3,16 @@ import { Link } from 'react-router';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
-import type { MyStatsResponse, ReportListResponse } from '../../api/generated';
+import type {
+  MyStatsResponse,
+  PublicProfileResponse,
+  ReportListResponse,
+} from '../../api/generated';
 import { useAuthContext } from '../auth/auth.context';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { PageTitle } from '../../ui/PageTitle';
 import { MyStats } from './my-stats';
+import { PilotCard } from './pilot-card';
 
 const SEPARATOR = ' · ';
 // The history loads the newest runs first, this many at a time.
@@ -46,6 +51,18 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
     queryFn: () => client.get<MyStatsResponse>('/v1/players/me/stats'),
   });
 
+  // The pilot's own public card (same key as the public page, so the cache is shared). A missing
+  // id, a loading or a failed request just leaves the page as it was.
+  const publicId = user?.publicId;
+  const cardQuery = useQuery({
+    queryKey: ['public-profile', publicId],
+    queryFn: () =>
+      client.get<PublicProfileResponse>(
+        `/v1/players/profile/${encodeURIComponent(publicId ?? '')}`,
+      ),
+    enabled: publicId !== undefined,
+  });
+
   const reports = reportsQuery.data?.pages.flatMap((page) => page.items) ?? [];
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const dateFormat = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' });
@@ -63,7 +80,11 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
         }
       />
 
-      {user?.factionId != null && <FactionBadge factionId={user.factionId} />}
+      {cardQuery.data !== undefined && <PilotCard profile={cardQuery.data} />}
+
+      {cardQuery.data === undefined && user?.factionId != null && (
+        <FactionBadge factionId={user.factionId} />
+      )}
 
       {statsQuery.data !== undefined && <MyStats stats={statsQuery.data} />}
 
