@@ -139,7 +139,6 @@
       "split": "Conector dividido",
       "universal": "Conector universal"
     },
-    "portsLabel": "Portas desta peça",
     "fit": {
       "full": "Todas as portas combinam com portas livres da sua nave",
       "partial": "{{matching}} de {{total}} portas combinam com portas livres da sua nave",
@@ -837,7 +836,18 @@
     "profileBreakdown": {
       "main": "principal",
       "second": "secundário",
-      "help": "Cada barra é o atributo da nave sobre um valor de referência. O tipo é o eixo que lidera."
+      "help": "Cada barra é o atributo da nave sobre um valor de referência. O tipo é o eixo que lidera.",
+      "typeRule": "O tipo vem de carga, passageiros, poder de fogo ou defesa, mineração e velocidade. O alcance nunca dá nome ao tipo, e a velocidade só conta quando é alta.",
+      "warshipNote": "A Belonave usa o seu eixo de combate mais alto",
+      "drives": {
+        "cargo": "espaço do porão de carga",
+        "passengers": "assentos, limitados pelo suporte de vida",
+        "firepower": "armas",
+        "defense": "escudo + blindagem (a blindagem conta x o fator de blindagem): instale escudo ou blindagem para subir",
+        "mobility": "empuxo dos motores sobre a massa total: motores mais leves ou mais fortes",
+        "range": "tanque de combustível sobre o consumo",
+        "mining": "equipamentos de mineração"
+      }
     }
   },
   "home": {

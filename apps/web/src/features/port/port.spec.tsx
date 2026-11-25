@@ -910,7 +910,9 @@ describe('port (S10.9)', () => {
     // never below what is in the tank, never above the tank space
     expect(slider.min).toBe('25');
     expect(slider.max).toBe('40');
-    expect(screen.getByTestId('tank-chart')).toHaveAccessibleName('Tanks: 25 of 40 fuel, 1 tank');
+    expect(screen.getByTestId('tank-chart')).toHaveAccessibleName(
+      'Tanks: 25 of 40 fuel, 1 tank. Fuel is shared by all tanks',
+    );
     expect(screen.getByText('Fuel is shared by all tanks')).toBeInTheDocument();
     expect(screen.getAllByTestId('tank-glyph')).toHaveLength(1);
   });

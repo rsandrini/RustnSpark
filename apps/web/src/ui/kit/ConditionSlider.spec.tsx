@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ConditionSlider, thumbCentre } from './ConditionSlider';
 
 const LABEL = 'Hull repair';
@@ -83,5 +85,18 @@ describe('ConditionSlider', () => {
   it('can be disabled', () => {
     render(<ConditionSlider {...props} disabled />);
     expect(screen.getByRole('slider')).toBeDisabled();
+  });
+
+  it('has a focus ring on the track (not clipped) and a thumb ring', () => {
+    const css = readFileSync(join(__dirname, '../../styles/kit.css'), 'utf8');
+    expect(css).toMatch(/\.cslider-track:focus-within\s*\{[^}]*outline:\s*2px solid/);
+    expect(css).toMatch(/\.cslider-input:focus-visible::-webkit-slider-thumb\s*\{[^}]*box-shadow/);
+  });
+
+  it('clamps the usable span so a part at 99.5% keeps a non-negative width', () => {
+    const css = readFileSync(join(__dirname, '../../styles/kit.css'), 'utf8');
+    expect(css).toMatch(/--span:\s*max\(0px,/);
+    render(<ConditionSlider {...props} current={99.5} value={99.5} />);
+    expect(screen.getByRole<HTMLInputElement>('slider').min).toBe('99.5');
   });
 });

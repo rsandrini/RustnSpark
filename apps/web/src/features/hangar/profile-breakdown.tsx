@@ -52,6 +52,9 @@ export function ProfileBreakdown({
   return (
     <div className="profile-breakdown" data-testid="profile-breakdown">
       <p className="sub profile-breakdown-help">{t('hangar.profileBreakdown.help')}</p>
+      <p className="sub profile-breakdown-rule" data-testid="pb-type-rule">
+        {t('hangar.profileBreakdown.typeRule')}
+      </p>
       <ul className="pb-list">
         {RADAR_AXES.map(({ key, kind }) => {
           const percent = pct(profile[key]);
@@ -67,12 +70,27 @@ export function ProfileBreakdown({
               </span>
               <span className="pb-marks">
                 {main === key && (
-                  <b className="pb-mark pb-main">{t('hangar.profileBreakdown.main')}</b>
+                  <b
+                    className="pb-mark pb-main"
+                    title={
+                      shipClass === 'WARSHIP' ? t('hangar.profileBreakdown.warshipNote') : undefined
+                    }
+                  >
+                    {t('hangar.profileBreakdown.main')}
+                  </b>
                 )}
                 {profileModifier === key && (
                   <b className="pb-mark pb-second">{t('hangar.profileBreakdown.second')}</b>
                 )}
               </span>
+              <small className="pb-hint">
+                {t(`hangar.profileBreakdown.drives.${key}`)}
+                {main === key && shipClass === 'WARSHIP' && (
+                  <em className="pb-note" data-testid="pb-warship-note">
+                    {t('hangar.profileBreakdown.warshipNote')}
+                  </em>
+                )}
+              </small>
               <span className="pb-bar" aria-hidden="true">
                 <span className="pb-fill" style={{ width: `${percent}%` }} />
               </span>

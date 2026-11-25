@@ -41,7 +41,12 @@ export function TankChart({
   const level = fraction(fuel, capacity);
   const targetLevel = target !== undefined && target > fuel ? fraction(target, capacity) : null;
   return (
-    <figure className="tank-chart" data-testid="tank-chart" role="img" aria-label={label}>
+    <figure
+      className="tank-chart"
+      data-testid="tank-chart"
+      role="img"
+      aria-label={`${label}. ${caption}`}
+    >
       <div className="tank-chart-row" aria-hidden="true">
         {tanks.map((tank) => {
           const height = Math.max(MIN_HEIGHT, (tank.capacity / largest) * MAX_HEIGHT);

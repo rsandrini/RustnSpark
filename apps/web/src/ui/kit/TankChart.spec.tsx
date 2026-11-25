@@ -57,6 +57,10 @@ describe('TankChart', () => {
 
   it('is an image with the summary as its name', () => {
     render(<TankChart {...base} tanks={three} label="Tanks: 45 of 120 fuel, 3 tanks" />);
-    expect(screen.getByRole('img', { name: 'Tanks: 45 of 120 fuel, 3 tanks' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {
+        name: 'Tanks: 45 of 120 fuel, 3 tanks. Fuel is shared by all tanks',
+      }),
+    ).toBeInTheDocument();
   });
 });

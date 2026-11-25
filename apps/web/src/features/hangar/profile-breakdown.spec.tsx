@@ -108,4 +108,27 @@ describe('ProfileBreakdown', () => {
       expect(ptBR.hangar.sheetView[k]).toBeTruthy();
     }
   });
+
+  it('explains what feeds each axis, in both locales', () => {
+    const axes = ['cargo', 'passengers', 'firepower', 'defense', 'mobility', 'range', 'mining'];
+    for (const tree of [en, ptBR]) {
+      const drives = (
+        tree as unknown as { hangar: { profileBreakdown: { drives: Record<string, string> } } }
+      ).hangar.profileBreakdown.drives;
+      for (const axis of axes) expect(drives[axis]).toBeTruthy();
+    }
+    renderWithProviders(<ProfileBreakdown profile={profile} detail={detail} shipClass="HAULER" />);
+    const def = row('Def');
+    expect(within(def).getByText(/shield \+ armor/)).toBeInTheDocument();
+    expect(within(row('Cargo')).getByText('cargo hold space')).toBeInTheDocument();
+    expect(screen.getAllByTestId('pb-type-rule')).toHaveLength(1);
+    expect(screen.getByTestId('pb-type-rule')).toHaveTextContent('Range never names a type');
+  });
+
+  it('notes on a warship main axis that it takes the higher combat axis', () => {
+    renderWithProviders(<ProfileBreakdown profile={profile} detail={detail} shipClass="WARSHIP" />);
+    const note = screen.getByTestId('pb-warship-note');
+    expect(note).toHaveTextContent('Warship takes its higher combat axis');
+    expect(row('Fire')).toContainElement(note);
+  });
 });

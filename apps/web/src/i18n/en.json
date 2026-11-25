@@ -139,7 +139,6 @@
       "split": "Split connector",
       "universal": "Universal connector"
     },
-    "portsLabel": "Ports of this part",
     "fit": {
       "full": "All ports match free ports on your ship",
       "partial": "{{matching}} of {{total}} ports match free ports on your ship",
@@ -837,7 +836,18 @@
     "profileBreakdown": {
       "main": "main",
       "second": "second",
-      "help": "Each bar is the ship's stat over a reference value. The type is the axis that leads."
+      "help": "Each bar is the ship's stat over a reference value. The type is the axis that leads.",
+      "typeRule": "The type comes from cargo, passengers, firepower or defense, mining and speed. Range never names a type, and speed only counts when it is high.",
+      "warshipNote": "Warship takes its higher combat axis",
+      "drives": {
+        "cargo": "cargo hold space",
+        "passengers": "seats, limited by life support",
+        "firepower": "weapons",
+        "defense": "shield + armor (armor counts x the armor factor): fit a shield or armor to raise it",
+        "mobility": "engine thrust over total mass: lighter or stronger engines",
+        "range": "fuel tank over fuel burn",
+        "mining": "mining rigs"
+      }
     }
   },
   "home": {
