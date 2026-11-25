@@ -71,6 +71,14 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 - Decided 2026-11-24: add the Racer type, rename Multirole to Balanced, 7 axes (cargo, passengers, firepower, defense, mobility, range, mining), add a passenger-capacity stat (`pax`) to the cabin parts and the sheet.
 - Plan (tasks and what is still open: axis reference values, `pax` numbers): `docs/superpowers/plans/2026-11-24-ship-identity-and-spider-chart.md`.
   Best built with UI slice 1.5 (type subtitle and Needs chips).
+- Built on develop (2026-11-25) and unit-tested (api unit 1778 passing, web 1203 passing, tsc, lint, prettier and build clean), NOT checked in a browser yet (the owner reviews later): types by main point incl. Racer and Balanced, the 7-axis spider chart on the ship sheet and a small one on the pilot card, `pax` on cabin parts and the sheet. Reference values: `docs/balance/ship-profile-references.md`.
+- Deploy notes for the owner:
+  - Run the two migrations: `20261124120000_part_pax_and_life_capacity` and `20261124130000_ship_profile_replaces_ship_class` (the second replaces the `ship_class.*` config keys with `ship_profile.*`).
+  - Rebuild the api AND the worker (missions resolve in the worker).
+  - Review the new admin knobs: `ship_profile.*` (the refs, `min_total`, `min_share`, `lead_margin`, `second_share`, `second_min`, `racer_min`), `missions.transport_passengers_min/max`, `missions.transport_pay_per_extra_passenger`, and the part editor fields `pax` and `lifeCap`.
+  - Average transport pay is up about 25% (head count 1-6, +10% per extra passenger). The sim re-check is still needed; it was not rebalanced.
+  - The integration specs (`dispatch.int-spec`, `contract.int-spec`, `parts-ships.int-spec`, `profile-stats.int-spec`) and the migration SQL were NEVER run (they need the docker stack): run them before deploying.
+  - `apps/api/sim-data/snapshot.json` still holds the old ship_class rules: re-run the snapshot export when refreshing the sims.
 
 ## 7. The map badge shows the pilots anchored at a place, not the missions (owner, 2026-11-24)
 
@@ -95,6 +103,7 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
   (`pax`, `lifeCap` on cabin and life-support parts, seed + MIGRATION for prod + admin editor), the prologue sandbox (its passenger
   job), the sim for pay per person. Existing accepted/flying TRANSPORT missions must keep working (default head count when none is stored).
 - Plan: with item 6's task A0 (the `pax` stat); see `docs/superpowers/plans/2026-11-24-ship-identity-and-spider-chart.md`.
+- Built on develop (2026-11-25) and unit-tested, NOT checked in a browser yet (the owner reviews later): `pax` and `lifeCap` on the parts (seed, migration, admin editor), a head count on TRANSPORT missions (`missions.transport_passengers_min/max`, default when none is stored), the checker needing `pax >= people` and `lifeCap >= people` with blocker chips in en and pt-BR, pay +10% per extra passenger. Deploy notes: see item 6.
 
 ## 9. Hard mode: start with no flag, no money, no ship (owner, 2026-11-24) - *needs a plan*
 

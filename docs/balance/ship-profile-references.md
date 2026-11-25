@@ -56,3 +56,9 @@ Results from the seed catalog, derived by `ship-class-seed.spec.ts` through the 
 | 8 Uncommon cargo bays | 0.436 | 0 | 0 | 0.013 | Hauler |
 | Rare 4 cargo bays + 3 large armor | 0.291 | 0.325 | 0 | 0.017 | Balanced (shares 0.48 / 0.52) |
 | Rare 6 cargo bays + 2 large shields | 0.436 | 0.221 | 0 | 0.022 | Hauler (defense) |
+
+## Passenger transport knobs
+
+Related admin knobs (not part of the profile): `missions.transport_passengers_min` and `missions.transport_passengers_max` (head count, default 1 to 6),
+`missions.transport_pay_per_extra_passenger` (default +10% per extra person). Part fields `pax` (cabin seats) and `lifeCap` (people a life-support part keeps alive)
+feed the passengers axis and the people-transport check. Average transport pay rises about 25%; not re-simulated.
