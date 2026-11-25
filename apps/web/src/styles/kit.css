@@ -382,3 +382,108 @@ button.kit-blocker:hover {
     stroke-width: 0.36;
   }
 }
+
+/* ---- ConditionSlider: the current level and its target in one bar -------------------------- */
+.cslider {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.cslider-track {
+  position: relative;
+  height: 20px;
+  border-radius: var(--radius);
+  background: var(--paper-3, var(--rule));
+  border: 1px solid var(--rule);
+  overflow: hidden;
+}
+.cslider-fill,
+.cslider-add {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+.cslider-fill {
+  background: var(--good);
+}
+.cslider.warn .cslider-fill {
+  background: var(--warn);
+}
+.cslider.bad .cslider-fill {
+  background: var(--bad);
+}
+.cslider.fuel .cslider-fill {
+  background: var(--brass);
+}
+.cslider-add {
+  background: repeating-linear-gradient(
+    45deg,
+    rgb(255 255 255 / 0.5) 0 4px,
+    rgb(255 255 255 / 0.15) 4px 8px
+  );
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.4);
+}
+.cslider-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.cslider-input {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--from, 0%);
+  width: calc(100% - var(--from, 0%));
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+.cslider-input::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 100%;
+}
+.cslider-input::-moz-range-track {
+  background: transparent;
+  height: 100%;
+}
+.cslider-input::-webkit-slider-thumb {
+  appearance: none;
+  width: 8px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.cslider-input::-moz-range-thumb {
+  width: 8px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.cslider-input:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+.cslider.disabled {
+  opacity: 0.5;
+}
+.cslider.disabled .cslider-input {
+  cursor: not-allowed;
+}
+.cslider-caps {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}

@@ -277,10 +277,7 @@
 }
 .repair-row {
   display: grid;
-  grid-template-columns: minmax(140px, 1.1fr) minmax(150px, 2fr) minmax(110px, 1fr) minmax(
-      130px,
-      0.9fr
-    );
+  grid-template-columns: minmax(140px, 1.1fr) minmax(200px, 3fr) minmax(130px, 0.9fr);
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
@@ -300,9 +297,6 @@
   letter-spacing: var(--tracking-micro);
   text-transform: uppercase;
   color: var(--muted);
-}
-.repair-row input[type='range'] {
-  width: 100%;
 }
 .repair-row .rcost {
   text-align: right;

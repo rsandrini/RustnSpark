@@ -239,6 +239,22 @@ describe('port (S10.9)', () => {
     expect(sliders.filter((slider) => (slider as HTMLInputElement).disabled)).toHaveLength(1);
   });
 
+  it('the repair tab has one bar per damaged part: no separate gauge beside the slider', async () => {
+    await renderPort();
+
+    openPortTab('Repair');
+    const sliders = repairSliders();
+    expect(sliders).toHaveLength(6);
+    const rows = document.querySelectorAll('[data-testid="repair"] .repair-row');
+    expect(rows).toHaveLength(6);
+    for (const row of rows) {
+      expect(row.querySelectorAll('input[type=range]')).toHaveLength(1);
+      expect(row.querySelector('[role=progressbar]')).toBeNull();
+      expect(row.querySelector('.gauge')).toBeNull();
+    }
+    expect(sliders[0]!.getAttribute('aria-label')).toMatch(/Repair to 100%$/);
+  });
+
   it('repair defaults to a full repair, prices each part and the total, then charges once', async () => {
     await renderPort();
 

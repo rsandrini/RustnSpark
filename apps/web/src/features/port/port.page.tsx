@@ -37,6 +37,7 @@ import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
 import { FuelBlock } from '../board/fuel-block';
 import { Gauge, conditionTone } from '../../ui/Gauge';
+import { ConditionSlider } from '../../ui/kit/ConditionSlider';
 import { ActionArt } from '../../ui/ActionArt';
 import { PartThumb } from '../../ui/PartThumb';
 import { PlaceBanner } from '../../ui/PlaceArt';
@@ -1002,31 +1003,15 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                           )}
                         </small>
                       </div>
-                      <Gauge
-                        value={condition}
-                        max={100}
-                        planned={changed ? target : undefined}
-                        tone={conditionTone(condition)}
-                        ariaLabel={`${rowName}: ${t('port.conditionNow', { value: condition })}`}
-                        label={
-                          changed
-                            ? t('port.conditionToTarget', { from: condition, to: target })
-                            : t('port.conditionNow', { value: condition })
-                        }
-                      />
-                      <input
-                        type="range"
-                        min={floor}
-                        max={100}
-                        step={1}
-                        disabled={item.broken}
+                      <ConditionSlider
+                        current={floor}
                         value={target}
-                        aria-label={`${rowName} ${t('port.repairSlider', { value: target })}`}
-                        onChange={(event) =>
-                          setRepairTargets((current) => ({
-                            ...current,
-                            [item.id]: Number(event.target.value),
-                          }))
+                        tone={conditionTone(condition)}
+                        disabled={item.broken}
+                        label={`${rowName} ${t('port.repairSlider', { value: target })}`}
+                        format={(amount) => t('port.conditionNow', { value: amount })}
+                        onChange={(next) =>
+                          setRepairTargets((current) => ({ ...current, [item.id]: next }))
                         }
                       />
                       <div
