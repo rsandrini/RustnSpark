@@ -75,12 +75,13 @@ export function MissionResultPopup({
       <CountUp value={creditsValue} from={0} animateOnMount format={creditsFormat} />
     );
   // one buzz when the card opens: a reward is a success, a loss a warning (no pay, no buzz)
+  const buzzed = useRef(false);
   useEffect(() => {
+    if (buzzed.current) return;
+    buzzed.current = true;
     if (tone === 'bad' || creditsValue < 0) haptic('warn');
     else if (creditsValue > 0) haptic('success');
-    // once per card
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tone, creditsValue]);
   useEffect(() => {
     noteResultCardShown();
     button.current?.focus();

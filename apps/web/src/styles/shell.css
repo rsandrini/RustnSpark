@@ -152,6 +152,13 @@
   color: var(--ink-2);
 }
 
+.shell-menu-note {
+  display: block;
+  padding: 0 12px 6px;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
 .shell-menu-name {
   padding: 8px 10px;
 }

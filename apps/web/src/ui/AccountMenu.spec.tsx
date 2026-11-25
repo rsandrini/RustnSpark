@@ -50,9 +50,10 @@ describe('AccountMenu wallet', () => {
   it('counts to a new credit value, keeping the accessible name, the pulse and the delta', () => {
     const view = render(tree());
     const wallet = screen.getByTestId('topbar-wallet');
-    expect(wallet).toHaveAttribute('aria-label', 'Credits: 100 ¢');
+    expect(wallet).not.toHaveAttribute('aria-label');
+    expect(wallet.querySelector('.sr-only')).toHaveTextContent('Credits: 100 ¢');
     expect(wallet).toHaveAttribute('data-value', '100');
-    expect(wallet).toHaveTextContent(/^100 ¢$/);
+    expect(wallet).toHaveTextContent(/^Credits: 100 ¢100 ¢$/);
     auth.credits = 1100;
     view.rerender(tree());
     expect(screen.getByTestId('topbar-wallet')).toHaveClass('pulse');
@@ -63,7 +64,7 @@ describe('AccountMenu wallet', () => {
     });
     // the final amount is exposed at once, even mid-count
     expect(wallet).toHaveAttribute('data-value', '1100');
-    expect(wallet).toHaveAttribute('aria-label', 'Credits: 1,100 ¢');
+    expect(wallet.querySelector('.sr-only')).toHaveTextContent('Credits: 1,100 ¢');
     const mid = Number(animated.textContent?.replace(/\D/g, ''));
     expect(mid).toBeGreaterThan(100);
     expect(mid).toBeLessThan(1100);
@@ -71,8 +72,8 @@ describe('AccountMenu wallet', () => {
       vi.advanceTimersByTime(400);
     });
     expect(animated).toHaveTextContent('1,100 ¢');
-    expect(wallet).toHaveAttribute('aria-label', 'Credits: 1,100 ¢');
-    expect(wallet).toHaveTextContent(/^1,100 ¢$/);
+    expect(wallet.querySelector('.sr-only')).toHaveTextContent('Credits: 1,100 ¢');
+    expect(wallet).toHaveTextContent(/^Credits: 1,100 ¢1,100 ¢$/);
   });
 });
 
@@ -84,10 +85,12 @@ describe('AccountMenu haptics toggle', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Account menu' }));
     const toggle = screen.getByTestId('menu-haptics');
     expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    expect(toggle).toHaveTextContent('Haptics: on');
+    expect(screen.getByRole('button', { name: 'Haptics' })).toBe(toggle);
+    expect(toggle.getAttribute('aria-describedby')).toBe('menu-haptics-help');
+    expect(document.getElementById('menu-haptics-help')).toHaveTextContent(/short buzz/);
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
-    expect(toggle).toHaveTextContent('Haptics: off');
+    expect(screen.getByRole('button', { name: 'Haptics' })).toBe(toggle);
     expect(localStorage.getItem('rs.haptics')).toBe('off');
   });
 });

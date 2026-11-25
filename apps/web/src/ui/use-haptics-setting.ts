@@ -48,7 +48,13 @@ function setHaptics(on: boolean) {
 
 /** Whether haptics are on right now (read synchronously by `haptic()`). */
 export function hapticsEnabled(): boolean {
-  return listeners.size > 0 ? snapshot : read();
+  // Storage is the truth across tabs and visits; when it cannot be read the session's own value stands.
+  try {
+    emit(localStorage.getItem(KEY) !== 'off');
+  } catch {
+    // keep the snapshot
+  }
+  return snapshot;
 }
 
 /** The pilot's haptics choice (default on), kept in this browser. */

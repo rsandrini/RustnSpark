@@ -73,6 +73,8 @@ export function AccountMenu() {
       `${amount > 0 ? '+' : '\u2212'}${new Intl.NumberFormat(i18n.language).format(Math.abs(amount))} ¢`,
   );
 
+  const walletLabel = `${t('port.wallet')}: ${new Intl.NumberFormat(i18n.language).format(user?.credits ?? 0)} ¢`;
+
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (event: KeyboardEvent) => {
@@ -95,8 +97,8 @@ export function AccountMenu() {
         className={`wallet-chip${walletAnswer.pulse ? ' pulse' : ''}`}
         data-testid="topbar-wallet"
         data-value={user?.credits ?? 0}
-        aria-label={`${t('port.wallet')}: ${new Intl.NumberFormat(i18n.language).format(user?.credits ?? 0)} ¢`}
       >
+        <span className="sr-only">{walletLabel}</span>
         <CountUp value={user?.credits ?? 0} unit="¢" srFinal={false} />
       </span>
       {walletAnswer.delta !== null && (
@@ -220,12 +222,15 @@ export function AccountMenu() {
             type="button"
             className="shell-menu-item"
             aria-pressed={hapticsOn}
-            title={t('account.hapticsHelp')}
+            aria-describedby="menu-haptics-help"
             data-testid="menu-haptics"
             onClick={() => setHapticsOn(!hapticsOn)}
           >
-            {t(hapticsOn ? 'account.hapticsOn' : 'account.hapticsOff')}
+            {t('account.haptics')} <span aria-hidden="true">{hapticsOn ? '●' : '○'}</span>
           </button>
+          <small className="shell-menu-note" id="menu-haptics-help">
+            {t('account.hapticsHelp')}
+          </small>
           <div className="shell-menu-lang">
             <LanguageSwitcher />
           </div>

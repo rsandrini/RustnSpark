@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
@@ -35,7 +37,7 @@ function popup(over: Partial<MissionResultProps> = {}) {
   );
 }
 
-const css = readFileSync('src/styles/mission-result.css', 'utf8');
+const css = readFileSync(resolve(__dirname, '../../styles/mission-result.css'), 'utf8');
 const rule = (selector: string) =>
   css.match(new RegExp(`${selector.replace(/\./g, '\\.')}[^{]*\\{([^}]*)\\}`))?.[1] ?? '';
 
@@ -145,5 +147,32 @@ describe('MissionResultPopup reward moment', () => {
     popup({ credits: '+0 ¢', creditsValue: 0 });
     expect(vibrate).not.toHaveBeenCalled();
     delete (navigator as { vibrate?: unknown }).vibrate;
+  });
+});
+
+describe('MissionResultPopup haptics in StrictMode', () => {
+  afterEach(() => delete (navigator as { vibrate?: unknown }).vibrate);
+
+  it('buzzes the reward once even when effects run twice', () => {
+    const vibrate = vi.fn(() => true);
+    Object.defineProperty(navigator, 'vibrate', { value: vibrate, configurable: true });
+    render(
+      <StrictMode>
+        <I18nextProvider i18n={i18n}>
+          <MissionResultPopup
+            tone="ok"
+            outcome="Mission accomplished"
+            title="Ore run"
+            route="A → B"
+            credits="+1,400 ¢"
+            creditsValue={1400}
+            creditsFormat={format}
+            race={null}
+            onReport={() => undefined}
+          />
+        </I18nextProvider>
+      </StrictMode>,
+    );
+    expect(vibrate).toHaveBeenCalledTimes(1);
   });
 });

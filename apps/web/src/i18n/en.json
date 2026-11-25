@@ -1645,8 +1645,7 @@
     "loading": "Loading..."
   },
   "account": {
-    "hapticsOn": "Haptics: on",
-    "hapticsOff": "Haptics: off",
+    "haptics": "Haptics",
     "hapticsHelp": "A short buzz on your main actions (phones that support it)."
   },
   "nav": {
