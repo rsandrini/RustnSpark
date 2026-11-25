@@ -996,6 +996,18 @@ describe('port (S10.9)', () => {
     expect(screen.queryByTestId('upgrade-group-ready')).not.toBeInTheDocument();
   });
 
+  it('an upgrade card shows the ship with the part to upgrade highlighted, and no stat sentence', async () => {
+    await renderPort();
+    openPortTab('Upgrade');
+    await screen.findByText('Plated Hull');
+    const card = screen.getByText('Plated Hull').closest('article') as HTMLElement;
+    expect(card.querySelector('.pcard-summary')).toBeNull();
+    const map = within(card).getByRole('img', { name: 'Part to upgrade: Plated Hull' });
+    const hot = map.querySelectorAll('.kit-shipmap-hot');
+    expect(hot).toHaveLength(1);
+    expect(map.querySelectorAll('rect').length).toBeGreaterThan(1);
+  });
+
   it('hovering an upgrade card shows only the diff table between this part and the upgraded part', async () => {
     await renderPort();
     openPortTab('Upgrade');

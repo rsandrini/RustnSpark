@@ -47,6 +47,8 @@ import { useActiveMissions } from '../transit/use-active-mission';
 import { MarketPanel } from '../market/market-panel';
 import { freePortsOfShip } from '../hangar/ship-ports';
 import { PartCard } from '../parts/part-card';
+import { ShipMiniMap } from '../../ui/kit/ShipMiniMap';
+import { footprint } from '../hangar/hangar.geometry';
 import { useDisplay } from '../../ui/display';
 import { readinessOf, upgradeNeeds, firstMissing, type UpgradeReadiness } from './upgrade-needs';
 import { useBridgeResize } from './bridge-resize-panel';
@@ -638,6 +640,17 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   }
 
   const inventory = inventoryQuery.data ?? [];
+  // The Upgrade cards draw the saved ship: each installed part at its placement's rotated size.
+  const installedFootprints = new Map(
+    ship.layout.flatMap((placement) => {
+      const part = inventory.find(
+        (entry) => entry.id === placement.partInstanceId && entry.location === 'INSTALLED',
+      );
+      return part === undefined
+        ? []
+        : [[placement.partInstanceId, footprint(part.catalog, placement.rot)] as const];
+    }),
+  );
   const partsOnSale = inventory.filter((entry) => entry.location === 'INVENTORY');
   const installed = inventory.filter((entry) => entry.location === 'INSTALLED');
   const damaged = installed.filter((entry) => entry.condition < 100);
@@ -1388,6 +1401,15 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                   hoverVersus={item}
                   actions={
                     <div className="upgrade-actions">
+                      {installedFootprints.has(item.id) && (
+                        <ShipMiniMap
+                          layout={ship.layout}
+                          footprintOf={(id) => installedFootprints.get(id)}
+                          highlightId={item.id}
+                          size={96}
+                          label={t('port.upgradePartOnShip', { name })}
+                        />
+                      )}
                       <span className="sub">{fromTo}</span>
                       <ul className="upgrade-needs" data-testid="upgrade-needs">
                         {needs.map((need) => (

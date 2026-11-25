@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { renderWithProviders } from '../../test/utils';
 import { PartCard } from './part-card';
+import { partSummary } from './part-detail';
+import i18n from '../../i18n';
 import type { PartInfoData } from './part-detail';
 import type { ConnectorCell } from '../../api/generated';
 import type { PortFit } from './port-fit';
@@ -110,5 +112,31 @@ describe('PartCard: ports first', () => {
       expect(screen.queryByTestId('part-fit')).toBeNull();
       view.unmount();
     }
+  });
+});
+
+describe('PartCard: no stat sentence', () => {
+  it('lists no summary line (the stats live in the (i) popup and the hover card)', () => {
+    const sentence = partSummary(
+      catalog,
+      (key) => i18n.t(key),
+      (value) => String(value),
+    );
+    expect(sentence).not.toBe('');
+    const { container } = renderWithProviders(<PartCard part={part()} />);
+    expect(container.querySelector('.pcard-summary')).toBeNull();
+    expect(container.textContent).not.toContain(sentence);
+  });
+
+  it('still shows the stats on the hover card', () => {
+    const sentence = partSummary(
+      catalog,
+      (key) => i18n.t(key),
+      (value) => String(value),
+    );
+    const label = sentence.split(' · ')[0]!.replace(/ \d+$/, '');
+    const { container } = renderWithProviders(<PartCard part={part()} />);
+    fireEvent.pointerEnter(container.querySelector('article')!, { clientX: 10, clientY: 10 });
+    expect(screen.getByTestId('part-card-hover-card')).toHaveTextContent(label);
   });
 });

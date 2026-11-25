@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { screen } from '@testing-library/react';
 import { renderWithProviders } from '../../test/utils';
 import { TrayPartRow } from './tray-part-row';
+import { partSummary } from '../parts/part-detail';
+import i18n from '../../i18n';
 import type { PortFit } from '../parts/port-fit';
 import type { InventoryItem } from '../../api/generated';
 
@@ -79,5 +81,27 @@ describe('tray part row fit chip', () => {
     row();
     row({ level: 'no-ports' });
     expect(screen.queryByTestId('tray-fit')).toBeNull();
+  });
+});
+
+describe('tray part row: no stat sentence', () => {
+  it('lists name and kind only; the stats are on the hover card', () => {
+    const sentence = partSummary(
+      part.catalog,
+      (key) => i18n.t(key),
+      (value) => String(value),
+    );
+    expect(sentence).not.toBe('');
+    const { container } = renderWithProviders(
+      <TrayPartRow
+        part={part}
+        name="Hull"
+        disabled={false}
+        selected={false}
+        onSelect={() => undefined}
+        compare={undefined}
+      />,
+    );
+    expect(container.textContent).not.toContain(sentence);
   });
 });

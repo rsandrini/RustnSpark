@@ -8,8 +8,6 @@ import { partKindOf } from './part-kind';
 import {
   PartDetail,
   PartStatsCard,
-  partSummary,
-  useNumberFormat,
   type PartCompareContext,
   type PartInfoData,
 } from './part-detail';
@@ -64,7 +62,6 @@ export function PartCard({
   fit,
 }: PartCardProps) {
   const { t, i18n } = useTranslation();
-  const format = useNumberFormat();
   const name = pickLocalized(part.displayName, i18n.language);
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const condition = part.condition === undefined ? undefined : Math.round(part.condition);
@@ -136,7 +133,6 @@ export function PartCard({
           label={t('port.conditionNow', { value: condition })}
         />
       )}
-      <div className="pcard-summary">{partSummary(part.catalog, t, format)}</div>
       <footer className="pcard-actions">
         {!hideInfo && <PartInfoButton part={part} compare={compare} extra={infoExtra} />}
         {actions}

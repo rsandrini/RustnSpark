@@ -473,10 +473,6 @@
   font-weight: 600;
 }
 
-.pcard-summary {
-  font-size: 12px;
-  color: var(--ink);
-}
 
 .pcard-title-row {
   display: flex;
@@ -596,10 +592,6 @@
   font-weight: 600;
 }
 
-.pcard-summary {
-  font-size: 12px;
-  color: var(--ink);
-}
 
 .pcard-title-row {
   display: flex;

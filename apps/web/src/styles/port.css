@@ -237,11 +237,6 @@
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent);
 }
-.pcard-summary {
-  font-size: var(--text-sm);
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
-}
 .pcard-actions .btn.primary {
   margin-left: auto;
 }
@@ -764,4 +759,8 @@
 .kit-tab-text {
   font-size: 12px;
   font-weight: 600;
+}
+
+.upgrade-actions .kit-shipmap {
+  align-self: flex-start;
 }

@@ -210,7 +210,7 @@ describe('market panel: descriptions and filters', () => {
     server.use(onboarded());
   });
 
-  it('shows name, price, what it is and a key stat on every card; the long description is behind the info button', async () => {
+  it('shows name and price on every card, with no stat sentence; the long description is behind the info button', async () => {
     await renderPortMarket();
     await screen.findByText('Plated Hull');
     const cards = document.querySelectorAll('.market-panel .pcard');
@@ -218,7 +218,7 @@ describe('market panel: descriptions and filters', () => {
     for (const card of Array.from(cards)) {
       expect(card.querySelector('.pcard-name')?.textContent ?? '').not.toBe('');
       expect(card.querySelector('.pcard-price')).not.toBeNull();
-      expect(card.querySelector('.pcard-summary')?.textContent ?? '').not.toBe('');
+      expect(card.querySelector('.pcard-summary')).toBeNull();
       // the prose moved behind (i): it no longer takes three lines on every card
       expect(card.querySelector('.part-desc-short')).toBeNull();
     }

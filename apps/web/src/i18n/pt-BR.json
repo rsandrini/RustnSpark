@@ -1824,6 +1824,7 @@
     "upgradeConfirm": "Melhorar",
     "upgraded": "Melhorado para {{name}}.",
     "scavengeFoot": "Vasculhar a pé",
+    "upgradePartOnShip": "Peça a melhorar: {{name}}",
     "upgradeFromTo": "{{from}} → {{to}}",
     "upgradeMaterial": "{{name}}: {{needed}} (você tem {{have}})",
     "upgradeNeedCredits": "Créditos: {{needed}}",

@@ -270,7 +270,6 @@
   }
 
   /* part cards (market, your goods, upgrades): a name, the price and the button; stats are in the (i) popup */
-  .pcard-summary,
   .pcard:not(.broken) .pcard-note {
     display: none;
   }

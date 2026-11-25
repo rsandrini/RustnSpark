@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { screen } from '@testing-library/react';
 import { renderWithProviders } from '../../test/utils';
 import { PartRow } from './part-row';
-import type { PartInfoData } from './part-detail';
+import { partSummary, type PartInfoData } from './part-detail';
+import i18n from '../../i18n';
 
 const part: PartInfoData = {
   displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
@@ -60,6 +61,13 @@ describe('PartRow', () => {
     expect(screen.getByRole('button', { name: 'Buy' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Details: Cargo Rack/ })).toBeInTheDocument();
     expect(container.querySelector('.pcard-summary')).toBeNull();
+    expect(container.textContent).not.toContain(
+      partSummary(
+        part.catalog,
+        (key) => i18n.t(key),
+        (value) => String(value),
+      ),
+    );
     expect(screen.queryByTestId('part-ports')).toBeNull();
   });
 

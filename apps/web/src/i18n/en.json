@@ -1824,6 +1824,7 @@
     "upgradeConfirm": "Upgrade",
     "upgraded": "Upgraded to {{name}}.",
     "scavengeFoot": "Go scavenging on foot",
+    "upgradePartOnShip": "Part to upgrade: {{name}}",
     "upgradeFromTo": "{{from}} → {{to}}",
     "upgradeMaterial": "{{name}}: {{needed}} (you have {{have}})",
     "upgradeNeedCredits": "Credits: {{needed}}",

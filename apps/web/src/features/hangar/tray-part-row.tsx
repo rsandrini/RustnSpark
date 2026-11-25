@@ -7,7 +7,6 @@ import { PartThumb } from '../../ui/PartThumb';
 import {
   PartStatsCard,
   RarityBadge,
-  partSummary,
   useNumberFormat,
   type PartCompareContext,
 } from '../parts/part-detail';
@@ -97,7 +96,6 @@ export function TrayPartRow({
             ]}
           />
         </span>
-        <span className="meta">{partSummary(part.catalog, t, format)}</span>
         {(part.storedFuel ?? 0) > 0 && (
           <span className="meta" data-testid="stored-fuel">
             {t('hangar.storedFuel', { value: format(Math.round(part.storedFuel ?? 0)) })}
