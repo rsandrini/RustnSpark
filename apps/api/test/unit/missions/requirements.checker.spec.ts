@@ -104,7 +104,7 @@ const DEEP_CARGO = [
 // Stamps cabin flags on the hull, which every fixture build here includes.
 function withCabinFlags(
   partTypes: readonly string[],
-  flags: { pressurized?: boolean; lifeSupport?: boolean },
+  flags: { pressurized?: boolean; lifeSupport?: boolean; pax?: number; lifeCap?: number },
 ): ReturnType<typeof buildInstalled> {
   return buildInstalled(partTypes).map((part) => {
     if (part.catalog.partType === 'hull') {
@@ -114,6 +114,8 @@ function withCabinFlags(
           ...part.catalog,
           pressurized: flags.pressurized === true,
           lifeSupport: flags.lifeSupport === true,
+          pax: flags.pax ?? 0,
+          lifeCap: flags.lifeCap ?? 0,
         },
       };
     }
@@ -140,18 +142,79 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
   });
 
   it('passes TRANSPORT only with pressurized AND life support', () => {
-    const full = withCabinFlags(STARTER, { pressurized: true, lifeSupport: true });
+    const full = withCabinFlags(STARTER, {
+      pressurized: true,
+      lifeSupport: true,
+      pax: 2,
+      lifeCap: 2,
+    });
     expect(check('TRANSPORT', full).eligible).toBe(true);
 
-    const pressurizedOnly = withCabinFlags(STARTER, { pressurized: true });
-    expect(codes(check('TRANSPORT', pressurizedOnly))).toEqual(['PRESSURIZED_LIFE_SUPPORT']);
+    const pressurizedOnly = withCabinFlags(STARTER, { pressurized: true, pax: 2 });
+    expect(codes(check('TRANSPORT', pressurizedOnly))).toEqual([
+      'PRESSURIZED_LIFE_SUPPORT',
+      'LIFE_SUPPORT_CAPACITY',
+    ]);
 
-    const lifeSupportOnly = withCabinFlags(STARTER, { lifeSupport: true });
-    expect(codes(check('TRANSPORT', lifeSupportOnly))).toEqual(['PRESSURIZED_LIFE_SUPPORT']);
+    const lifeSupportOnly = withCabinFlags(STARTER, { lifeSupport: true, lifeCap: 2 });
+    expect(codes(check('TRANSPORT', lifeSupportOnly))).toEqual([
+      'PRESSURIZED_LIFE_SUPPORT',
+      'PASSENGER_SEATS',
+    ]);
 
     expect(codes(check('TRANSPORT', buildInstalled(STARTER)))).toEqual([
       'PRESSURIZED_LIFE_SUPPORT',
+      'PASSENGER_SEATS',
+      'LIFE_SUPPORT_CAPACITY',
     ]);
+  });
+
+  describe('a passenger group needs seats and life-support capacity', () => {
+    const cabin = (pax: number, lifeCap: number): ReturnType<typeof buildInstalled> =>
+      withCabinFlags(STARTER, { pressurized: true, lifeSupport: true, pax, lifeCap });
+
+    it('a group of 4 with 4 seats and capacity 6 is eligible', () => {
+      const result = check('TRANSPORT', cabin(4, 6), { passengers: 4 });
+      expect(result.eligible).toBe(true);
+      expect(result.checklist.map((entry) => entry.code)).toEqual([
+        'PRESSURIZED_LIFE_SUPPORT',
+        'PASSENGER_SEATS',
+        'LIFE_SUPPORT_CAPACITY',
+      ]);
+    });
+
+    it('too few seats names PASSENGER_SEATS with needed 4 and actual 2', () => {
+      const result = check('TRANSPORT', cabin(2, 6), { passengers: 4 });
+      expect(codes(result)).toEqual(['PASSENGER_SEATS']);
+      expect(result.checklist.find((entry) => entry.code === 'PASSENGER_SEATS')).toMatchObject({
+        met: false,
+        needed: 4,
+        actual: 2,
+        unit: 'passengers',
+      });
+    });
+
+    it('too little life-support capacity names LIFE_SUPPORT_CAPACITY', () => {
+      const result = check('TRANSPORT', cabin(4, 3), { passengers: 4 });
+      expect(codes(result)).toEqual(['LIFE_SUPPORT_CAPACITY']);
+      expect(
+        result.checklist.find((entry) => entry.code === 'LIFE_SUPPORT_CAPACITY'),
+      ).toMatchObject({ needed: 4, actual: 3, unit: 'passengers' });
+    });
+
+    it('a cabin without life support fails PRESSURIZED_LIFE_SUPPORT', () => {
+      const noLife = withCabinFlags(STARTER, { pressurized: true, pax: 4, lifeCap: 6 });
+      expect(codes(check('TRANSPORT', noLife, { passengers: 4 }))).toEqual([
+        'PRESSURIZED_LIFE_SUPPORT',
+      ]);
+    });
+
+    it('an offer with no valid head count is a group of one', () => {
+      expect(check('TRANSPORT', cabin(1, 1)).eligible).toBe(true);
+      expect(check('TRANSPORT', cabin(1, 1), { passengers: 0 }).eligible).toBe(true);
+      expect(check('TRANSPORT', cabin(1, 1), { passengers: 2.5 }).eligible).toBe(true);
+      expect(check('TRANSPORT', cabin(1, 1), { passengers: 2 }).eligible).toBe(false);
+    });
   });
 
   it('passes ESCORT with weapons and mobility, failing each dimension separately', () => {
@@ -242,6 +305,8 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
     const allowed = new Set([
       'CARGO_TYPE',
       'PRESSURIZED_LIFE_SUPPORT',
+      'PASSENGER_SEATS',
+      'LIFE_SUPPORT_CAPACITY',
       'WEAPONS',
       'MIN_MOBILITY',
       'MINER',

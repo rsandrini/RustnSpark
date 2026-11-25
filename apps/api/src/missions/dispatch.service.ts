@@ -30,7 +30,7 @@ import { connectedPartIds, incorrectPortPartIds, outsidePartIds } from '../ships
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { loadHold, withHoldProblem, withMiningCargoProblem } from '../ships/hold.js';
 import { cargoLoadFor, cargoTermsOf } from './cargo-mode.js';
-import { checkMissionRequirements } from './requirements.checker.js';
+import { checkMissionRequirements, offerRequirements } from './requirements.checker.js';
 import { checkViability } from '../ships/viability.js';
 import { flightShip, type AppliedPenalty } from '../ships/penalties.js';
 import { jobDelayMs } from '../config/debug-timing.js';
@@ -418,7 +418,7 @@ export class DispatchService {
         const requirement = checkMissionRequirements(
           {
             missionType: mission.type,
-            requirements: template?.requirements,
+            requirements: offerRequirements(template?.requirements, mission.cargo),
             sheet,
             parts: installedConnected,
           },

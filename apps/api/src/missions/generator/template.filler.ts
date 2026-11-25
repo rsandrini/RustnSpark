@@ -459,6 +459,13 @@ function miningCargo(
   return { materialId: material.id, rarity: material.rarity, contracted: false };
 }
 
+/** The head count of a passenger job: a whole number inside the admin range. */
+function transportPassengers(rng: Rng, rules: GameRules): number {
+  const min = Math.max(1, Math.floor(rules.missions.transport_passengers_min));
+  const max = Math.max(min, Math.floor(rules.missions.transport_passengers_max));
+  return rng.int(min, max);
+}
+
 /**
  * Pure template filler (design missoes §7): one seed in, one ready-to-insert
  * MissionInstance draft out. Deterministic for a fixed seed + world + rules + now.
@@ -593,7 +600,9 @@ export function fillMission(input: FillMissionInput): MissionDraft {
       ? miningCargo(rng, pinnedMaterials(template, world.materials), rules, destination)
       : template.type === 'RACE'
         ? { race: { competitors: generateCompetitors(rng.child('race'), rules) } }
-        : {};
+        : template.type === 'TRANSPORT'
+          ? { passengers: transportPassengers(rng.child('passengers'), rules) }
+          : {};
 
   let deadlineAt: Date | null = null;
   if (template.type === 'RESCUE') {
@@ -620,6 +629,9 @@ export function fillMission(input: FillMissionInput): MissionDraft {
         danger: maxDanger,
         distance: totalDistance,
         missionType: template.type,
+        ...(template.type === 'TRANSPORT'
+          ? { passengers: (cargo as { passengers?: number }).passengers }
+          : {}),
       },
       rules,
     ) * (template.type === 'RACE' ? rules.race.prize_share_1 : 1),

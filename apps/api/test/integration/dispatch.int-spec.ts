@@ -1093,6 +1093,17 @@ describe('ship dispatch API (S7.2)', () => {
       await expectRefused(player, mission, 'PRESSURIZED_LIFE_SUPPORT');
     });
 
+    it('refuses a TRANSPORT whose ship has no seats for the group, naming the seats', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const mission = await missionOfType(player, 'TRANSPORT');
+      await prisma.missionInstance.update({
+        where: { id: mission.id },
+        data: { cargo: { passengers: 4 } },
+      });
+      await expectRefused(player, mission, 'PASSENGER_SEATS');
+    });
+
     it('refuses a MINING mission once the drill is removed', async () => {
       await freshSeededApp();
       const player = await onboardPlayer();

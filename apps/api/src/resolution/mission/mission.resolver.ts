@@ -79,6 +79,8 @@ export interface MissionInput {
   readonly unpaid?: boolean;
   /** Open-cargo deliveries: what the units beyond the minimum add to the pay (credits). */
   readonly cargoExtra?: number;
+  /** TRANSPORT: the head count of the group (pays more per extra passenger). */
+  readonly passengers?: number;
   readonly contractedMining?: {
     readonly materialId: string;
     readonly requiredQuantity: number;
@@ -330,6 +332,9 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
           danger: maxDanger,
           distance: totalDistance,
           missionType: input.mission.type ?? 'delivery',
+          ...(input.mission.passengers === undefined
+            ? {}
+            : { passengers: input.mission.passengers }),
         },
         input.rules,
       ) +

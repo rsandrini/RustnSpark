@@ -321,6 +321,9 @@ const missionsSchema = z.object({
   starter_guarantee_max_completed: z.number().int().min(0).max(50),
   starter_max_distance: z.number().int().min(0).max(100000),
   starter_max_zone: z.number().int().min(0).max(3),
+  transport_passengers_min: z.number().int().min(1).max(50).default(1),
+  transport_passengers_max: z.number().int().min(1).max(50).default(6),
+  transport_pay_per_extra_passenger: z.number().min(0).max(5).default(0.1),
 });
 
 const scavengingSchema = z.object({

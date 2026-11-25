@@ -240,6 +240,66 @@ describe('the sandbox port: the market and the refuel', () => {
   });
 });
 
+describe('the sandbox passenger job: a head count that seats and life support must cover', () => {
+  type Offer = {
+    type: string;
+    info: {
+      requirements: Array<{
+        code: string;
+        met: boolean;
+        needed?: number;
+        actual?: number;
+        unit?: string;
+      }>;
+    };
+  };
+
+  it('shows the three checks, unmet before the cabin and met once the cabin and life support are fitted', async () => {
+    const env = fresh();
+    await raceDone(env);
+    await env.call('POST', '/v1/ships/prologue-ship/refuel', { mode: 'full' });
+    env.sandbox.choose('passengers');
+    const board = async () =>
+      ((await env.call('GET', `/v1/locations/${env.sandbox.state.locationId}/missions`)) as Offer[])
+        .find((offer) => offer.type === 'TRANSPORT')!
+        .info.requirements.filter((check) =>
+          ['PRESSURIZED_LIFE_SUPPORT', 'PASSENGER_SEATS', 'LIFE_SUPPORT_CAPACITY'].includes(
+            check.code,
+          ),
+        );
+    const before = await board();
+    expect(before.map((check) => check.code)).toEqual([
+      'PRESSURIZED_LIFE_SUPPORT',
+      'PASSENGER_SEATS',
+      'LIFE_SUPPORT_CAPACITY',
+    ]);
+    expect(before.every((check) => !check.met)).toBe(true);
+    expect(before[1]).toMatchObject({ needed: 2, actual: 0, unit: 'passengers' });
+
+    const cabin = BuyResponseSchema.parse(
+      await env.call('POST', '/v1/market/buy', { listingId: MODULE, expectedPrice: 400 }),
+    );
+    const life = BuyResponseSchema.parse(
+      await env.call('POST', '/v1/market/buy', {
+        listingId: 'catalog:sandbox:life_support',
+        expectedPrice: 400,
+      }),
+    );
+    await env.call('POST', '/v1/ships/prologue-ship/assemble', {
+      layout: [
+        ...PROLOGUE_START_PARTS.map((part) => part.target),
+        { partInstanceId: PROLOGUE_ENGINE.id, gx: -4, gy: 0, rot: 0 },
+        { partInstanceId: cabin.partInstanceId, gx: 1, gy: 0, rot: 0 },
+        { partInstanceId: life.partInstanceId, gx: 2, gy: 0, rot: 0 },
+      ],
+    });
+    const after = await board();
+    expect(after.every((check) => check.met)).toBe(true);
+    expect(after[1]?.actual).toBeGreaterThanOrEqual(after[1]?.needed ?? Infinity);
+    expect(after[2]?.actual).toBeGreaterThanOrEqual(after[2]?.needed ?? Infinity);
+  });
+});
+
 async function sheetNow(env: ReturnType<typeof fresh>) {
   const ships = (await env.call('GET', '/v1/ships')) as Array<{
     sheet: { hp: number; pdf: number };

@@ -150,6 +150,12 @@ export const SCRAP_NAME: LocalizedText = { en: 'Scrap', 'pt-BR': 'Sucata' };
 // ---------------------------------------------------------------------------------------------
 // The module the job needs, sold at every port
 
+/** Seats of the opening's cabin and people its life support keeps alive: at least the head count of any passenger job there. */
+export const SANDBOX_CABIN_SEATS = 4;
+export const SANDBOX_LIFE_CAPACITY = 6;
+/** Head count of the opening's passenger jobs (the final run carries the full cabin). */
+const OPENING_PASSENGERS = 2;
+
 /** The passenger cabin of the opening: a pressurized room for people, one square, joined to the bridge's east side. */
 export const SANDBOX_PASSENGER_CABIN: ProloguePart = {
   id: 'sandbox-passenger-cabin',
@@ -179,7 +185,7 @@ export const SANDBOX_PASSENGER_CABIN: ProloguePart = {
     batInput: 0,
     pressurized: true,
     lifeSupport: false,
-    pax: 0,
+    pax: SANDBOX_CABIN_SEATS,
     lifeCap: 0,
   },
   connectors: PROLOGUE_CARGO.connectors,
@@ -200,7 +206,7 @@ export const SANDBOX_LIFE_SUPPORT: ProloguePart = {
     pressurized: false,
     lifeSupport: true,
     pax: 0,
-    lifeCap: 0,
+    lifeCap: SANDBOX_LIFE_CAPACITY,
   },
   connectors: PROLOGUE_CARGO.connectors,
   rarity: 'COMMON',
@@ -283,6 +289,8 @@ export interface JobSpec {
   readonly title: LocalizedText;
   readonly brief: LocalizedText;
   readonly cargoNeed: number;
+  /** Head count of a passenger job (needs that many seats and life-support capacity); 0 for the other jobs. */
+  readonly passengers: number;
   /** What the job carries: crates (a cargo hold) or people (a cabin and life support). The final run follows the ship. */
   readonly load: ModuleKind;
 }
@@ -350,6 +358,12 @@ function job(
     title: jobTitle(kind, load, destination),
     brief: kind === 'final' && load === 'crates' ? FINAL_CRATES_BRIEF : BRIEFS[kind],
     cargoNeed,
+    passengers:
+      kind === 'race' || load === 'crates'
+        ? 0
+        : kind === 'final'
+          ? SANDBOX_CABIN_SEATS
+          : OPENING_PASSENGERS,
     load,
   };
 }

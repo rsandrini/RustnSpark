@@ -155,6 +155,9 @@ export type ConfigKey =
   | 'missions.starter_guarantee_max_completed'
   | 'missions.starter_max_distance'
   | 'missions.starter_max_zone'
+  | 'missions.transport_passengers_min'
+  | 'missions.transport_passengers_max'
+  | 'missions.transport_pay_per_extra_passenger'
   | 'missions.duration_class_cutoffs'
   | 'missions.duration_k'
   | 'missions.short_trip_below'
@@ -634,6 +637,10 @@ export type GameRules = Readonly<{
     starter_guarantee_max_completed: number;
     starter_max_distance: number;
     starter_max_zone: number;
+    /** A passenger job carries a head count drawn from this range; each head above one adds this share of the base pay. */
+    transport_passengers_min: number;
+    transport_passengers_max: number;
+    transport_pay_per_extra_passenger: number;
   }>;
   scavenging: Readonly<{
     chance: Readonly<Record<string, number>>;

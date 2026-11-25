@@ -485,6 +485,11 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // The first mission is a short trip: the private starter offer only goes to a destination
     // within this path distance (0 = off). The filler picks the nearest one inside the cap.
     starter_max_distance: 600,
+    // A passenger job carries a head count drawn from this range (it needs that many seats and that much
+    // life-support capacity); each head above one adds this share of the base pay.
+    transport_passengers_min: 1,
+    transport_passengers_max: 6,
+    transport_pay_per_extra_passenger: 0.1,
   },
   scavenging: {
     // Round-8 rebalance (owner: "the drop of items on scavenging is too high... investigate if

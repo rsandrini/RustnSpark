@@ -16,7 +16,7 @@ export function missionReward(
   bridgeRarity?: string,
 ): number {
   // A mining contract pays what it was posted at (ore value x amount), not by distance and tier.
-  const cargo = (row.cargo ?? {}) as { contracted?: unknown };
+  const cargo = (row.cargo ?? {}) as { contracted?: unknown; passengers?: unknown };
   if (row.type === 'MINING' && cargo.contracted === true && typeof row.reward === 'number') {
     return row.reward;
   }
@@ -35,6 +35,7 @@ export function missionReward(
         danger: maxDanger,
         distance: totalDistance,
         missionType: row.type,
+        ...(typeof cargo.passengers === 'number' ? { passengers: cargo.passengers } : {}),
         ...(bridgeRarity === undefined ? {} : { bridgeRarity }),
       },
       rules,

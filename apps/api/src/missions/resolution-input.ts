@@ -63,6 +63,8 @@ export interface ResolutionContext {
   readonly scavenge?: ScavengeContext;
   /** RACE only: the rivals generated with the offer, frozen with the run. */
   readonly race?: { readonly competitors: readonly RaceCompetitor[] };
+  /** TRANSPORT only: the head count drawn with the offer. */
+  readonly passengers?: number;
 }
 
 /** The rival ships of a RACE offer, as stored in its cargo (`cargo.race.competitors`). */
@@ -159,6 +161,9 @@ export function contextFromLive(source: LiveContextSource): ResolutionContext {
       ? { unpaid: true }
       : {}),
     ...(source.type === 'RACE' ? { race: { competitors: parseCompetitors(cargo) } } : {}),
+    ...(source.type === 'TRANSPORT' && typeof cargo['passengers'] === 'number'
+      ? { passengers: cargo['passengers'] }
+      : {}),
     ...(cargo['contracted'] === true &&
     materialId !== undefined &&
     typeof cargo['quantity'] === 'number'
@@ -379,6 +384,7 @@ export function buildResolveInput(args: {
     ...(context.contractedMining ? { contractedMining: context.contractedMining } : {}),
     ...(context.scavenge ? { scavenge: context.scavenge } : {}),
     ...(context.race && context.race.competitors.length > 0 ? { race: context.race } : {}),
+    ...(context.passengers === undefined ? {} : { passengers: context.passengers }),
   };
   return { seed: args.seed, snapshot: missionSnapshot, mission: missionInput, rules };
 }

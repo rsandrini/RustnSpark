@@ -5,6 +5,8 @@ describe('fixOf', () => {
   it.each([
     ['CARGO_TYPE', 'CARGO'],
     ['PRESSURIZED_LIFE_SUPPORT', 'CARGO'],
+    ['PASSENGER_SEATS', 'CARGO'],
+    ['LIFE_SUPPORT_CAPACITY', 'UTILITY'],
     ['WEAPONS', 'WEAPON'],
     ['MIN_MOBILITY', 'ENGINE'],
     ['SPEED', 'ENGINE'],

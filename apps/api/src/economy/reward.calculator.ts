@@ -14,6 +14,14 @@ export interface RewardBaseInput {
   readonly missionType: string;
   /** Rarity of the ship's bridge: scales the payout by `economy.reward_by_bridge` (absent = x1). */
   readonly bridgeRarity?: string;
+  /** TRANSPORT: the head count of the group; each head above one adds `missions.transport_pay_per_extra_passenger`. */
+  readonly passengers?: number;
+}
+
+/** The pay multiplier of a passenger group: 1 for one passenger (or none known), growing per extra head. */
+export function passengerPayFactor(passengers: number | undefined, rules: GameRules): number {
+  if (passengers === undefined || !Number.isFinite(passengers) || passengers <= 1) return 1;
+  return 1 + (passengers - 1) * rules.missions.transport_pay_per_extra_passenger;
 }
 
 /** The payout multiplier for a ship's bridge rarity (x1 when the table has no entry). */
@@ -59,6 +67,7 @@ export function rewardBase(input: RewardBaseInput, rules: GameRules): number {
     distanceMod *
     typeBonus *
     bridgeRewardMultiplier(input.bridgeRarity, rules) *
+    (type === 'TRANSPORT' ? passengerPayFactor(input.passengers, rules) : 1) *
     shortTrip
   );
 }

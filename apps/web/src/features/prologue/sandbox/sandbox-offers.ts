@@ -76,14 +76,33 @@ function requirementsOf(sandbox: Sandbox, job: JobSpec): RequirementCheck[] {
       unit: 'cargo',
     });
   } else {
-    // the real game's one requirement: a Passenger Cabin and the Life Support it only works with, both installed
-    checks.push({
-      code: 'PRESSURIZED_LIFE_SUPPORT',
-      message: 'Needs a Passenger Cabin and Life Support (both installed)',
-      met:
-        installed.some((stats) => stats?.pressurized === true) &&
-        installed.some((stats) => stats?.lifeSupport === true),
-    });
+    // the real game's three checks: a Passenger Cabin and the Life Support it only works with, both installed,
+    // then seats and life-support capacity for the whole group
+    checks.push(
+      {
+        code: 'PRESSURIZED_LIFE_SUPPORT',
+        message: 'Needs a Passenger Cabin and Life Support (both installed)',
+        met:
+          installed.some((stats) => stats?.pressurized === true) &&
+          installed.some((stats) => stats?.lifeSupport === true),
+      },
+      {
+        code: 'PASSENGER_SEATS',
+        message: 'The ship has too few passenger seats for this group.',
+        met: ship.sheet.pax >= job.passengers,
+        needed: job.passengers,
+        actual: ship.sheet.pax,
+        unit: 'passengers',
+      },
+      {
+        code: 'LIFE_SUPPORT_CAPACITY',
+        message: 'The life support cannot keep this many passengers alive.',
+        met: ship.sheet.lifeCap >= job.passengers,
+        needed: job.passengers,
+        actual: ship.sheet.lifeCap,
+        unit: 'passengers',
+      },
+    );
   }
   return checks;
 }

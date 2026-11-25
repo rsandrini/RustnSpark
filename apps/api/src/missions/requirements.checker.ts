@@ -7,6 +7,8 @@ import type { ShipSheet } from '../ships/sheet.types.js';
 export type RequirementReasonCode =
   | 'CARGO_TYPE'
   | 'PRESSURIZED_LIFE_SUPPORT'
+  | 'PASSENGER_SEATS'
+  | 'LIFE_SUPPORT_CAPACITY'
   | 'WEAPONS'
   | 'MIN_MOBILITY'
   | 'MINER'
@@ -29,6 +31,14 @@ const PRESSURIZED_LIFE_SUPPORT: RequirementReason = {
   // named explicitly since a player installing only one of them (usually Life Support alone)
   // is the actual confusion this message needs to head off.
   message: 'Mission requires a Passenger Cabin and a Life Support module, both installed.',
+};
+const PASSENGER_SEATS: RequirementReason = {
+  code: 'PASSENGER_SEATS',
+  message: 'The ship has too few passenger seats for this group.',
+};
+const LIFE_SUPPORT_CAPACITY: RequirementReason = {
+  code: 'LIFE_SUPPORT_CAPACITY',
+  message: 'The life support cannot keep this many passengers alive.',
 };
 const WEAPONS: RequirementReason = {
   code: 'WEAPONS',
@@ -78,18 +88,41 @@ interface RequirementHints {
   readonly speed?: number;
   /** RACE: the entry minimum for this template (else `race.min_mobility`). */
   readonly minMobility?: number;
+  /** TRANSPORT: the head count of the group (a positive whole number; anything else is a group of one). */
+  readonly passengers: number;
 }
 
 function threshold(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+function headCount(value: unknown): number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 1;
+}
+
+/**
+ * The hints one offer is checked against: the template's requirements plus what this offer drew
+ * (a passenger job's head count lives in the offer's cargo, since a template serves many offers).
+ */
+export function offerRequirements(templateRequirements: unknown, offerCargo: unknown): unknown {
+  const base =
+    typeof templateRequirements === 'object' && templateRequirements !== null
+      ? (templateRequirements as Record<string, unknown>)
+      : {};
+  const cargo =
+    typeof offerCargo === 'object' && offerCargo !== null
+      ? (offerCargo as Record<string, unknown>)
+      : {};
+  return { ...base, passengers: cargo.passengers };
+}
+
 function parseHints(requirements: unknown): RequirementHints {
   if (typeof requirements !== 'object' || requirements === null) {
-    return {};
+    return { passengers: 1 };
   }
   const record = requirements as Record<string, unknown>;
   return {
+    passengers: headCount(record.passengers),
     cargo: threshold(record.cargo),
     speed: threshold(record.speed),
     minMobility: threshold(record.minMobility),
@@ -98,7 +131,7 @@ function parseHints(requirements: unknown): RequirementHints {
 
 /** What a numeric requirement compares: the ship has `actual` of `needed` (mobility in game units,
     unrounded — the web shows it on the display scale, like the ship sheet). */
-export type RequirementUnit = 'mobility' | 'cargo' | 'mining' | 'fuel';
+export type RequirementUnit = 'mobility' | 'cargo' | 'mining' | 'fuel' | 'passengers';
 
 export interface RequirementCheck extends RequirementReason {
   met: boolean;
@@ -158,7 +191,11 @@ export function missionRequirementChecklist(
     case 'DELIVERY':
       return [numeric(CARGO_TYPE, 'cargo', cargoNeeded, sheet.crg)];
     case 'TRANSPORT':
-      return [{ ...PRESSURIZED_LIFE_SUPPORT, met: hasCabin }];
+      return [
+        { ...PRESSURIZED_LIFE_SUPPORT, met: hasCabin },
+        numeric(PASSENGER_SEATS, 'passengers', hints.passengers, sheet.pax),
+        numeric(LIFE_SUPPORT_CAPACITY, 'passengers', hints.passengers, sheet.lifeCap),
+      ];
     case 'ESCORT':
       return [
         { ...WEAPONS, met: hasWeapon },

@@ -899,3 +899,72 @@ describe('mining contracts by place (v0.1.3 place_mix)', () => {
     }
   });
 });
+
+describe('passenger head count on a TRANSPORT offer', () => {
+  const TRANSPORT_LUNA: FillerTemplate = {
+    id: 'transport_luna',
+    type: 'TRANSPORT',
+    factionId: 'luna',
+    active: true,
+    requirements: { originFactions: ['luna'], originTypes: ['port'] },
+  };
+  const headCount = (draft: ReturnType<typeof fillMission>): number | undefined =>
+    (draft.cargo as { passengers?: number }).passengers;
+
+  it('draws the head count inside the configured range, deterministically', () => {
+    const counts = new Set<number>();
+    for (let n = 0; n < 60; n += 1) {
+      const count = headCount(fill(`alpha|pax|${n}`, LOC_ALPHA, [TRANSPORT_LUNA]));
+      expect(Number.isInteger(count)).toBe(true);
+      expect(count).toBeGreaterThanOrEqual(rules.missions.transport_passengers_min);
+      expect(count).toBeLessThanOrEqual(rules.missions.transport_passengers_max);
+      counts.add(count as number);
+    }
+    expect(counts.size).toBeGreaterThan(1);
+    expect(headCount(fill('alpha|pax|same', LOC_ALPHA, [TRANSPORT_LUNA]))).toBe(
+      headCount(fill('alpha|pax|same', LOC_ALPHA, [TRANSPORT_LUNA])),
+    );
+  });
+
+  it('follows the admin range', () => {
+    const narrow: GameRules = {
+      ...rules,
+      missions: { ...rules.missions, transport_passengers_min: 3, transport_passengers_max: 3 },
+    };
+    const draft = fillMission({
+      seed: 'alpha|pax|narrow',
+      origin: LOC_ALPHA,
+      world: world([TRANSPORT_LUNA]),
+      rules: narrow,
+      now: NOW,
+    });
+    expect(headCount(draft)).toBe(3);
+  });
+
+  it('pays more per passenger above one', () => {
+    const at = (count: number): number =>
+      fillMission({
+        seed: 'alpha|pax|pay',
+        origin: LOC_ALPHA,
+        world: world([TRANSPORT_LUNA]),
+        rules: {
+          ...rules,
+          missions: {
+            ...rules.missions,
+            transport_passengers_min: count,
+            transport_passengers_max: count,
+          },
+        },
+        now: NOW,
+      }).reward;
+    const one = at(1);
+    const five = at(5);
+    expect(five).toBeGreaterThan(one);
+    expect(five).toBe(Math.round(one * (1 + 4 * rules.missions.transport_pay_per_extra_passenger)));
+  });
+
+  it('other types carry no head count', () => {
+    const draft = fill('alpha|pax|other', LOC_ALPHA, [DELIVERY_LUNA]);
+    expect(headCount(draft)).toBeUndefined();
+  });
+});

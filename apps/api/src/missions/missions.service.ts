@@ -48,6 +48,7 @@ import {
   checkMissionRequirements,
   fuelCapacityCheck,
   missionRequirementChecklist,
+  offerRequirements,
   type RequirementCheck,
 } from './requirements.checker.js';
 import { MissionResolveService } from './resolve.service.js';
@@ -339,7 +340,7 @@ export class MissionsService implements OnModuleInit {
         checkMissionRequirements(
           {
             missionType: draft.type,
-            requirements: requirementsById.get(draft.templateId),
+            requirements: offerRequirements(requirementsById.get(draft.templateId), draft.cargo),
             sheet,
             parts: viewer.installed,
           },
@@ -642,7 +643,12 @@ export class MissionsService implements OnModuleInit {
       select: { requirements: true },
     });
     const requirement = checkMissionRequirements(
-      { missionType: mission.type, requirements: template?.requirements, sheet, parts: installed },
+      {
+        missionType: mission.type,
+        requirements: offerRequirements(template?.requirements, mission.cargo),
+        sheet,
+        parts: installed,
+      },
       rules,
     );
     if (!requirement.eligible) {
@@ -861,7 +867,7 @@ export class MissionsService implements OnModuleInit {
           const check = checkMissionRequirements(
             {
               missionType: row.type,
-              requirements: requirementsById.get(row.templateId),
+              requirements: offerRequirements(requirementsById.get(row.templateId), row.cargo),
               sheet,
               parts: viewer.installed,
             },
@@ -1036,7 +1042,12 @@ function offerInfo(
       ? []
       : [
           ...missionRequirementChecklist(
-            { missionType: row.type, requirements: requirementsJson, sheet, parts },
+            {
+              missionType: row.type,
+              requirements: offerRequirements(requirementsJson, row.cargo),
+              sheet,
+              parts,
+            },
             rules,
           ),
           // a trip that burns more fuel than the tank holds can never be flown: warn on the card (the row

@@ -2423,6 +2423,47 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'missions.transport_passengers_min',
+    group: 'missions',
+    type: 'integer',
+    min: 1,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.transport_passengers_min),
+    description: {
+      en: 'The fewest passengers a passenger job can carry (each needs a seat and life-support capacity).',
+      'pt-BR':
+        'O menor número de passageiros que um transporte de passageiros pode levar (cada um precisa de assento e de capacidade de suporte de vida).',
+    },
+  },
+  {
+    key: 'missions.transport_passengers_max',
+    group: 'missions',
+    type: 'integer',
+    min: 1,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.transport_passengers_max),
+    description: {
+      en: 'The most passengers a passenger job can carry (each needs a seat and life-support capacity).',
+      'pt-BR':
+        'O maior número de passageiros que um transporte de passageiros pode levar (cada um precisa de assento e de capacidade de suporte de vida).',
+    },
+  },
+  {
+    key: 'missions.transport_pay_per_extra_passenger',
+    group: 'missions',
+    type: 'number',
+    min: 0,
+    max: 5,
+    factoryDefault: structuredClone(
+      GAME_CONFIG_DEFAULTS.missions.transport_pay_per_extra_passenger,
+    ),
+    description: {
+      en: 'Each passenger above one adds this share of the base pay to a passenger job (0.1 = +10%).',
+      'pt-BR':
+        'Cada passageiro acima de um acrescenta esta fração do pagamento base a um transporte de passageiros (0,1 = +10%).',
+    },
+  },
+  {
     key: 'missions.starter_max_distance',
     group: 'missions',
     type: 'integer',
