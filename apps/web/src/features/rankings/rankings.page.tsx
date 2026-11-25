@@ -19,7 +19,7 @@ import { boardIcon } from './board-icons';
 import { gapToNext, podiumOf } from './podium';
 import { OwnPlace, Podium } from './podium-view';
 
-const BOARDS: readonly RankingBoard[] = [
+export const BOARDS: readonly RankingBoard[] = [
   'distance',
   'fights_won',
   'race_wins',
@@ -96,6 +96,10 @@ export function RankingsPage() {
           onChange={(id) => setBoard(id as RankingBoard)}
         />
       </div>
+
+      <p className="sub rankings-board-name" aria-hidden="true">
+        {t(`rankings.board.${board}`)}
+      </p>
 
       {shipBoard && <p className="sub">{t('rankings.shipNote')}</p>}
       {!shipBoard && (
