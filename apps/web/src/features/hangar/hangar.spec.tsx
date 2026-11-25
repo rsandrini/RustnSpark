@@ -11,6 +11,7 @@ import {
 } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import type { Placement, ShipSheet } from '../../api/generated';
+import { BALANCED_PROFILE } from '../../test/ship-profile-fixture';
 
 const onboarded = () =>
   http.get('/v1/players/me', () =>
@@ -75,7 +76,9 @@ function shipEcho(layout: Placement[]) {
     stance: 'NEUTRAL',
     layout,
     sheet: testSheet,
-    shipClass: 'MULTIROLE',
+    shipClass: 'BALANCED',
+    profile: BALANCED_PROFILE,
+    profileModifier: null,
   };
 }
 
@@ -112,7 +115,7 @@ describe('hangar (S10.4)', () => {
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
 
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
-    expect(screen.getAllByText('Multirole').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Balanced').length).toBeGreaterThan(0);
     // Only part-cargo-b is in storage; everything else is placed on the yard.
     expect(await screen.findByRole('button', { name: /^cargo/i })).toBeInTheDocument();
     expect(block(container, 'part-bridge')).not.toBeNull();
@@ -435,7 +438,9 @@ describe('hangar (S10.4)', () => {
             stance: 'NEUTRAL',
             layout: [],
             sheet: { ...testSheet, pot: 0, mass: 20, mob: 1 },
-            shipClass: 'MULTIROLE',
+            shipClass: 'BALANCED',
+            profile: BALANCED_PROFILE,
+            profileModifier: null,
             yard: { cells: classicSquareCells() },
             activity: { kind: 'idle', until: null, missionId: null, repairUntil: null },
           },
@@ -481,7 +486,9 @@ describe('hangar (S10.4)', () => {
         const withCandidate = (body.partInstanceIds ?? []).includes('part-cargo-b');
         return HttpResponse.json({
           sheet: { ...testSheet, crg: withCandidate ? testSheet.crg + 5 : testSheet.crg },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: [],
           omittedPartInstanceIds: [],
@@ -520,7 +527,9 @@ describe('hangar (S10.4)', () => {
         // more mass drags mobility down, so it must read as a bad (red) change, not good.
         return HttpResponse.json({
           sheet: { ...testSheet, mass: withCandidate ? testSheet.mass + 4 : testSheet.mass },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: [],
           omittedPartInstanceIds: [],
@@ -560,7 +569,9 @@ describe('hangar (S10.4)', () => {
         return HttpResponse.json(
           {
             sheet: testSheet,
-            shipClass: 'MULTIROLE',
+            shipClass: 'BALANCED',
+            profile: BALANCED_PROFILE,
+            profileModifier: null,
             viability: { viable: true, problems: [] },
             layout: body.layout,
             omittedPartInstanceIds: [],
@@ -605,7 +616,9 @@ describe('hangar (S10.4)', () => {
         return HttpResponse.json(
           {
             sheet: testSheet,
-            shipClass: 'MULTIROLE',
+            shipClass: 'BALANCED',
+            profile: BALANCED_PROFILE,
+            profileModifier: null,
             viability: {
               viable: false,
               problems: [{ code: 'MOB_TOO_LOW', message: 'Mobility is below 1.' }],
@@ -640,7 +653,9 @@ describe('hangar (S10.4)', () => {
         const body = (await request.json()) as { layout: Placement[] };
         return HttpResponse.json({
           sheet: testSheet,
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: {
             viable: false,
             problems: [{ code: 'STRUCTURE_EXCEEDED', message: 'Structure budget exceeded.' }],
@@ -693,7 +708,9 @@ describe('hangar (S10.4)', () => {
           // this instead of the saved ship.sheet for the Store compare) would be unmissable.
           return HttpResponse.json({
             sheet: { ...testSheet, hp: 999 },
-            shipClass: 'MULTIROLE',
+            shipClass: 'BALANCED',
+            profile: BALANCED_PROFILE,
+            profileModifier: null,
             viability: { viable: true, problems: [] },
             layout: body.layout,
             omittedPartInstanceIds: [],
@@ -703,7 +720,9 @@ describe('hangar (S10.4)', () => {
         // (testSheet.hp is 40) — never the 999 from the unsaved layout edit above.
         return HttpResponse.json({
           sheet: { ...testSheet, hp: testSheet.hp + 6 },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: [],
           omittedPartInstanceIds: [],
@@ -735,7 +754,9 @@ describe('hangar (S10.4)', () => {
         const withCandidate = (body.partInstanceIds ?? []).includes('part-cargo-b');
         return HttpResponse.json({
           sheet: { ...testSheet, crg: withCandidate ? testSheet.crg + 5 : testSheet.crg },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: [],
           omittedPartInstanceIds: [],
@@ -990,7 +1011,9 @@ describe('hangar (S10.4)', () => {
             stance: 'NEUTRAL',
             layout: [{ partInstanceId: 'part-cargo-a', gx: 2, gy: 2, rot: 0 }],
             sheet: testSheet,
-            shipClass: 'MULTIROLE',
+            shipClass: 'BALANCED',
+            profile: BALANCED_PROFILE,
+            profileModifier: null,
             yard: { cells: classicSquareCells() },
             activity: { kind: 'idle', until: null, missionId: null, repairUntil: null },
           },
@@ -1449,7 +1472,9 @@ describe('hangar (S10.4)', () => {
         const body = (await request.json()) as { layout: Placement[] };
         return HttpResponse.json({
           sheet: { ...testSheet, pot: 12 },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: body.layout,
           omittedPartInstanceIds: [],

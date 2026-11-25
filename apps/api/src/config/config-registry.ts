@@ -2257,39 +2257,131 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
-    key: 'ship_class.cargo_share',
-    group: 'ship_class',
+    key: 'ship_profile.ref_cargo',
+    group: 'ship_profile',
     type: 'number',
-    min: 0,
-    max: 1,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_class.cargo_share),
+    min: 1,
+    max: 1000000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.ref_cargo),
     description: {
-      en: 'Fraction of class budget allocated to cargo capacity.',
-      'pt-BR': 'Fração do orçamento de classe alocada à capacidade de carga.',
+      en: 'Cargo space that counts as a full Cargo axis of the ship profile.',
+      'pt-BR': 'Espaço de carga que conta como o eixo Carga cheio do perfil da nave.',
     },
   },
   {
-    key: 'ship_class.pressurized_share',
-    group: 'ship_class',
+    key: 'ship_profile.ref_passengers',
+    group: 'ship_profile',
     type: 'number',
-    min: 0,
-    max: 1,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_class.pressurized_share),
+    min: 1,
+    max: 1000000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.ref_passengers),
     description: {
-      en: 'Fraction of class budget allocated to pressurized sections.',
-      'pt-BR': 'Fração do orçamento de classe alocada a seções pressurizadas.',
+      en: 'Passengers (seats the life support can keep alive) that count as a full Passengers axis of the ship profile.',
+      'pt-BR':
+        'Passageiros (assentos que o suporte de vida sustenta) que contam como o eixo Passageiros cheio do perfil da nave.',
     },
   },
   {
-    key: 'ship_class.combat_share',
-    group: 'ship_class',
+    key: 'ship_profile.ref_firepower',
+    group: 'ship_profile',
+    type: 'number',
+    min: 1,
+    max: 1000000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.ref_firepower),
+    description: {
+      en: 'Weapon firepower that counts as a full Firepower axis of the ship profile.',
+      'pt-BR':
+        'Poder de fogo das armas que conta como o eixo Poder de fogo cheio do perfil da nave.',
+    },
+  },
+  {
+    key: 'ship_profile.ref_defense',
+    group: 'ship_profile',
+    type: 'number',
+    min: 1,
+    max: 1000000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.ref_defense),
+    description: {
+      en: 'Defense (shield plus armor at its pool value) that counts as a full Defense axis of the ship profile.',
+      'pt-BR':
+        'Defesa (escudo mais blindagem pelo valor da reserva) que conta como o eixo Defesa cheio do perfil da nave.',
+    },
+  },
+  {
+    key: 'ship_profile.ref_mobility',
+    group: 'ship_profile',
+    type: 'number',
+    min: 0.1,
+    max: 1000000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.ref_mobility),
+    description: {
+      en: 'Mobility (thrust over mass, before rounding) that counts as a full Mobility axis of the ship profile.',
+      'pt-BR':
+        'Mobilidade (empuxo sobre massa, sem arredondar) que conta como o eixo Mobilidade cheio do perfil da nave.',
+    },
+  },
+  {
+    key: 'ship_profile.ref_range',
+    group: 'ship_profile',
+    type: 'number',
+    min: 1,
+    max: 100000000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.ref_range),
+    description: {
+      en: 'Autonomy (fuel over fuel use, in percent) that counts as a full Range axis of the ship profile.',
+      'pt-BR':
+        'Autonomia (combustível sobre consumo, em porcentagem) que conta como o eixo Alcance cheio do perfil da nave.',
+    },
+  },
+  {
+    key: 'ship_profile.ref_mining',
+    group: 'ship_profile',
+    type: 'number',
+    min: 0.1,
+    max: 1000000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.ref_mining),
+    description: {
+      en: 'Mining power that counts as a full Mining axis of the ship profile.',
+      'pt-BR': 'Poder de mineração que conta como o eixo Mineração cheio do perfil da nave.',
+    },
+  },
+  {
+    key: 'ship_profile.min_main',
+    group: 'ship_profile',
     type: 'number',
     min: 0,
     max: 1,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_class.combat_share),
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.min_main),
     description: {
-      en: 'Fraction of class budget allocated to combat stats.',
-      'pt-BR': 'Fração do orçamento de classe alocada a atributos de combate.',
+      en: 'A ship whose strongest axis is below this share of a full axis has no main point: it is Balanced.',
+      'pt-BR':
+        'Uma nave cujo eixo mais forte fica abaixo desta fração de um eixo cheio não tem ponto principal: é Equilibrada.',
+    },
+  },
+  {
+    key: 'ship_profile.lead_margin',
+    group: 'ship_profile',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.lead_margin),
+    description: {
+      en: 'How far the strongest axis must lead the second one to name the ship type; closer than this and the ship is Balanced.',
+      'pt-BR':
+        'Quanto o eixo mais forte precisa liderar o segundo para nomear o tipo da nave; mais perto que isso, a nave é Equilibrada.',
+    },
+  },
+  {
+    key: 'ship_profile.second_min',
+    group: 'ship_profile',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship_profile.second_min),
+    description: {
+      en: 'A second axis at or above this share of a full axis is shown as the ship modifier (for example Hauler, armed).',
+      'pt-BR':
+        'Um segundo eixo igual ou acima desta fração de um eixo cheio aparece como modificador da nave (por exemplo Cargueira, armada).',
     },
   },
   {

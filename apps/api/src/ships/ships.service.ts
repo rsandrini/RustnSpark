@@ -37,7 +37,8 @@ import {
   outsidePartIds,
   validateLayout,
 } from './geometry.js';
-import { deriveShipClass, type ShipClassType } from './ship-class.js';
+import { shipIdentityOf, type ShipClassType } from './ship-class.js';
+import type { ProfileAxis, ShipProfile } from './ship-profile.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
 import { startingPools } from '../missions/resolution-input.js';
@@ -98,6 +99,9 @@ export interface ShipResponse {
   formatChangeRequired: boolean;
   sheet: ShipSheet;
   shipClass: ShipClassType;
+  /** The seven axes of the ship (0..1) and its strong second axis, if any. */
+  profile: ShipProfile;
+  profileModifier: ProfileAxis | null;
   /** The assembly yard the layout lives on; the client draws it, the server validates it. */
   yard: { cells: [number, number][] };
   /** Installed part instance ids with no compatible connector chain back to the bridge right
@@ -169,6 +173,9 @@ export interface ShipActivity {
 export interface PreviewResponse {
   sheet: ShipSheet;
   shipClass: ShipClassType;
+  /** The seven axes of the ship (0..1) and its strong second axis, if any. */
+  profile: ShipProfile;
+  profileModifier: ProfileAxis | null;
   viability: ViabilityReport;
   /** How the ship's power would be shared while travelling: each kind of system's share of its need. */
   power?: { supply: number; demand: number; shares: Record<string, number> };
@@ -379,7 +386,7 @@ export class ShipsService implements OnModuleInit {
     );
     return {
       sheet,
-      shipClass: deriveShipClass(installedConnected, rules),
+      ...shipIdentityOf(sheet, rules),
       viability,
       layers: {
         shield: pools.esc,
@@ -441,7 +448,7 @@ export class ShipsService implements OnModuleInit {
     const viability = checkViability(sheet, installed, rules);
     return {
       sheet,
-      shipClass: deriveShipClass(installed, rules),
+      ...shipIdentityOf(sheet, rules),
       viability,
       layout: (ship.layout as unknown as Placement[]) ?? [],
       omittedPartInstanceIds: [],
@@ -975,7 +982,7 @@ export class ShipsService implements OnModuleInit {
       ),
       layout: shipLayout,
       sheet,
-      shipClass: deriveShipClass(installedConnected, rules),
+      ...shipIdentityOf(sheet, rules),
       disconnectedPartIds: installedRows
         .filter((row) => !connectedIds.has(row.id) && !outsidePartIds(shipLayout).has(row.id))
         .map((row) => row.id),

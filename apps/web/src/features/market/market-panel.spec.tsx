@@ -8,6 +8,7 @@ import { server } from '../../test/msw/server';
 import { economyState, resetEconomyState, setWallet } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import type { InventoryItem, ShipResponse, ShipSheet } from '../../api/generated';
+import { BALANCED_PROFILE } from '../../test/ship-profile-fixture';
 
 // Mirrors the default fixture's own ship sheet (handlers.ts's private `sheet()`) exactly, same
 // convention hangar.spec.tsx already uses for its own compare tests — the "before" side of the
@@ -436,7 +437,9 @@ describe('market panel: descriptions and filters', () => {
         expect(body.replacePartInstanceId).toBeUndefined();
         return HttpResponse.json({
           sheet: { ...defaultSheet, hp: defaultSheet.hp + 10 },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: [],
           omittedPartInstanceIds: [],
@@ -466,7 +469,9 @@ describe('market panel: descriptions and filters', () => {
             body.replacePartInstanceId === undefined
               ? { ...defaultSheet, hp: defaultSheet.hp + 10 }
               : { ...defaultSheet, hp: defaultSheet.hp + 6 },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: [],
           omittedPartInstanceIds: [],
@@ -500,7 +505,9 @@ describe('market panel: descriptions and filters', () => {
       http.post('/v1/ships/:id/preview', () =>
         HttpResponse.json({
           sheet: { ...defaultSheet, hp: defaultSheet.hp + 4 },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: [],
           omittedPartInstanceIds: [],
@@ -523,7 +530,9 @@ describe('market panel: descriptions and filters', () => {
       http.post('/v1/ships/:id/preview', () =>
         HttpResponse.json({
           sheet: { ...defaultSheet, hp: defaultSheet.hp + 6 },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: [],
           omittedPartInstanceIds: [],

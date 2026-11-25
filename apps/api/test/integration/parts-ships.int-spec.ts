@@ -49,6 +49,9 @@ interface ShipResponse {
   stance: string;
   layout: Array<Record<string, unknown>>;
   sheet: SheetShape;
+  shipClass: string;
+  profile: Record<string, number>;
+  profileModifier: string | null;
   yard: { cells: [number, number][] };
   disconnectedPartIds: string[];
 }
@@ -165,6 +168,12 @@ describe('parts and ships API (S4.3)', () => {
         expect(assembled.sheet.pot).toBeGreaterThan(0);
         expect(assembled.sheet.hp).toBeGreaterThan(0);
         expect(assembled.sheet.mob).toBeGreaterThanOrEqual(1);
+        expect(['HAULER', 'TRANSPORT', 'WARSHIP', 'MINER', 'RACER', 'BALANCED']).toContain(
+          assembled.shipClass,
+        );
+        expect(Object.keys(assembled.profile).sort()).toEqual(
+          ['cargo', 'defense', 'firepower', 'mining', 'mobility', 'passengers', 'range'].sort(),
+        );
         // a new ship starts with a share of its tank (the tutorial's first step is to fill it)
         expect(assembled.fuel).toBe(
           Math.floor(assembled.sheet.fuelCap * GAME_CONFIG_DEFAULTS.onboarding.start_fuel_fraction),
@@ -642,9 +651,9 @@ describe('parts and ships API (S4.3)', () => {
         .post(`/v1/ships/${shipId}/preview`)
         .set('Authorization', `Bearer ${token}`)
         .send({ layout });
-      const codes = (preview.body as { viability: { problems: { code: string }[] } }).viability.problems.map(
-        (p) => p.code,
-      );
+      const codes = (
+        preview.body as { viability: { problems: { code: string }[] } }
+      ).viability.problems.map((p) => p.code);
       expect(codes).toContain('PART_OUTSIDE');
       expect(codes).not.toContain('PART_DISCONNECTED');
     });
@@ -671,14 +680,18 @@ describe('parts and ships API (S4.3)', () => {
       expect(saved.status).toBe(200);
       expect((await prisma.ship.findUniqueOrThrow({ where: { id: shipId } })).fuel).toBe(0);
       // ...but the fuel is not lost: it goes with the tank, and comes back when the tank does
-      expect((await prisma.partInstance.findUniqueOrThrow({ where: { id: tank.id } })).storedFuel).toBe(25);
+      expect(
+        (await prisma.partInstance.findUniqueOrThrow({ where: { id: tank.id } })).storedFuel,
+      ).toBe(25);
       const back = await request(httpServer(testApp.app))
         .post(`/v1/ships/${shipId}/assemble`)
         .set('Authorization', `Bearer ${token}`)
         .send({ layout: ship.layout });
       expect(back.status).toBe(200);
       expect((await prisma.ship.findUniqueOrThrow({ where: { id: shipId } })).fuel).toBe(25);
-      expect((await prisma.partInstance.findUniqueOrThrow({ where: { id: tank.id } })).storedFuel).toBe(0);
+      expect(
+        (await prisma.partInstance.findUniqueOrThrow({ where: { id: tank.id } })).storedFuel,
+      ).toBe(0);
     });
 
     it('POST /v1/ships/:id/assemble with a valid layout updates the ship and parts', async () => {

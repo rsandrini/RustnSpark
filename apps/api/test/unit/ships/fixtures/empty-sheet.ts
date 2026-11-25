@@ -1,0 +1,27 @@
+import type { ShipSheet } from '../../../../src/ships/sheet.types.js';
+
+export const EMPTY_SHEET: ShipSheet = {
+  pot: 0,
+  pdf: 0,
+  bli: 0,
+  esc: 0,
+  sen: 0,
+  crg: 0,
+  min: 0,
+  hp: 0,
+  mass: 0,
+  energyCont: 0,
+  energyCombat: 0,
+  batCharge: 0,
+  batOutput: 0,
+  batInput: 0,
+  fuelCap: 0,
+  fuelUse: 0,
+  pax: 0,
+  lifeCap: 0,
+  structureUsed: 0,
+  structureBudget: 0,
+  autonomy: 0,
+  mob: 1,
+  condition: 100,
+};

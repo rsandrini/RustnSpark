@@ -1,4 +1,5 @@
 import type {
+  ShipProfile,
   EnginePreview,
   PartCatalogStats,
   Placement,
@@ -11,6 +12,17 @@ import { directionViolations, isOutsideYard, placementIssue } from '../../hangar
 import { SANDBOX_FORMAT_ID, SANDBOX_FORMATS } from './sandbox-fixtures';
 import { connectedPartIds, sheetOf } from './sandbox-geometry';
 import { SHIP_ID, SHIP_NAME, type Sandbox } from './sandbox-state';
+
+/** The prologue ship is fixed: a small passenger hauler, so it always reads as a Transport. */
+const SANDBOX_PROFILE: ShipProfile = {
+  cargo: 0.1,
+  passengers: 0.5,
+  firepower: 0,
+  defense: 0.05,
+  mobility: 0.1,
+  range: 0.1,
+  mining: 0,
+};
 
 const ONE_ROUTE_COVERED = { covered: 1, total: 1 } as const;
 
@@ -108,6 +120,8 @@ export function previewOf(
   return {
     sheet,
     shipClass: 'TRANSPORT',
+    profile: SANDBOX_PROFILE,
+    profileModifier: null,
     viability: { viable: problems.length === 0, problems, warnings },
     layout,
     omittedPartInstanceIds: [],
@@ -139,6 +153,8 @@ export function shipOf(sandbox: Sandbox): ShipResponse {
     layout: [...state.layout],
     sheet: preview.sheet,
     shipClass: 'TRANSPORT',
+    profile: SANDBOX_PROFILE,
+    profileModifier: null,
     yard: { cells: SANDBOX_FORMATS[0]?.cells.map(([x, y]) => [x, y] as [number, number]) ?? [] },
     disconnectedPartIds: preview.disconnectedPartIds,
     routeCoverage: preview.routeCoverage,

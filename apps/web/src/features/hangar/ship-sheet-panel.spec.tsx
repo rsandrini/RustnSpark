@@ -47,7 +47,7 @@ describe('ShipSheetPanel defense', () => {
   it('shows the shield and the armor as their own tiles, as a fight would start (worn or unconnected parts give less)', () => {
     renderWithProviders(
       <ShipSheetPanel
-        shipClass="MULTIROLE"
+        shipClass="BALANCED"
         sheet={{ ...sheet, bli: 10, esc: 20 }}
         problemCount={0}
         layers={{ shield: 7, armor: 23, hull: 100, shieldRegen: 1 }}
@@ -66,12 +66,7 @@ describe('ShipSheetPanel defense', () => {
 describe('ShipSheetPanel headline', () => {
   it('puts the structure first and keeps the range out of the headline', () => {
     renderWithProviders(
-      <ShipSheetPanel
-        shipClass="MULTIROLE"
-        sheet={sheet}
-        problemCount={0}
-        installedCatalogs={[]}
-      />,
+      <ShipSheetPanel shipClass="BALANCED" sheet={sheet} problemCount={0} installedCatalogs={[]} />,
     );
     const tiles = within(screen.getByTestId('sheet-headline')).getAllByText(
       /^(Structure|Firepower|Shield|Armor|Cargo|Mobility|Condition|Energy|Range)$/,
@@ -92,7 +87,7 @@ describe('ShipSheetPanel headline', () => {
     const onShowWarnings = vi.fn();
     renderWithProviders(
       <ShipSheetPanel
-        shipClass="MULTIROLE"
+        shipClass="BALANCED"
         sheet={sheet}
         problemCount={0}
         warningCount={2}
@@ -109,19 +104,14 @@ describe('ShipSheetPanel headline', () => {
   it('has no (!) without warnings, and a gear on the mobility only when tuning is offered', () => {
     const onTuneEngines = vi.fn();
     const { unmount } = renderWithProviders(
-      <ShipSheetPanel
-        shipClass="MULTIROLE"
-        sheet={sheet}
-        problemCount={0}
-        installedCatalogs={[]}
-      />,
+      <ShipSheetPanel shipClass="BALANCED" sheet={sheet} problemCount={0} installedCatalogs={[]} />,
     );
     expect(screen.queryByRole('button', { name: /Warnings/ })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Engine tuning' })).toBeNull();
     unmount();
     renderWithProviders(
       <ShipSheetPanel
-        shipClass="MULTIROLE"
+        shipClass="BALANCED"
         sheet={sheet}
         problemCount={0}
         onTuneEngines={onTuneEngines}
@@ -136,12 +126,7 @@ describe('ShipSheetPanel headline', () => {
 
   it('shows only the full list while "Show all stats" is open', () => {
     renderWithProviders(
-      <ShipSheetPanel
-        shipClass="MULTIROLE"
-        sheet={sheet}
-        problemCount={0}
-        installedCatalogs={[]}
-      />,
+      <ShipSheetPanel shipClass="BALANCED" sheet={sheet} problemCount={0} installedCatalogs={[]} />,
     );
     expect(screen.getByTestId('sheet-headline')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Show all stats'));
@@ -155,7 +140,7 @@ describe('ShipSheetPanel range', () => {
   it('shows the range in the full list as a plain distance with how many routes it covers', () => {
     renderWithProviders(
       <ShipSheetPanel
-        shipClass="MULTIROLE"
+        shipClass="BALANCED"
         sheet={sheet}
         problemCount={0}
         routeCoverage={{ covered: 14, total: 17 }}
@@ -171,7 +156,7 @@ describe('ShipSheetPanel range', () => {
   it('says unlimited for a ship that burns no fuel, with no route count', () => {
     renderWithProviders(
       <ShipSheetPanel
-        shipClass="MULTIROLE"
+        shipClass="BALANCED"
         sheet={{ ...sheet, fuelUse: 0, fuelCap: 0, autonomy: 0 }}
         problemCount={0}
         routeCoverage={null}
@@ -189,7 +174,7 @@ describe('ShipSheetPanel name', () => {
     const onRename = vi.fn();
     renderWithProviders(
       <ShipSheetPanel
-        shipClass="MULTIROLE"
+        shipClass="BALANCED"
         shipName="LUN-NOVA"
         onRename={onRename}
         sheet={sheet}

@@ -20,7 +20,7 @@ export type ConfigGroup =
   | 'rescue'
   | 'scavenging'
   | 'ship'
-  | 'ship_class'
+  | 'ship_profile'
   | 'stance'
   | 'wear'
   | 'world';
@@ -221,9 +221,16 @@ export type ConfigKey =
   | 'scavenging.handicap_factor'
   | 'scavenging.quality_max'
   | 'scavenging.quality_min'
-  | 'ship_class.cargo_share'
-  | 'ship_class.combat_share'
-  | 'ship_class.pressurized_share'
+  | 'ship_profile.lead_margin'
+  | 'ship_profile.min_main'
+  | 'ship_profile.ref_cargo'
+  | 'ship_profile.ref_defense'
+  | 'ship_profile.ref_firepower'
+  | 'ship_profile.ref_mining'
+  | 'ship_profile.ref_mobility'
+  | 'ship_profile.ref_passengers'
+  | 'ship_profile.ref_range'
+  | 'ship_profile.second_min'
   | 'ship.fuel_mass_per_unit'
   | 'ship.spare_part_slots'
   | 'ship.mob_factor'
@@ -613,10 +620,17 @@ export type GameRules = Readonly<{
     encounter_multiplier: number;
     client_target_share: number;
   }>;
-  ship_class: Readonly<{
-    cargo_share: number;
-    pressurized_share: number;
-    combat_share: number;
+  ship_profile: Readonly<{
+    ref_cargo: number;
+    ref_passengers: number;
+    ref_firepower: number;
+    ref_defense: number;
+    ref_mobility: number;
+    ref_range: number;
+    ref_mining: number;
+    min_main: number;
+    lead_margin: number;
+    second_min: number;
   }>;
   missions: Readonly<{
     hold_max: number;

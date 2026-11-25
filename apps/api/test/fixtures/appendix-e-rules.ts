@@ -62,7 +62,6 @@ export const APPENDIX_E_RULES: GameRules = {
   race: { ...GAME_CONFIG_DEFAULTS.race, field_follow: 0 },
   parts: { ...GAME_CONFIG_DEFAULTS.parts, starter_condition: 80 },
   scavenging: { ...GAME_CONFIG_DEFAULTS.scavenging, cooldown_seconds: 300 },
-  ship_class: { ...GAME_CONFIG_DEFAULTS.ship_class, pressurized_share: 0.15 },
   wear: {
     ...GAME_CONFIG_DEFAULTS.wear,
     danger_cap: 2.5,

@@ -3,7 +3,8 @@ import type { MyStatsResponse, PublicProfileResponse } from './profile.types.js'
 import { GameConfigService } from '../config/game-config.service.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { deriveShipClass } from '../ships/ship-class.js';
+import { shipIdentityOf } from '../ships/ship-class.js';
+import { deriveSheet } from '../ships/sheet.deriver.js';
 import { callsignOf } from './callsign.js';
 import { PlayerStatsService } from './player-stats.service.js';
 import type { StatTotals } from './stat-keys.js';
@@ -79,6 +80,7 @@ export class ProfileService {
     }));
     const bridge = installed.find((part) => part.catalog.partClass === 'BRIDGE');
     if (bridge === undefined) return null;
+    const rules = this.config.snapshot().rules;
     return {
       // The ship's own name (its callsign since onboarding); the generated one only if it is somehow blank.
       title:
@@ -89,7 +91,7 @@ export class ProfileService {
               playerName: player.name,
               playerId: player.id,
             }),
-      shipClass: deriveShipClass(installed, this.config.snapshot().rules),
+      ...shipIdentityOf(deriveSheet(installed, rules), rules),
       bridgeRarity: bridge.instance.partCatalog.rarity,
     };
   }

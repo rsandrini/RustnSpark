@@ -449,10 +449,20 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     encounter_multiplier: 1.5,
     client_target_share: 0.4,
   },
-  ship_class: {
-    cargo_share: 0.3,
-    pressurized_share: 0.2,
-    combat_share: 0.45,
+  // The value that counts as a full axis of the ship profile, and the rules that read it. Derived from the
+  // strongest dedicated Rare-tier builds (docs/balance/ship-profile-references.md): a good mid-game ship fills
+  // about 65% of its main axis.
+  ship_profile: {
+    ref_cargo: 550,
+    ref_passengers: 80,
+    ref_firepower: 210,
+    ref_defense: 850,
+    ref_mobility: 54,
+    ref_range: 105000,
+    ref_mining: 50,
+    min_main: 0.25,
+    lead_margin: 0.1,
+    second_min: 0.5,
   },
   missions: {
     hold_max: 1,

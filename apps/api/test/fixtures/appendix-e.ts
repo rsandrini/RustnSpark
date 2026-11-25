@@ -74,11 +74,6 @@ export const APPENDIX_E_DEFAULTS = {
   // Appendix E — escort
   'escort.encounter_multiplier': 1.5,
   'escort.client_target_share': 0.4,
-
-  // Appendix E — ship class thresholds (display label only)
-  'ship_class.cargo_share': 0.3,
-  'ship_class.pressurized_share': 0.15,
-  'ship_class.combat_share': 0.45,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -773,11 +768,3 @@ export const ESCORT_SHARE_CASES: readonly EscortShareCase[] = [
 // ---------------------------------------------------------------------------
 // Ship class [S4.2] — display label only; first match wins
 // ---------------------------------------------------------------------------
-
-export const SHIP_CLASS_PRECEDENCE = [
-  'HAULER',
-  'TRANSPORT',
-  'WARSHIP',
-  'MINER',
-  'MULTIROLE',
-] as const;

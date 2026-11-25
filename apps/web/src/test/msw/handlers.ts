@@ -56,6 +56,7 @@ import type {
 } from '../../api/generated';
 import { myStatsFixture, publicProfileFixture } from '../../features/profile/profile-fixtures';
 import { raceRoutesFixture, rankingFixture } from '../../features/rankings/rankings-fixtures';
+import { BALANCED_PROFILE } from '../ship-profile-fixture';
 
 let wallet = 4820;
 let fuelState = 25;
@@ -314,7 +315,9 @@ export const ship = (): ShipResponse => ({
       : null,
   layout: starterLayout(),
   sheet: sheet(),
-  shipClass: 'MULTIROLE',
+  shipClass: 'BALANCED',
+  profile: BALANCED_PROFILE,
+  profileModifier: null,
   yard: { cells: classicSquareCells() },
   disconnectedPartIds: [],
   routeCoverage: { covered: 14, total: 17 },
@@ -713,7 +716,9 @@ export const handlers = [
       rescue: null,
       layout: [],
       sheet: sheet(),
-      shipClass: 'MULTIROLE',
+      shipClass: 'BALANCED',
+      profile: BALANCED_PROFILE,
+      profileModifier: null,
       yard: { cells: classicSquareCells() },
       disconnectedPartIds: [],
       routeCoverage: null,
@@ -860,7 +865,9 @@ export const handlers = [
     const body = (await request.json()) as { layout?: Placement[] };
     return ok<PreviewResponse>({
       sheet: sheet(),
-      shipClass: 'MULTIROLE',
+      shipClass: 'BALANCED',
+      profile: BALANCED_PROFILE,
+      profileModifier: null,
       viability: { viable: true, problems: [], warnings: [] },
       layout: body.layout ?? [],
       omittedPartInstanceIds: [],

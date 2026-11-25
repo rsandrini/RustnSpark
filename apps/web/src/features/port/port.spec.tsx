@@ -17,6 +17,7 @@ import {
 } from '../../test/msw/handlers';
 import { queryByRoleSafe } from '../../test/queries';
 import { routes } from '../../app/router';
+import { BALANCED_PROFILE } from '../../test/ship-profile-fixture';
 
 const onboarded = () =>
   http.get('/v1/players/me', () =>
@@ -301,7 +302,9 @@ describe('port (S10.9)', () => {
             mob: 1,
             condition: 100,
           },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: {
             viable: false,
             problems: [{ code: 'NO_ENGINE', message: 'x' }],
@@ -410,7 +413,9 @@ describe('port (S10.9)', () => {
             mob: 1,
             condition: 100,
           },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: {
             viable: true,
             problems: [],
@@ -681,7 +686,9 @@ describe('port (S10.9)', () => {
               // An all-ion (or mid-refit) ship: no tank installed, so fuelCap is 0 — this must
               // not read as "0 / 0 = full" the way a genuinely topped-up tank would.
               sheet: { fuelCap: 0 },
-              shipClass: 'MULTIROLE',
+              shipClass: 'BALANCED',
+              profile: BALANCED_PROFILE,
+              profileModifier: null,
               yard: { cells: classicSquareCells() },
               activity: { kind: 'idle', until: null, missionId: null },
             },
@@ -713,7 +720,9 @@ describe('port (S10.9)', () => {
               stance: 'NEUTRAL',
               layout: [],
               sheet: { fuelCap: 40 },
-              shipClass: 'MULTIROLE',
+              shipClass: 'BALANCED',
+              profile: BALANCED_PROFILE,
+              profileModifier: null,
               yard: { cells: classicSquareCells() },
               activity: { kind: 'idle', until: null, missionId: null },
             },

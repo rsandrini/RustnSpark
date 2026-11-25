@@ -1,4 +1,5 @@
 import type { MyStatsResponse, PublicProfileResponse } from '../../api/generated';
+import { BALANCED_PROFILE } from '../../test/ship-profile-fixture';
 
 export const publicProfileFixture = (): PublicProfileResponse => ({
   name: 'Test Pilot',
@@ -6,7 +7,9 @@ export const publicProfileFixture = (): PublicProfileResponse => ({
   publicId: 'a1b2c3d4e5f6',
   ship: {
     title: 'LUN-TestPilot-Wren',
-    shipClass: 'MULTIROLE',
+    shipClass: 'BALANCED',
+    profile: BALANCED_PROFILE,
+    profileModifier: null,
     bridgeRarity: 'COMMON',
   },
   totals: {

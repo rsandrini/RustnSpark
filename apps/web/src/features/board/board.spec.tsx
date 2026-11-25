@@ -10,6 +10,7 @@ import {
   ship,
 } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
+import { BALANCED_PROFILE } from '../../test/ship-profile-fixture';
 
 const onboarded = () =>
   http.get('/v1/players/me', () =>
@@ -364,7 +365,9 @@ describe('board (S10.6)', () => {
               stance: 'NEUTRAL',
               layout: [],
               sheet: { fuelCap: 40 },
-              shipClass: 'MULTIROLE',
+              shipClass: 'BALANCED',
+              profile: BALANCED_PROFILE,
+              profileModifier: null,
               yard: { cells: classicSquareCells() },
               activity: { kind: 'scavenging', until: null, missionId: 'm-1', repairUntil: null },
             },
@@ -412,7 +415,9 @@ describe('board (S10.6)', () => {
               stance: 'NEUTRAL',
               layout: [],
               sheet: { fuelCap: 40 },
-              shipClass: 'MULTIROLE',
+              shipClass: 'BALANCED',
+              profile: BALANCED_PROFILE,
+              profileModifier: null,
               yard: { cells: classicSquareCells() },
               activity: { kind: 'idle', until: null, missionId: null, repairUntil: null },
             },
@@ -449,7 +454,9 @@ describe('board (S10.6)', () => {
               stance: 'NEUTRAL',
               layout: [],
               sheet: { fuelCap: 3 },
-              shipClass: 'MULTIROLE',
+              shipClass: 'BALANCED',
+              profile: BALANCED_PROFILE,
+              profileModifier: null,
               yard: { cells: classicSquareCells() },
               activity: { kind: 'idle', until: null, missionId: null, repairUntil: null },
             },
@@ -486,7 +493,9 @@ describe('board (S10.6)', () => {
               stance: 'NEUTRAL',
               layout: [],
               sheet: { fuelCap: 0, fuelUse: 0 },
-              shipClass: 'MULTIROLE',
+              shipClass: 'BALANCED',
+              profile: BALANCED_PROFILE,
+              profileModifier: null,
               yard: { cells: classicSquareCells() },
               activity: { kind: 'idle', until: null, missionId: null, repairUntil: null },
             },

@@ -1,52 +1,83 @@
 import type { GameRules } from '../config/game-config.types.js';
-import type { InstalledPart } from '../parts/part.types.js';
+import {
+  PROFILE_AXES,
+  deriveShipProfile,
+  type ProfileAxis,
+  type ShipProfile,
+} from './ship-profile.js';
+import type { ShipSheet } from './sheet.types.js';
 
-export type ShipClassType = 'HAULER' | 'TRANSPORT' | 'WARSHIP' | 'MINER' | 'MULTIROLE';
+export type ShipClassType = 'HAULER' | 'TRANSPORT' | 'WARSHIP' | 'MINER' | 'RACER' | 'BALANCED';
 
-export function deriveShipClass(parts: InstalledPart[], rules: GameRules): ShipClassType {
-  // Class is the shape of what the pilot built, so shares are measured against the structure
-  // actually fitted (everything but the bridge), not against the bridge's budget: a small ship
-  // that is mostly cargo is a hauler even though it uses a fraction of the budget. (Measured
-  // against the budget, no small ship ever reached a threshold and every ship was Multirole.)
-  const budget = parts
-    .filter((part) => part.catalog.partClass !== 'BRIDGE')
-    .reduce((total, part) => total + Math.max(0, part.catalog.structureCost), 0);
-  if (budget <= 0) {
-    return 'MULTIROLE';
-  }
-
-  const cargoCost = structureCostForClasses(parts, ['CARGO']);
-  const pressurizedCost = structureCostForFlag(parts, (part) => part.catalog.pressurized);
-  const combatCost = structureCostForClasses(parts, ['WEAPON', 'DEFENSE']);
-  const hasMiningGear = parts.some((part) => part.catalog.min > 0);
-
-  const cargoShare = cargoCost / budget;
-  const combatShare = combatCost / budget;
-
-  if (cargoShare >= rules.ship_class.cargo_share) {
-    return 'HAULER';
-  }
-  if (pressurizedCost > 0 && pressurizedCost / budget >= rules.ship_class.pressurized_share) {
-    return 'TRANSPORT';
-  }
-  if (combatShare >= rules.ship_class.combat_share) {
-    return 'WARSHIP';
-  }
-  if (hasMiningGear) {
-    return 'MINER';
-  }
-  return 'MULTIROLE';
+export interface ShipIdentity {
+  shipClass: ShipClassType;
+  /** A strong second axis ("Hauler, armed"); null when there is none or the ship is Balanced. */
+  modifier: ProfileAxis | null;
 }
 
-function structureCostForClasses(parts: InstalledPart[], classes: readonly string[]): number {
-  return parts
-    .filter((part) => classes.includes(part.catalog.partClass))
-    .reduce((total, part) => total + part.catalog.structureCost, 0);
+/** What the ship responses carry next to the sheet. */
+export interface ShipIdentityBundle {
+  shipClass: ShipClassType;
+  profile: ShipProfile;
+  profileModifier: ProfileAxis | null;
 }
 
-function structureCostForFlag(
-  parts: InstalledPart[],
-  predicate: (part: InstalledPart) => boolean,
-): number {
-  return parts.filter(predicate).reduce((total, part) => total + part.catalog.structureCost, 0);
+// The types by main point, in the fixed order that breaks an exact tie (the first listed wins).
+// Range has no type of its own; the two combat axes share one (the better of them counts).
+const TYPE_ORDER: readonly { type: ShipClassType; score: (p: ShipProfile) => number }[] = [
+  { type: 'HAULER', score: (p) => p.cargo },
+  { type: 'TRANSPORT', score: (p) => p.passengers },
+  { type: 'WARSHIP', score: (p) => Math.max(p.firepower, p.defense) },
+  { type: 'MINER', score: (p) => p.mining },
+  { type: 'RACER', score: (p) => p.mobility },
+];
+
+export function deriveShipIdentity(profile: ShipProfile, rules: GameRules): ShipIdentity {
+  const cfg = rules.ship_profile;
+  const ranked = TYPE_ORDER.map((entry, index) => ({
+    ...entry,
+    value: entry.score(profile),
+    index,
+  })).sort((a, b) => b.value - a.value || a.index - b.index);
+  const top = ranked[0];
+  const second = ranked[1];
+  if (top === undefined || second === undefined) return { shipClass: 'BALANCED', modifier: null };
+  if (top.value < cfg.min_main || top.value - second.value < cfg.lead_margin) {
+    return { shipClass: 'BALANCED', modifier: null };
+  }
+  // The axes the type already names are not repeated as its modifier.
+  const named: readonly ProfileAxis[] =
+    top.type === 'WARSHIP'
+      ? [profile.firepower >= profile.defense ? 'firepower' : 'defense']
+      : [
+          top.type === 'HAULER'
+            ? 'cargo'
+            : top.type === 'TRANSPORT'
+              ? 'passengers'
+              : top.type === 'MINER'
+                ? 'mining'
+                : 'mobility',
+        ];
+  let modifier: ProfileAxis | null = null;
+  let best = cfg.second_min;
+  for (const key of PROFILE_AXES) {
+    if (named.includes(key)) continue;
+    // `>=` on the first and `>` after it: the earlier axis in PROFILE_AXES wins a tie.
+    if (modifier === null ? profile[key] >= best : profile[key] > best) {
+      modifier = key;
+      best = profile[key];
+    }
+  }
+  return { shipClass: top.type, modifier };
+}
+
+/** The class name alone, for callers that only show it. */
+export function deriveShipClass(profile: ShipProfile, rules: GameRules): ShipClassType {
+  return deriveShipIdentity(profile, rules).shipClass;
+}
+
+export function shipIdentityOf(sheet: ShipSheet, rules: GameRules): ShipIdentityBundle {
+  const profile = deriveShipProfile(sheet, rules);
+  const { shipClass, modifier } = deriveShipIdentity(profile, rules);
+  return { shipClass, profile, profileModifier: modifier };
 }

@@ -1,4 +1,5 @@
 import type { ShipClassType } from '../ships/ship-class.js';
+import type { ProfileAxis, ShipProfile } from '../ships/ship-profile.js';
 import type { StatRecords, StatTotals } from './stat-keys.js';
 
 // The shapes of the profile endpoints. The API does not depend on the contract package (the web
@@ -16,6 +17,8 @@ export interface PublicProfileShip {
   /** Placeholder callsign until ships have names. */
   title: string;
   shipClass: ShipClassType;
+  profile: ShipProfile;
+  profileModifier: ProfileAxis | null;
   /** Rarity of the installed bridge. */
   bridgeRarity: string;
 }

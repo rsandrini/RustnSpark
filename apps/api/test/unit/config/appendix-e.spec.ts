@@ -22,7 +22,6 @@ import {
   PVP_ZONE_CASES,
   PRESET_CASES,
   RESCUE_DEADLINE_CASES,
-  SHIP_CLASS_PRECEDENCE,
   SLOT_A_PRECEDENCE,
   STANCE_CASES,
   type PolicyCase,
@@ -75,7 +74,6 @@ describe('S5.0 — Appendix E sign-off gate', () => {
       'wear.danger_floor',
       'wear.danger_cap',
       'wear.system_base_min',
-      'ship_class.pressurized_share',
       'parts.starter_condition',
       'scavenging.cooldown_seconds',
       'mining.attempts_per_stop',
@@ -381,21 +379,6 @@ describe('S5.0 — Appendix E sign-off gate', () => {
 
     it('pins the escort encounter multiplier', () => {
       expect(APPENDIX_E_DEFAULTS['escort.encounter_multiplier']).toBe(1.5);
-    });
-  });
-
-  describe('ship class table [S4.2]', () => {
-    it('pins the three share thresholds and the first-match precedence', () => {
-      expect(APPENDIX_E_DEFAULTS['ship_class.cargo_share']).toBe(0.3);
-      expect(APPENDIX_E_DEFAULTS['ship_class.pressurized_share']).toBe(0.15);
-      expect(APPENDIX_E_DEFAULTS['ship_class.combat_share']).toBe(0.45);
-      expect(SHIP_CLASS_PRECEDENCE).toEqual([
-        'HAULER',
-        'TRANSPORT',
-        'WARSHIP',
-        'MINER',
-        'MULTIROLE',
-      ]);
     });
   });
 });

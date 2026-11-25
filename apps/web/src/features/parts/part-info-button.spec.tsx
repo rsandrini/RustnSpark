@@ -6,6 +6,7 @@ import { server } from '../../test/msw/server';
 import { PartInfoButton } from './part-info-button';
 import type { PartInfoData } from './part-detail';
 import type { ShipSheet } from '../../api/generated';
+import { BALANCED_PROFILE } from '../../test/ship-profile-fixture';
 
 // A full sheet (every ShipSheetSchema field required — a bare partial would leave every
 // row but the one under test reading NaN), same fixture shape as hangar.spec.tsx's testSheet.
@@ -85,7 +86,9 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
         expect(body.replacePartInstanceId).toBe('part-cargo-a');
         return HttpResponse.json({
           sheet: { ...baseSheet, crg: baseSheet.crg + 8 },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: [],
           omittedPartInstanceIds: [],
@@ -133,7 +136,9 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
         // scales any of the candidate's own effect stats (deriveSheet is condition-agnostic).
         return HttpResponse.json({
           sheet: { ...baseSheet, condition: baseSheet.condition - 10 },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: { viable: true, problems: [] },
           layout: [],
           omittedPartInstanceIds: [],
@@ -222,7 +227,9 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
       http.post('/v1/ships/:id/preview', () =>
         HttpResponse.json({
           sheet: { ...baseSheet, pax: 0, lifeCap: 0, structureUsed: 62 },
-          shipClass: 'MULTIROLE',
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
           viability: {
             viable: false,
             problems: [{ code: 'STRUCTURE_EXCEEDED', message: 'Structure budget exceeded.' }],

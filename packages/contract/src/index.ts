@@ -218,8 +218,38 @@ export const ShipSheetSchema = z.object({
 });
 export type ShipSheet = z.infer<typeof ShipSheetSchema>;
 
-export const ShipClassTypeSchema = z.enum(['HAULER', 'TRANSPORT', 'WARSHIP', 'MINER', 'MULTIROLE']);
+export const ShipClassTypeSchema = z.enum([
+  'HAULER',
+  'TRANSPORT',
+  'WARSHIP',
+  'MINER',
+  'RACER',
+  'BALANCED',
+]);
 export type ShipClassType = z.infer<typeof ShipClassTypeSchema>;
+
+/** The seven axes of a ship, each 0..1 (the share of a full axis it reaches). */
+export const ProfileAxisSchema = z.enum([
+  'cargo',
+  'passengers',
+  'firepower',
+  'defense',
+  'mobility',
+  'range',
+  'mining',
+]);
+export type ProfileAxis = z.infer<typeof ProfileAxisSchema>;
+const axisValue = z.number().min(0).max(1);
+export const ShipProfileSchema = z.object({
+  cargo: axisValue,
+  passengers: axisValue,
+  firepower: axisValue,
+  defense: axisValue,
+  mobility: axisValue,
+  range: axisValue,
+  mining: axisValue,
+});
+export type ShipProfile = z.infer<typeof ShipProfileSchema>;
 
 export const ShipStatusSchema = z.enum(['IN_PORT', 'ON_MISSION', 'ADRIFT']);
 export type ShipStatus = z.infer<typeof ShipStatusSchema>;
@@ -577,6 +607,9 @@ export const ShipResponseSchema = z.object({
   layout: z.array(PlacementSchema),
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,
+  profile: ShipProfileSchema,
+  /** The ship's strong second axis ("Hauler, armed"), or null. */
+  profileModifier: ProfileAxisSchema.nullable(),
   /** The assembly yard: exactly these cells (relative to the bridge at [0,0]) are buildable —
       the ship's own ShipFormat selection, not a fixed bound. */
   yard: z.object({ cells: z.array(z.tuple([z.number(), z.number()])) }),
@@ -642,6 +675,9 @@ export type Problem = z.infer<typeof ProblemSchema>;
 export const PreviewResponseSchema = z.object({
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,
+  profile: ShipProfileSchema,
+  /** The ship's strong second axis ("Hauler, armed"), or null. */
+  profileModifier: ProfileAxisSchema.nullable(),
   viability: z.object({
     viable: z.boolean(),
     /** Block flight. */
@@ -1891,6 +1927,9 @@ export const PublicProfileShipSchema = z.object({
   /** Placeholder callsign (`TAG-Name-Word`) until ships have names. */
   title: z.string(),
   shipClass: ShipClassTypeSchema,
+  profile: ShipProfileSchema,
+  /** The ship's strong second axis ("Hauler, armed"), or null. */
+  profileModifier: ProfileAxisSchema.nullable(),
   /** Rarity of the installed bridge. */
   bridgeRarity: z.string(),
 });
