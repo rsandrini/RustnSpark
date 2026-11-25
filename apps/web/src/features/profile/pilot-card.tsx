@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import type { PublicProfileResponse } from '../../api/generated';
 import { ShipRadar } from '../../ui/kit/ShipRadar';
 import { FactionBadge } from '../../ui/FactionBadge';
+import { PilotAvatar } from './pilot-avatar';
+import { pilotNumbersOf } from './pilot-numbers';
 
 export interface PilotCardProps {
   profile: PublicProfileResponse;
@@ -18,8 +20,7 @@ export function PilotCard({ profile }: PilotCardProps) {
   });
 
   const totals = profile.totals;
-  const missions = totals['missions.started'] ?? 0;
-  const hasFlown = missions > 0;
+  const n = pilotNumbersOf(profile);
 
   const typeName = t(`hangar.classes.${profile.ship?.shipClass ?? ''}`, {
     defaultValue: profile.ship?.shipClass ?? '',
@@ -38,8 +39,11 @@ export function PilotCard({ profile }: PilotCardProps) {
   return (
     <article className="pilot-card">
       <header className="pilot-header">
-        <h2 className="pilot-name">{profile.name}</h2>
-        {profile.factionId !== null && <FactionBadge factionId={profile.factionId} />}
+        <PilotAvatar name={profile.name} factionId={profile.factionId} size={56} />
+        <div className="pilot-ident">
+          <h2 className="pilot-name">{profile.name}</h2>
+          {profile.factionId !== null && <FactionBadge factionId={profile.factionId} />}
+        </div>
       </header>
 
       {profile.ship !== null && (
@@ -53,53 +57,57 @@ export function PilotCard({ profile }: PilotCardProps) {
             </p>
           </div>
           {profile.ship.profile !== undefined && (
-            <ShipRadar values={profile.ship.profile} size={96} label={t('hangar.profile.title')} />
+            <ShipRadar values={profile.ship.profile} size={120} label={t('hangar.profile.title')} />
           )}
         </section>
       )}
 
-      {!hasFlown ? (
+      {!n.hasFlown ? (
         <p className="pilot-empty">{t('profile.stats.noFlights')}</p>
       ) : (
-        <dl className="pilot-stats">
-          <div className="pilot-stat">
-            <dt>{t('profile.stats.missions')}</dt>
-            <dd>{numberFormat.format(missions)}</dd>
-          </div>
-          <div className="pilot-stat">
-            <dt>{t('profile.stats.successRate')}</dt>
-            <dd>
-              {profile.successRate !== null ? percentFormat.format(profile.successRate) : '—'}
-            </dd>
-          </div>
-          <div className="pilot-stat">
-            <dt>{t('profile.stats.distance')}</dt>
-            <dd>{numberFormat.format(totals['flight.distance'] ?? 0)}</dd>
-          </div>
-          <div className="pilot-stat">
-            <dt>{t('profile.stats.fightsWon')}</dt>
-            <dd>{numberFormat.format(totals['fights.won'] ?? 0)}</dd>
-          </div>
-          <div className="pilot-stat">
-            <dt>{t('profile.stats.races')}</dt>
-            <dd>
-              {t('profile.stats.racesValue', {
-                entered: totals['races.entered'] ?? 0,
-                won: totals['races.won'] ?? 0,
-                podium: totals['races.podium'] ?? 0,
-              })}
-            </dd>
-          </div>
-          <div className="pilot-stat">
-            <dt>{t('profile.stats.bestRacePlace')}</dt>
-            <dd>
-              {profile.records['best.race_place'] !== undefined
-                ? numberFormat.format(profile.records['best.race_place'].value)
-                : '—'}
-            </dd>
-          </div>
-        </dl>
+        <>
+          <dl className="pilot-stats">
+            <div className="pilot-stat">
+              <dt>{t('profile.stats.missions')}</dt>
+              <dd>{numberFormat.format(n.missions)}</dd>
+            </div>
+            <div className="pilot-stat">
+              <dt>{t('profile.stats.successRate')}</dt>
+              <dd>{n.successPct !== null ? percentFormat.format(n.successPct) : '—'}</dd>
+            </div>
+            <div className="pilot-stat">
+              <dt>{t('profile.stats.distance')}</dt>
+              <dd>{numberFormat.format(n.distance)}</dd>
+            </div>
+            <div className="pilot-stat">
+              <dt>{t('profile.stats.raceWins')}</dt>
+              <dd>{numberFormat.format(n.raceWins)}</dd>
+            </div>
+          </dl>
+          <dl className="pilot-details">
+            <div>
+              <dt>{t('profile.stats.fightsWon')}</dt>
+              <dd>{numberFormat.format(n.fightsWon)}</dd>
+            </div>
+            <div>
+              <dt>{t('profile.stats.races')}</dt>
+              <dd>
+                {t('profile.stats.racesValue', {
+                  entered: totals['races.entered'] ?? 0,
+                  won: n.raceWins,
+                  podium: totals['races.podium'] ?? 0,
+                })}
+              </dd>
+            </div>
+            <div>
+              <dt>{t('profile.stats.bestRacePlace')}</dt>
+              <dd>{n.bestRacePlace !== null ? numberFormat.format(n.bestRacePlace) : '—'}</dd>
+            </div>
+          </dl>
+        </>
       )}
+
+      {/* Reserved for the pilot's rank and medals: no such system exists yet, so this renders nothing. */}
     </article>
   );
 }

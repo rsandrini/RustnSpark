@@ -1947,6 +1947,7 @@
       "successRate": "Success rate",
       "distance": "Distance",
       "fightsWon": "Fights won",
+      "raceWins": "Race wins",
       "races": "Races",
       "racesValue": "{{entered}} entered · {{won}} won · {{podium}} podiums",
       "bestRacePlace": "Best place",

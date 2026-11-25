@@ -21,9 +21,12 @@ describe('PilotCard', () => {
     expect(stat('Missions').getByText('5')).toBeInTheDocument();
     expect(stat('Success rate').getByText('75%')).toBeInTheDocument();
     expect(stat('Distance').getByText('2,400')).toBeInTheDocument();
+    expect(stat('Race wins').getByText('1')).toBeInTheDocument();
     expect(stat('Fights won').getByText('2')).toBeInTheDocument();
     expect(stat('Races').getByText('4 entered · 1 won · 2 podiums')).toBeInTheDocument();
     expect(stat('Best place').getByText('2')).toBeInTheDocument();
+    expect(screen.getByTestId('pilot-avatar')).toHaveTextContent('T');
+    expect(screen.getByRole('img', { name: 'Ship profile' })).toBeInTheDocument();
     // no scavenging, fastest-race or joined-date lines on the card
     expect(screen.queryByText('Fastest race')).toBeNull();
     expect(screen.queryByText('Scavenging')).toBeNull();
@@ -47,6 +50,7 @@ describe('PilotCard', () => {
     expect(screen.getByText('Distância')).toBeInTheDocument();
     expect(screen.getByText('Combates vencidos')).toBeInTheDocument();
     expect(screen.getByText('Corridas')).toBeInTheDocument();
+    expect(screen.getByText('Vitórias em corrida')).toBeInTheDocument();
   });
 
   it('never shows money, damage or part text from private totals', () => {
@@ -64,5 +68,39 @@ describe('PilotCard', () => {
     renderWithProviders(<PilotCard profile={profile} />, { withRouter: false });
     expect(screen.getByRole('img', { name: 'Ship profile' })).toBeInTheDocument();
     expect(screen.getByText(/Racer, long-range/)).toBeInTheDocument();
+  });
+
+  it('has four big tiles and the details on a second line', () => {
+    const { container } = renderWithProviders(<PilotCard profile={publicProfileFixture()} />, {
+      withRouter: false,
+    });
+    expect(container.querySelectorAll('.pilot-stats .pilot-stat')).toHaveLength(4);
+    expect(container.querySelector('.pilot-details')).toHaveTextContent('Fights won');
+  });
+
+  it('shows no ship panel and no radar without a ship', () => {
+    const profile = publicProfileFixture();
+    profile.ship = null;
+    const { container } = renderWithProviders(<PilotCard profile={profile} />, {
+      withRouter: false,
+    });
+    expect(container.querySelector('.pilot-ship')).toBeNull();
+    expect(screen.queryByRole('img', { name: 'Ship profile' })).toBeNull();
+  });
+
+  it('a never-flown pilot shows the empty state and no tiles', () => {
+    const { container } = renderWithProviders(<PilotCard profile={emptyPublicProfileFixture()} />, {
+      withRouter: false,
+    });
+    expect(screen.getByText('No flights yet')).toBeInTheDocument();
+    expect(container.querySelector('.pilot-stat')).toBeNull();
+    expect(container.querySelector('.pilot-details')).toBeNull();
+  });
+
+  it('a very long name keeps the truncating name class', () => {
+    const profile = publicProfileFixture();
+    profile.name = 'W'.repeat(120);
+    renderWithProviders(<PilotCard profile={profile} />, { withRouter: false });
+    expect(screen.getByRole('heading', { level: 2 })).toHaveClass('pilot-name');
   });
 });

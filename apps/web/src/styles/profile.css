@@ -9,12 +9,53 @@
 }
 
 .pilot-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
+}
+
+.pilot-avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 3px solid var(--rule);
+  border-radius: 50%;
+  background: var(--paper-1);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.pilot-ident {
+  min-width: 0;
 }
 
 .pilot-name {
   margin: 0 0 6px;
   font-size: var(--text-xl);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pilot-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.pilot-details div {
+  display: flex;
+  gap: 4px;
+}
+
+.pilot-details dd {
+  margin: 0;
 }
 
 .pilot-joined {
