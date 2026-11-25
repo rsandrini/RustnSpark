@@ -1040,9 +1040,65 @@ describe('filler reach and length target', () => {
     for (const seed of seeds) expect(draw(seed, { minSeconds: 4000 })).toBe('far');
   });
 
-  it('a length target no destination fits falls back to any destination, never throws', () => {
+  const bandGiver = (minZone: number, maxZone: number): FillMissionInput['giver'] => ({
+    id: 'g',
+    role: 'GIVER',
+    weight: 1,
+    locationIds: [],
+    personality: { types: { DELIVERY: 1 }, minZone, maxZone, tone: 'plain' },
+  });
+
+  it('a length target no destination fits falls back to the plain draw (banded when the giver has a band)', () => {
+    for (const seed of seeds) {
+      expect(draw(seed, { minSeconds: 99999 })).toBe(draw(seed, undefined));
+      expect(draw(seed, { minSeconds: 99999 }, bandGiver(1, 1))).toBe('mid');
+    }
+  });
+
+  it('banded and fitting beats everywhere and fitting', () => {
+    // band zones 1..2 = mid, far; max 2000s fits near and mid; the band-fit step leaves only mid
+    for (const seed of seeds) expect(draw(seed, { maxSeconds: 2000 }, bandGiver(1, 2))).toBe('mid');
+  });
+
+  it('a rescue is measured out and back under a length target', () => {
+    const rescue = (seed: string): string | null | undefined =>
+      fillMission({
+        seed,
+        origin: O,
+        world: starWorld([RESCUE_LUNA]),
+        rules,
+        now: NOW,
+        lengthTarget: { maxSeconds: 2000 },
+      }).destinationId;
+    // mid is 1500s one way but 3000s out and back: only near fits
+    for (const seed of seeds) expect(rescue(seed)).toBe('near');
+  });
+
+  it('TRAVEL and SCAVENGE templates never count in the reach', () => {
+    const extra: FillerTemplate[] = [
+      { ...DELIVERY_LUNA, id: 't', type: 'TRAVEL' },
+      { ...DELIVERY_LUNA, id: 'sc', type: 'SCAVENGE' },
+    ];
+    const reach = reachByType(O, starWorld([DELIVERY_LUNA, ...extra]), rules);
+    expect([...reach.keys()]).toEqual(['DELIVERY']);
+  });
+
+  it('a destination with no path is neither counted nor drawn', () => {
+    const w = starWorld([DELIVERY_LUNA]);
+    const isle: FillerLocation = { id: 'isle', type: 'outpost', zone: 0, factionId: 'luna' };
+    const island = { ...w, locations: [...w.locations, isle] };
+    expect(reachByType(O, island, rules).get('DELIVERY')?.destinations).toBe(3);
     for (const seed of seeds)
-      expect(['near', 'mid', 'far']).toContain(draw(seed, { minSeconds: 99999 }));
+      expect(
+        fillMission({
+          seed,
+          origin: O,
+          world: island,
+          rules,
+          now: NOW,
+          lengthTarget: { maxSeconds: 600 },
+        }).destinationId,
+      ).toBe('near');
   });
 
   it('the length target beats the giver zone band', () => {
@@ -1056,9 +1112,20 @@ describe('filler reach and length target', () => {
     for (const seed of seeds) expect(draw(seed, { minSeconds: 4000 }, giver)).toBe('far');
   });
 
-  it('no lengthTarget: the same seed gives the same draft as before', () => {
-    const a = draw('stable', undefined);
-    expect(draw('stable', undefined)).toBe(a);
-    expect(draw('stable', {})).toBe(a);
+  it('no lengthTarget: seeded drafts keep the values the pre-change filler gave', () => {
+    const got = [LOC_ALPHA, LOC_BETA].flatMap((o) =>
+      ['p1', 'p2', 'p3'].map((seed) => {
+        const d = fill(seed, o);
+        return [o.id, seed, d.destinationId, d.reward, d.type];
+      }),
+    );
+    expect(got).toEqual([
+      ['alpha', 'p1', 'beta', 9620, 'DELIVERY'],
+      ['alpha', 'p2', 'beta', 9620, 'DELIVERY'],
+      ['alpha', 'p3', 'beta', 12012, 'RESCUE'],
+      ['beta', 'p1', 'alpha', 9620, 'DELIVERY'],
+      ['beta', 'p2', 'alpha', 9620, 'DELIVERY'],
+      ['beta', 'p3', 'alpha', 9620, 'DELIVERY'],
+    ]);
   });
 });

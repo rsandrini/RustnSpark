@@ -592,13 +592,20 @@ export function fillMission(input: FillMissionInput): MissionDraft {
     Math.max(
       ...path.flatMap((route) => [zoneOf.get(route.nodeAId) ?? 0, zoneOf.get(route.nodeBId) ?? 0]),
     );
+  // One Dijkstra per destination per fill, however many scans ask for it.
+  const paths = new Map<string, FillerRoute[] | null>();
+  const pathTo = (locationId: string): FillerRoute[] | null => {
+    if (!paths.has(locationId))
+      paths.set(locationId, shortestPath(origin.id, locationId, adjacency));
+    return paths.get(locationId) ?? null;
+  };
   const reachableWhere = (inBand: (path: FillerRoute[]) => boolean): FillerLocation[] =>
     world.locations
       .filter((location) => {
         if (location.id === origin.id) return false;
         if (!matchesDestination(location, template, input.starter?.firstMission === true))
           return false;
-        const candidatePath = shortestPath(origin.id, location.id, adjacency);
+        const candidatePath = pathTo(location.id);
         return candidatePath !== null && withinStarterZone(candidatePath) && inBand(candidatePath);
       })
       .sort(byId);
@@ -616,10 +623,7 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   // fast and from the same nearby place every time (the usual board keeps the whole map in play
   // and picks freely).
   const pathLength = (locationId: string): number =>
-    (shortestPath(origin.id, locationId, adjacency) ?? []).reduce(
-      (sum, route) => sum + route.distance,
-      0,
-    );
+    (pathTo(locationId) ?? []).reduce((sum, route) => sum + route.distance, 0);
   const byDistance = (x: FillerLocation, y: FillerLocation): number =>
     pathLength(x.id) - pathLength(y.id) || byId(x, y);
   let destination: FillerLocation | undefined;
