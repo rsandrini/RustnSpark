@@ -68,6 +68,8 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 - [ ] Make zones with really long distances, hours to cross between ports, so bigger tanks are worth having and can be validated.
   The initial zone stays as it is (or with small adjustments).
 
+- Owner, 2026-11-25: the NEXT version expands the map about 5x, with missions of 8+ hours. Slice 2.1's 'long' threshold (an admin knob, 1 h today) is to be raised with it.
+
 ### 5d. Refuel between ports
 
 - [ ] The option to refuel between ports (today the pilot refuels docked at a port).
