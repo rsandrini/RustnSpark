@@ -24,7 +24,7 @@
 - Code in English; every player-facing string in en AND pt-BR, no hard-coded text; new error/reason codes need en + pt-BR (`apps/api/src` must NOT import the contract package: the Docker api build has none; use local types, parse in int-spec).
 - Admin owns every tunable number: the DB wins over TS defaults, changes take effect at once; new knobs go in the config registry (`config-registry.ts`) with en + pt-BR labels.
 - Missions resolve in the `worker` container: rebuild api AND worker after an engine/requirements change (a note for the owner; no docker run in this plan).
-- A pilot with a mission accepted or flying while a migration changes parts or requirements: nothing may break (accepted/flying TRANSPORT missions without a stored head count default to 1 passenger).
+- No retro-compatibility for missions (owner, 2026-11-24): old offers and accepted missions expire and are replaced by the new rules; code does NOT carry legacy branches or tests for them. If an old offer cannot satisfy the new rule it is simply not accepted.
 - The seed fills data only when empty: any part/config change needs a MIGRATION for prod.
 - Sims need Node 22. Run only the specs of touched files (api: the unit/int specs for touched modules; web: touched specs); the api int-test stack recipe is in memory `feedback_targeted_tests.md`.
 - The prologue sandbox (`apps/web/src/features/prologue/sandbox`) and the admin screens follow every new field/kind.
@@ -35,7 +35,6 @@
 - An axis far above its reference: clamped to the rim, the type stays stable.
 - Config edited in the admin while pilots are online: type and chart change at once (no stale cache).
 - The class/profile are DERIVED, never stored (check the `Ship` model has no class column): nothing to migrate for ships.
-- A TRANSPORT offer accepted BEFORE the migration (no `passengers` in its requirements) stays takeable and dispatchable with the default of 1.
 - A ship with a cabin and a life-support module but not enough seats/capacity for the group: the offer is blocked with a reason naming which one is short (seats vs life support), the fix chip points to the right store tab (cabin = CARGO class, life support = UTILITY class).
 - The oracles for resolution/sheet values still pass unchanged (adding `pax`/`lifeCap` to the sheet changes no existing field).
 - pt-BR axis labels short enough for a 390px radar.
@@ -74,7 +73,7 @@
 - The generator sets `requirements.passengers` for TRANSPORT offers: a random integer in `[transport_passengers_min, transport_passengers_max]` (defaults 1 and 6), following the cargo pattern if the generator already scales cargo; the reward grows by `transport_pay_per_extra_passenger` (default 10% of the base per extra passenger above 1) through the existing reward formula (read the `reward` computation first; keep the economy sim in mind: a note, not a rebalance here).
 - Web fix map (`requirement-fix.ts`): `PASSENGER_SEATS` -> store CARGO (cabins are CARGO class), `LIFE_SUPPORT_CAPACITY` -> store UTILITY; add to its spec.
 
-- [ ] **Step 1: Failing tests.** checker spec: a group of 4 with a cabin of 4 seats and a life-support of 6 -> eligible; seats 2 -> `PASSENGER_SEATS` unmet with needed 4 actual 2; lifeCap 3 -> `LIFE_SUPPORT_CAPACITY` unmet; cabin without life support -> `PRESSURIZED_LIFE_SUPPORT` unmet; an offer with NO `passengers` hint needs 1 (a cabin of 2 seats passes: legacy offers keep working); the dispatch-time check uses the same checklist (an accepted TRANSPORT whose ship lost seats is refused with the reason: a spec near the slice-0.1 dispatch spec). Generator spec: a TRANSPORT offer's `requirements.passengers` is within the configured range and the reward grows with it; other types get no `passengers`. Web `requirement-fix.spec`: the two new codes map as above.
+- [ ] **Step 1: Failing tests.** checker spec: a group of 4 with a cabin of 4 seats and a life-support of 6 -> eligible; seats 2 -> `PASSENGER_SEATS` unmet with needed 4 actual 2; lifeCap 3 -> `LIFE_SUPPORT_CAPACITY` unmet; cabin without life support -> `PRESSURIZED_LIFE_SUPPORT` unmet; the dispatch-time check uses the same checklist (an accepted TRANSPORT whose ship lost seats is refused with the reason: a spec near the slice-0.1 dispatch spec). Generator spec: a TRANSPORT offer's `requirements.passengers` is within the configured range and the reward grows with it; other types get no `passengers`. Web `requirement-fix.spec`: the two new codes map as above.
 - [ ] **Step 2: Run:** FAIL. **Step 3: Implement.** **Step 4: Run** the api specs of the checker, generator, dispatch (int) and the web specs (requirement-fix, contract-face if it renders `unit`), the board i18n spec.
 - [ ] **Step 5: Commit** `feat: passenger missions carry a head count; seats and life-support capacity gate them`.
 
