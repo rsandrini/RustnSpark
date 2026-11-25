@@ -131,6 +131,15 @@
   background: transparent;
   color: var(--muted, #9aa3b2);
 }
+/* gain: green; loss (or a failed mission): red, restrained, never animated */
+.mresult-credits.gain,
+.mresult-prize.gain {
+  color: var(--ok);
+}
+.mresult-credits.loss,
+.mresult-prize.loss {
+  color: var(--bad);
+}
 @keyframes mresult-fade {
   from {
     opacity: 0;
@@ -150,8 +159,8 @@
 }
 @keyframes mresult-pop {
   40% {
-    transform: scale(1.12);
-    text-shadow: 0 0 18px currentColor;
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 0.5rem color-mix(in oklch, var(--ok) 60%, transparent));
   }
 }
 @media (prefers-reduced-motion: no-preference) {

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
@@ -33,6 +34,10 @@ function popup(over: Partial<MissionResultProps> = {}) {
     </I18nextProvider>,
   );
 }
+
+const css = readFileSync('src/styles/mission-result.css', 'utf8');
+const rule = (selector: string) =>
+  css.match(new RegExp(`${selector.replace(/\./g, '\\.')}[^{]*\\{([^}]*)\\}`))?.[1] ?? '';
 
 describe('MissionResultPopup reward moment', () => {
   beforeEach(() => {
@@ -109,5 +114,36 @@ describe('MissionResultPopup reward moment', () => {
     popup({ tone: 'bad', credits: '−200 ¢', creditsValue: -200 });
     expect(figure()).toHaveClass('loss');
     expect(figure()).not.toHaveClass('gain');
+  });
+
+  it('the stylesheet colours a gain green and a loss red, and the pop is motion-gated and glows green', () => {
+    expect(rule('.mresult-credits.gain')).toMatch(/color:\s*var\(--ok\)/);
+    expect(rule('.mresult-credits.loss')).toMatch(/color:\s*var\(--bad\)/);
+    expect(rule('.mresult-credits.loss')).not.toMatch(/animation/);
+    const gated =
+      css.match(/@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n\}/)?.[0] ?? '';
+    expect(gated).toContain('mresult-pop');
+    expect(css.match(/@keyframes mresult-pop \{[\s\S]*?\n\}/)?.[0]).toContain('var(--ok)');
+    expect(css.replace(gated, '')).not.toMatch(/animation:[^;]*mresult-pop/);
+  });
+
+  it('tone bad with a positive credit uses the loss style', () => {
+    popup({ tone: 'bad', credits: '+50 ¢', creditsValue: 50 });
+    expect(figure()).toHaveClass('loss');
+    expect(figure()).not.toHaveClass('gain');
+  });
+
+  it('buzzes once when it opens: success for a reward, warn for a loss, nothing for zero', () => {
+    const vibrate = vi.fn(() => true);
+    Object.defineProperty(navigator, 'vibrate', { value: vibrate, configurable: true });
+    popup();
+    expect(vibrate.mock.calls).toEqual([[[20, 40, 30]]]);
+    vibrate.mockClear();
+    popup({ tone: 'bad', credits: '−200 ¢', creditsValue: -200 });
+    expect(vibrate.mock.calls).toEqual([[40]]);
+    vibrate.mockClear();
+    popup({ credits: '+0 ¢', creditsValue: 0 });
+    expect(vibrate).not.toHaveBeenCalled();
+    delete (navigator as { vibrate?: unknown }).vibrate;
   });
 });
