@@ -149,13 +149,15 @@ describe('deriveShipIdentity modifier', () => {
     expect(deriveShipIdentity(profile({ cargo: 0.8, firepower: 0.1 }), rules).modifier).toBeNull();
   });
 
-  it('lets range be a modifier although it never names a type', () => {
-    expect(deriveShipIdentity(profile({ cargo: 0.8, range: 0.6 }), rules)).toEqual({
+  it('never makes range a modifier: a full-range ion ship takes its real second axis', () => {
+    expect(deriveShipIdentity(profile({ cargo: 0.8, range: 1 }), rules)).toEqual({
       shipClass: 'HAULER',
-      modifier: 'range',
+      modifier: null,
     });
-    // but a small range never qualifies by share
-    expect(deriveShipIdentity(profile({ cargo: 0.1, range: 0.4 }), rules).modifier).toBeNull();
+    expect(deriveShipIdentity(profile({ cargo: 0.8, firepower: 0.5, range: 1 }), rules)).toEqual({
+      shipClass: 'HAULER',
+      modifier: 'firepower',
+    });
   });
 
   it('does not repeat the axis that named a warship as its modifier', () => {

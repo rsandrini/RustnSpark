@@ -49,7 +49,7 @@ const EPSILON = 1e-9;
  * Balanced means the ship really has no main point: nearly empty, no axis holding `min_share` of the whole, or
  * a lead over the second share under `lead_margin`.
  *
- * The modifier is the strongest remaining axis (range included, the axes that named the type excluded) that is
+ * The modifier is the strongest remaining axis (range excluded: it is display-only; the axes that named the type excluded) that is
  * either strong in absolute terms (`second_min`) or, for a type axis, holds at least `second_share` of the sum.
  */
 export function deriveShipIdentity(profile: ShipProfile, rules: GameRules): ShipIdentity {
@@ -84,7 +84,8 @@ export function deriveShipIdentity(profile: ShipProfile, rules: GameRules): Ship
   let modifier: ProfileAxis | null = null;
   let best = -1;
   for (const key of PROFILE_AXES) {
-    if (key === named) continue;
+    // Range is display-only: it stays on the radar but never names a modifier (a fuel-free ion ship is always full).
+    if (key === named || key === 'range') continue;
     const value = profile[key];
     const strong = value >= cfg.second_min - EPSILON;
     // Mobility is a modifier only when strong in absolute terms: its share of a small sum means nothing.

@@ -2795,6 +2795,14 @@
         "label": "Mineração",
         "hint": "Poder de mineração para missões de minério."
       },
+      "pax": {
+        "label": "Assentos de passageiros",
+        "hint": "Assentos para passageiros."
+      },
+      "lifeCap": {
+        "label": "Pessoas atendidas",
+        "hint": "Quantas pessoas esta peça mantém vivas."
+      },
       "fuelCap": {
         "label": "Tanque",
         "hint": "Quanto combustível cabe."

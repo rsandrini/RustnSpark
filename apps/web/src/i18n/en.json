@@ -2795,6 +2795,14 @@
         "label": "Mining",
         "hint": "Mining power for ore missions."
       },
+      "pax": {
+        "label": "Passenger seats",
+        "hint": "Seats for passengers."
+      },
+      "lifeCap": {
+        "label": "People kept alive",
+        "hint": "How many people this part keeps alive."
+      },
       "fuelCap": {
         "label": "Fuel tank",
         "hint": "How much fuel it holds."

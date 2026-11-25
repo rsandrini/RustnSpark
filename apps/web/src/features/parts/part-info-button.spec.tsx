@@ -221,6 +221,17 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
     const tag = within(dialog).getByRole('button', { name: /^Why you need it/i });
     expect(tag.getAttribute('title')).toContain('4 passenger seats');
     expect(tag.getAttribute('title')).toContain('keeps 1 person alive');
+    // and they are visible rows of the stats table, not only a hover title
+    expect(within(dialog).getByRole('row', { name: /^Passenger seats/ })).toHaveTextContent('4');
+    expect(within(dialog).getByRole('row', { name: /^People kept alive/ })).toHaveTextContent('1');
+  });
+
+  it('shows neither the seats nor the air row for a part that has none', async () => {
+    renderWithProviders(<PartInfoButton part={listingPart} />, { withRouter: false });
+    fireEvent.click(screen.getByRole('button', { name: /Details/i }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).queryByRole('row', { name: /^Passenger seats/ })).toBeNull();
+    expect(within(dialog).queryByRole('row', { name: /^People kept alive/ })).toBeNull();
   });
 
   it('shows a rarity badge in the header, not only the card’s border color (owner request)', async () => {

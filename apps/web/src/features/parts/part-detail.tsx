@@ -64,6 +64,8 @@ const EFFECT_STATS = [
   'sen',
   'crg',
   'min',
+  'pax',
+  'lifeCap',
   'fuelCap',
   'fuelUse',
   'energyCont',
