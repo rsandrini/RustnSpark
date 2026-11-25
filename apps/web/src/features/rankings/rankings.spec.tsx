@@ -27,25 +27,57 @@ describe('rankings page', () => {
     await i18n.changeLanguage('en');
   });
 
-  it('lists the pilots with rank, name and value, links each to the card and marks the own row', async () => {
+  it('shows the podium for the top three and links each to the card, marking the own place', async () => {
     server.use(onboarded());
     renderWithRouter(routes, { initialEntries: ['/rankings'] });
 
-    const list = await screen.findByTestId('ranking-list');
-    const rows = within(list).getAllByRole('listitem');
-    expect(rows).toHaveLength(3);
-    expect(within(rows[0]!).getByText('1')).toBeInTheDocument();
-    expect(within(rows[0]!).getByRole('link', { name: 'Mira' })).toHaveAttribute(
+    const podium = await screen.findByTestId('ranking-podium');
+    const cols = within(podium).getAllByRole('listitem');
+    expect(cols.map((c) => c.getAttribute('data-place'))).toEqual(['2', '1', '3']);
+    expect(within(cols[1]!).getByRole('link', { name: 'Mira' })).toHaveAttribute(
       'href',
       '/pilots/mira0000pub1',
     );
-    expect(within(rows[0]!).getByText('9,800')).toBeInTheDocument();
-    expect(rows[1]).toHaveClass('me');
-    // the own row is in the list, so no separate pinned line
-    expect(screen.queryByTestId('ranking-own')).not.toBeInTheDocument();
+    expect(within(cols[1]!).getByText('9,800')).toBeInTheDocument();
+    expect(cols[0]).toHaveClass('me');
+    // fewer than 4 pilots: no list under the podium
+    expect(screen.queryByTestId('ranking-list')).not.toBeInTheDocument();
+    expect(screen.getByTestId('ranking-own')).toHaveTextContent(
+      'You · rank 2 · +5,600 to pass the next',
+    );
   });
 
-  it('pins the own position when the pilot is below the listed ones, and says so when there is none', async () => {
+  it('lists rank 4 onwards under the podium and marks the own row', async () => {
+    const more = [4, 5].map((rank) => ({
+      rank,
+      publicId: `pub${rank}`,
+      name: `Pilot ${rank}`,
+      factionId: null,
+      value: 100 - rank,
+      isMe: rank === 5,
+    }));
+    server.use(
+      onboarded(),
+      http.get('/v1/rankings/:board', () =>
+        HttpResponse.json(
+          rankingFixture({
+            entries: [...rankingFixture().entries.map((e) => ({ ...e, isMe: false })), ...more],
+            me: { rank: 5, value: 95 },
+          }),
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/rankings'] });
+    const rows = within(await screen.findByTestId('ranking-list')).getAllByRole('listitem');
+    expect(rows).toHaveLength(2);
+    expect(within(rows[0]!).getByRole('link', { name: 'Pilot 4' })).toBeInTheDocument();
+    expect(rows[1]).toHaveClass('me');
+    expect(screen.getByTestId('ranking-own')).toHaveTextContent(
+      'You · rank 5 · +1 to pass the next',
+    );
+  });
+
+  it('anchors the own position when the pilot is below the listed ones, and says so when there is none', async () => {
     server.use(
       onboarded(),
       http.get('/v1/rankings/:board', () =>
@@ -59,7 +91,7 @@ describe('rankings page', () => {
       ),
     );
     renderWithRouter(routes, { initialEntries: ['/rankings'] });
-    expect(await screen.findByTestId('ranking-own')).toHaveTextContent('You are number 312 (40)');
+    expect(await screen.findByTestId('ranking-own')).toHaveTextContent('You · rank 312');
 
     server.use(
       http.get('/v1/rankings/:board', () =>
@@ -83,7 +115,7 @@ describe('rankings page', () => {
       }),
     );
     renderWithRouter(routes, { initialEntries: ['/rankings'] });
-    await screen.findByTestId('ranking-list');
+    await screen.findByTestId('ranking-podium');
     expect(asked).toContain('/v1/rankings/distance?window=weekly');
     fireEvent.click(screen.getByRole('button', { name: 'All time' }));
     await waitFor(() => expect(asked).toContain('/v1/rankings/distance?window=lifetime'));
@@ -109,8 +141,16 @@ describe('rankings page', () => {
                 value: 185,
                 isMe: false,
               },
+              {
+                rank: 2,
+                publicId: 'oro00000pub3',
+                name: 'Oro',
+                factionId: null,
+                value: 200,
+                isMe: true,
+              },
             ],
-            me: null,
+            me: { rank: 2, value: 200 },
           }),
         ),
       ),
@@ -120,6 +160,7 @@ describe('rankings page', () => {
     const picker = await screen.findByRole('combobox', { name: 'Race route' });
     expect(within(picker).getAllByRole('option')).toHaveLength(2);
     expect(await screen.findByText('3:05')).toBeInTheDocument();
+    expect(screen.getByTestId('ranking-own')).toHaveTextContent('-0:15 to pass the next');
   });
 
   it('the ship boards have no period toggle and show one decimal', async () => {

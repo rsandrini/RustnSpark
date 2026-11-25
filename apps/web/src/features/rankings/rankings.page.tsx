@@ -14,6 +14,8 @@ import { pickLocalized } from '../../i18n/localized';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { PageTitle } from '../../ui/PageTitle';
 import { useWorld } from '../ship/use-world';
+import { gapToNext, podiumOf } from './podium';
+import { OwnPlace, Podium } from './podium-view';
 
 const BOARDS: readonly RankingBoard[] = [
   'distance',
@@ -75,7 +77,7 @@ export function RankingsPage() {
     });
   };
 
-  const ownInList = ranking?.entries.some((entry) => entry.isMe) === true;
+  const podium = podiumOf(ranking?.entries ?? []);
 
   return (
     <main className="app rankings">
@@ -152,33 +154,37 @@ export function RankingsPage() {
           {ranking.entries.length === 0 ? (
             <p className="sub">{t('rankings.empty')}</p>
           ) : (
-            <ol className="rankings-list" data-testid="ranking-list">
-              {ranking.entries.map((entry) => (
-                <li key={entry.rank} className={entry.isMe ? 'rankings-row me' : 'rankings-row'}>
-                  <span className="rankings-rank">{entry.rank}</span>
-                  <Link
-                    className="rankings-name"
-                    to={`/pilots/${encodeURIComponent(entry.publicId)}`}
-                  >
-                    {entry.name}
-                  </Link>
-                  {entry.factionId !== null && <FactionBadge factionId={entry.factionId} />}
-                  <span className="rankings-value">{valueText(entry.value)}</span>
-                </li>
-              ))}
-            </ol>
+            <>
+              <Podium entries={ranking.entries} valueText={valueText} />
+              {podium.rest.length > 0 && (
+                <ol className="rankings-list" data-testid="ranking-list">
+                  {podium.rest.map((entry) => (
+                    <li
+                      key={entry.rank}
+                      className={entry.isMe ? 'rankings-row me' : 'rankings-row'}
+                    >
+                      <span className="rankings-rank">{entry.rank}</span>
+                      <Link
+                        className="rankings-name"
+                        to={`/pilots/${encodeURIComponent(entry.publicId)}`}
+                      >
+                        {entry.name}
+                      </Link>
+                      {entry.factionId !== null && <FactionBadge factionId={entry.factionId} />}
+                      <span className="rankings-value">{valueText(entry.value)}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </>
           )}
 
-          {!ownInList && (
-            <p className="rankings-own" data-testid="ranking-own">
-              {ranking.me === null
-                ? t('rankings.noResult')
-                : t('rankings.yourPosition', {
-                    rank: numberFormat.format(ranking.me.rank),
-                    value: valueText(ranking.me.value),
-                  })}
-            </p>
-          )}
+          <OwnPlace
+            me={ranking.me}
+            board={board}
+            gap={gapToNext({ board, entries: ranking.entries, me: ranking.me })}
+            valueText={valueText}
+          />
         </>
       )}
     </main>

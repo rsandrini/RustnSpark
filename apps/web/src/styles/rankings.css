@@ -87,3 +87,85 @@
   padding: 8px;
   border: 1px dashed var(--faint);
 }
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  list-style: none;
+  margin: 16px 0;
+  padding: 0;
+}
+
+.podium-col {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.podium-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--faint);
+  background: var(--paper-2, rgba(255, 255, 255, 0.05));
+  font-weight: 700;
+}
+
+.podium-first .podium-avatar {
+  width: 60px;
+  height: 60px;
+}
+
+.podium-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podium-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.podium-pedestal {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+  min-height: 48px;
+  background: var(--paper-2, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--faint);
+  border-bottom: none;
+  font-weight: 700;
+  font-size: var(--text-lg, 1.25rem);
+}
+
+.podium-first .podium-pedestal {
+  min-height: 80px;
+}
+
+.podium-third .podium-pedestal {
+  min-height: 32px;
+}
+
+.podium-col.me .podium-pedestal,
+.podium-col.me .podium-name {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.podium-col.me .podium-avatar {
+  box-shadow: 0 0 0 2px var(--accent);
+}

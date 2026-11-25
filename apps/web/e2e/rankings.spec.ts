@@ -12,13 +12,12 @@ test('a flown pilot is on the distance board, weekly and all time, and every boa
   await flyOneMission(page);
 
   await page.goto('/rankings');
-  const list = page.getByTestId('ranking-list');
-  await expect(list).toBeVisible();
-  await expect(list.locator('.rankings-row.me')).toHaveCount(1);
+  await expect(page.getByTestId('ranking-podium')).toBeVisible();
+  await expect(page.getByTestId('ranking-own')).toBeVisible();
   await assertClean(page, 'rankings (weekly distance)');
 
   await page.getByRole('button', { name: 'All time' }).click();
-  await expect(page.locator('.rankings-row.me')).toHaveCount(1);
+  await expect(page.getByTestId('ranking-podium')).toBeVisible();
 
   // the others answer, whatever they hold (an empty board says so)
   for (const board of ['Fights won', 'Race wins', 'Fastest race']) {

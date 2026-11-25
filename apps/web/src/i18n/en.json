@@ -1910,7 +1910,12 @@
     "noRaces": "Nobody has finished a race yet.",
     "empty": "Nobody is on this board yet.",
     "noResult": "You have no result on this board yet.",
-    "yourPosition": "You are number {{rank}} ({{value}})",
+    "you": "You",
+    "rankValue": "rank {{rank}}",
+    "toPass": "+{{amount}} to pass the next",
+    "toPassTime": "-{{time}} to pass the next",
+    "leading": "You lead",
+    "tied": "Tied for the next place",
     "loadFailed": "Could not load the ranking.",
     "shipNote": "Ranks the latest rating of each pilot's ship. Ratings are refreshed periodically, not live.",
     "board": {
