@@ -20,7 +20,9 @@ export interface RewardBaseInput {
 
 /** The pay multiplier of a passenger group: 1 for one passenger (or none known), growing per extra head. */
 export function passengerPayFactor(passengers: unknown, rules: GameRules): number {
-  return 1 + (headCountOf(passengers) - 1) * rules.missions.transport_pay_per_extra_passenger;
+  // `?? 0`: an old simulation snapshot predates the knob, and undefined would make the pay NaN.
+  const perExtra: number | undefined = rules.missions.transport_pay_per_extra_passenger;
+  return 1 + (headCountOf(passengers) - 1) * (perExtra ?? 0);
 }
 
 /** The one parse of a head count (the checker and the pay both use it): a positive whole number, else a group of one. */

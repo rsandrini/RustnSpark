@@ -429,6 +429,8 @@ export function PartDetail({
     t(`parts.role.${catalog.partClass}`),
     catalog.pressurized ? t('parts.flag.pressurized') : null,
     catalog.lifeSupport ? t('parts.flag.lifeSupport') : null,
+    catalog.pax > 0 ? t('parts.flag.seats', { count: catalog.pax }) : null,
+    catalog.lifeCap > 0 ? t('parts.flag.lifeCap', { count: catalog.lifeCap }) : null,
   ]
     .filter((piece): piece is string => piece !== null && piece !== '')
     .join(' ');

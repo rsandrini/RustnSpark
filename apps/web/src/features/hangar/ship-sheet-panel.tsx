@@ -80,6 +80,8 @@ const ROWS: readonly Row[] = [
   { key: 'autonomy', group: 'propulsion' },
   { key: 'crg', group: 'cargo' },
   { key: 'min', group: 'cargo' },
+  { key: 'pax', group: 'cargo' },
+  { key: 'lifeCap', group: 'cargo' },
   { key: 'hp', group: 'hull' },
   { key: 'condition', group: 'hull' },
   { key: 'structure', group: 'hull' },

@@ -121,8 +121,40 @@ const SPECIAL_FLAGS: readonly FlagSpec[] = ['pressurized', 'lifeSupport'].map((k
   helpKey: `tuning.structured.special.${key}Help`,
 }));
 
+const SPECIAL_COUNTS = ['pax', 'lifeCap'] as const;
+
 export function SpecialPropEditor(props: StructuredEditorProps) {
-  return withAdvanced(props, <FlagsEditor {...props} flags={SPECIAL_FLAGS} testPrefix="special" />);
+  const { t } = useTranslation();
+  const current = asObject(props.value);
+  return withAdvanced(
+    props,
+    <>
+      <FlagsEditor {...props} flags={SPECIAL_FLAGS} testPrefix="special" />
+      <div className="structured-fields">
+        {SPECIAL_COUNTS.map((key) => (
+          <label key={key} title={t(`tuning.structured.special.${key}Help`)}>
+            {t(`tuning.structured.special.${key}`)}
+            <input
+              type="number"
+              min={0}
+              step={1}
+              data-testid={`special-${key}`}
+              placeholder="0"
+              value={typeof current[key] === 'number' ? current[key] : ''}
+              onChange={(event) => {
+                // Every other key of the object is kept; an empty field drops just this one.
+                const rest = { ...current };
+                delete rest[key];
+                props.onChange(
+                  event.target.value === '' ? rest : { ...rest, [key]: Number(event.target.value) },
+                );
+              }}
+            />
+          </label>
+        ))}
+      </div>
+    </>,
+  );
 }
 
 const PRESETS = ['CRUISE', 'ESCAPE', 'COMBAT'] as const;

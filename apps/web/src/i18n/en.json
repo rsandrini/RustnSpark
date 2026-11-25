@@ -538,6 +538,8 @@
       "sen": "Sensors",
       "crg": "Cargo capacity",
       "min": "Mining capacity",
+      "pax": "Passenger seats",
+      "lifeCap": "Life support capacity",
       "hp": "Hull points",
       "mass": "Mass",
       "fuelCap": "Fuel tank capacity",
@@ -731,10 +733,12 @@
       "twice": "No room to turn it sideways here, so it was turned twice instead."
     },
     "statHelp": {
-      "class": "The ship class, decided automatically by how much of the structure budget goes to cargo, pressurized (passenger) space and combat parts.",
+      "class": "Named from what the ship is mainly good at: its strongest axis on the chart. Balanced when no axis leads clearly.",
       "mob": "How fast the ship travels: total engine power divided by mass, times a fixed factor. More power or less mass raises it.",
       "crg": "How much cargo the ship can carry, from every installed cargo hold.",
       "min": "How much ore the ship can mine per trip, from every installed mining rig.",
+      "pax": "How many passengers the installed cabins seat.",
+      "lifeCap": "How many people the installed life support keeps alive. A group is bounded by the smaller of seats and air.",
       "hp": "Total hit points from every installed part. Lost in combat, restored by repair.",
       "pot": "Total thrust from every installed engine. Feeds mobility.",
       "pdf": "Combat damage output from every installed weapon.",
@@ -1527,9 +1531,13 @@
       },
       "special": {
         "pressurized": "Pressurized cabin",
-        "pressurizedHelp": "Counts as passenger space (needed for transport missions).",
+        "pressurizedHelp": "Counts as passenger space (needed for transport missions). The seats it gives are set below.",
         "lifeSupport": "Life support",
-        "lifeSupportHelp": "Keeps passengers alive (needed together with a cabin)."
+        "lifeSupportHelp": "Keeps passengers alive (needed together with a cabin). How many it keeps alive is set below.",
+        "pax": "Passenger seats",
+        "paxHelp": "How many passengers this part seats (empty or 0 = none).",
+        "lifeCap": "People kept alive",
+        "lifeCapHelp": "How many people this part keeps alive (empty or 0 = none). A group is bounded by the smaller of seats and air."
       },
       "policy": {
         "missionForcesFlee": "Always flee",
@@ -2373,7 +2381,7 @@
     "needsTitle": "You need:",
     "needs": {
       "DELIVERY": "cargo space for the load (see Cargo in the Hangar).",
-      "TRANSPORT": "a Passenger Cabin plus a Life Support module.",
+      "TRANSPORT": "a Passenger Cabin plus a Life Support module, with seats and air for the group.",
       "ESCORT": "at least one weapon and good mobility to keep up.",
       "MINING": "a Mining Rig and cargo space for the ore.",
       "RESCUE": "a fast ship (mobility) and room for the survivors.",
@@ -2749,6 +2757,12 @@
       "UTILITY": "Special equipment that unlocks certain missions (mining rigs, life support, and so on)."
     },
     "flag": {
+      "seats": "{{count}} passenger seats",
+      "seats_one": "{{count}} passenger seat",
+      "seats_other": "{{count}} passenger seats",
+      "lifeCap": "keeps {{count}} people alive",
+      "lifeCap_one": "keeps {{count}} person alive",
+      "lifeCap_other": "keeps {{count}} people alive",
       "pressurized": "Passenger module: a ship carrying one needs a life support part.",
       "lifeSupport": "Life support: required as soon as the ship has a passenger module."
     },
@@ -3087,7 +3101,7 @@
       "transport": {
         "name": "Transport",
         "text": "Fly passengers where they are going.",
-        "needs": "A Passenger Cabin plus a Life Support module."
+        "needs": "A Passenger Cabin plus a Life Support module, with seats and air for the group."
       },
       "escort": {
         "name": "Escort",

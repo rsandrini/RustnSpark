@@ -653,7 +653,7 @@ details.collapsible > summary h2 {
 
 .sheet-top {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
 }

@@ -538,6 +538,8 @@
       "sen": "Sensores",
       "crg": "Capacidade de carga",
       "min": "Capacidade de mineração",
+      "pax": "Assentos de passageiros",
+      "lifeCap": "Capacidade de suporte de vida",
       "hp": "Pontos de casco",
       "mass": "Massa",
       "fuelCap": "Capacidade do tanque",
@@ -731,10 +733,12 @@
       "twice": "Não há espaço para virá-la de lado aqui, então ela foi girada duas vezes."
     },
     "statHelp": {
-      "class": "A classe da nave, decidida automaticamente por quanto do orçamento de estrutura vai para carga, espaço pressurizado (passageiros) e peças de combate.",
+      "class": "Nomeada pelo que a nave faz melhor: o eixo mais forte do gráfico. Equilibrada quando nenhum eixo se destaca claramente.",
       "mob": "Quão rápida a nave viaja: potência total dos motores dividida pela massa, vezes um fator fixo. Mais potência ou menos massa aumenta.",
       "crg": "Quanta carga a nave pode transportar, de cada compartimento de carga instalado.",
       "min": "Quanto minério a nave pode minerar por viagem, de cada plataforma de mineração instalada.",
+      "pax": "Quantos passageiros as cabines instaladas acomodam.",
+      "lifeCap": "Quantas pessoas o suporte de vida instalado mantém vivas. Um grupo é limitado pelo menor entre assentos e ar.",
       "hp": "Pontos de vida totais de cada peça instalada. Perdidos em combate, restaurados no reparo.",
       "pot": "Empuxo total de cada motor instalado. Alimenta a mobilidade.",
       "pdf": "Dano de combate de cada arma instalada.",
@@ -1527,9 +1531,13 @@
       },
       "special": {
         "pressurized": "Cabine pressurizada",
-        "pressurizedHelp": "Conta como espaço para passageiros (necessário para missões de transporte).",
+        "pressurizedHelp": "Conta como espaço para passageiros (necessário para missões de transporte). Os assentos que ela dá são definidos abaixo.",
         "lifeSupport": "Suporte de vida",
-        "lifeSupportHelp": "Mantém os passageiros vivos (necessário junto com a cabine)."
+        "lifeSupportHelp": "Mantém os passageiros vivos (necessário junto com a cabine). Quantos ela mantém vivos é definido abaixo.",
+        "pax": "Assentos de passageiros",
+        "paxHelp": "Quantos passageiros esta peça acomoda (vazio ou 0 = nenhum).",
+        "lifeCap": "Pessoas mantidas vivas",
+        "lifeCapHelp": "Quantas pessoas esta peça mantém vivas (vazio ou 0 = nenhuma). Um grupo é limitado pelo menor entre assentos e ar."
       },
       "policy": {
         "missionForcesFlee": "Sempre fugir",
@@ -2373,7 +2381,7 @@
     "needsTitle": "Você precisa de:",
     "needs": {
       "DELIVERY": "espaço de carga para o pacote (veja Carga no Hangar).",
-      "TRANSPORT": "uma Cabine de Passageiros e um módulo de Suporte de Vida.",
+      "TRANSPORT": "uma Cabine de Passageiros e um módulo de Suporte de Vida, com assentos e ar para o grupo.",
       "ESCORT": "pelo menos uma arma e boa mobilidade para acompanhar.",
       "MINING": "uma Plataforma de Mineração e espaço de carga para o minério.",
       "RESCUE": "uma nave rápida (mobilidade) e espaço para os sobreviventes.",
@@ -2749,6 +2757,12 @@
       "UTILITY": "Equipamento especial que libera certas missões (mineradoras, suporte de vida etc.)."
     },
     "flag": {
+      "seats": "{{count}} assentos de passageiros",
+      "seats_one": "{{count}} assento de passageiro",
+      "seats_other": "{{count}} assentos de passageiros",
+      "lifeCap": "mantém {{count}} pessoas vivas",
+      "lifeCap_one": "mantém {{count}} pessoa viva",
+      "lifeCap_other": "mantém {{count}} pessoas vivas",
       "pressurized": "Módulo de passageiros: uma nave que leva um precisa de suporte de vida.",
       "lifeSupport": "Suporte de vida: obrigatório assim que a nave tem um módulo de passageiros."
     },
@@ -3087,7 +3101,7 @@
       "transport": {
         "name": "Transporte",
         "text": "Leve passageiros para onde eles vão.",
-        "needs": "Uma Cabine de Passageiros mais um módulo de Suporte de Vida."
+        "needs": "Uma Cabine de Passageiros mais um módulo de Suporte de Vida, com assentos e ar para o grupo."
       },
       "escort": {
         "name": "Escolta",

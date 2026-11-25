@@ -151,6 +151,12 @@ describe('the passenger head count pays more', () => {
   const trip = { tier: 1, danger: 0, distance: 800 } as const;
   const knob = rules.missions.transport_pay_per_extra_passenger;
 
+  it('an old snapshot without the knob pays x1, never NaN', () => {
+    const { transport_pay_per_extra_passenger: _gone, ...missions } = rules.missions;
+    const old = { ...rules, missions } as unknown as GameRules;
+    expect(passengerPayFactor(4, old)).toBe(1);
+  });
+
   it('a group of one pays x1 and five pay x1.4 with the 0.1 knob', () => {
     const tenth: GameRules = {
       ...rules,

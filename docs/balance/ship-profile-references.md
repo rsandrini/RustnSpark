@@ -24,7 +24,7 @@ Notes:
   be on that axis; a ship that splits its structure shows proportionally less on each axis (a half-armor, half-gun
   warship reads about 0.3 on each, and the WARSHIP type takes the better of the two).
 - Firepower reads `sheet.pdf` (the weapons' stat), not `sheet.pot` (engine thrust, which feeds mobility).
-- Range counts fuel-free ion ships as 0 (`autonomy` is 0 when no engine burns fuel); range never names a type.
+- Range counts fuel-free ion ships as a full axis (1), matching the sheet's "unlimited" (`autonomy` is 0 when no engine burns fuel, so the profile reads `fuelUse <= 0` with an engine fitted instead; a ship with no engine reads 0); range never names a type.
 - Mobility 35 is far above what early ships do (reference_mob 3). That only scales the radar: a ship with
   mobility 0.13 is still a Racer (from `racer_min` 0.08), because the type is named from the relative shape (below).
 

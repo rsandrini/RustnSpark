@@ -746,6 +746,38 @@ describe('hangar (S10.4)', () => {
     await waitFor(() => expect(within(hpRow).getByText('46 (+6)')).toBeInTheDocument());
   });
 
+  it.each([
+    ['differs from', { ...BALANCED_PROFILE, cargo: 0.05 }, true],
+    ['equals', BALANCED_PROFILE, false],
+  ])(
+    'draws the saved ship as the radar ghost only when the layout preview %s it',
+    async (_name, previewProfile, ghost) => {
+      server.use(
+        onboarded(),
+        http.post('/v1/ships/:id/preview', async ({ request }) => {
+          const body = (await request.json()) as { layout?: Placement[] };
+          return HttpResponse.json({
+            sheet: { ...testSheet, hp: 999 },
+            shipClass: 'BALANCED',
+            profile: previewProfile,
+            profileModifier: null,
+            viability: { viable: true, problems: [] },
+            layout: body.layout ?? [],
+            omittedPartInstanceIds: [],
+          });
+        }),
+      );
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      // No preview yet: the saved ship alone, no ghost.
+      await screen.findByRole('heading', { name: 'My Ship' });
+      expect(container.querySelector('.kit-radar-ghost')).toBeNull();
+      fireEvent.click(await screen.findByRole('button', { name: /^cargo/i }));
+      fireEvent.click(cell(container, 4, 0));
+      await waitFor(() => expect(screen.getByText('999')).toBeInTheDocument(), { timeout: 3000 });
+      expect(container.querySelector('.kit-radar-ghost') !== null).toBe(ghost);
+    },
+  );
+
   it('hovering a tray part shows the comparison inline, without clicking (owner request)', async () => {
     server.use(
       onboarded(),

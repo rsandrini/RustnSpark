@@ -210,6 +210,19 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
     expect(within(dialog).queryByText(/swap this in for/i)).not.toBeInTheDocument();
   });
 
+  it('names the seats and the air of a part in its info tag, plural-aware', async () => {
+    const cabin: PartInfoData = {
+      ...listingPart,
+      catalog: { ...catalog, pressurized: true, lifeSupport: true, pax: 4, lifeCap: 1 },
+    };
+    renderWithProviders(<PartInfoButton part={cabin} />, { withRouter: false });
+    fireEvent.click(screen.getByRole('button', { name: /Details/i }));
+    const dialog = await screen.findByRole('dialog');
+    const tag = within(dialog).getByRole('button', { name: /^Why you need it/i });
+    expect(tag.getAttribute('title')).toContain('4 passenger seats');
+    expect(tag.getAttribute('title')).toContain('keeps 1 person alive');
+  });
+
   it('shows a rarity badge in the header, not only the card’s border color (owner request)', async () => {
     renderWithProviders(<PartInfoButton part={listingPart} />, { withRouter: false });
 

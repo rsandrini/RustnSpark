@@ -38,7 +38,8 @@ export function deriveShipProfile(sheet: ShipSheet, rules: GameRules): ShipProfi
     firepower: axis(sheet.pdf, ref.ref_firepower),
     defense: axis(defense, ref.ref_defense),
     mobility: axis(rawMobility(sheet.pot, sheet.mass, rules), ref.ref_mobility),
-    range: axis(sheet.autonomy, ref.ref_range),
+    // A ship with an engine that burns no fuel (ion) has unlimited range (the sheet's autonomy reads 0 for it): a full axis.
+    range: sheet.fuelUse <= 0 && sheet.pot > 0 ? 1 : axis(sheet.autonomy, ref.ref_range),
     mining: axis(sheet.min, ref.ref_mining),
   };
 }

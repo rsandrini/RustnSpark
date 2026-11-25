@@ -86,7 +86,8 @@ describe('ship types of real seed builds', () => {
       'Rare ion racer',
       ['bridge_rare', ...rep('engine_ion_medium_rare', 3), 'reactor_nuclear_rare'],
       'RACER',
-      null,
+      // an ion ship burns no fuel: its range axis is full, so it is the strongest remaining axis
+      'range',
     ],
     [
       '8 Uncommon cargo bays',

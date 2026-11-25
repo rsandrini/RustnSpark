@@ -44,6 +44,26 @@ describe('structured editors (what used to be raw JSON)', () => {
     expect(onChange).toHaveBeenCalledWith({ pressurized: true, lifeSupport: true });
   });
 
+  it('part special properties: seats and air numbers keep every other key', () => {
+    const onChange = vi.fn();
+    renderWithProviders(
+      <SpecialPropEditor
+        value={{ pressurized: true, custom: 'keep', pax: 2 }}
+        onChange={onChange}
+      />,
+    );
+    expect(screen.getByTestId('special-pax')).toHaveValue(2);
+    fireEvent.change(screen.getByTestId('special-lifeCap'), { target: { value: '4' } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      pressurized: true,
+      custom: 'keep',
+      pax: 2,
+      lifeCap: 4,
+    });
+    fireEvent.change(screen.getByTestId('special-pax'), { target: { value: '' } });
+    expect(onChange).toHaveBeenLastCalledWith({ pressurized: true, custom: 'keep' });
+  });
+
   it('encounter policy: a flee checkbox and two selects, writing only what is set', () => {
     const onChange = vi.fn();
     renderWithProviders(

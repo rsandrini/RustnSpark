@@ -43,6 +43,15 @@ describe('deriveShipProfile', () => {
     expect(Object.values(profile)).toEqual([1, 1, 1, 1, 1, 1, 1]);
   });
 
+  it('a fuel-free ship (fuelUse 0) has a full range axis, a fuel-burning one reads its autonomy', () => {
+    expect(
+      deriveShipProfile({ ...EMPTY_SHEET, fuelUse: 0, autonomy: 0, pot: 5, mass: 5 }, rules).range,
+    ).toBe(1);
+    expect(deriveShipProfile({ ...EMPTY_SHEET, fuelUse: 0, autonomy: 0 }, rules).range).toBe(0);
+    const burning = { ...EMPTY_SHEET, fuelUse: 2, autonomy: ref.ref_range / 2 };
+    expect(deriveShipProfile(burning, rules).range).toBeCloseTo(0.5);
+  });
+
   it('an empty sheet gives zeros, never NaN (zero mass included)', () => {
     const profile = deriveShipProfile(EMPTY_SHEET, rules);
     expect(Object.values(profile)).toEqual([0, 0, 0, 0, 0, 0, 0]);
@@ -102,6 +111,7 @@ describe('deriveShipProfile', () => {
         pdf: ref.ref_firepower / 2,
         pot: 50,
         mass: 100,
+        fuelUse: 1,
         autonomy: ref.ref_range / 4,
         min: ref.ref_mining / 5,
       },
