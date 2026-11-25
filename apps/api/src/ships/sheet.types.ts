@@ -15,6 +15,10 @@ export interface ShipSheet {
   batInput: number;
   fuelCap: number;
   fuelUse: number;
+  /** Passenger seats aboard (cabins that are not dead). */
+  pax: number;
+  /** People the life-support modules keep alive (modules that are not dead). */
+  lifeCap: number;
   structureUsed: number;
   structureBudget: number;
   autonomy: number;

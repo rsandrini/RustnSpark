@@ -3,17 +3,46 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from '@jest/globals';
 import type { ConnectorLayout } from '../../../src/parts/connectors.js';
 import type { PartCatalog, Placement } from '../../../src/parts/part.types.js';
-import { directionErrors, facingSide, withDirectionProblems } from '../../../src/ships/direction.js';
+import {
+  directionErrors,
+  facingSide,
+  withDirectionProblems,
+} from '../../../src/ships/direction.js';
 
 const BASE: PartCatalog = {
-  partType: 'x', partClass: 'UTILITY', w: 1, h: 1, mass: 0, structureCost: 0, partHp: 0, basePrice: 0,
-  pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0, energyCombat: 0,
-  fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0, pressurized: false, lifeSupport: false,
+  partType: 'x',
+  partClass: 'UTILITY',
+  w: 1,
+  h: 1,
+  mass: 0,
+  structureCost: 0,
+  partHp: 0,
+  basePrice: 0,
+  pot: 0,
+  pdf: 0,
+  bli: 0,
+  esc: 0,
+  sen: 0,
+  crg: 0,
+  min: 0,
+  energyCont: 0,
+  energyCombat: 0,
+  fuelCap: 0,
+  fuelUse: 0,
+  batCharge: 0,
+  batOutput: 0,
+  batInput: 0,
+  pressurized: false,
+  lifeSupport: false,
+  pax: 0,
+  lifeCap: 0,
 };
 
 const vectors = JSON.parse(
   readFileSync(
-    fileURLToPath(new URL('../../../../../packages/contract/fixtures/direction-vectors.json', import.meta.url)),
+    fileURLToPath(
+      new URL('../../../../../packages/contract/fixtures/direction-vectors.json', import.meta.url),
+    ),
     'utf8',
   ),
 ) as {
@@ -36,7 +65,10 @@ describe('direction rules — shared vectors (parity with the web)', () => {
         ]),
       );
       const placements: Placement[] = scenario.layout.map((p) => ({
-        partInstanceId: p.id, gx: p.gx, gy: p.gy, rot: p.rot,
+        partInstanceId: p.id,
+        gx: p.gx,
+        gy: p.gy,
+        rot: p.rot,
       }));
       const found = directionErrors(placements, catalog)
         .map((e) => ({ id: e.partInstanceId!, code: e.code }))
@@ -46,12 +78,15 @@ describe('direction rules — shared vectors (parity with the web)', () => {
   }
 
   it('facingSide matches the table at all four angles', () => {
-    for (const [rot, side] of Object.entries(vectors.facingOf)) expect(facingSide(Number(rot))).toBe(side);
+    for (const [rot, side] of Object.entries(vectors.facingOf))
+      expect(facingSide(Number(rot))).toBe(side);
   });
 });
 
 describe('facing-side connector rule', () => {
-  const catalog = new Map<string, PartCatalog>([['e', { ...BASE, partClass: 'ENGINE', w: 2, h: 1 }]]);
+  const catalog = new Map<string, PartCatalog>([
+    ['e', { ...BASE, partClass: 'ENGINE', w: 2, h: 1 }],
+  ]);
   const at = (rot: number): Placement[] => [{ partInstanceId: 'e', gx: 0, gy: 0, rot }];
   const noneOnW: ConnectorLayout = {
     cells: [
@@ -64,7 +99,9 @@ describe('facing-side connector rule', () => {
   it('accepts none on the facing side, rejects a connector there, at every rotation', () => {
     for (const rot of [0, 90, 180, 270]) {
       expect(directionErrors(at(rot), catalog, new Map([['e', noneOnW]]))).toEqual([]);
-      const codes = directionErrors(at(rot), catalog, new Map([['e', centralOnW]])).map((e) => e.code);
+      const codes = directionErrors(at(rot), catalog, new Map([['e', centralOnW]])).map(
+        (e) => e.code,
+      );
       // authored W connector faces the facing side at every rot: facing = rotate(W, rot)
       expect(codes).toEqual(['FACING_CONNECTOR']);
     }

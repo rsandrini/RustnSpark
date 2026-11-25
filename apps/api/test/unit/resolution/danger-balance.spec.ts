@@ -41,6 +41,8 @@ function snapshot(overrides: Partial<MissionSnapshot> = {}): MissionSnapshot {
       batInput: 10,
       fuelCap: 1000,
       fuelUse: 0.7,
+      pax: 0,
+      lifeCap: 0,
       structureUsed: 10,
       structureBudget: 30,
       autonomy: 1428,

@@ -31,6 +31,8 @@ const catalog: PartInfoData['catalog'] = {
   batInput: 0,
   pressurized: false,
   lifeSupport: false,
+  pax: 0,
+  lifeCap: 0,
 };
 
 const cells: ConnectorCell[] = [

@@ -26,6 +26,8 @@ const baseSheet: ShipSheet = {
   batInput: 8,
   fuelCap: 40,
   fuelUse: 1,
+  pax: 0,
+  lifeCap: 0,
   structureUsed: 18,
   structureBudget: 40,
   autonomy: 40,
@@ -58,6 +60,8 @@ const catalog: PartInfoData['catalog'] = {
   batInput: 0,
   pressurized: false,
   lifeSupport: false,
+  pax: 0,
+  lifeCap: 0,
 };
 
 // A market listing: no owned instance id, matching the real shape (MarketListing has none).
@@ -217,7 +221,7 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
     server.use(
       http.post('/v1/ships/:id/preview', () =>
         HttpResponse.json({
-          sheet: { ...baseSheet, structureUsed: 62 },
+          sheet: { ...baseSheet, pax: 0, lifeCap: 0, structureUsed: 62 },
           shipClass: 'MULTIROLE',
           viability: {
             viable: false,

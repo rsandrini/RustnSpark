@@ -81,6 +81,8 @@ describe('ShipYard port marks', () => {
     batInput: 0,
     pressurized: false,
     lifeSupport: false,
+    pax: 0,
+    lifeCap: 0,
   };
   const baseProps = {
     cells: [
@@ -245,6 +247,8 @@ describe('ShipYard facing arrow', () => {
     batInput: 0,
     pressurized: false,
     lifeSupport: false,
+    pax: 0,
+    lifeCap: 0,
   });
   const props = {
     cells: [
@@ -311,6 +315,8 @@ describe('ShipYard parts outside the hull', () => {
     batInput: 0,
     pressurized: false,
     lifeSupport: false,
+    pax: 0,
+    lifeCap: 0,
   };
 
   it('outlines a part beside the hull, says how many are out, and leaves the ones inside alone', () => {
@@ -380,6 +386,8 @@ describe('ShipYard landing', () => {
     batInput: 0,
     pressurized: false,
     lifeSupport: false,
+    pax: 0,
+    lifeCap: 0,
   });
   const props = {
     cells: [

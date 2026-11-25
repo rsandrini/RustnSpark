@@ -67,6 +67,8 @@ const NO_STATS = {
   batInput: 0,
   pressurized: false,
   lifeSupport: false,
+  pax: 0,
+  lifeCap: 0,
 } as const;
 
 /** A part of the opening: its catalog figures, its ports and its names. `target` is where it belongs. */

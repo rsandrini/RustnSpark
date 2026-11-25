@@ -35,6 +35,8 @@ function part(id: string, overrides: Partial<InstalledPart['catalog']> = {}): In
       batInput: 7,
       pressurized: false,
       lifeSupport: false,
+      pax: 0,
+      lifeCap: 0,
       ...overrides,
     },
   };

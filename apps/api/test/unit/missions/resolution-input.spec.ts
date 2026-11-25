@@ -24,6 +24,8 @@ function catalog(overrides: Partial<DispatchSnapshot['parts'][number]['catalog']
     energyCombat: 0,
     fuelCap: 0,
     fuelUse: 0,
+    pax: 0,
+    lifeCap: 0,
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
@@ -46,7 +48,13 @@ describe('buildResolveInput', () => {
           id: 'p-bridge',
           partType: 'bridge',
           condition: 100,
-          catalog: catalog({ partClass: 'BRIDGE', mass: 10, structureCost: 10, partHp: 20, pot: 0 }),
+          catalog: catalog({
+            partClass: 'BRIDGE',
+            mass: 10,
+            structureCost: 10,
+            partHp: 20,
+            pot: 0,
+          }),
           connected: true,
         },
         {
@@ -94,7 +102,13 @@ describe('buildResolveInput', () => {
           id: 'p-bridge',
           partType: 'bridge',
           condition: 100,
-          catalog: catalog({ partClass: 'BRIDGE', mass: 10, structureCost: 10, partHp: 20, pot: 0 }),
+          catalog: catalog({
+            partClass: 'BRIDGE',
+            mass: 10,
+            structureCost: 10,
+            partHp: 20,
+            pot: 0,
+          }),
           connected: true,
         },
         {

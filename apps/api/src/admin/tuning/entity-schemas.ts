@@ -350,8 +350,8 @@ const PART_FIELDS: EntitySchemaField[] = [
     type: 'json',
     required: false,
     description: localeMap(
-      'Special properties: pressurized, lifeSupport, shieldRegen, idlePower, armorPiercing (a weapon whose hits skip the armor cut)',
-      'Propriedades especiais: pressurized, lifeSupport, shieldRegen, idlePower, armorPiercing (arma cujos tiros ignoram o corte da armadura)',
+      'Special properties: pressurized, lifeSupport, pax (passenger seats of a cabin), lifeCap (people a life-support module keeps alive), shieldRegen, idlePower, armorPiercing (a weapon whose hits skip the armor cut)',
+      'Propriedades especiais: pressurized, lifeSupport, pax (assentos de passageiros de uma cabine), lifeCap (pessoas que um módulo de suporte de vida mantém vivas), shieldRegen, idlePower, armorPiercing (arma cujos tiros ignoram o corte da armadura)',
     ),
   },
   {

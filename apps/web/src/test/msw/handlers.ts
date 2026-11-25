@@ -101,6 +101,8 @@ const sheet = () => ({
   batInput: 8,
   fuelCap: 40,
   fuelUse: ionShip.on ? 0 : 1,
+  pax: 0,
+  lifeCap: 0,
   structureUsed: 18,
   structureBudget: 40,
   autonomy: 40,
@@ -154,6 +156,8 @@ const catalog = (
   batInput: 0,
   pressurized: false,
   lifeSupport: false,
+  pax: 0,
+  lifeCap: 0,
   ...over,
 });
 

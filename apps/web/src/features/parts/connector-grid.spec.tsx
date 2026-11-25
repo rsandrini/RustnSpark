@@ -56,6 +56,8 @@ const part = (connectors: PartInfoData['connectors']): PartInfoData => ({
     batInput: 0,
     pressurized: false,
     lifeSupport: false,
+    pax: 0,
+    lifeCap: 0,
   },
   connectors,
 });

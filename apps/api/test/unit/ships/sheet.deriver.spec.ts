@@ -449,8 +449,44 @@ describe('sheet.deriver', () => {
     const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small']);
     expect(deriveSheet(parts, rules).fuelCap).toBeGreaterThan(0);
     const dead = parts.map((part) =>
-      part.catalog.partType === 'tank_small' ? { ...part, instance: { ...part.instance, condition: 0 } } : part,
+      part.catalog.partType === 'tank_small'
+        ? { ...part, instance: { ...part.instance, condition: 0 } }
+        : part,
     );
     expect(deriveSheet(dead, rules).fuelCap).toBe(0);
+  });
+
+  describe('pax and lifeCap', () => {
+    it('sums seats and life-support capacity over the installed parts', () => {
+      const sheet = deriveSheet(
+        buildInstalled(['bridge', 'passenger_cabin', 'life_support']),
+        rules,
+      );
+      expect(sheet.pax).toBe(4);
+      expect(sheet.lifeCap).toBe(6);
+      const two = deriveSheet(
+        buildInstalled(['bridge', 'passenger_cabin', 'passenger_cabin']),
+        rules,
+      );
+      expect(two.pax).toBe(8);
+      expect(two.lifeCap).toBe(0);
+    });
+
+    it('is 0 without a cabin or a life-support module', () => {
+      const sheet = deriveSheet(buildInstalled(['bridge', 'hull']), rules);
+      expect(sheet.pax).toBe(0);
+      expect(sheet.lifeCap).toBe(0);
+    });
+
+    it('ignores dead parts, as the fuel tank does', () => {
+      const dead = buildInstalled(['bridge', 'passenger_cabin', 'life_support']).map((part) =>
+        part.catalog.partType === 'bridge'
+          ? part
+          : { ...part, instance: { ...part.instance, condition: 0 } },
+      );
+      const sheet = deriveSheet(dead, rules);
+      expect(sheet.pax).toBe(0);
+      expect(sheet.lifeCap).toBe(0);
+    });
   });
 });

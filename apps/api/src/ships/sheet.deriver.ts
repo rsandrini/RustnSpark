@@ -42,6 +42,10 @@ export function deriveSheet(parts: InstalledPart[], rules: GameRules): ShipSheet
     parts.filter((part) => !isDead(part.instance.condition, rules)),
     'fuelCap',
   );
+  // Seats and life-support capacity go with the part too: a dead cabin or module carries no one.
+  const live = parts.filter((part) => !isDead(part.instance.condition, rules));
+  const pax = sumStat(live, 'pax');
+  const lifeCap = sumStat(live, 'lifeCap');
   const pot = sumStat(parts, 'pot');
   // A full tank is part of the ship's mass; the factor is Admin-tunable and 0 by default.
   const mass = sumStat(parts, 'mass') + fuelCap * rules.ship.fuel_mass_per_unit;
@@ -66,6 +70,8 @@ export function deriveSheet(parts: InstalledPart[], rules: GameRules): ShipSheet
     batInput: sumStat(parts, 'batInput'),
     fuelCap,
     fuelUse,
+    pax,
+    lifeCap,
     structureUsed,
     structureBudget,
     autonomy: fuelUse > 0 ? (fuelCap / fuelUse) * PERCENT : NO_AUTONOMY,

@@ -40,6 +40,8 @@ describe('validateLayout', () => {
         batInput: 0,
         pressurized: false,
         lifeSupport: false,
+        pax: 0,
+        lifeCap: 0,
       },
     ],
     [
@@ -69,6 +71,8 @@ describe('validateLayout', () => {
         batInput: 0,
         pressurized: false,
         lifeSupport: false,
+        pax: 0,
+        lifeCap: 0,
       },
     ],
   ]);
@@ -206,6 +210,8 @@ describe('validateLayout — format cell bounds', () => {
         batInput: 0,
         pressurized: false,
         lifeSupport: false,
+        pax: 0,
+        lifeCap: 0,
       },
     ],
   ]);
@@ -268,6 +274,8 @@ describe('connectedPartIds', () => {
     batInput: 0,
     pressurized: false,
     lifeSupport: false,
+    pax: 0,
+    lifeCap: 0,
   };
   const BRIDGE: PartCatalog = { ...POD, partType: 'bridge', partClass: 'BRIDGE' };
   const twoPartCatalog = new Map([
@@ -391,6 +399,8 @@ describe('validateLayout — no more DISCONNECTED', () => {
           batInput: 0,
           pressurized: false,
           lifeSupport: false,
+          pax: 0,
+          lifeCap: 0,
         },
       ],
       [
@@ -420,6 +430,8 @@ describe('validateLayout — no more DISCONNECTED', () => {
           batInput: 0,
           pressurized: false,
           lifeSupport: false,
+          pax: 0,
+          lifeCap: 0,
         },
       ],
     ]);
@@ -466,6 +478,8 @@ describe('direction rules are not part of validateLayout (free placement) but of
     batInput: 0,
     pressurized: false,
     lifeSupport: false,
+    pax: 0,
+    lifeCap: 0,
   };
   const catalog = new Map<string, PartCatalog>([
     ['e', { ...base, partClass: 'ENGINE' }],
@@ -534,6 +548,8 @@ describe('incorrectPortPartIds (the red ports of the ship yard)', () => {
     batInput: 0,
     pressurized: false,
     lifeSupport: false,
+    pax: 0,
+    lifeCap: 0,
   };
   const catalog = new Map([
     ['a', POD],

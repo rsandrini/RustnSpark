@@ -136,6 +136,10 @@ export const PartCatalogStatsSchema = z.object({
   batInput: z.number(),
   pressurized: z.boolean(),
   lifeSupport: z.boolean(),
+  /** Passenger seats of a cabin; 0 elsewhere. */
+  pax: z.number().default(0),
+  /** People a life-support module keeps alive; 0 elsewhere. */
+  lifeCap: z.number().default(0),
   /** Shield parts: points of shield recovered per combat round. */
   shieldRegen: z.number().optional(),
   idlePower: z.number().optional(),
@@ -202,6 +206,10 @@ export const ShipSheetSchema = z.object({
   batInput: z.number(),
   fuelCap: z.number(),
   fuelUse: z.number(),
+  /** Passenger seats aboard. */
+  pax: z.number().default(0),
+  /** People the life-support modules keep alive. */
+  lifeCap: z.number().default(0),
   structureUsed: z.number(),
   structureBudget: z.number(),
   autonomy: z.number(),

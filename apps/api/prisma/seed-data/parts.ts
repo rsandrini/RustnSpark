@@ -44,6 +44,10 @@ type SeedPart = {
   specialProp?: {
     pressurized?: boolean;
     lifeSupport?: boolean;
+    /** Passenger seats of a cabin (default tuned in the Admin part editor). */
+    pax?: number;
+    /** People one life-support module keeps alive. */
+    lifeCap?: number;
     shieldRegen?: number;
     /** Power a context system (weapon, shield, mining rig) keeps drawing while idle (default 1). */
     idlePower?: number;
@@ -2350,7 +2354,14 @@ const FAMILIES: Family[] = [
         'Uma estrutura de casco 2×2: mais pontos de vida por célula e por crédito que a estrutura padrão.',
     },
     tiers: [
-      { rarity: 'COMMON', mass: 16, structureCost: 9, basePrice: 2100, scrapValue: 58, partHp: 130 },
+      {
+        rarity: 'COMMON',
+        mass: 16,
+        structureCost: 9,
+        basePrice: 2100,
+        scrapValue: 58,
+        partHp: 130,
+      },
       {
         rarity: 'UNCOMMON',
         mass: 8,
@@ -2870,7 +2881,7 @@ const FAMILIES: Family[] = [
         scrapValue: 60,
         partHp: 25,
         energyCont: -2,
-        specialProp: { pressurized: true },
+        specialProp: { pressurized: true, pax: 2 },
       },
       {
         rarity: 'UNCOMMON',
@@ -2880,7 +2891,7 @@ const FAMILIES: Family[] = [
         scrapValue: 100,
         partHp: 32,
         energyCont: -2,
-        specialProp: { pressurized: true },
+        specialProp: { pressurized: true, pax: 3 },
         name: { en: 'Comfortable Cabin', 'pt-BR': 'Cabine Confortável' },
         description: {
           en: 'A better pressurized cabin with improved life-support coupling. Lighter and cheaper on structure than a basic cabin.',
@@ -2896,7 +2907,7 @@ const FAMILIES: Family[] = [
         scrapValue: 163,
         partHp: 40,
         energyCont: -2,
-        specialProp: { pressurized: true },
+        specialProp: { pressurized: true, pax: 4 },
         name: { en: 'Reinforced Passenger Cabin', 'pt-BR': 'Cabine de Passageiros Reforçada' },
         description: {
           en: 'A sturdy cabin for valuable passengers. Stronger hull and lower power draw than lower-tier cabins.',
@@ -2911,7 +2922,7 @@ const FAMILIES: Family[] = [
         basePrice: 10000,
         scrapValue: 250,
         partHp: 50,
-        specialProp: { pressurized: true },
+        specialProp: { pressurized: true, pax: 6 },
         name: { en: 'Luxury Transport Module', 'pt-BR': 'Módulo de Transporte de Luxo' },
         description: {
           en: 'A compact luxury cabin for high-paying passengers. Much lighter and cheaper on structure than a basic cabin.',
@@ -2926,7 +2937,7 @@ const FAMILIES: Family[] = [
         basePrice: 16000,
         scrapValue: 400,
         partHp: 62,
-        specialProp: { pressurized: true },
+        specialProp: { pressurized: true, pax: 8 },
         name: { en: 'Cryo-Sleep Bay', 'pt-BR': 'Baía de Sono Criogênico' },
         description: {
           en: 'A legendary passenger module. Passengers sleep through the journey in safety, using almost no life-support power.',
@@ -3107,7 +3118,7 @@ const FAMILIES: Family[] = [
         scrapValue: 70,
         partHp: 15,
         energyCont: -6,
-        specialProp: { lifeSupport: true },
+        specialProp: { lifeSupport: true, lifeCap: 3 },
       },
       {
         rarity: 'UNCOMMON',
@@ -3117,7 +3128,7 @@ const FAMILIES: Family[] = [
         scrapValue: 100,
         partHp: 20,
         energyCont: -4,
-        specialProp: { lifeSupport: true },
+        specialProp: { lifeSupport: true, lifeCap: 4 },
         name: { en: 'Efficient Life Support', 'pt-BR': 'Suporte de Vida Eficiente' },
         description: {
           en: 'A more efficient life-support loop. Keeps the same crew alive while drawing less power and costing less structure.',
@@ -3133,7 +3144,7 @@ const FAMILIES: Family[] = [
         scrapValue: 140,
         partHp: 26,
         energyCont: -4,
-        specialProp: { lifeSupport: true },
+        specialProp: { lifeSupport: true, lifeCap: 6 },
         name: { en: 'Recycling Life Support', 'pt-BR': 'Suporte de Vida Reciclável' },
         description: {
           en: 'A closed-loop system that recycles air and water. Lighter and cheaper on structure than basic life support.',
@@ -3149,7 +3160,7 @@ const FAMILIES: Family[] = [
         scrapValue: 200,
         partHp: 30,
         energyCont: -2,
-        specialProp: { lifeSupport: true },
+        specialProp: { lifeSupport: true, lifeCap: 8 },
         name: { en: 'Regenerative Life Support', 'pt-BR': 'Suporte de Vida Regenerativo' },
         description: {
           en: 'An advanced life-support unit. It uses a fraction of the power of a basic system while keeping the crew safe in a compact frame.',
@@ -3165,7 +3176,7 @@ const FAMILIES: Family[] = [
         scrapValue: 300,
         partHp: 38,
         energyCont: -2,
-        specialProp: { lifeSupport: true },
+        specialProp: { lifeSupport: true, lifeCap: 10 },
         name: { en: 'Bio-Dome Core', 'pt-BR': 'Núcleo de Biodomo' },
         description: {
           en: 'A legendary self-sustaining life-support core. It barely draws power and can keep a whole crew alive indefinitely.',

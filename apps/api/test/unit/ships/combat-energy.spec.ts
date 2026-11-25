@@ -28,6 +28,8 @@ function baseCatalog(): PartCatalog {
     batInput: 0,
     pressurized: false,
     lifeSupport: false,
+    pax: 0,
+    lifeCap: 0,
   };
 }
 

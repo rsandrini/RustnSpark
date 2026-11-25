@@ -29,6 +29,8 @@ const defaultSheet: ShipSheet = {
   batInput: 8,
   fuelCap: 40,
   fuelUse: 1,
+  pax: 0,
+  lifeCap: 0,
   structureUsed: 18,
   structureBudget: 40,
   autonomy: 40,

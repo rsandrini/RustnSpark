@@ -101,6 +101,8 @@ export function pickCatalogStats(row: PartCatalogRow): PartCatalog {
     batInput: row.batInput ?? 0,
     pressurized: readFlag(row.specialProp, 'pressurized'),
     lifeSupport: readFlag(row.specialProp, 'lifeSupport'),
+    pax: readNumber(row.specialProp, 'pax'),
+    lifeCap: readNumber(row.specialProp, 'lifeCap'),
     shieldRegen: readNumber(row.specialProp, 'shieldRegen'),
     idlePower: readNumber(row.specialProp, 'idlePower'),
     armorPiercing: readFlag(row.specialProp, 'armorPiercing'),

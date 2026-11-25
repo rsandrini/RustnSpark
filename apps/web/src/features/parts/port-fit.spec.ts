@@ -36,6 +36,8 @@ function catalog(w: number, h: number): PartCatalogStats {
     batInput: 0,
     pressurized: false,
     lifeSupport: false,
+    pax: 0,
+    lifeCap: 0,
   };
 }
 

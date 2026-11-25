@@ -21,6 +21,8 @@ const sheet: ShipSheet = {
   batInput: 0,
   fuelCap: 100,
   fuelUse: 7,
+  pax: 0,
+  lifeCap: 0,
   structureUsed: 10,
   structureBudget: 40,
   autonomy: 1428.6,

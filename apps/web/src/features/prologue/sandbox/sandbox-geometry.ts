@@ -138,6 +138,8 @@ export function sheetOf(
     batInput: sum((part) => part.batInput),
     fuelCap,
     fuelUse,
+    pax: sum((part) => part.pax),
+    lifeCap: sum((part) => part.lifeCap),
     structureUsed,
     structureBudget,
     autonomy: fuelUse > 0 ? Math.round(Math.min(fuel, fuelCap) / fuelUse) : 0,

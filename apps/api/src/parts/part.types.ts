@@ -26,6 +26,10 @@ export interface PartCatalog {
   batInput: number;
   pressurized: boolean;
   lifeSupport: boolean;
+  /** Passenger seats this part gives (a cabin); 0 for every other part. */
+  pax: number;
+  /** People this part keeps alive (a life-support module); 0 for every other part. */
+  lifeCap: number;
   /** Shield parts: points of shield recovered per combat round (paid for with combat energy). */
   shieldRegen?: number;
   /** Weapon/shield/mining rig: power it keeps drawing while idle (0/absent = the default). */

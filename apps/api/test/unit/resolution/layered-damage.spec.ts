@@ -444,6 +444,8 @@ describe('a whole run in the layered model', () => {
       batInput: 0,
       fuelCap: 1000,
       fuelUse: 1,
+      pax: 0,
+      lifeCap: 0,
       structureUsed: 5,
       structureBudget: 60,
       autonomy: 0,
