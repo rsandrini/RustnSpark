@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import type { ConnectorCell } from '../../api/generated';
 import type { Kind, PortState, Side } from '../hangar/connectors';
+import type { PartKind } from './part-kind';
+import { PartKindIcon } from './part-kind-icon';
 
 // Shapes carry the connection KIND by how many ports sit on the edge — central: ONE dot at the
 // centre; split: TWO small dots either side of the centre; universal: THREE (the centre dot plus
@@ -81,11 +83,14 @@ export function ConnectorGrid({
   h,
   connectors,
   size = 'full',
+  kind,
 }: {
   w: number;
   h: number;
   connectors: readonly ConnectorCell[];
   size?: 'mini' | 'full' | 'large';
+  /** The part's kind: the large drawing shows its icon, faint, inside the footprint. */
+  kind?: PartKind;
 }) {
   const { t } = useTranslation();
   if (connectors.length === 0) return null;
@@ -109,6 +114,20 @@ export function ConnectorGrid({
           rx={0.08}
         />
       ))}
+      {size === 'large' && kind !== undefined && (
+        <svg
+          className="connector-grid-kind"
+          data-testid="connector-grid-kind"
+          x={w / 2 - Math.min(w, h) * 0.3}
+          y={h / 2 - Math.min(w, h) * 0.3}
+          width={Math.min(w, h) * 0.6}
+          height={Math.min(w, h) * 0.6}
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+        >
+          <PartKindIcon kind={kind} size={20} />
+        </svg>
+      )}
       {connectors.map((cell) => (
         <PortGlyph
           key={`${cell.dx},${cell.dy},${cell.side}`}

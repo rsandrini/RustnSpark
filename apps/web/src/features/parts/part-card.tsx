@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { pickLocalized } from '../../i18n/localized';
 import { PartKindTag, MetaLine } from './part-kind-tag';
 import { Gauge, conditionTone } from '../../ui/Gauge';
-import { PartThumb } from '../../ui/PartThumb';
+import { PartArt } from './part-art';
+import { partKindOf } from './part-kind';
 import {
   PartDetail,
   PartStatsCard,
@@ -12,10 +13,9 @@ import {
   type PartCompareContext,
   type PartInfoData,
 } from './part-detail';
-import { ConnectorGrid, KindIcon } from './connector-grid';
+import { ConnectorGrid } from './connector-grid';
 import { fitView } from './fit-view';
 import type { PortFit } from './port-fit';
-import type { Kind, Side } from '../hangar/connectors';
 import { PartInfoButton } from './part-info-button';
 import { hoverAnchor, useClampedPosition, type HoverAnchor } from './use-hover-card-position';
 
@@ -45,24 +45,6 @@ export interface PartCardProps {
   hoverVersus?: PartInfoData;
   /** Store cards: how the part's ports match the free ports of the ship. */
   fit?: PortFit;
-}
-
-const SIDES: readonly Side[] = ['N', 'E', 'S', 'W'];
-
-/** One entry per distinct (side, kind) of the part's ports, in side order. */
-function portGroups(
-  connectors: readonly { side: Side; kind: Kind }[],
-): { side: Side; kind: Exclude<Kind, 'none'>; count: number }[] {
-  const groups: { side: Side; kind: Exclude<Kind, 'none'>; count: number }[] = [];
-  for (const side of SIDES) {
-    for (const cell of connectors) {
-      if (cell.side !== side || cell.kind === 'none') continue;
-      const found = groups.find((g) => g.side === side && g.kind === cell.kind);
-      if (found === undefined) groups.push({ side, kind: cell.kind, count: 1 });
-      else found.count += 1;
-    }
-  }
-  return groups;
 }
 
 // One part, one card, stacked top to bottom: name and price, what it is, how worn it is, what it
@@ -96,7 +78,6 @@ export function PartCard({
     />
   );
 
-  const groups = portGroups(part.connectors ?? []);
   const verdict = fitView(fit);
 
   // Owner request: Market/Store gets the same hover-only compare card the Hangar tray already
@@ -112,7 +93,7 @@ export function PartCard({
     >
       <header className="pcard-head">
         <div className="pcard-title-row">
-          <PartThumb name={name} rarity={part.rarity} />
+          <PartArt catalog={part.catalog} rarity={part.rarity} size={72} />
           <h2 className="pcard-name">{name}</h2>
         </div>
         {price !== undefined && (
@@ -126,32 +107,15 @@ export function PartCard({
         {used && <span className="used-tag">{t('market.used')}</span>}
         {meta}
       </div>
-      {groups.length > 0 && part.connectors !== undefined && (
+      {part.connectors !== undefined && part.connectors.length > 0 && (
         <div className="pcard-ports">
           <ConnectorGrid
             w={part.catalog.w}
             h={part.catalog.h}
             connectors={part.connectors}
             size="large"
+            kind={partKindOf(part.catalog)}
           />
-          <ul
-            className="pcard-port-words"
-            data-testid="part-ports"
-            aria-label={t('connectors.portsLabel')}
-          >
-            {groups.map((group) => (
-              <li key={`${group.side}-${group.kind}`}>
-                <KindIcon kind={group.kind} />
-                <span>
-                  {t('connectors.portLine', {
-                    side: t(`connectors.sides.${group.side}`),
-                    count: group.count,
-                    kind: t(`connectors.kinds.${group.kind}`),
-                  })}
-                </span>
-              </li>
-            ))}
-          </ul>
           {verdict !== undefined && (
             <p className={`pcard-fit ${verdict.tone}`} data-testid="part-fit">
               <span aria-hidden="true">{verdict.icon}</span>{' '}

@@ -224,6 +224,15 @@ describe('market panel: descriptions and filters', () => {
     }
   });
 
+  it('the cards show no port-words line but keep the diagram', async () => {
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    expect(
+      document.querySelector('.market-panel .pcard [data-testid="connector-grid"]'),
+    ).not.toBeNull();
+    expect(screen.queryByTestId('part-ports')).toBeNull();
+  });
+
   it('opens the full explanation from the info button, with the stats table and a hover tag for why you need it', async () => {
     await renderPortMarket();
     await screen.findByText('Plated Hull');
@@ -573,5 +582,56 @@ describe('market panel: descriptions and filters', () => {
 
     fireEvent.pointerLeave(block);
     await waitFor(() => expect(screen.queryByTestId('part-hover-card')).not.toBeInTheDocument());
+  });
+});
+
+describe('market panel: cards and list views', () => {
+  beforeEach(() => {
+    window.localStorage.removeItem('rs.storeView');
+    resetEconomyState();
+    server.use(onboarded());
+  });
+
+  it('defaults to cards, switches to a compact list, remembers it, and keeps used tags and prices', async () => {
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    expect(document.querySelectorAll('.market-panel .pcard').length).toBeGreaterThan(0);
+    expect(screen.queryAllByTestId('part-row')).toHaveLength(0);
+    const cardCount = document.querySelectorAll('.market-panel .pcard').length;
+
+    fireEvent.click(screen.getByRole('button', { name: 'List' }));
+    const rows = await screen.findAllByTestId('part-row');
+    expect(rows).toHaveLength(cardCount);
+    expect(document.querySelectorAll('.market-panel .pcard')).toHaveLength(0);
+    expect(window.localStorage.getItem('rs.storeView')).toBe('list');
+    for (const row of rows) {
+      expect(row.querySelector('.part-row-name')?.textContent ?? '').not.toBe('');
+      expect(row.querySelector('.part-row-price')).not.toBeNull();
+      expect(row.querySelector('.pcard-summary')).toBeNull();
+      expect(within(row).getByRole('button', { name: /^Details:/ })).toBeInTheDocument();
+    }
+    const used = rows.find((row) => row.textContent?.includes('Cargo Rack (used)'));
+    expect(used?.querySelector('.used-tag')).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cards' }));
+    expect(document.querySelectorAll('.market-panel .pcard').length).toBe(cardCount);
+  });
+
+  it('opens in the remembered view', async () => {
+    window.localStorage.setItem('rs.storeView', 'list');
+    await renderPortMarket();
+    expect((await screen.findAllByTestId('part-row')).length).toBeGreaterThan(0);
+  });
+
+  it('buys from the list view through the same confirmation', async () => {
+    window.localStorage.setItem('rs.storeView', 'list');
+    setWallet(4820);
+    await renderPortMarket();
+    const row = (await screen.findByText('Plated Hull')).closest('[data-testid="part-row"]')!;
+    fireEvent.click(within(row as HTMLElement).getByRole('button', { name: 'Buy' }));
+    const popup = await screen.findByRole('dialog');
+    expect(popup).toHaveTextContent('Buy Plated Hull for 300 ¢?');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Bought Plated Hull for 300 ¢.');
   });
 });

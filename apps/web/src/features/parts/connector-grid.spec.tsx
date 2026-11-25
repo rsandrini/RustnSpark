@@ -13,6 +13,21 @@ const cells = [
 ] as const;
 
 describe('ConnectorGrid', () => {
+  it('draws the kind icon in the large size only', () => {
+    const large = renderWithProviders(
+      <ConnectorGrid w={2} h={1} connectors={cells} size="large" kind="engine" />,
+    );
+    expect(large.container.querySelector('[data-testid="connector-grid-kind"]')).not.toBeNull();
+    large.unmount();
+    const mini = renderWithProviders(
+      <ConnectorGrid w={2} h={1} connectors={cells} size="mini" kind="engine" />,
+    );
+    expect(mini.container.querySelector('[data-testid="connector-grid-kind"]')).toBeNull();
+    mini.unmount();
+    const bare = renderWithProviders(<ConnectorGrid w={2} h={1} connectors={cells} size="large" />);
+    expect(bare.container.querySelector('[data-testid="connector-grid-kind"]')).toBeNull();
+  });
+
   it('draws one mark per non-none side, all in the available state', () => {
     const { container } = renderWithProviders(<ConnectorGrid w={2} h={1} connectors={cells} />);
     expect(screen.getAllByTestId('port-mark')).toHaveLength(3);

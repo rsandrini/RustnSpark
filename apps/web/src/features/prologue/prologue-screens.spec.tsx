@@ -81,6 +81,15 @@ describe('the real Board and Port screens on the sandbox', () => {
     expect((await screen.findAllByText(/800/)).length).toBeGreaterThan(0);
   });
 
+  it('keeps the big cards in the market and offers no view toggle, even when the browser remembers the list', async () => {
+    window.localStorage.setItem('rs.storeView', 'list');
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await screen.findByText(/passenger cabin/i);
+    expect(document.querySelectorAll('.market-panel .pcard').length).toBeGreaterThan(0);
+    expect(document.querySelector('[data-testid="part-row"]')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'List' })).toBeNull();
+  });
+
   it('after a reload in the middle of the story the wallet shows the story\u2019s credits, not the account\u2019s', async () => {
     window.localStorage.setItem(
       'rs.prologue.player-1',

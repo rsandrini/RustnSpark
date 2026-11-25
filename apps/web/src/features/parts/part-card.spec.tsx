@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { renderWithProviders } from '../../test/utils';
 import { PartCard } from './part-card';
 import type { PartInfoData } from './part-detail';
@@ -55,12 +55,18 @@ function renderCard(connectors: ConnectorCell[] | undefined, fit?: PortFit) {
 }
 
 describe('PartCard: ports first', () => {
-  it('shows the large port diagram and the ports in words, grouped by side and kind', () => {
-    renderCard(cells);
+  it('shows the large port diagram and the verdict but no port-words line', () => {
+    renderCard(cells, { level: 'full', matching: 3, total: 3 });
     expect(screen.getByTestId('connector-grid')).toHaveClass('connector-grid-large');
-    const words = screen.getByTestId('part-ports');
-    expect(within(words).getByText('North · 2 × Central connector')).toBeInTheDocument();
-    expect(within(words).getByText('East · 1 × Split connector')).toBeInTheDocument();
+    expect(screen.getByTestId('part-fit')).toBeInTheDocument();
+    expect(screen.queryByTestId('part-ports')).toBeNull();
+    expect(screen.queryByText(/North · 2 × Central connector/)).toBeNull();
+  });
+
+  it('draws the kind icon inside the large diagram and the art tile in the header', () => {
+    renderCard(cells);
+    expect(screen.getByTestId('connector-grid-kind')).toBeInTheDocument();
+    expect(screen.getByTestId('part-art')).toHaveClass('part-art-72');
   });
 
   it('shows no diagram and no verdict for a part without connectors', () => {

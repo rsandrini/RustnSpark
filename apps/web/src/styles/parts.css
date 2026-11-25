@@ -342,7 +342,8 @@
   --accent: var(--rar-legendary);
 }
 
-.pcard-head .part-thumb {
+.pcard-head .part-thumb,
+.pcard-head .part-art {
   margin-right: 8px;
 }
 
@@ -647,32 +648,12 @@
   color: var(--muted);
 }
 
-/* Store cards lead with their ports: a big diagram, the ports in words, then the verdict. */
+/* Store cards lead with their ports: a big diagram, then the verdict. */
 .pcard-ports {
   display: grid;
   justify-items: center;
   gap: 6px;
   min-width: 0;
-}
-.pcard-port-words {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 12px;
-  font-size: 12px;
-  color: var(--ink);
-}
-.pcard-port-words li {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.pcard-port-words .kind-icon {
-  width: 22px;
-  height: 9px;
 }
 .pcard-fit {
   justify-self: stretch;
@@ -712,4 +693,121 @@
 .tray-fit.bad {
   color: var(--bad);
   background: color-mix(in oklch, var(--bad) 14%, transparent);
+}
+
+/* the kind icon drawn inside a large footprint: faint, behind the port dots */
+.connector-grid-kind {
+  color: var(--muted);
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+/* the art placeholder: kind icon on a rarity-tinted, lightly hatched tile (slice 1.9 swaps it for art) */
+.part-art {
+  --accent: var(--rar-common);
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0 6px,
+      color-mix(in srgb, var(--accent) 10%, transparent) 6px 7px
+    ),
+    color-mix(in srgb, var(--accent) 16%, var(--paper-3));
+}
+.part-art-40 {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+.part-art-72 {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+}
+.part-art.rarity-uncommon {
+  --accent: var(--rar-uncommon);
+}
+.part-art.rarity-rare {
+  --accent: var(--rar-rare);
+}
+.part-art.rarity-epic {
+  --accent: var(--rar-epic);
+}
+.part-art.rarity-legendary {
+  --accent: var(--rar-legendary);
+}
+
+/* the store's list view: one compact row per listing */
+.part-row-list {
+  display: grid;
+  gap: 6px;
+}
+.part-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper-2);
+  min-width: 0;
+}
+.part-row.broken {
+  border-color: var(--bad);
+}
+.part-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.part-row-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.part-row-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.part-row-fit {
+  flex: 0 1 auto;
+  padding: 3px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+.part-row-condition {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.part-row-price {
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.part-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+@media (max-width: 640px) {
+  .part-row {
+    flex-wrap: wrap;
+  }
+  .part-row-fit {
+    order: 5;
+    max-width: 100%;
+  }
+}
+.store-view {
+  margin-left: auto;
 }

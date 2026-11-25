@@ -13,6 +13,8 @@ import { PortsLegend } from '../parts/ports-legend';
 import { ALL_ICON, partClassIcon } from './part-class-icon';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
+import { PartRow } from '../parts/part-row';
+import { StoreViewToggle, useStoreView } from '../parts/store-view-toggle';
 import { ConnectorGrid } from '../parts/connector-grid';
 import { usePrologueMode } from '../prologue/prologue-mode';
 import { ShipNeedsList, isShield, lackingParts, useDismissedNeeds } from './ship-needs';
@@ -72,6 +74,9 @@ export function MarketPanel({
   const { t, i18n } = useTranslation();
   // the opening buys one module for one job: no list of what the ship lacks
   const opening = usePrologueMode().active;
+  const [storedView, setStoredView] = useStoreView();
+  // the opening keeps the big cards
+  const view = opening ? 'cards' : storedView;
   const { user, reloadProfile } = useAuthContext();
   const queryClient = useQueryClient();
   const buyKey = useIntentKey();
@@ -321,6 +326,7 @@ export function MarketPanel({
               {t('market.fitsFreePorts')}
             </button>
           )}
+          {!opening && <StoreViewToggle value={view} onChange={setStoredView} />}
           <button type="button" className="btn" onClick={() => setMoreFilters(true)}>
             {t('market.moreFilters')}
             {extraFilters > 0 && <span className="count">{extraFilters}</span>}
@@ -432,42 +438,44 @@ export function MarketPanel({
         <p className="sub">{t('market.noMatches')}</p>
       )}
 
-      <div className="pcard-grid">
+      <div className={view === 'list' ? 'part-row-list' : 'pcard-grid'}>
         {visible.map((listing) => {
           const name = pickLocalized(listing.displayName, i18n.language);
           const affordable = wallet >= listing.price;
-          return (
-            <PartCard
-              key={listing.listingId}
-              part={{ ...listing }}
-              price={listing.price}
-              priceCaption={t('market.youPay')}
-              used={listing.kind === 'used'}
-              compare={compareContextFor(listing)}
-              fit={opening ? undefined : portFit(listing.connectors, freePorts)}
-              actions={
-                <button
-                  type="button"
-                  className="btn primary"
-                  disabled={!affordable || listing.blockedReason !== undefined}
-                  onClick={() => {
-                    setNotice(null);
-                    setConfirm({
-                      name,
-                      price: listing.price,
-                      listingId: listing.listingId,
-                      listing,
-                    });
-                  }}
-                >
-                  {listing.blockedReason !== undefined
-                    ? pickLocalized(listing.blockedReason, i18n.language)
-                    : affordable
-                      ? t('port.buy')
-                      : t('port.needMore', { amount: money(listing.price - wallet) })}
-                </button>
-              }
-            />
+          const buyButton = (
+            <button
+              type="button"
+              className="btn primary"
+              disabled={!affordable || listing.blockedReason !== undefined}
+              onClick={() => {
+                setNotice(null);
+                setConfirm({
+                  name,
+                  price: listing.price,
+                  listingId: listing.listingId,
+                  listing,
+                });
+              }}
+            >
+              {listing.blockedReason !== undefined
+                ? pickLocalized(listing.blockedReason, i18n.language)
+                : affordable
+                  ? t('port.buy')
+                  : t('port.needMore', { amount: money(listing.price - wallet) })}
+            </button>
+          );
+          const shared = {
+            part: { ...listing },
+            price: listing.price,
+            used: listing.kind === 'used',
+            compare: compareContextFor(listing),
+            fit: opening ? undefined : portFit(listing.connectors, freePorts),
+            actions: buyButton,
+          };
+          return view === 'list' ? (
+            <PartRow key={listing.listingId} {...shared} />
+          ) : (
+            <PartCard key={listing.listingId} {...shared} priceCaption={t('market.youPay')} />
           );
         })}
       </div>
