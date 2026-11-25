@@ -34,6 +34,14 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
 - Slice 1.5 (part type subtitle, needs chips, empty-slot hints) built on develop and unit-tested (web suite 1180 passing, lint, prettier and build clean), NOT checked in a browser yet (the owner reviews later): part type row (icon + name) in the tray, store and part popup; the ship needs as chips that lead to the part; dashed empty-slot hints on the ship where a needed part could go (docked in port only, at most 3). The only e2e spec touching it is tutorial.spec (updated to No shield).
 - Slice 1.6 (pilot card and rankings podium) built on develop and unit-tested (web suite 1241 tests, tsc, lint, prettier and build clean), NOT checked in a browser yet (the owner reviews later): the pilot card as an ID card (avatar, ship and radar, big numbers); the profile page opens with the pilot's own card; the rankings as a podium with the pilot's own place and the gap to the pilot ahead; icon tabs for the boards and a segmented period toggle. The e2e specs touching it are rankings.spec (updated), profile-stats.spec, a11y.spec, widths.spec and smoke.spec (not run). NOT built: the rank/XP bar and the medals from the mockup (no such system exists: they need game design).
 - Open: the Port as a place (needs a mockup).
+- Owner review round 1 (2026-11-25), built on develop and unit-tested, NOT checked in a browser yet (the owner reviews later). Of the owner's nine points:
+  - 1: the part icon is centred in its cell.
+  - 2 and 3: the ship sheet has Stats | Profile toggles and a breakdown of the profile, using the server's `profileDetail`.
+  - 4 and 5: the store has a list view, a placeholder while loading, no port words, and the part icon in the drawing.
+  - 6: repair is one bar to drag (current condition and target together).
+  - 8: refuel is one bar plus a chart of the tanks.
+  - 9: part lists have no stat sentences; the upgrade tab shows a mini ship with the part highlighted.
+  - Deferred follow-ups: real part art (slice 1.9), per-tank fuel from the server (the chart estimates it), and the type-icon group centring uses an estimate. The e2e literals still match (no spec changes needed).
 
 ## 5. More missions per port, more mission kinds, a bigger map (owner, 2026-11-23) - *needs design*
 
