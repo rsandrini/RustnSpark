@@ -6,6 +6,8 @@ import {
   eligibleTypesAt,
   fillMission,
   miningMaterialsFor,
+  reachByType,
+  referenceSeconds,
   isMiningEligible,
   MissionGenerationError,
   type FillMissionInput,
@@ -968,5 +970,95 @@ describe('passenger head count on a TRANSPORT offer', () => {
   it('other types carry no head count', () => {
     const draft = fill('alpha|pax|other', LOC_ALPHA, [DELIVERY_LUNA]);
     expect(headCount(draft)).toBeUndefined();
+  });
+});
+
+describe('filler reach and length target', () => {
+  const O: FillerLocation = { id: 'o', type: 'port', zone: 0, factionId: 'luna' };
+  const star = (id: string, zone: number, distance: number): [FillerLocation, FillerRoute] => [
+    { id, type: 'outpost', zone, factionId: 'luna' },
+    { id: `o-${id}`, nodeAId: 'o', nodeBId: id, distance, danger: 1 },
+  ];
+  const stars = [star('near', 0, 200), star('mid', 1, 2000), star('far', 2, 6000)];
+  const starWorld = (templates: readonly FillerTemplate[]) => ({
+    locations: [O, ...stars.map(([l]) => l)],
+    routes: stars.map(([, r]) => r),
+    routeEnvironments: stars.map(([l]) => ({
+      routeId: `o-${l.id}`,
+      environmentId: 'open',
+      order: 0,
+    })),
+    environments: ENVELOPES,
+    templates,
+    materials: MATERIALS,
+  });
+  const both = [DELIVERY_LUNA, RESCUE_LUNA];
+  const draw = (
+    seed: string,
+    target: FillMissionInput['lengthTarget'],
+    g?: FillMissionInput['giver'],
+  ) =>
+    fillMission({
+      seed,
+      origin: O,
+      world: starWorld([DELIVERY_LUNA]),
+      rules,
+      now: NOW,
+      lengthTarget: target,
+      giver: g,
+    }).destinationId;
+  const seeds = Array.from({ length: 30 }, (_, i) => `s${i}`);
+
+  it('referenceSeconds ignores time_scale and applies the short-trip floor', () => {
+    expect(referenceSeconds(200, rules)).toBe(300);
+    expect(referenceSeconds(6000, rules)).toBe(4500);
+    const fast = { ...rules, missions: { ...rules.missions, time_scale: 10 } };
+    expect(referenceSeconds(200, fast)).toBe(300);
+    expect(referenceSeconds(6000, fast)).toBe(4500);
+  });
+
+  it('reachByType counts destinations and nearest/farthest seconds per type; rescue doubles the path', () => {
+    const reach = reachByType(O, starWorld(both), rules);
+    expect(reach.get('DELIVERY')).toEqual({
+      destinations: 3,
+      nearestSeconds: 300,
+      farthestSeconds: 4500,
+    });
+    expect(reach.get('RESCUE')).toEqual({
+      destinations: 3,
+      nearestSeconds: 300,
+      farthestSeconds: 9000,
+    });
+    expect(reach.has('MINING')).toBe(false);
+  });
+
+  it('with lengthTarget.maxSeconds only short destinations are drawn', () => {
+    for (const seed of seeds) expect(draw(seed, { maxSeconds: 600 })).toBe('near');
+  });
+
+  it('with lengthTarget.minSeconds only long destinations are drawn', () => {
+    for (const seed of seeds) expect(draw(seed, { minSeconds: 4000 })).toBe('far');
+  });
+
+  it('a length target no destination fits falls back to any destination, never throws', () => {
+    for (const seed of seeds)
+      expect(['near', 'mid', 'far']).toContain(draw(seed, { minSeconds: 99999 }));
+  });
+
+  it('the length target beats the giver zone band', () => {
+    const giver: FillMissionInput['giver'] = {
+      id: 'g',
+      role: 'GIVER',
+      weight: 1,
+      locationIds: [],
+      personality: { types: { DELIVERY: 1 }, minZone: 0, maxZone: 0, tone: 'plain' },
+    };
+    for (const seed of seeds) expect(draw(seed, { minSeconds: 4000 }, giver)).toBe('far');
+  });
+
+  it('no lengthTarget: the same seed gives the same draft as before', () => {
+    const a = draw('stable', undefined);
+    expect(draw('stable', undefined)).toBe(a);
+    expect(draw('stable', {})).toBe(a);
   });
 });

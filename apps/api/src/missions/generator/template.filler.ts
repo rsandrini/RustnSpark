@@ -2,6 +2,8 @@ import type { MissionType, Prisma } from '@prisma/client';
 import type { Rng } from '../../common/rng/rng.js';
 import { createRng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
+import type { BoardReach, TypeReach } from '../board-composition.js';
+import { missionDuration } from '../duration.calculator.js';
 import { rewardBase } from '../../economy/reward.calculator.js';
 import { droppableOres, placeKeyOf } from '../../resolution/mining/mining-yield.js';
 import type { LegRoute } from '../../resolution/leg/leg.resolver.js';
@@ -13,6 +15,7 @@ import { type GiverShape, typeWeight, weightedPick } from './giver.picker.js';
 const BOARD_EXPIRY_MIN_SECONDS = 360; // 6 minutes
 const BOARD_EXPIRY_MAX_SECONDS = 2400; // 40 minutes
 const MS_PER_SECOND = 1000;
+const ROUND_TRIP = 2; // a rescue flies out and back
 
 // Mining contracts (v0.1.3): draw a rarity tier by the admin weights, pick an ore of that
 // rarity from the template's pinned/available set, and — when contracted — ask for a quantity
@@ -121,6 +124,11 @@ export interface FillMissionInput {
   readonly giver?: GiverShape;
   /** Types the board already holds as many of as it allows: not offered while anything else fits. */
   readonly avoidTypes?: ReadonlySet<MissionType>;
+  /**
+   * The trip length the board wants (reference seconds, a rescue counted out and back). The destination is drawn among
+   * those that fit it, ahead of the giver's zone band; when none fits, the usual choice applies. Not for starter drafts.
+   */
+  readonly lengthTarget?: { readonly maxSeconds?: number; readonly minSeconds?: number };
 }
 
 export type MissionDraft = Prisma.MissionInstanceUncheckedCreateInput;
@@ -295,6 +303,61 @@ function eligibleTemplates(origin: FillerLocation, world: FillerWorld): FillerTe
       )
       .sort(byId)
   );
+}
+
+/** A trip's length at the board's reference ship, ignoring the game speed (`time_scale`). */
+export function referenceSeconds(totalDistance: number, rules: GameRules): number {
+  return missionDuration({
+    totalDistance,
+    mobility: rules.missions.board_reference_mob,
+    durationK: rules.missions.duration_k,
+    timeScale: 1,
+    shortTripBelow: rules.missions.short_trip_below,
+    shortTripMinSeconds: rules.missions.short_trip_min_seconds,
+    shortTripExemptBelow: rules.missions.short_trip_exempt_below,
+    classCutoffs: rules.missions.duration_class_cutoffs,
+  }).durationSeconds;
+}
+
+/** What each mission type can post from `origin`: distinct destinations and nearest/farthest trip in reference seconds. */
+export function reachByType(
+  origin: FillerLocation,
+  world: FillerWorld,
+  rules: GameRules,
+): BoardReach {
+  const adjacency = buildAdjacency(world.routes);
+  const lengths = new Map<string, number | null>();
+  const lengthTo = (id: string): number | null => {
+    if (!lengths.has(id)) {
+      const path = shortestPath(origin.id, id, adjacency);
+      lengths.set(id, path === null ? null : path.reduce((sum, route) => sum + route.distance, 0));
+    }
+    return lengths.get(id) ?? null;
+  };
+  const perType = new Map<MissionType, Map<string, number>>();
+  for (const template of eligibleTemplates(origin, world)) {
+    const seconds = perType.get(template.type) ?? new Map<string, number>();
+    for (const location of world.locations) {
+      if (location.id === origin.id || !matchesDestination(location, template)) continue;
+      const distance = lengthTo(location.id);
+      if (distance === null) continue;
+      seconds.set(
+        location.id,
+        referenceSeconds(template.type === 'RESCUE' ? distance * ROUND_TRIP : distance, rules),
+      );
+    }
+    if (seconds.size > 0) perType.set(template.type, seconds);
+  }
+  const reach = new Map<MissionType, TypeReach>();
+  for (const [type, seconds] of perType) {
+    const values = [...seconds.values()];
+    reach.set(type, {
+      destinations: values.length,
+      nearestSeconds: Math.min(...values),
+      farthestSeconds: Math.max(...values),
+    });
+  }
+  return reach;
 }
 
 export function buildAdjacency(routes: readonly FillerRoute[]): Map<string, Adjacent[]> {
@@ -561,7 +624,27 @@ export function fillMission(input: FillMissionInput): MissionDraft {
     pathLength(x.id) - pathLength(y.id) || byId(x, y);
   let destination: FillerLocation | undefined;
   if (input.starter === undefined) {
-    destination = reachable.length > 0 ? rng.child('destination').pick(reachable) : undefined;
+    const { lengthTarget } = input;
+    let candidates = reachable;
+    if (lengthTarget !== undefined) {
+      const fits = (location: FillerLocation): boolean => {
+        const distance = pathLength(location.id);
+        const seconds = referenceSeconds(
+          template.type === 'RESCUE' ? distance * ROUND_TRIP : distance,
+          rules,
+        );
+        return (
+          seconds <= (lengthTarget.maxSeconds ?? Number.POSITIVE_INFINITY) &&
+          seconds >= (lengthTarget.minSeconds ?? 0)
+        );
+      };
+      const everywhere = banded.length > 0 ? reachableWhere(() => true) : reachable;
+      candidates =
+        [banded.filter(fits), everywhere.filter(fits), banded, everywhere].find(
+          (list) => list.length > 0,
+        ) ?? reachable;
+    }
+    destination = candidates.length > 0 ? rng.child('destination').pick(candidates) : undefined;
   } else {
     const { maxDistance } = input.starter;
     const pads =
