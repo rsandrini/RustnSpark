@@ -5,10 +5,10 @@ import { boardSize, maxOffersOfOneType } from '../../../src/missions/board-size.
 const rules = GAME_CONFIG_DEFAULTS;
 
 describe('boardSize', () => {
-  it('follows the size of the place on the map: 8 on a main port, 6 regional, 4 on a small place', () => {
-    expect(boardSize({ type: 'port', detail: 'main' }, rules)).toBe(8);
-    expect(boardSize({ type: 'deep_field', detail: 'regional' }, rules)).toBe(6);
-    expect(boardSize({ type: 'drydock', detail: 'local' }, rules)).toBe(4);
+  it('follows the size of the place on the map: 10 on a main port, 8 regional, 6 on a small place', () => {
+    expect(boardSize({ type: 'port', detail: 'main' }, rules)).toBe(10);
+    expect(boardSize({ type: 'deep_field', detail: 'regional' }, rules)).toBe(8);
+    expect(boardSize({ type: 'drydock', detail: 'local' }, rules)).toBe(6);
   });
 
   it('falls back to the per-location minimum for a place with no size', () => {
@@ -34,9 +34,9 @@ describe('boardSize', () => {
 
 describe('maxOffersOfOneType', () => {
   it('is at least half the board (rounded up), never below the configured cap', () => {
+    expect(maxOffersOfOneType(10, rules)).toBe(5);
     expect(maxOffersOfOneType(8, rules)).toBe(4);
     expect(maxOffersOfOneType(6, rules)).toBe(3);
-    expect(maxOffersOfOneType(4, rules)).toBe(2);
     expect(maxOffersOfOneType(1, rules)).toBe(rules.missions.board_max_same_type);
   });
 });

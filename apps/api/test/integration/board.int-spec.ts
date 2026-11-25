@@ -63,12 +63,12 @@ describe('mission board (S6.2)', () => {
     expect(stored).toBe(rows.length);
   });
 
-  it('boards are a mix: 8 on a big port, no two offers of one type for one destination, and at most half the board of one type, over many refreshes', async () => {
+  it('boards are a mix: 10 on a big port, no two offers of one type for one destination, and at most half the board of one type, over many refreshes', async () => {
     const locations = ['ceres', 'vesta', 'hedus', 'marsa', 'cair', 'tycho'];
     for (let round = 0; round < 25; round += 1) {
       for (const locationId of locations) {
         const rows = await board!.getBoard(locationId, 1);
-        expect(rows.length).toBe(8);
+        expect(rows.length).toBe(10);
         const keys = rows.map(
           (row) =>
             `${row.type}>${row.destinationId}>${(row.cargo as { materialId?: string } | null)?.materialId ?? ''}`,
@@ -76,7 +76,7 @@ describe('mission board (S6.2)', () => {
         expect(new Set(keys).size).toBe(keys.length);
         const perType = new Map<string, number>();
         for (const row of rows) perType.set(row.type, (perType.get(row.type) ?? 0) + 1);
-        expect(Math.max(...perType.values())).toBeLessThanOrEqual(4);
+        expect(Math.max(...perType.values())).toBeLessThanOrEqual(5);
       }
       // let every offer run out, so the next read posts a fresh board
       await prisma.missionInstance.updateMany({
@@ -86,13 +86,13 @@ describe('mission board (S6.2)', () => {
     }
   }, 60000);
 
-  it('a board has the size of its place: 8 on a main port, 4 on a small stop, 1 on a test pad', async () => {
-    expect((await board!.getBoard('ceres', 1)).length).toBe(8);
-    expect((await board!.getBoard('ceres_dock', 1)).length).toBe(4);
+  it('a board has the size of its place: 10 on a main port, 6 on a small stop, 1 on a test pad', async () => {
+    expect((await board!.getBoard('ceres', 1)).length).toBe(10);
+    expect((await board!.getBoard('ceres_dock', 1)).length).toBe(6);
     expect((await board!.getBoard('ceres_pad', 1)).length).toBe(1);
     const counts = await board!.countOffers(['hedus', 'tycho_slip', 'cair_pad']);
-    expect(counts.get('hedus')).toBe(8);
-    expect(counts.get('tycho_slip')).toBe(4);
+    expect(counts.get('hedus')).toBe(10);
+    expect(counts.get('tycho_slip')).toBe(6);
     expect(counts.get('cair_pad')).toBe(1);
   });
 
@@ -121,7 +121,7 @@ describe('mission board (S6.2)', () => {
       expect(Date.now() - started).toBeLessThan(2000);
       // the busy board is counted as it stands (empty), the free one is topped up as usual
       expect(counts.get('hedus')).toBe(0);
-      expect(counts.get('tycho_slip')).toBe(4);
+      expect(counts.get('tycho_slip')).toBe(6);
     } finally {
       release();
       await holder;

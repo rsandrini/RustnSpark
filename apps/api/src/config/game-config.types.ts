@@ -152,6 +152,11 @@ export type ConfigKey =
   | 'missions.board_max_same_type'
   | 'missions.board_min_per_location'
   | 'missions.board_min_by_detail'
+  | 'missions.board_core_types'
+  | 'missions.board_min_races'
+  | 'missions.board_short_max_seconds'
+  | 'missions.board_long_min_seconds'
+  | 'missions.board_reference_mob'
   | 'missions.starter_guarantee_max_completed'
   | 'missions.starter_max_distance'
   | 'missions.starter_max_zone'
@@ -653,6 +658,16 @@ export type GameRules = Readonly<{
     board_min_per_location: number;
     /** Offers on a board by the place's map detail (main / regional / local); the fallback is `board_min_per_location`. */
     board_min_by_detail: Readonly<Record<string, number>>;
+    /** Mission types every board posts at least once when its place can. */
+    board_core_types: readonly string[];
+    /** Races every board posts, when the place has that many race destinations. */
+    board_min_races: number;
+    /** A trip this short (seconds at the reference ship) counts as the board's short offer. */
+    board_short_max_seconds: number;
+    /** A trip this long (seconds at the reference ship) counts as the board's long offer. */
+    board_long_min_seconds: number;
+    /** Mobility of the reference ship that measures a board offer as short or long. */
+    board_reference_mob: number;
     board_max_same_type: number;
     starter_guarantee_max_completed: number;
     starter_max_distance: number;

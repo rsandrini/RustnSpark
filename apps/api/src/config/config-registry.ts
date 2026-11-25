@@ -2657,6 +2657,71 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
         'Quantas missões um quadro publica, pelo tamanho do local no mapa: principal (portos grandes), regional e local (locais pequenos). Um local sem tamanho usa o mínimo por local acima.',
     },
   },
+  {
+    key: 'missions.board_core_types',
+    group: 'missions',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_core_types),
+    description: {
+      en: 'Mission types every board posts at least once when its place can (cargo DELIVERY, people TRANSPORT, ESCORT, MINING).',
+      'pt-BR':
+        'Tipos de missão que todo quadro publica ao menos uma vez quando o local permite (carga DELIVERY, pessoas TRANSPORT, ESCORT, MINING).',
+    },
+  },
+  {
+    key: 'missions.board_min_races',
+    group: 'missions',
+    type: 'integer',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_min_races),
+    description: {
+      en: 'Races every board posts, when the place has that many race destinations.',
+      'pt-BR':
+        'Corridas que todo quadro publica, quando o local tem esse número de destinos de corrida.',
+    },
+  },
+  {
+    key: 'missions.board_short_max_seconds',
+    group: 'missions',
+    type: 'number',
+    min: 60,
+    max: 86400,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_short_max_seconds),
+    description: {
+      en: "A trip this short (seconds at the reference ship) counts as the board's short offer; a place with none uses its nearest trip.",
+      'pt-BR':
+        'Uma viagem até esse tempo (segundos na nave de referência) conta como a oferta curta do quadro; um local sem nenhuma usa a viagem mais próxima.',
+    },
+  },
+  {
+    key: 'missions.board_long_min_seconds',
+    group: 'missions',
+    type: 'number',
+    min: 60,
+    max: 86400,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_long_min_seconds),
+    description: {
+      en: "A trip this long (seconds at the reference ship) counts as the board's long offer; a place with none uses its farthest trip.",
+      'pt-BR':
+        'Uma viagem a partir desse tempo (segundos na nave de referência) conta como a oferta longa do quadro; um local sem nenhuma usa a viagem mais distante.',
+    },
+  },
+  {
+    key: 'missions.board_reference_mob',
+    group: 'missions',
+    type: 'number',
+    min: 0.1,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_reference_mob),
+    description: {
+      en: 'Mobility of the reference ship that measures a board offer as short or long (the game speed is ignored).',
+      'pt-BR':
+        'Mobilidade da nave de referência que mede uma oferta do quadro como curta ou longa (a velocidade do jogo é ignorada).',
+    },
+  },
   // DEFERRED (S8 review item 12): the `mission` chance (55%) is reserved. No SCAVENGING
   // MissionType exists in v0.1, so only `common` and `pirate` are read by scavenging.service.
   {

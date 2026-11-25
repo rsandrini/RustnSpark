@@ -326,7 +326,12 @@ const missionsSchema = z.object({
   board_min_per_location: z.number().int().min(0).max(20),
   board_min_by_detail: z
     .record(z.string(), z.number().int().min(0).max(20))
-    .default({ main: 8, regional: 6, local: 4 }),
+    .default({ main: 10, regional: 8, local: 6 }),
+  board_core_types: z.array(z.string()).default(['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING']),
+  board_min_races: z.number().int().min(0).max(10).default(2),
+  board_short_max_seconds: z.number().min(60).max(86400).default(600),
+  board_long_min_seconds: z.number().min(60).max(86400).default(3600),
+  board_reference_mob: z.number().min(0.1).max(100).default(3),
   board_max_same_type: z.number().int().min(1).max(20).default(2),
   starter_guarantee_max_completed: z.number().int().min(0).max(50),
   starter_max_distance: z.number().int().min(0).max(100000),

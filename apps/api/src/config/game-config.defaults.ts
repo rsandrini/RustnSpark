@@ -484,9 +484,19 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     time_scale: 1,
     // Several offers per port: one at a time made every board look the same.
     board_min_per_location: 4,
-    // The size of a board follows the size of the place: 8 offers on a main port, 6 on a regional one, 4 on a small
+    // The floor of a board follows the size of the place: 10 offers on a main port, 8 on a regional one, 6 on a small
     // place (the map's `detail`); `board_min_per_location` is the fallback. A test pad keeps one (its way back).
-    board_min_by_detail: { main: 8, regional: 6, local: 4 },
+    board_min_by_detail: { main: 10, regional: 8, local: 6 },
+    // Mission types every board posts at least once when its place can (cargo, people, escort, mining).
+    board_core_types: ['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING'],
+    // Races every board posts, when the place has that many race destinations.
+    board_min_races: 2,
+    // A trip up to this long (seconds at the reference ship) is the board's short offer; from `board_long_min_seconds`
+    // up it is the long offer. A place with none uses its nearest / farthest trip.
+    board_short_max_seconds: 600,
+    board_long_min_seconds: 3600,
+    // Mobility of the reference ship that measures short and long (the game speed `time_scale` is ignored).
+    board_reference_mob: 3,
     // No more than this many offers of one type on a board (and never two of the same type for the
     // same destination), so a board is a mix and not four of the same job.
     board_max_same_type: 2,
