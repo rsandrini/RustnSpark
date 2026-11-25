@@ -250,6 +250,12 @@ export const ShipProfileSchema = z.object({
   mining: axisValue,
 });
 export type ShipProfile = z.infer<typeof ShipProfileSchema>;
+/** The raw value and the reference (a full axis) behind each of the seven axes ("Defense 6%: 4.2 of 70"). */
+export const ShipProfileDetailSchema = z.record(
+  ProfileAxisSchema,
+  z.object({ value: z.number(), ref: z.number() }),
+);
+export type ShipProfileDetail = z.infer<typeof ShipProfileDetailSchema>;
 
 export const ShipStatusSchema = z.enum(['IN_PORT', 'ON_MISSION', 'ADRIFT']);
 export type ShipStatus = z.infer<typeof ShipStatusSchema>;
@@ -610,6 +616,8 @@ export const ShipResponseSchema = z.object({
   profile: ShipProfileSchema,
   /** The ship's strong second axis ("Hauler, armed"), or null. */
   profileModifier: ProfileAxisSchema.nullable(),
+  /** The value and reference behind each axis; always sent by the API. */
+  profileDetail: ShipProfileDetailSchema.optional(),
   /** The assembly yard: exactly these cells (relative to the bridge at [0,0]) are buildable —
       the ship's own ShipFormat selection, not a fixed bound. */
   yard: z.object({ cells: z.array(z.tuple([z.number(), z.number()])) }),
@@ -678,6 +686,8 @@ export const PreviewResponseSchema = z.object({
   profile: ShipProfileSchema,
   /** The ship's strong second axis ("Hauler, armed"), or null. */
   profileModifier: ProfileAxisSchema.nullable(),
+  /** The value and reference behind each axis; always sent by the API. */
+  profileDetail: ShipProfileDetailSchema.optional(),
   viability: z.object({
     viable: z.boolean(),
     /** Block flight. */

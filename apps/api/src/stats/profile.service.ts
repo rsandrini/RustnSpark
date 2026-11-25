@@ -81,6 +81,7 @@ export class ProfileService {
     const bridge = installed.find((part) => part.catalog.partClass === 'BRIDGE');
     if (bridge === undefined) return null;
     const rules = this.config.snapshot().rules;
+    const identity = shipIdentityOf(deriveSheet(installed, rules), rules);
     return {
       // The ship's own name (its callsign since onboarding); the generated one only if it is somehow blank.
       title:
@@ -91,7 +92,10 @@ export class ProfileService {
               playerName: player.name,
               playerId: player.id,
             }),
-      ...shipIdentityOf(deriveSheet(installed, rules), rules),
+      // The public card shows the class and axes only: the value/reference detail is for the owner's sheet.
+      shipClass: identity.shipClass,
+      profile: identity.profile,
+      profileModifier: identity.profileModifier,
       bridgeRarity: bridge.instance.partCatalog.rarity,
     };
   }

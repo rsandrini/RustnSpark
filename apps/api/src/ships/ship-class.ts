@@ -2,8 +2,10 @@ import type { GameRules } from '../config/game-config.types.js';
 import {
   PROFILE_AXES,
   deriveShipProfile,
+  deriveShipProfileDetail,
   type ProfileAxis,
   type ShipProfile,
+  type ShipProfileDetail,
 } from './ship-profile.js';
 import type { ShipSheet } from './sheet.types.js';
 
@@ -20,6 +22,8 @@ export interface ShipIdentityBundle {
   shipClass: ShipClassType;
   profile: ShipProfile;
   profileModifier: ProfileAxis | null;
+  /** The value and reference behind each axis ("Defense 6%: 4.2 of 70"). */
+  profileDetail: ShipProfileDetail;
 }
 
 // The types, in the fixed order that breaks an exact tie (the first listed wins). Each type reads the profile
@@ -108,5 +112,10 @@ export function deriveShipClass(profile: ShipProfile, rules: GameRules): ShipCla
 export function shipIdentityOf(sheet: ShipSheet, rules: GameRules): ShipIdentityBundle {
   const profile = deriveShipProfile(sheet, rules);
   const { shipClass, modifier } = deriveShipIdentity(profile, rules);
-  return { shipClass, profile, profileModifier: modifier };
+  return {
+    shipClass,
+    profile,
+    profileModifier: modifier,
+    profileDetail: deriveShipProfileDetail(sheet, rules),
+  };
 }

@@ -38,7 +38,7 @@ import {
   validateLayout,
 } from './geometry.js';
 import { shipIdentityOf, type ShipClassType } from './ship-class.js';
-import type { ProfileAxis, ShipProfile } from './ship-profile.js';
+import type { ProfileAxis, ShipProfile, ShipProfileDetail } from './ship-profile.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
 import { startingPools } from '../missions/resolution-input.js';
@@ -102,6 +102,8 @@ export interface ShipResponse {
   /** The seven axes of the ship (0..1) and its strong second axis, if any. */
   profile: ShipProfile;
   profileModifier: ProfileAxis | null;
+  /** The value and reference behind each axis. */
+  profileDetail: ShipProfileDetail;
   /** The assembly yard the layout lives on; the client draws it, the server validates it. */
   yard: { cells: [number, number][] };
   /** Installed part instance ids with no compatible connector chain back to the bridge right
@@ -176,6 +178,8 @@ export interface PreviewResponse {
   /** The seven axes of the ship (0..1) and its strong second axis, if any. */
   profile: ShipProfile;
   profileModifier: ProfileAxis | null;
+  /** The value and reference behind each axis. */
+  profileDetail: ShipProfileDetail;
   viability: ViabilityReport;
   /** How the ship's power would be shared while travelling: each kind of system's share of its need. */
   power?: { supply: number; demand: number; shares: Record<string, number> };

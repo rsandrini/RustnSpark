@@ -24,6 +24,12 @@ describe('shipIdentityOf (what every ship response carries next to the sheet)', 
     expect(identity.profileModifier).toBe('firepower');
   });
 
+  it('carries the value and reference behind every axis', () => {
+    const identity = shipIdentityOf({ ...EMPTY_SHEET, crg: 100 }, rules);
+    expect(identity.profileDetail.cargo).toEqual({ value: 100, ref: rules.ship_profile.ref_cargo });
+    expect(Object.keys(identity.profileDetail)).toHaveLength(7);
+  });
+
   it('names a weak ship BALANCED with no modifier', () => {
     expect(shipIdentityOf(EMPTY_SHEET, rules)).toMatchObject({
       shipClass: 'BALANCED',

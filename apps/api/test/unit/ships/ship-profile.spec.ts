@@ -2,7 +2,11 @@ import { describe, expect, it } from '@jest/globals';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import { EMPTY_SHEET } from './fixtures/empty-sheet.js';
-import { deriveShipProfile } from '../../../src/ships/ship-profile.js';
+import {
+  deriveShipProfile,
+  deriveShipProfileDetail,
+  PROFILE_AXES,
+} from '../../../src/ships/ship-profile.js';
 
 const rules = GAME_CONFIG_DEFAULTS;
 const ref = rules.ship_profile;
@@ -121,5 +125,71 @@ describe('deriveShipProfile', () => {
     expect(profile.mobility).toBeCloseTo(((50 / 100) * rules.ship.mob_factor) / ref.ref_mobility);
     expect(profile.range).toBeCloseTo(0.25);
     expect(profile.mining).toBeCloseTo(0.2);
+  });
+});
+
+describe('deriveShipProfileDetail (the numbers behind the axes)', () => {
+  const starter = {
+    ...EMPTY_SHEET,
+    pot: 12,
+    mass: 60,
+    crg: 40,
+    pdf: 15,
+    esc: 30,
+    bli: 20,
+    fuelUse: 2,
+    autonomy: 20000,
+    pax: 2,
+    lifeCap: 4,
+  };
+  const hauler = {
+    ...EMPTY_SHEET,
+    pot: 20,
+    mass: 200,
+    crg: 400,
+    pax: 10,
+    lifeCap: 4,
+    fuelUse: 5,
+    autonomy: 50000,
+    esc: 10,
+  };
+  const ionRacer = { ...EMPTY_SHEET, pot: 40, mass: 20, fuelUse: 0, autonomy: 0, pdf: 5 };
+  const refs = {
+    cargo: ref.ref_cargo,
+    passengers: ref.ref_passengers,
+    firepower: ref.ref_firepower,
+    defense: ref.ref_defense,
+    mobility: ref.ref_mobility,
+    range: ref.ref_range,
+    mining: ref.ref_mining,
+  };
+
+  it.each([
+    ['starter', starter],
+    ['cargo hauler', hauler],
+    ['fuel-free ion racer', ionRacer],
+  ])('%s: every axis is min(1, value / ref) and the refs are the config refs', (_n, sheet) => {
+    const profile = deriveShipProfile(sheet, rules);
+    const detail = deriveShipProfileDetail(sheet, rules);
+    for (const key of PROFILE_AXES) {
+      expect(detail[key].ref).toBe(refs[key]);
+      expect(profile[key]).toBeCloseTo(Math.min(1, detail[key].value / detail[key].ref), 10);
+    }
+  });
+
+  it('reports the raw values: cargo, bounded passengers, armor-weighted defense', () => {
+    const detail = deriveShipProfileDetail(hauler, rules);
+    expect(detail.cargo.value).toBe(400);
+    expect(detail.passengers.value).toBe(4);
+    expect(detail.defense.value).toBeCloseTo(10);
+    expect(deriveShipProfileDetail(starter, rules).defense.value).toBeCloseTo(
+      30 + 20 * rules.combat.armor_pool_factor,
+    );
+  });
+
+  it('a fuel-free ion ship reports range value = ref (unlimited reads as a full axis)', () => {
+    const detail = deriveShipProfileDetail(ionRacer, rules);
+    expect(detail.range).toEqual({ value: ref.ref_range, ref: ref.ref_range });
+    expect(deriveShipProfile(ionRacer, rules).range).toBe(1);
   });
 });
