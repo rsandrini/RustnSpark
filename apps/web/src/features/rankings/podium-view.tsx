@@ -57,7 +57,7 @@ export function OwnPlace({
   gap: Gap;
   valueText: (value: number) => string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (me === null) {
     return (
       <p className="rankings-own" data-testid="ranking-own">
@@ -65,7 +65,9 @@ export function OwnPlace({
       </p>
     );
   }
-  const rank = t('rankings.rankValue', { rank: me.rank });
+  const rank = t('rankings.rankValue', {
+    rank: new Intl.NumberFormat(i18n.language).format(me.rank),
+  });
   const parts: string[] = [];
   if (gap.kind === 'first') {
     parts.push(t('rankings.leading'), rank);

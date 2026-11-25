@@ -52,6 +52,11 @@ describe('Podium', () => {
     expect(none.container).toBeEmptyDOMElement();
   });
 
+  it('rings the avatar in the static faction colour', () => {
+    wrap(<Podium podium={podiumOf([{ ...entry(1), factionId: 'luna' }])} valueText={valueText} />);
+    expect(screen.getByTestId('podium-avatar').style.borderColor).toBe('var(--luna)');
+  });
+
   it('links each name to the pilot card and highlights the own column', () => {
     wrap(<Podium podium={podiumOf([entry(1), entry(2, true), entry(3)])} valueText={valueText} />);
     expect(screen.getByRole('link', { name: 'Pilot 2' })).toHaveAttribute('href', '/pilots/pub2');
@@ -122,6 +127,18 @@ describe('OwnPlace', () => {
     expect(screen.getByTestId('ranking-own')).toHaveTextContent(
       'You have no result on this board yet.',
     );
+  });
+
+  it('formats the rank with the language separators', async () => {
+    const big = { rank: 1234, value: 5 };
+    const a = wrap(
+      <OwnPlace me={big} board="distance" gap={{ kind: 'unknown' }} valueText={valueText} />,
+    );
+    expect(screen.getByTestId('ranking-own').textContent).toBe('You · rank 1,234');
+    a.unmount();
+    await i18n.changeLanguage('pt-BR');
+    wrap(<OwnPlace me={big} board="distance" gap={{ kind: 'unknown' }} valueText={valueText} />);
+    expect(screen.getByTestId('ranking-own').textContent).toContain('1.234');
   });
 
   it('reads in Portuguese', async () => {

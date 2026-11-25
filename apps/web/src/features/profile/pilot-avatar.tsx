@@ -1,4 +1,4 @@
-import { useFactions } from '../../ui/factions';
+import { factionColorVar, useFactions } from '../../ui/factions';
 
 export interface PilotAvatarProps {
   name: string;
@@ -19,7 +19,7 @@ export function PilotAvatar({ name, factionId, size = 56 }: PilotAvatarProps) {
         width: size,
         height: size,
         fontSize: Math.round(size * 0.45),
-        borderColor: faction?.color ?? 'var(--rule)',
+        borderColor: faction?.color ?? `var(${factionColorVar[factionId ?? ''] ?? '--neutro'})`,
       }}
     >
       {initial}

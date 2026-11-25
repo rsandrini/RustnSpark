@@ -13,6 +13,11 @@ describe('PilotAvatar', () => {
     expect(el).toHaveAttribute('aria-hidden', 'true');
   });
 
+  it('rings a known faction in its static colour before the factions load', () => {
+    renderWithProviders(<PilotAvatar name="Wren" factionId="luna" />, { withRouter: false });
+    expect(screen.getByTestId('pilot-avatar').style.borderColor).toBe('var(--luna)');
+  });
+
   it('is safe for an empty name and an unknown faction', () => {
     renderWithProviders(<PilotAvatar name="" factionId={null} />, { withRouter: false });
     expect(screen.getByTestId('pilot-avatar')).toHaveTextContent('?');

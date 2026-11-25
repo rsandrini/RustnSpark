@@ -151,6 +151,26 @@ describe('profile (S10.9)', () => {
       expect(await screen.findByText('Mission accomplished')).toBeInTheDocument();
     });
 
+    it('shows a single faction badge once the card is in, none standalone while loading', async () => {
+      server.use(
+        withPublicId(),
+        http.get('/v1/players/profile/:publicId', async () => {
+          await new Promise((r) => setTimeout(r, 50));
+          return HttpResponse.json({}, { status: 500 });
+        }),
+      );
+      const { container } = renderWithRouter(routes, { initialEntries: ['/profile'] });
+      expect(await screen.findByTestId('wallet')).toBeInTheDocument();
+      expect(container.querySelectorAll('main .fac')).toHaveLength(0);
+    });
+
+    it('has a single faction badge on the page once the card is in', async () => {
+      server.use(withPublicId());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/profile'] });
+      expect(await screen.findByText('LUN-TestPilot-Wren')).toBeInTheDocument();
+      expect(container.querySelectorAll('main .fac')).toHaveLength(1);
+    });
+
     it('makes no card request without a public id', async () => {
       let calls = 0;
       server.use(

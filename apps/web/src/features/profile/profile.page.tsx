@@ -82,9 +82,11 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
 
       {cardQuery.data !== undefined && <PilotCard profile={cardQuery.data} />}
 
-      {cardQuery.data === undefined && user?.factionId != null && (
-        <FactionBadge factionId={user.factionId} />
-      )}
+      {cardQuery.data === undefined &&
+        user?.factionId != null &&
+        (publicId === undefined || cardQuery.isError) && (
+          <FactionBadge factionId={user.factionId} />
+        )}
 
       {statsQuery.data !== undefined && <MyStats stats={statsQuery.data} />}
 
