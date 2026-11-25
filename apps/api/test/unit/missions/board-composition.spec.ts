@@ -85,6 +85,19 @@ describe('board composition', () => {
     });
   });
 
+  it('a capped required type is not asked for: the slot falls to the length need instead', () => {
+    const live = offers(
+      ['DELIVERY', 300],
+      ['TRANSPORT', 300],
+      ['ESCORT', 300],
+      ['MINING', 300],
+      ['RACE', 300],
+    );
+    const slot = nextSlot({ reach: mainReach, live, capped: set('RACE'), rules });
+    expect(slot.types?.has('RACE') ?? false).toBe(false);
+    expect(slot.length).toBe('long');
+  });
+
   it('a place with no trip under the threshold counts its nearest as short', () => {
     expect(lengthBounds(reachOf({ DELIVERY: [3, 675, 1900] }), rules)).toEqual({
       shortMax: 675,

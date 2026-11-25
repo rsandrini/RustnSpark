@@ -1055,6 +1055,30 @@ describe('filler reach and length target', () => {
     }
   });
 
+  it('a template with no destination at the wanted length is passed over for one that has one', () => {
+    const nearOnly: FillerTemplate = {
+      ...DELIVERY_LUNA,
+      id: 'delivery_near',
+      requirements: { originFactions: ['luna'], destinationIds: ['near'] },
+    };
+    const farOnly: FillerTemplate = {
+      ...DELIVERY_LUNA,
+      id: 'delivery_far',
+      requirements: { originFactions: ['luna'], destinationIds: ['far'] },
+    };
+    for (const seed of seeds) {
+      const draft = fillMission({
+        seed,
+        origin: O,
+        world: starWorld([nearOnly, farOnly]),
+        rules,
+        now: NOW,
+        lengthTarget: { minSeconds: 4000 },
+      });
+      expect(draft.destinationId).toBe('far');
+    }
+  });
+
   it('banded and fitting beats everywhere and fitting', () => {
     // band zones 1..2 = mid, far; max 2000s fits near and mid; the band-fit step leaves only mid
     for (const seed of seeds) expect(draw(seed, { maxSeconds: 2000 }, bandGiver(1, 2))).toBe('mid');

@@ -571,11 +571,6 @@ export function fillMission(input: FillMissionInput): MissionDraft {
       pool = narrowed.filter((candidate) => candidate.type === type);
     }
   }
-  const template = pool.length > 0 ? rng.child('template').pick(pool) : undefined;
-  if (template === undefined) {
-    throw new MissionGenerationError(`No eligible mission template at location ${origin.id}`);
-  }
-
   const adjacency = buildAdjacency(world.routes);
   const zoneOf = new Map(world.locations.map((location) => [location.id, location.zone]));
   const allowedZone =
@@ -599,16 +594,49 @@ export function fillMission(input: FillMissionInput): MissionDraft {
       paths.set(locationId, shortestPath(origin.id, locationId, adjacency));
     return paths.get(locationId) ?? null;
   };
-  const reachableWhere = (inBand: (path: FillerRoute[]) => boolean): FillerLocation[] =>
+  const reachableFor = (
+    candidate: FillerTemplate,
+    inBand: (path: FillerRoute[]) => boolean,
+  ): FillerLocation[] =>
     world.locations
       .filter((location) => {
         if (location.id === origin.id) return false;
-        if (!matchesDestination(location, template, input.starter?.firstMission === true))
+        if (!matchesDestination(location, candidate, input.starter?.firstMission === true))
           return false;
         const candidatePath = pathTo(location.id);
         return candidatePath !== null && withinStarterZone(candidatePath) && inBand(candidatePath);
       })
       .sort(byId);
+  const pathLength = (locationId: string): number =>
+    (pathTo(locationId) ?? []).reduce((sum, route) => sum + route.distance, 0);
+  const { lengthTarget } = input;
+  const fitsTarget = (candidate: FillerTemplate, location: FillerLocation): boolean => {
+    if (lengthTarget === undefined) return true;
+    const distance = pathLength(location.id);
+    const seconds = referenceSeconds(
+      candidate.type === 'RESCUE' ? distance * ROUND_TRIP : distance,
+      rules,
+    );
+    return (
+      seconds <= (lengthTarget.maxSeconds ?? Number.POSITIVE_INFINITY) &&
+      seconds >= (lengthTarget.minSeconds ?? 0)
+    );
+  };
+  // A wanted trip length narrows the templates first: one with no destination at that length would answer
+  // with the wrong trip. When none has one, the pool stays as it is (the destination ladder below falls back).
+  if (lengthTarget !== undefined && input.starter === undefined) {
+    const fitting = pool.filter((candidate) =>
+      reachableFor(candidate, () => true).some((location) => fitsTarget(candidate, location)),
+    );
+    if (fitting.length > 0) pool = fitting;
+  }
+  const template = pool.length > 0 ? rng.child('template').pick(pool) : undefined;
+  if (template === undefined) {
+    throw new MissionGenerationError(`No eligible mission template at location ${origin.id}`);
+  }
+
+  const reachableWhere = (inBand: (path: FillerRoute[]) => boolean): FillerLocation[] =>
+    reachableFor(template, inBand);
   // The giver's zone band (a cautious one stays near home, a daring one goes far) holds when anywhere reachable fits it.
   const banded =
     giver === undefined
@@ -622,26 +650,13 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   // destination within the distance cap is offered — deterministic, so the first result comes
   // fast and from the same nearby place every time (the usual board keeps the whole map in play
   // and picks freely).
-  const pathLength = (locationId: string): number =>
-    (pathTo(locationId) ?? []).reduce((sum, route) => sum + route.distance, 0);
   const byDistance = (x: FillerLocation, y: FillerLocation): number =>
     pathLength(x.id) - pathLength(y.id) || byId(x, y);
   let destination: FillerLocation | undefined;
   if (input.starter === undefined) {
-    const { lengthTarget } = input;
     let candidates = reachable;
     if (lengthTarget !== undefined) {
-      const fits = (location: FillerLocation): boolean => {
-        const distance = pathLength(location.id);
-        const seconds = referenceSeconds(
-          template.type === 'RESCUE' ? distance * ROUND_TRIP : distance,
-          rules,
-        );
-        return (
-          seconds <= (lengthTarget.maxSeconds ?? Number.POSITIVE_INFINITY) &&
-          seconds >= (lengthTarget.minSeconds ?? 0)
-        );
-      };
+      const fits = (location: FillerLocation): boolean => fitsTarget(template, location);
       const everywhere = banded.length > 0 ? reachableWhere(() => true) : reachable;
       candidates =
         [banded.filter(fits), everywhere.filter(fits), banded, everywhere].find(

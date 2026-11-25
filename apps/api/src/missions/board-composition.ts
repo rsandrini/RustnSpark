@@ -84,7 +84,7 @@ export function nextSlot(input: {
   for (const t of requiredTypes(reach, rules)) {
     const have = counts.get(t) ?? 0;
     if (have > 0) counts.set(t, have - 1);
-    else missing.push(t);
+    else if (!capped.has(t)) missing.push(t);
   }
 
   const needs: LengthNeed[] = [];

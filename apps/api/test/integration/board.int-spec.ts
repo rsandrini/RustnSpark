@@ -418,16 +418,7 @@ describe('mission board (S6.2)', () => {
   it('a held long offer leaves the board and the refill posts another long one', async () => {
     const first = await board!.getBoard('ceres', 1);
     const longs = first.filter((row) => pathDistance(row) >= 4800);
-    // keep exactly one long offer, then hold it
-    await prisma.missionInstance.updateMany({
-      where: { id: { in: longs.slice(1).map((row) => row.id) } },
-      data: { status: 'EXPIRED' },
-    });
-    await board!.getBoard('ceres', 1);
-    const only = (
-      await prisma.missionInstance.findMany({ where: { originId: 'ceres', status: 'AVAILABLE' } })
-    ).filter((row) => pathDistance(row) >= 4800);
-    const target = only[0]!;
+    expect(longs.length).toBeGreaterThan(0);
     const player = await prisma.account.create({
       data: {
         email: `held-${Date.now()}@example.com`,
@@ -437,13 +428,15 @@ describe('mission board (S6.2)', () => {
       },
       include: { player: true },
     });
-    await prisma.missionInstance.update({
-      where: { id: target.id },
+    // hold every long offer: the board has none left, so the refill must post a long one
+    await prisma.missionInstance.updateMany({
+      where: { id: { in: longs.map((row) => row.id) } },
       data: { status: 'HELD', playerId: player.player!.id },
     });
+    const heldIds = new Set(longs.map((row) => row.id));
     const rows = await board!.getBoard('ceres', 1);
     expect(rows.length).toBe(10);
-    expect(rows.some((row) => row.id !== target.id && pathDistance(row) >= 4800)).toBe(true);
+    expect(rows.some((row) => !heldIds.has(row.id) && pathDistance(row) >= 4800)).toBe(true);
   }, 60000);
 
   it('a private starter offer does not count toward the mix', async () => {
@@ -463,10 +456,23 @@ describe('mission board (S6.2)', () => {
       isTakeable: () => true,
     });
     expect(created).toBe(true);
+    await board!.getBoard('ceres', 1);
+    // every shared short offer runs out while the starter offer (a short one) is still live
+    await prisma.missionInstance.updateMany({
+      where: { originId: 'ceres', status: 'AVAILABLE', privatePlayerId: null },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    });
     const rows = await board!.getBoard('ceres', 1);
     const shared = rows.filter((row) => row.privatePlayerId === null);
     expect(shared.length).toBe(10);
     expect(shared.some((row) => pathDistance(row) <= 800)).toBe(true);
+  }, 60000);
+
+  it('a high board_min_races still fills the board to its size and ends', async () => {
+    await config!.setValue('missions.board_min_races', 6, 'tester', 'integration-test');
+    const rows = await board!.getBoard('ceres', 1);
+    expect(rows.length).toBe(10);
+    expect(rows.filter((row) => row.type === 'RACE').length).toBeLessThanOrEqual(5);
   }, 60000);
 
   it('returns an empty board for an unknown location', async () => {

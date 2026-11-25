@@ -344,6 +344,9 @@ export class BoardService {
     const reach = planned ? reachByType(location, worldTables, rules) : new Map();
     const boardMin = planned ? boardTarget(baseSize, reach, rules) : baseSize;
     const bounds = planned ? lengthBounds(reach, rules) : null;
+    // `baseSize` is checked first (cheap, before the world loads); `boardMin` only exceeds it when the required
+    // types outnumber the base size. Between refills a board of base size may then lack a core type; the default
+    // sizes never reach that, and the next refill past baseSize tops it up.
     if (available >= boardMin) return available;
     let epoch = await tx.missionInstance.count({ where: { originId: locationId } });
     // A board of four identical offers is not a board: a new offer must differ from the live ones
@@ -356,7 +359,7 @@ export class BoardService {
         expiresAt: { gt: now },
         privatePlayerId: null,
       },
-      select: { type: true, destinationId: true, cargo: true, legs: true },
+      select: { type: true, destinationId: true, cargo: true, legs: true, giverId: true },
     });
     const live: (OfferShape & { type: MissionType; seconds: number })[] = liveRows.map((row) => ({
       type: row.type,
@@ -367,21 +370,12 @@ export class BoardService {
     const maxSameType = maxOffersOfOneType(boardMin, rules);
     const eligibleTypes = eligibleTypesAt(location, worldTables);
     const givers = await loadGivers(tx, location.factionId);
-    const liveGiverIds: (string | null)[] = (
-      await tx.missionInstance.findMany({
-        where: {
-          originId: locationId,
-          status: 'AVAILABLE',
-          expiresAt: { gt: now },
-          privatePlayerId: null,
-        },
-        select: { giverId: true },
-      })
-    ).map((row) => row.giverId);
+    const liveGiverIds: (string | null)[] = liveRows.map((row) => row.giverId);
     const seconds = (draft: MissionDraft): number => legsSeconds(draft.legs, rules);
     while (available < boardMin) {
       try {
         let draft: MissionDraft | undefined;
+        let draftSeconds = 0;
         let attempt = 0;
         for (;;) {
           // A seed this place already used (a rejected attempt of an earlier top-up burned some epochs) would
@@ -397,14 +391,13 @@ export class BoardService {
             ),
           );
           // The planner says what the board still lacks: a type, a race, a short or a long offer.
-          const slot: BoardSlot = planned
-            ? nextSlot({ reach, live, capped: avoidTypes, rules })
-            : {};
-          // Every type the slot asks for is at its cap: nothing can be posted for it.
-          if (slot.types !== undefined && [...slot.types].every((type) => avoidTypes.has(type))) {
-            draft = undefined;
-            break;
-          }
+          const wanted = planned ? nextSlot({ reach, live, capped: avoidTypes, rules }) : {};
+          // Every type the slot asks for is at its cap: the slot is dropped, the board still fills to its size
+          // with whatever the filler can post (it ignores the caps when nothing else is eligible).
+          const slot: BoardSlot =
+            wanted.types !== undefined && [...wanted.types].every((t) => avoidTypes.has(t))
+              ? {}
+              : wanted;
           let giver = pickGiver({
             givers,
             locationId,
@@ -442,13 +435,14 @@ export class BoardService {
               : attempt < VARIETY_ATTEMPTS
                 ? SAME_JOB_ONLY
                 : ANYTHING_GOES;
-          // The filler picks the template before the trip, so a template with nothing at the wanted length can still
-          // answer a short or long slot with the wrong one: reseed a few times, then take what comes.
+          // The filler already prefers a template with a destination at the wanted length; this only backstops the
+          // case where no template of the pool has one: reseed a few times, then take what comes.
+          draftSeconds = seconds(draft);
           const lengthOk =
             lengthTarget === undefined ||
             attempt >= STRICT_ATTEMPTS ||
-            (seconds(draft) <= (lengthTarget.maxSeconds ?? Number.POSITIVE_INFINITY) &&
-              seconds(draft) >= (lengthTarget.minSeconds ?? 0));
+            (draftSeconds <= (lengthTarget.maxSeconds ?? Number.POSITIVE_INFINITY) &&
+              draftSeconds >= (lengthTarget.minSeconds ?? 0));
           if (lengthOk && isVariedEnough(draft, live, maxSameType, strictness)) break;
           attempt += 1;
           epoch += 1;
@@ -458,7 +452,7 @@ export class BoardService {
           type: draft.type,
           destinationId: draft.destinationId,
           cargo: draft.cargo,
-          seconds: legsSeconds(draft.legs, rules),
+          seconds: draftSeconds,
         });
         liveGiverIds.push(draft.giverId ?? null);
         await tx.missionInstance.create({ data: draft });
