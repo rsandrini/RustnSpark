@@ -8,6 +8,7 @@ import { useDialogueActions, useDialogueState } from '../features/dialogue/use-d
 import { pickLocalized } from '../i18n/localized';
 import { LanguageSwitcher } from '../i18n/language-switcher';
 import { APP_VERSION } from '../version';
+import { CountUp } from './CountUp';
 import { useWalletAnswer } from './use-wallet-answer';
 import { BugReportDialog } from './BugReportDialog';
 import { ClaimPopup } from '../features/auth/claim-popup';
@@ -64,7 +65,6 @@ export function AccountMenu() {
   useEffect(() => {
     if (!open) setTalkOpen(false);
   }, [open]);
-  const credits = `${new Intl.NumberFormat(i18n.language).format(user?.credits ?? 0)} ¢`;
   const walletAnswer = useWalletAnswer(
     user?.credits,
     (amount) =>
@@ -94,7 +94,7 @@ export function AccountMenu() {
         data-testid="topbar-wallet"
         aria-label={t('port.wallet')}
       >
-        {credits}
+        <CountUp value={user?.credits ?? 0} unit="¢" />
       </span>
       {walletAnswer.delta !== null && (
         <span

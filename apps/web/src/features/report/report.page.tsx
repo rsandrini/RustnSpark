@@ -15,6 +15,7 @@ import type {
   ReportViewName,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
+import { CountUp } from '../../ui/CountUp';
 import { enginePercent } from '../../ui/engine-level';
 import { formatDuration } from '../../ui/duration';
 import { pathOfLegs } from '../../ui/RouteMap';
@@ -499,7 +500,8 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
       ? undefined
       : world?.locations.find((entry) => entry.id === mission.destinationId);
   const earned = stats.credits;
-  const creditsText = `${earned >= 0 ? '+' : '−'}${number(Math.abs(earned))} ¢`;
+  const signed = (value: number) => `${earned >= 0 ? '+' : '−'}${number(Math.abs(value))}`;
+  const creditsText = `${signed(earned)} ¢`;
   const hasFights =
     stats.fights.won +
       stats.fights.lost +
@@ -664,7 +666,9 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
           )}
         </div>
         <div className="debrief-credits">
-          <b className={earned < 0 ? 'neg' : earned > 0 ? 'pos' : undefined}>{creditsText}</b>
+          <b className={earned < 0 ? 'neg' : earned > 0 ? 'pos' : undefined}>
+            <CountUp value={earned} format={signed} unit="¢" animateOnMount />
+          </b>
           {stats.balanceAfter !== null && (
             <small>{t('report.debrief.balance', { balance: number(stats.balanceAfter) })}</small>
           )}

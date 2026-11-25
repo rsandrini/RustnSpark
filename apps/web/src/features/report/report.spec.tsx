@@ -72,6 +72,17 @@ describe('report (S10.8)', () => {
     expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('counts the debrief credits up from 0 when the report opens, with the final figure for screen readers', async () => {
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    const figure = await screen.findByTestId('debrief');
+    const box = figure.querySelector('.debrief-credits b') as HTMLElement;
+    const hidden = box.querySelector('[aria-hidden="true"]') as HTMLElement;
+    expect(box.querySelector('.sr-only')).toHaveTextContent('+1,400 ¢');
+    expect(box).toHaveClass('pos');
+    expect(hidden.textContent).not.toBe('+1,400 ¢');
+    await waitFor(() => expect(hidden).toHaveTextContent('+1,400 ¢'));
+  });
+
   it('renders the narrative chapters and opens the event popup', async () => {
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
     fireEvent.click(await screen.findByRole('tab', { name: 'The story' }));
