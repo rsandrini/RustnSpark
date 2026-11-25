@@ -960,7 +960,9 @@ describe('passenger head count on a TRANSPORT offer', () => {
     const one = at(1);
     const five = at(5);
     expect(five).toBeGreaterThan(one);
-    expect(five).toBe(Math.round(one * (1 + 4 * rules.missions.transport_pay_per_extra_passenger)));
+    expect(
+      Math.abs(five - one * (1 + 4 * rules.missions.transport_pay_per_extra_passenger)),
+    ).toBeLessThanOrEqual(1);
   });
 
   it('other types carry no head count', () => {

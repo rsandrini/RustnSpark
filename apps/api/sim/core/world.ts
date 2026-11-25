@@ -40,7 +40,10 @@ import {
   type GiverShape,
 } from '../../src/missions/generator/giver.picker.js';
 import { createRng } from '../../src/common/rng/rng.js';
-import { checkMissionRequirements } from '../../src/missions/requirements.checker.js';
+import {
+  checkMissionRequirements,
+  offerRequirements,
+} from '../../src/missions/requirements.checker.js';
 import type { ScavengeContext } from '../../src/resolution/scavenge/scavenge.resolver.js';
 import { deriveSheet } from '../../src/ships/sheet.deriver.js';
 import type {
@@ -269,7 +272,7 @@ function offerOf(draft: MissionDraft, snapshot: Snapshot, starter: boolean): Off
     expiresAtMs: toMs(draft.expiresAt),
     deadlineAtMs: draft.deadlineAt == null ? null : toMs(draft.deadlineAt),
     starter,
-    requirements: template?.requirements ?? {},
+    requirements: offerRequirements(template?.requirements ?? {}, draft.cargo) as Json,
     encounterPolicy: template?.encounterPolicy ?? {},
     ...(draft.giverId == null ? {} : { giverId: draft.giverId }),
   };
@@ -350,7 +353,7 @@ function requirementsMet(
   const report = checkMissionRequirements(
     {
       missionType: draft.type,
-      requirements: template?.requirements,
+      requirements: offerRequirements(template?.requirements, draft.cargo),
       sheet,
       parts,
     },
@@ -431,7 +434,9 @@ export function boardAt(input: BoardAtInput): Offer[] {
           ),
         );
         const preferTypes =
-          missingTypes.size > 0 && missingTypes.size < eligibleTypes.size ? missingTypes : undefined;
+          missingTypes.size > 0 && missingTypes.size < eligibleTypes.size
+            ? missingTypes
+            : undefined;
         const seed = missionSeed({
           locationId,
           epoch: boardState.epoch,

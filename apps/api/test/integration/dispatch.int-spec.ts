@@ -1093,15 +1093,30 @@ describe('ship dispatch API (S7.2)', () => {
       await expectRefused(player, mission, 'PRESSURIZED_LIFE_SUPPORT');
     });
 
-    it('refuses a TRANSPORT whose ship has no seats for the group, naming the seats', async () => {
+    it('refuses a TRANSPORT whose ship has a cabin and life support but too few seats, naming the seats', async () => {
       await freshSeededApp();
       const player = await onboardPlayer();
       const mission = await missionOfType(player, 'TRANSPORT');
+      // the ship carries a cabin (2 seats) and a life support (capacity 6), the group is 4
+      const installed = await prisma.partInstance.findFirstOrThrow({
+        where: { shipId: player.shipId, ownerPlayerId: player.seeded.player.id },
+        include: { partCatalog: true },
+      });
+      await prisma.partCatalog.update({
+        where: { partType: installed.partCatalog.partType },
+        data: {
+          specialProp: { pressurized: true, lifeSupport: true, pax: 2, lifeCap: 6 },
+        },
+      });
       await prisma.missionInstance.update({
         where: { id: mission.id },
         data: { cargo: { passengers: 4 } },
       });
-      await expectRefused(player, mission, 'PASSENGER_SEATS');
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(400);
+      const codes = reasonCodes(response.body);
+      expect(codes).toContain('PASSENGER_SEATS');
+      expect(codes).not.toContain('PRESSURIZED_LIFE_SUPPORT');
     });
 
     it('refuses a MINING mission once the drill is removed', async () => {

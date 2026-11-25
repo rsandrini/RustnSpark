@@ -214,6 +214,7 @@ export function takeMission(
           {
             legs: offer.legs as unknown as Parameters<typeof missionReward>[0]['legs'],
             type: offer.type,
+            cargo: offer.cargo,
           },
           tier,
           rules,

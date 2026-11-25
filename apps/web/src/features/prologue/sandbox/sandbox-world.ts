@@ -327,8 +327,8 @@ const BRIEFS: Record<JobKind, LocalizedText> = {
     'pt-BR': 'Caixas lacradas que precisam chegar ao porto.',
   },
   final: {
-    en: 'Forty people need to get to Cinder Reach, and nobody else will fly the route.',
-    'pt-BR': 'Quarenta pessoas precisam chegar a Cinder Reach, e ninguém mais voa essa rota.',
+    en: 'Four people need to get to Cinder Reach, and nobody else will fly the route.',
+    'pt-BR': 'Quatro pessoas precisam chegar a Cinder Reach, e ninguém mais voa essa rota.',
   },
 };
 

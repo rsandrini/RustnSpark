@@ -7,6 +7,7 @@ import {
   contractedMiningPayout,
   integrityMultiplier,
   integrityPayout,
+  passengerPayFactor,
   rewardBase,
 } from '../../../src/economy/reward.calculator.js';
 
@@ -143,5 +144,39 @@ describe('P3 — reward follows the bridge rarity (the part-price ladder)', () =
       ]),
     ).toBe('EPIC');
     expect(bridgeRarityOf([{ partClass: 'ENGINE', rarity: 'RARE' }])).toBeUndefined();
+  });
+});
+
+describe('the passenger head count pays more', () => {
+  const trip = { tier: 1, danger: 0, distance: 800 } as const;
+  const knob = rules.missions.transport_pay_per_extra_passenger;
+
+  it('a group of one pays x1 and five pay x1.4 with the 0.1 knob', () => {
+    const tenth: GameRules = {
+      ...rules,
+      missions: { ...rules.missions, transport_pay_per_extra_passenger: 0.1 },
+    };
+    expect(passengerPayFactor(1, tenth)).toBe(1);
+    expect(passengerPayFactor(5, tenth)).toBeCloseTo(1.4, 12);
+    const base = rewardBase({ ...trip, missionType: 'TRANSPORT' }, tenth);
+    expect(rewardBase({ ...trip, missionType: 'TRANSPORT', passengers: 5 }, tenth)).toBeCloseTo(
+      base * 1.4,
+      9,
+    );
+  });
+
+  it('a head count that is not a positive whole number is a group of one', () => {
+    for (const bad of [undefined, 0, -3, 2.5, '4', Number.NaN]) {
+      expect(passengerPayFactor(bad, rules)).toBe(1);
+    }
+    expect(knob).toBeGreaterThan(0);
+  });
+
+  it('other types ignore the head count', () => {
+    for (const missionType of ['DELIVERY', 'RESCUE', 'ESCORT']) {
+      expect(rewardBase({ ...trip, missionType, passengers: 5 }, rules)).toBe(
+        rewardBase({ ...trip, missionType }, rules),
+      );
+    }
   });
 });

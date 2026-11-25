@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { buildResolveInput } from '../../../src/missions/resolution-input.js';
+import { buildResolveInput, contextFromLive } from '../../../src/missions/resolution-input.js';
 import type { DispatchSnapshot } from '../../../src/missions/dispatch.service.js';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 
@@ -137,5 +137,48 @@ describe('buildResolveInput', () => {
       rules: GAME_CONFIG_DEFAULTS,
     });
     expect(input.snapshot.sheet.pot).toBe(7);
+  });
+
+  it('carries the head count of a TRANSPORT offer from its cargo, and only for TRANSPORT', () => {
+    const live = (type: string, cargo: unknown) =>
+      contextFromLive({
+        type,
+        cargo,
+        legs: [],
+        playerFactionId: null,
+        destinationIsolation: 1,
+      } as unknown as Parameters<typeof contextFromLive>[0]);
+    expect(live('TRANSPORT', { passengers: 5 }).passengers).toBe(5);
+    expect(live('TRANSPORT', {}).passengers).toBeUndefined();
+    expect(live('DELIVERY', { passengers: 5 }).passengers).toBeUndefined();
+  });
+
+  it('puts the head count on the resolver mission input', () => {
+    const snapshot: DispatchSnapshot = {
+      shipId: 'ship-1',
+      fuel: 100,
+      currentLocationId: 'ceres',
+      stance: 'NEUTRAL',
+      energyMode: 'FULL',
+      parts: [],
+      legs: [],
+    };
+    const input = buildResolveInput({
+      missionId: 'm-1',
+      missionType: 'TRANSPORT',
+      seed: 'seed-1',
+      snapshot,
+      context: {
+        isolation: 1,
+        factionRelation: 'neutral',
+        preset: 'CRUISE',
+        missionOwner: null,
+        missionForcesFlee: false,
+        client: null,
+        passengers: 5,
+      },
+      rules: GAME_CONFIG_DEFAULTS,
+    });
+    expect(input.mission.passengers).toBe(5);
   });
 });

@@ -15,13 +15,17 @@ export interface RewardBaseInput {
   /** Rarity of the ship's bridge: scales the payout by `economy.reward_by_bridge` (absent = x1). */
   readonly bridgeRarity?: string;
   /** TRANSPORT: the head count of the group; each head above one adds `missions.transport_pay_per_extra_passenger`. */
-  readonly passengers?: number;
+  readonly passengers?: unknown;
 }
 
 /** The pay multiplier of a passenger group: 1 for one passenger (or none known), growing per extra head. */
-export function passengerPayFactor(passengers: number | undefined, rules: GameRules): number {
-  if (passengers === undefined || !Number.isFinite(passengers) || passengers <= 1) return 1;
-  return 1 + (passengers - 1) * rules.missions.transport_pay_per_extra_passenger;
+export function passengerPayFactor(passengers: unknown, rules: GameRules): number {
+  return 1 + (headCountOf(passengers) - 1) * rules.missions.transport_pay_per_extra_passenger;
+}
+
+/** The one parse of a head count (the checker and the pay both use it): a positive whole number, else a group of one. */
+export function headCountOf(value: unknown): number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 1;
 }
 
 /** The payout multiplier for a ship's bridge rarity (x1 when the table has no entry). */

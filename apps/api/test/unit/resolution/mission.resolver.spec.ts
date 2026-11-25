@@ -5,6 +5,7 @@ import type { GameRules } from '../../../src/config/game-config.types.js';
 import { createRng } from '../../../src/common/rng/rng.js';
 import { ScriptedRng } from '../../../src/common/rng/scripted.rng.js';
 import { escortAttackShare, type PartSnapshot } from '../../../src/resolution/leg/leg.resolver.js';
+import { missionReward } from '../../../src/missions/mission.reward.js';
 import {
   resolveMission,
   type MissionInput,
@@ -738,6 +739,32 @@ describe('open-cargo deliveries', () => {
     };
     const factor = rules.missions.short_trip_reward_factor;
     expect(hop(400) - hop(0)).toBeLessThanOrEqual(400 * factor + 1);
+  });
+});
+
+describe('passenger head count pays on top of the base', () => {
+  it('a group of five pays more than none, and the figure is the board figure of the same tier', () => {
+    const payoutOf = (passengers?: number) => {
+      const out = resolve(
+        'pax-pay',
+        snapshot(),
+        mission({ type: 'TRANSPORT', ...(passengers === undefined ? {} : { passengers }) }),
+      );
+      expect(out.status).toBe('success');
+      return out.events.find((event) => event.type === 'mission_payout')?.effects.credits ?? 0;
+    };
+    const plain = payoutOf();
+    const five = payoutOf(5);
+    expect(five).toBeGreaterThan(plain);
+    expect(payoutOf(1)).toBe(plain);
+    // the payout is the board figure times the ship's integrity: the group's share is the same ratio
+    const boardAt = (passengers: number) =>
+      missionReward(
+        { legs: mission().legs as never, type: 'TRANSPORT', cargo: { passengers } },
+        1,
+        rules,
+      );
+    expect(five / plain).toBeCloseTo(boardAt(5) / boardAt(1), 1);
   });
 });
 

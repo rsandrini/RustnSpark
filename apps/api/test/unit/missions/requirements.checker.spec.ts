@@ -4,6 +4,7 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import {
   checkMissionRequirements,
   fuelCapacityCheck,
+  offerRequirements,
 } from '../../../src/missions/requirements.checker.js';
 import { deriveSheet } from '../../../src/ships/sheet.deriver.js';
 import { buildInstalled } from '../ships/fixtures/catalog.js';
@@ -207,6 +208,28 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
       expect(codes(check('TRANSPORT', noLife, { passengers: 4 }))).toEqual([
         'PRESSURIZED_LIFE_SUPPORT',
       ]);
+    });
+
+    it('the offer cargo head count joins the template requirements, so a 2-seat ship is unmet for 4 and met without it', () => {
+      const ship = cabin(2, 6);
+      const sheet = deriveSheet(ship, rules);
+      const run = (cargo: unknown) =>
+        checkMissionRequirements(
+          {
+            missionType: 'TRANSPORT',
+            requirements: offerRequirements({ originFactions: ['luna'] }, cargo),
+            sheet,
+            parts: ship,
+          },
+          rules,
+        );
+      const group = run({ passengers: 4 });
+      expect(group.reasons.map((reason) => reason.code)).toEqual(['PASSENGER_SEATS']);
+      expect(group.checklist.find((entry) => entry.code === 'PASSENGER_SEATS')).toMatchObject({
+        needed: 4,
+        actual: 2,
+      });
+      expect(run({}).eligible).toBe(true);
     });
 
     it('an offer with no valid head count is a group of one', () => {

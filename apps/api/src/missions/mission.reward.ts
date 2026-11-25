@@ -35,7 +35,7 @@ export function missionReward(
         danger: maxDanger,
         distance: totalDistance,
         missionType: row.type,
-        ...(typeof cargo.passengers === 'number' ? { passengers: cargo.passengers } : {}),
+        passengers: cargo.passengers,
         ...(bridgeRarity === undefined ? {} : { bridgeRarity }),
       },
       rules,

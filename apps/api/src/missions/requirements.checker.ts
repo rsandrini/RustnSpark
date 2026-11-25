@@ -1,5 +1,6 @@
 import type { MissionType } from '@prisma/client';
 import type { GameRules } from '../config/game-config.types.js';
+import { headCountOf } from '../economy/reward.calculator.js';
 import type { InstalledPart } from '../parts/part.types.js';
 import { rawMobility } from '../ships/sheet.deriver.js';
 import type { ShipSheet } from '../ships/sheet.types.js';
@@ -96,10 +97,6 @@ function threshold(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-function headCount(value: unknown): number {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 1;
-}
-
 /**
  * The hints one offer is checked against: the template's requirements plus what this offer drew
  * (a passenger job's head count lives in the offer's cargo, since a template serves many offers).
@@ -113,6 +110,7 @@ export function offerRequirements(templateRequirements: unknown, offerCargo: unk
     typeof offerCargo === 'object' && offerCargo !== null
       ? (offerCargo as Record<string, unknown>)
       : {};
+  // the head count lives per offer in its cargo and overrides a `passengers` key of the template
   return { ...base, passengers: cargo.passengers };
 }
 
@@ -122,7 +120,7 @@ function parseHints(requirements: unknown): RequirementHints {
   }
   const record = requirements as Record<string, unknown>;
   return {
-    passengers: headCount(record.passengers),
+    passengers: headCountOf(record.passengers),
     cargo: threshold(record.cargo),
     speed: threshold(record.speed),
     minMobility: threshold(record.minMobility),

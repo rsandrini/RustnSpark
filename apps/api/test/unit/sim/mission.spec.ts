@@ -3,11 +3,7 @@ import { missionDuration } from '../../../src/missions/duration.calculator.js';
 import { missionReward } from '../../../src/missions/mission.reward.js';
 import { integrityMultiplier, rewardBase } from '../../../src/economy/reward.calculator.js';
 import { deriveSheet } from '../../../src/ships/sheet.deriver.js';
-import {
-  canTakeMission,
-  missionContext,
-  takeMission,
-} from '../../../sim/actions/mission.js';
+import { canTakeMission, missionContext, takeMission } from '../../../sim/actions/mission.js';
 import { catalogIndex, installedParts, starterPlayer } from '../../../sim/core/state.js';
 import type { Offer } from '../../../sim/core/world.js';
 import { fixtureSnapshot } from './fixture.js';
@@ -63,6 +59,17 @@ describe('canTakeMission', () => {
     expect(state.clock.now()).toBe(clockBefore);
   });
 
+  it('a passenger offer carries its head count into the check: the starter ship has no seats for it', () => {
+    const state = starterPlayer(snapshot, 'luna');
+    const check = canTakeMission(
+      state,
+      offerOf({ type: 'TRANSPORT', requirements: { passengers: 4 } }),
+      ctx,
+    );
+    expect(check.ok).toBe(false);
+    expect(check.reasons).toContain('PASSENGER_SEATS');
+  });
+
   it('refuses a ship that is not at the origin', () => {
     const state = starterPlayer(snapshot, 'luna');
     state.locationId = 'tycho';
@@ -100,7 +107,9 @@ describe('takeMission', () => {
       ctx.rules,
     );
     const expectedPaid = Math.round(base * integrityMultiplier(result.integrity, ctx.rules));
-    expect(result.rewardOffered).toBe(missionReward({ legs: offer.legs as never, type: offer.type }, 1, ctx.rules));
+    expect(result.rewardOffered).toBe(
+      missionReward({ legs: offer.legs as never, type: offer.type }, 1, ctx.rules),
+    );
     expect(result.rewardPaid).toBe(expectedPaid);
     expect(state.wallet).toBe(snapshot.rules.economy.start_credits + expectedPaid);
   });
