@@ -60,6 +60,23 @@ describe('ShipRadar', () => {
     expect(y).toBeLessThan(100);
   });
 
+  it('places axes in order, clockwise from the top, at value * radius', () => {
+    const order = ['cargo', 'passengers', 'firepower', 'defense', 'mobility', 'range', 'mining'];
+    const values = Object.fromEntries(order.map((k, i) => [k, i / 10 + 0.1])) as ShipProfile;
+    const { container } = render(<ShipRadar values={values} label={LABEL} />);
+    const rings = container.querySelectorAll('.kit-radar-ring');
+    const rim = at(radii(rings[rings.length - 1] as Element), 0);
+    vertices(shape(container)).forEach(([x, y], i) => {
+      const expected = -Math.PI / 2 + (i * 2 * Math.PI) / 7;
+      const angle = Math.atan2(y - 100, x - 100);
+      const diff = Math.atan2(Math.sin(angle - expected), Math.cos(angle - expected));
+      expect(Math.abs(diff)).toBeLessThan(0.01);
+      expect(Math.hypot(x - 100, y - 100)).toBeCloseTo((i / 10 + 0.1) * rim, 1);
+    });
+    const rows = Array.from(container.querySelectorAll('tbody th')).map((th) => th.textContent);
+    expect(rows).toEqual(order.map((k) => (en.hangar.profile.axis as Record<string, string>)[k]));
+  });
+
   it('draws the ghost as a second, dashed polygon', () => {
     const { container } = render(<ShipRadar values={FLAT} ghost={FLAT} label={LABEL} />);
     const ghost = container.querySelector('.kit-radar-ghost') as Element;
@@ -102,7 +119,7 @@ describe('ShipRadar', () => {
       for (const loc of [en, ptBR]) {
         const text = (loc.hangar.profile.axis as Record<string, string>)[key];
         expect(text).toBeTruthy();
-        expect((text ?? '').length).toBeLessThanOrEqual(8);
+        expect((text ?? '').length).toBeLessThanOrEqual(9);
       }
     }
     expect(Object.keys(en.hangar.profile.axis)).toHaveLength(7);
@@ -110,14 +127,20 @@ describe('ShipRadar', () => {
     expect(en.hangar.profile.title).toBeTruthy();
   });
 
-  it('shows text labels at full size and icons only below 120', () => {
+  it('shows text labels at full size and icons only below 160', () => {
     const big = render(<ShipRadar values={FLAT} label={LABEL} />);
     expect(big.container.querySelectorAll('.kit-radar-label')).toHaveLength(7);
     big.unmount();
-    const small = render(<ShipRadar values={FLAT} size={96} label={LABEL} />);
+    const small = render(<ShipRadar values={FLAT} size={140} label={LABEL} />);
     expect(small.container.querySelectorAll('.kit-radar-label')).toHaveLength(0);
-    expect(small.container.querySelectorAll('.kit-radar-axis svg')).toHaveLength(14);
-    expect(small.container.querySelectorAll('tbody tr')).toHaveLength(7);
+    expect(small.container.querySelectorAll('.kit-radar-axis > svg')).toHaveLength(7);
+    expect(small.container.querySelectorAll('.kit-radar-axis path').length).toBeGreaterThanOrEqual(
+      7,
+    );
+    small.unmount();
+    const pilot = render(<ShipRadar values={FLAT} size={96} label={LABEL} />);
+    expect(pilot.container.querySelectorAll('.kit-radar-label')).toHaveLength(0);
+    expect(pilot.container.querySelectorAll('tbody tr')).toHaveLength(7);
   });
 
   it('hides every icon from assistive tech', () => {

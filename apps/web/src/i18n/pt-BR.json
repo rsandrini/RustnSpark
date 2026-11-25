@@ -605,6 +605,16 @@
       "RACER": "Velocista",
       "BALANCED": "Equilibrado"
     },
+    "classWithModifier": "{{type}}, {{modifier}}",
+    "classModifier": {
+      "cargo": "carregado",
+      "passengers": "com passageiros",
+      "firepower": "armado",
+      "defense": "blindado",
+      "mobility": "veloz",
+      "range": "de longo alcance",
+      "mining": "com equipamento de mineração"
+    },
     "partClasses": {
       "BRIDGE": "Ponte",
       "ENGINE": "Motor",
@@ -799,7 +809,7 @@
         "defense": "Def",
         "mobility": "Veloc.",
         "range": "Alcance",
-        "mining": "Minério"
+        "mining": "Mineração"
       }
     },
     "shipName": "Nome da nave",

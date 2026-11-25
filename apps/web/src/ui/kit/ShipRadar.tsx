@@ -22,7 +22,7 @@ const VIEW = 200;
 const CENTER = VIEW / 2;
 const RADIUS = 58; // leaves room at the rim for the icon + label
 const RINGS = [0.25, 0.5, 0.75, 1];
-const LABELS_MIN_SIZE = 120;
+const LABELS_MIN_SIZE = 160;
 
 function clamp01(v: number | undefined): number {
   return typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0;
