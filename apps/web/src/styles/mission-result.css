@@ -73,7 +73,7 @@
   display: grid;
   gap: 2px;
   margin: 10px 0 0;
-  animation: mresult-up 0.4s ease-out 0.3s both;
+  animation: mresult-up 0.4s ease-out var(--reveal-delay, 0.3s) both;
 }
 .mresult-mission b {
   font-size: 1rem;
@@ -92,7 +92,7 @@
 .mresult-travel {
   display: grid;
   gap: 4px;
-  animation: mresult-up 0.4s ease-out 0.3s both;
+  animation: mresult-up 0.4s ease-out var(--reveal-delay, 0.3s) both;
 }
 .mresult-travel b {
   font-size: 2.25rem;
@@ -114,14 +114,13 @@
 }
 .mresult-prize {
   margin: 0;
-  animation: mresult-up 0.4s ease-out 0.4s both;
+  animation: mresult-up 0.4s ease-out var(--reveal-delay, 0.4s) both;
 }
 .mresult-actions {
   display: grid;
   gap: 4px;
   width: 100%;
   margin-top: 16px;
-  animation: mresult-up 0.4s ease-out 0.5s both;
 }
 .mresult-actions .btn {
   min-height: 44px;
@@ -145,8 +144,27 @@
 }
 @keyframes mresult-up {
   from {
+    opacity: 0;
     transform: translateY(10px);
   }
+}
+@keyframes mresult-pop {
+  40% {
+    transform: scale(1.12);
+    text-shadow: 0 0 18px currentColor;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mresult-credits.gain,
+  .mresult-prize.gain {
+    animation:
+      mresult-up 0.4s ease-out 0.15s both,
+      mresult-pop 0.5s ease-out 0.6s;
+  }
+}
+/* skipped: every staged animation drops to the final state */
+.mresult[data-revealed='true'] * {
+  animation: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
   .mresult,

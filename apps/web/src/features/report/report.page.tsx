@@ -541,6 +541,8 @@ function Debrief({ outcome, stats, mission, world, onRef, missionId, fresh }: De
           title={missionName}
           route={missionRoute}
           credits={creditsText}
+          creditsValue={earned}
+          creditsFormat={(value) => `${signed(value)} ¢`}
           travel={
             mission?.type === 'TRAVEL' && stats.race == null
               ? { destination: place(mission.destinationId) }

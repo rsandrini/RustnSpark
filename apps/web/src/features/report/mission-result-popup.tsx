@@ -1,8 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import '../../styles/mission-result.css';
+import { CountUp } from '../../ui/CountUp';
+import { prefersReducedMotion } from '../../ui/use-count-up';
 import { noteResultCardShown } from './result-card-gate';
+
+/** The secondary lines slide in one after another, this far apart, after the figure has started. */
+const LINE_BASE_MS = 350;
+const LINE_STAGGER_MS = 60;
 
 /** The chip's icon, one stroke path per verdict (a tick, a flag, a cross). */
 const CHIP_ICON = {
@@ -21,6 +27,10 @@ export interface MissionResultProps {
   route: string;
   /** What it paid, already formatted ("+646 ¢"). */
   credits: string;
+  /** The same reward as a number: the figure counts up to it. */
+  creditsValue: number;
+  /** Writes a number the way `credits` is written ("+646 ¢"); the count-up uses it for every step. */
+  creditsFormat: (value: number) => string;
   /** A race: the place the pilot finished and the time they took (already formatted). */
   race: { place: number; time: string } | null;
   /** A free flight (no mission): there is no pay, so the card says where the ship arrived instead. */
@@ -41,6 +51,8 @@ export function MissionResultPopup({
   title,
   route,
   credits,
+  creditsValue,
+  creditsFormat,
   race,
   travel = null,
   onReport,
@@ -48,6 +60,19 @@ export function MissionResultPopup({
 }: MissionResultProps) {
   const { t } = useTranslation();
   const button = useRef<HTMLButtonElement>(null);
+  // The staged reveal plays once; a click on the body or reduced motion shows the final state at once.
+  // Escape is not touched: it closes the popup as always, mid-reveal or not.
+  const [revealed, setRevealed] = useState(prefersReducedMotion);
+  let line = 0;
+  const lineStyle = (): CSSProperties =>
+    ({ '--reveal-delay': `${LINE_BASE_MS + line++ * LINE_STAGGER_MS}ms` }) as CSSProperties;
+  const kind = creditsValue === 0 ? '' : creditsValue > 0 && tone !== 'bad' ? 'gain' : 'loss';
+  const figure =
+    revealed || creditsValue === 0 ? (
+      credits
+    ) : (
+      <CountUp value={creditsValue} from={0} animateOnMount format={creditsFormat} />
+    );
   useEffect(() => {
     noteResultCardShown();
     button.current?.focus();
@@ -61,7 +86,14 @@ export function MissionResultPopup({
   return createPortal(
     <div className="mresult-layer" data-testid="mission-result" data-dialogue-free="">
       <div className="mresult-backdrop" aria-hidden="true" />
-      <div className={`mresult ${tone}`} role="alertdialog" aria-label={outcome}>
+      {/* a click anywhere on the card skips the reveal; the buttons and Escape work as usual */}
+      <div
+        className={`mresult ${tone}`}
+        role="alertdialog"
+        aria-label={outcome}
+        data-revealed={revealed ? 'true' : 'false'}
+        onClick={() => setRevealed(true)}
+      >
         <p className="mresult-chip">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d={CHIP_ICON[tone]} />
@@ -69,25 +101,27 @@ export function MissionResultPopup({
           <span>{outcome}</span>
         </p>
         {travel !== null ? (
-          <p className="mresult-travel" data-testid="mission-result-travel">
+          <p className="mresult-travel" data-testid="mission-result-travel" style={lineStyle()}>
             <b>{travel.destination}</b>
             <small>{[title, route].join(' · ')}</small>
           </p>
         ) : race === null ? (
           <>
-            <p className="mresult-credits">{credits}</p>
-            <p className="mresult-mission">
+            <p className={`mresult-credits ${kind}`}>{figure}</p>
+            <p className="mresult-mission" style={lineStyle()}>
               <b>{title}</b>
               <small>{route}</small>
             </p>
           </>
         ) : (
           <>
-            <p className="mresult-race" data-testid="mission-result-race">
+            <p className="mresult-race" data-testid="mission-result-race" style={lineStyle()}>
               <b>{t('report.popup.racePlace', { place: race.place })}</b>
               <small>{t('report.popup.raceTime', { time: race.time })}</small>
             </p>
-            <p className="mresult-prize">{credits}</p>
+            <p className={`mresult-prize ${kind}`} style={lineStyle()}>
+              {figure}
+            </p>
           </>
         )}
         <div className="mresult-actions">
