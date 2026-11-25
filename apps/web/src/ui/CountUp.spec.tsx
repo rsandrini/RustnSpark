@@ -38,4 +38,9 @@ describe('CountUp', () => {
     const { container } = render(view(1234));
     expect(container.querySelector('.sr-only')).toHaveTextContent('1.234');
   });
+
+  it('leaves out the hidden final span with srFinal off', () => {
+    const { container } = render(<CountUp value={5} srFinal={false} />);
+    expect(container.querySelector('.sr-only')).toBeNull();
+  });
 });

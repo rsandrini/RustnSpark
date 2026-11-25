@@ -92,9 +92,10 @@ export function AccountMenu() {
       <span
         className={`wallet-chip${walletAnswer.pulse ? ' pulse' : ''}`}
         data-testid="topbar-wallet"
-        aria-label={t('port.wallet')}
+        data-value={user?.credits ?? 0}
+        aria-label={`${t('port.wallet')}: ${new Intl.NumberFormat(i18n.language).format(user?.credits ?? 0)} ¢`}
       >
-        <CountUp value={user?.credits ?? 0} unit="¢" />
+        <CountUp value={user?.credits ?? 0} unit="¢" srFinal={false} />
       </span>
       {walletAnswer.delta !== null && (
         <span

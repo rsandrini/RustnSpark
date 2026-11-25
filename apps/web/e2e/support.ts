@@ -130,8 +130,11 @@ export async function registerAndLaunch(
 
 /** Credits shown in the port header, as a number. */
 export async function walletOf(page: Page): Promise<number> {
-  const text = await page.getByTestId('topbar-wallet').innerText();
-  return Number(text.replace(/[^\d-]/g, ''));
+  const wallet = page.getByTestId('topbar-wallet');
+  // data-value is the final amount even while the number is still counting
+  const value = await wallet.getAttribute('data-value');
+  if (value !== null) return parseInt(value, 10);
+  return Number((await wallet.innerText()).replace(/[^\d-]/g, ''));
 }
 
 /** The names of the small repair-and-fuel stops, which have no market. */

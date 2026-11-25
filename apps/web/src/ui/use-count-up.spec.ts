@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { StrictMode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { useCountUp } from './use-count-up';
 
@@ -115,5 +116,41 @@ describe('useCountUp', () => {
     });
     expect(error).not.toHaveBeenCalled();
     error.mockRestore();
+  });
+
+  it('clears the direction when the change lands on the displayed number', () => {
+    const { result, rerender } = renderHook(({ v }) => useCountUp(v), { initialProps: { v: 0 } });
+    rerender({ v: 1000 });
+    expect(result.current.direction).toBe('rise');
+    act(() => {
+      vi.advanceTimersByTime(30);
+    });
+    const now = result.current.shown;
+    rerender({ v: now });
+    expect(result.current.direction).toBeNull();
+  });
+
+  it('clears the direction when reduced motion turns on mid-flash', () => {
+    const { result, rerender } = renderHook(({ v }) => useCountUp(v), { initialProps: { v: 0 } });
+    rerender({ v: 1000 });
+    expect(result.current.direction).toBe('rise');
+    setReducedMotion(true);
+    rerender({ v: 2000 });
+    expect(result.current).toEqual({ shown: 2000, direction: null });
+  });
+
+  it('ends exactly on the target under StrictMode and leaves no timers', () => {
+    const { result, unmount } = renderHook(() => useCountUp(800, { animateOnMount: true }), {
+      wrapper: StrictMode,
+    });
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+    expect(result.current.shown).toBe(800);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

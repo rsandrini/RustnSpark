@@ -39,8 +39,12 @@ export function useCountUp(
 
   useEffect(() => {
     const begin = current.current;
-    if (begin === value) return undefined;
+    if (begin === value) {
+      setDirection(null);
+      return undefined;
+    }
     if (prefersReducedMotion()) {
+      setDirection(null);
       current.current = value;
       setShown(value);
       return undefined;

@@ -50,8 +50,9 @@ describe('AccountMenu wallet', () => {
   it('counts to a new credit value, keeping the accessible name, the pulse and the delta', () => {
     const view = render(tree());
     const wallet = screen.getByTestId('topbar-wallet');
-    expect(wallet).toHaveAttribute('aria-label', 'Credits');
-    expect(wallet).toHaveTextContent('100 ¢');
+    expect(wallet).toHaveAttribute('aria-label', 'Credits: 100 ¢');
+    expect(wallet).toHaveAttribute('data-value', '100');
+    expect(wallet).toHaveTextContent(/^100 ¢$/);
     auth.credits = 1100;
     view.rerender(tree());
     expect(screen.getByTestId('topbar-wallet')).toHaveClass('pulse');
@@ -60,6 +61,9 @@ describe('AccountMenu wallet', () => {
     act(() => {
       vi.advanceTimersByTime(300);
     });
+    // the final amount is exposed at once, even mid-count
+    expect(wallet).toHaveAttribute('data-value', '1100');
+    expect(wallet).toHaveAttribute('aria-label', 'Credits: 1,100 ¢');
     const mid = Number(animated.textContent?.replace(/\D/g, ''));
     expect(mid).toBeGreaterThan(100);
     expect(mid).toBeLessThan(1100);
@@ -67,6 +71,7 @@ describe('AccountMenu wallet', () => {
       vi.advanceTimersByTime(400);
     });
     expect(animated).toHaveTextContent('1,100 ¢');
-    expect(wallet).toHaveAttribute('aria-label', 'Credits');
+    expect(wallet).toHaveAttribute('aria-label', 'Credits: 1,100 ¢');
+    expect(wallet).toHaveTextContent(/^1,100 ¢$/);
   });
 });
