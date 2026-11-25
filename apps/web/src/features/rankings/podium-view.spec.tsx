@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import i18n from '../../i18n';
 import type { RankingEntry } from '../../api/generated';
+import { podiumOf } from './podium';
 import { OwnPlace, Podium } from './podium-view';
 
 const entry = (rank: number, isMe = false): RankingEntry => ({
@@ -27,7 +28,9 @@ function wrap(node: React.ReactNode) {
 
 describe('Podium', () => {
   it('renders three columns in the order 2-1-3 with names, values and places', () => {
-    wrap(<Podium entries={[entry(1), entry(2), entry(3), entry(4)]} valueText={valueText} />);
+    wrap(
+      <Podium podium={podiumOf([entry(1), entry(2), entry(3), entry(4)])} valueText={valueText} />,
+    );
     const cols = within(screen.getByTestId('ranking-podium')).getAllByRole('listitem');
     expect(cols.map((c) => c.getAttribute('data-place'))).toEqual(['2', '1', '3']);
     expect(cols[1]).toHaveClass('podium-first');
@@ -37,18 +40,20 @@ describe('Podium', () => {
   });
 
   it('shows only the places that exist', () => {
-    const { unmount } = wrap(<Podium entries={[entry(1), entry(2)]} valueText={valueText} />);
+    const { unmount } = wrap(
+      <Podium podium={podiumOf([entry(1), entry(2)])} valueText={valueText} />,
+    );
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
     unmount();
-    const one = wrap(<Podium entries={[entry(1)]} valueText={valueText} />);
+    const one = wrap(<Podium podium={podiumOf([entry(1)])} valueText={valueText} />);
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
     one.unmount();
-    const none = wrap(<Podium entries={[]} valueText={valueText} />);
+    const none = wrap(<Podium podium={podiumOf([])} valueText={valueText} />);
     expect(none.container).toBeEmptyDOMElement();
   });
 
   it('links each name to the pilot card and highlights the own column', () => {
-    wrap(<Podium entries={[entry(1), entry(2, true), entry(3)]} valueText={valueText} />);
+    wrap(<Podium podium={podiumOf([entry(1), entry(2, true), entry(3)])} valueText={valueText} />);
     expect(screen.getByRole('link', { name: 'Pilot 2' })).toHaveAttribute('href', '/pilots/pub2');
     expect(screen.getByRole('link', { name: 'Pilot 2' }).closest('li')).toHaveClass('me');
     expect(screen.getByRole('link', { name: 'Pilot 1' }).closest('li')).not.toHaveClass('me');

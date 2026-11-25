@@ -1,21 +1,20 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { RankingBoard, RankingEntry } from '../../api/generated';
+import type { RankingBoard } from '../../api/generated';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { PodiumAvatar } from './podium-avatar';
-import { podiumOf, type Gap } from './podium';
+import type { Gap, Podium as PodiumData } from './podium';
 
 const PLACES = ['second', 'first', 'third'] as const;
 
 /** The top three as columns in the order 2-1-3, the winner in the middle and the tallest. */
 export function Podium({
-  entries,
+  podium,
   valueText,
 }: {
-  entries: readonly RankingEntry[];
+  podium: PodiumData;
   valueText: (value: number) => string;
 }) {
-  const podium = podiumOf(entries);
   const columns = PLACES.flatMap((place) => {
     const entry = podium[place];
     return entry === undefined ? [] : [{ place, entry }];
@@ -79,7 +78,7 @@ export function OwnPlace({
         parts.push(
           board === 'race_time'
             ? t('rankings.toPassTime', { time: amount })
-            : t('rankings.toPass', { amount, count: gap.amount }),
+            : t('rankings.toPass', { amount }),
         );
       }
     }

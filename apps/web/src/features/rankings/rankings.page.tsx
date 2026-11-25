@@ -155,7 +155,7 @@ export function RankingsPage() {
             <p className="sub">{t('rankings.empty')}</p>
           ) : (
             <>
-              <Podium entries={ranking.entries} valueText={valueText} />
+              <Podium podium={podium} valueText={valueText} />
               {podium.rest.length > 0 && (
                 <ol className="rankings-list" data-testid="ranking-list">
                   {podium.rest.map((entry) => (

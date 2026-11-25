@@ -12,12 +12,22 @@ test('a flown pilot is on the distance board, weekly and all time, and every boa
   await flyOneMission(page);
 
   await page.goto('/rankings');
-  await expect(page.getByTestId('ranking-podium')).toBeVisible();
-  await expect(page.getByTestId('ranking-own')).toBeVisible();
+  // the own place is anchored with a real rank and the own entry is marked (podium column or list row)
+  await expect(page.getByTestId('ranking-own')).toContainText(/rank \d+/);
+  await expect(page.locator('.podium-col.me, .rankings-row.me')).toHaveCount(1);
   await assertClean(page, 'rankings (weekly distance)');
 
+  const lifetime = page.waitForResponse((r) =>
+    r.url().includes('/v1/rankings/distance?window=lifetime'),
+  );
   await page.getByRole('button', { name: 'All time' }).click();
-  await expect(page.getByTestId('ranking-podium')).toBeVisible();
+  await lifetime;
+  await expect(page.getByRole('button', { name: 'All time' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByTestId('ranking-own')).toContainText(/rank \d+/);
+  await expect(page.locator('.podium-col.me, .rankings-row.me')).toHaveCount(1);
 
   // the others answer, whatever they hold (an empty board says so)
   for (const board of ['Fights won', 'Race wins', 'Fastest race']) {

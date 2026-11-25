@@ -169,3 +169,10 @@
 .podium-col.me .podium-avatar {
   box-shadow: 0 0 0 2px var(--accent);
 }
+
+/* On a phone the three columns are narrow: the faction badge cannot shrink, so it is hidden in the podium (the avatar ring already carries the faction colour). */
+@media (max-width: 700px) {
+  .podium-col .fac {
+    display: none;
+  }
+}
