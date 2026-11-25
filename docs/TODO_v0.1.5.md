@@ -123,6 +123,22 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
   later and how; the guide and the opening for this mode; ranking (a separate board or the same); the sim to tune the scrap economy.
 - Open question for the owner: is "start with nothing" a choice on the faction screen (a fourth card) or a separate "hard mode" switch?
 
+## 10. Turn old parts into scrap, with a chance of more scrap by health and quality (owner, 2026-11-25)
+
+- [ ] An option to transform old parts into scrap (a "scrap it" action next to sell). The scrap yield has a CHANCE of extra pieces that
+  depends on the part's health (condition) and its quality (rarity): a healthy rare part gives more than a worn common one.
+- What exists today (checked 2026-11-25): "discard" (`parts.service.ts` ~210-250) destroys parts that are below `economy.sell_min_condition`
+  (default 15%: the ones no port will buy) and gives a FIXED `economy.discard_scrap_per_part` (default 1) generic `scrap` per part
+  (it can sell that scrap at once with `sellScrap`). Scrap is also found by scavenging (`scrap_min`/`scrap_max`, `scrap_share`) and used
+  by repair (`repair_points_per_scrap`, `repair_scrap_max`) and by upgrades (money + scrap/crystals/cores); `scrapValue` is a column
+  of the part catalog. So the new action extends "discard": any part (not only the dead ones), a yield formula, a random extra.
+- To decide in its plan: which parts can be scrapped (any in the hold? installed ones are not); the formula (e.g. base by rarity
+  tier + a share of the catalog `scrapValue`, times the condition fraction, plus a chance roll for +1..N scrap that grows with condition
+  and rarity); whether the pilot sees the odds before confirming (a preview of the min/max); whether the yield could ever beat the sell
+  price (it should not: selling must stay the better deal for a healthy part, scrapping for a worn one); config knobs in the admin
+  (`economy.scrap_*`), the idempotent API action and its report/ledger entry, the UI (a button on the part row/popup with a confirm
+  that names the odds), the sim (scrap supply) and the guide text. Plan before building.
+
 ## Bugs found testing v0.1.4 in prod
 
 - [ ] (the owner will add them here as they are found; each ships in v0.1.5, or as a `v0.1.4b` hotfix if it blocks play)
