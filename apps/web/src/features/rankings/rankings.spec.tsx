@@ -226,6 +226,30 @@ describe('rankings page', () => {
     expect(screen.queryByRole('group', { name: 'Period' })).not.toBeInTheDocument();
   });
 
+  it('explains the symbols in a help tip', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/rankings'] });
+    await screen.findByTestId('ranking-podium');
+    const row = container.querySelector('.rankings-boards') as HTMLElement;
+    fireEvent.focus(within(row).getByRole('button', { name: 'Help' }));
+    const card = screen.getByRole('tooltip');
+    const items = within(card).getAllByRole('listitem');
+    expect(items).toHaveLength(8);
+    for (const name of [
+      'Distance',
+      'Fights won',
+      'Race wins',
+      'Race time',
+      'Ship power',
+      'Ship speed',
+    ]) {
+      const item = items.find((li) => li.textContent === name);
+      expect(item?.querySelector('svg')).not.toBeNull();
+    }
+    expect(card).toHaveTextContent("The badge is the pilot's faction.");
+    expect(card).toHaveTextContent('Your own row is highlighted.');
+  });
+
   it('reads in Portuguese', async () => {
     server.use(onboarded('pt-BR'));
     await i18n.changeLanguage('pt-BR');

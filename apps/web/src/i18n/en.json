@@ -1934,6 +1934,10 @@
     "noRaces": "Nobody has finished a race yet.",
     "empty": "Nobody is on this board yet.",
     "noResult": "You have no result on this board yet.",
+    "legend": {
+      "faction": "The badge is the pilot's faction.",
+      "you": "Your own row is highlighted."
+    },
     "you": "You",
     "rankValue": "rank {{rank}}",
     "toPass": "+{{amount}} to pass the next",

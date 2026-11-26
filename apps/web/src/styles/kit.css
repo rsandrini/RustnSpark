@@ -260,9 +260,9 @@ button.kit-blocker:hover {
 .kit-tabs {
   display: inline-flex;
   max-width: 100%;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 4px;
-  overflow-x: auto;
   border: 1px solid var(--rule-2);
   border-radius: var(--radius);
 }

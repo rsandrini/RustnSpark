@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { IconTabs } from './IconTabs';
 
 const TABS = [
@@ -40,5 +42,12 @@ describe('IconTabs', () => {
     fireEvent.focus(tab);
     expect(screen.getByRole('tooltip')).toBeInTheDocument();
     expect(tab).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('wraps onto more rows instead of scrolling sideways', () => {
+    const css = readFileSync(join(__dirname, '../../styles/kit.css'), 'utf8');
+    const rule = /\.kit-tabs\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/flex-wrap:\s*wrap/);
+    expect(rule).not.toMatch(/overflow-x:\s*auto/);
   });
 });

@@ -13,6 +13,7 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { PageTitle } from '../../ui/PageTitle';
+import { HelpTip } from '../../ui/kit/HelpTip';
 import { IconTabs } from '../../ui/kit/IconTabs';
 import { useWorld } from '../ship/use-world';
 import { boardIcon } from './board-icons';
@@ -85,7 +86,7 @@ export function RankingsPage() {
     <main className="app rankings">
       <PageTitle title={t('rankings.title')} />
 
-      <div className="rankings-boards" role="group" aria-label={t('rankings.boards')}>
+      <div className="rankings-boards help-row" role="group" aria-label={t('rankings.boards')}>
         <IconTabs
           tabs={BOARDS.map((name) => ({
             id: name,
@@ -95,6 +96,18 @@ export function RankingsPage() {
           value={board}
           onChange={(id) => setBoard(id as RankingBoard)}
         />
+        <HelpTip align="end">
+          <ul className="rankings-legend">
+            {BOARDS.map((name) => (
+              <li key={name}>
+                {boardIcon(name)}
+                {t(`rankings.board.${name}`)}
+              </li>
+            ))}
+            <li>{t('rankings.legend.faction')}</li>
+            <li>{t('rankings.legend.you')}</li>
+          </ul>
+        </HelpTip>
       </div>
 
       <p className="sub rankings-board-name" aria-hidden="true">

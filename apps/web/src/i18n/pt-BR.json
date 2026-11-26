@@ -1934,6 +1934,10 @@
     "noRaces": "Ninguém terminou uma corrida ainda.",
     "empty": "Ninguém está neste ranking ainda.",
     "noResult": "Você ainda não tem resultado neste ranking.",
+    "legend": {
+      "faction": "O selo é a facção do piloto.",
+      "you": "Sua linha fica destacada."
+    },
     "you": "Você",
     "rankValue": "posição {{rank}}",
     "toPass": "+{{amount}} para passar o próximo",
