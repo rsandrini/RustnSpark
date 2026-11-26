@@ -1701,7 +1701,13 @@
     "failed": "O porto rejeitou essa ação.",
     "marketEmpty": "Nada à venda neste porto.",
     "yourGoods": "Suas mercadorias",
-    "materials": "Materiais minerais",
+    "goods": {
+      "parts": "Peças",
+      "ore": "Minérios e minerais",
+      "scrap": "Sucata",
+      "cores": "Núcleos",
+      "worth": "Vale {{value}}"
+    },
     "quantity": "{{quantity}} ×",
     "unitPrice": "{{price}} ¢ cada",
     "repairDestroyed": "Peça destruída não pode ser reparada: troque-a.",

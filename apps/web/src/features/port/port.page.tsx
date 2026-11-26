@@ -30,6 +30,8 @@ import type {
   MineInfoResponse,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
+import { groupGoods } from './goods-groups';
+import { MaterialGroup } from './material-group';
 import { useAuthContext } from '../auth/auth.context';
 import { markVisited } from '../tutorial/tutorial-store';
 import { RescueBanner } from '../rescue/rescue-banner';
@@ -858,6 +860,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               </button>
             </div>
           )}
+          <h3 className="port-subhead">{t('port.goods.parts')}</h3>
           <div className="pcard-grid">
             {partsOnSale.map((item) => {
               const offer = sellOfferOf(item.id);
@@ -907,72 +910,29 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             })}
           </div>
 
-          <h2 className="port-subhead">{t('port.materials')}</h2>
           {materials.length === 0 && <p className="sub">{t('inventory.noMaterials')}</p>}
-          <div className="pcard-grid">
-            {materials.map((holding) => {
-              const name = pickLocalized(holding.displayName, i18n.language);
-              const amount = sellAmountOf(holding.materialId, holding.quantity);
-              const total = holding.unitPrice * amount;
-              const materialTitle = [t('port.quantity', { quantity: holding.quantity }), name].join(
-                ' ',
-              );
-              return (
-                <article key={holding.materialId} className="pcard rarity-common">
-                  <header className="pcard-head">
-                    <h2 className="pcard-name">{materialTitle}</h2>
-                    <p className="sub pcard-desc">
-                      {pickLocalized(holding.description, i18n.language)}
-                    </p>
-                    <div className="pcard-price">
-                      <b>{money(total)}</b>
-                      <small>{t('port.unitPrice', { price: holding.unitPrice })}</small>
-                    </div>
-                  </header>
-                  <footer className="pcard-actions">
-                    {holding.quantity > 1 && (
-                      <label className="sell-amount">
-                        <span className="sub">{t('port.sellAmount')}</span>
-                        <input
-                          type="range"
-                          min={1}
-                          max={holding.quantity}
-                          value={amount}
-                          aria-label={t('port.sellAmountFor', { name })}
-                          data-testid={`sell-amount-${holding.materialId}`}
-                          onChange={(event) =>
-                            setSellAmounts((current) => ({
-                              ...current,
-                              [holding.materialId]: Number(event.target.value),
-                            }))
-                          }
-                        />
-                        <b>{amount}</b>
-                      </label>
-                    )}
-                    <button
-                      type="button"
-                      className="btn primary"
-                      onClick={() => {
-                        setNotice(null);
-                        setConfirm({
-                          kind: 'sellMaterial',
-                          name,
-                          price: total,
-                          materialId: holding.materialId,
-                          quantity: amount,
-                        });
-                      }}
-                    >
-                      {amount === holding.quantity
-                        ? t('port.sellAll')
-                        : t('port.sellSome', { count: amount })}
-                    </button>
-                  </footer>
-                </article>
-              );
-            })}
-          </div>
+          {groupGoods(materials).map(({ group, items }) => (
+            <MaterialGroup
+              key={group}
+              group={group}
+              holdings={items}
+              money={money}
+              sellAmountOf={sellAmountOf}
+              onAmount={(materialId, amount) =>
+                setSellAmounts((current) => ({ ...current, [materialId]: amount }))
+              }
+              onSell={(holding, amount) => {
+                setNotice(null);
+                setConfirm({
+                  kind: 'sellMaterial',
+                  name: pickLocalized(holding.displayName, i18n.language),
+                  price: holding.unitPrice * amount,
+                  materialId: holding.materialId,
+                  quantity: amount,
+                });
+              }}
+            />
+          ))}
         </section>
       )}
 

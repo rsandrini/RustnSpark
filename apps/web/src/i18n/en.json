@@ -1701,7 +1701,13 @@
     "failed": "The port rejected that action.",
     "marketEmpty": "Nothing for sale at this port.",
     "yourGoods": "Your goods",
-    "materials": "Mined materials",
+    "goods": {
+      "parts": "Parts",
+      "ore": "Ore and minerals",
+      "scrap": "Scrap",
+      "cores": "Cores",
+      "worth": "Worth {{value}}"
+    },
     "quantity": "{{quantity}} ×",
     "unitPrice": "{{price}} ¢ each",
     "repairDestroyed": "A destroyed part cannot be repaired: replace it.",

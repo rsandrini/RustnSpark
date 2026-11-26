@@ -17,6 +17,8 @@ import {
 } from '../../test/msw/handlers';
 import { queryByRoleSafe } from '../../test/queries';
 import { routes } from '../../app/router';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { BALANCED_PROFILE } from '../../test/ship-profile-fixture';
 
 const onboarded = () =>
@@ -220,7 +222,9 @@ describe('port (S10.9)', () => {
     await renderPort();
 
     openPortTab('Your goods');
-    fireEvent.click(rowButton(/Iron/));
+    fireEvent.click(
+      within(await screen.findByTestId('goods-ore')).getByRole('button', { name: /Sell/ }),
+    );
     const popup = await screen.findByRole('dialog', { name: 'Sell Iron for 24 ¢?' });
     expect(popup).toHaveTextContent('Balance after: 4,844 ¢');
     fireEvent.click(within(popup).getByRole('button', { name: 'Sell' }));
@@ -1262,5 +1266,55 @@ describe('port (S10.9)', () => {
     await renderPort();
     openPortTab('Your goods');
     expect(await screen.findByText('Common iron ore.')).toBeInTheDocument();
+  });
+
+  describe('your goods in groups', () => {
+    const holding = (materialId: string, en: string, quantity: number, unitPrice: number) => ({
+      materialId,
+      displayName: { en, 'pt-BR': en },
+      description: {
+        en: `About ${en}. A long description that must be shown in full.`,
+        'pt-BR': en,
+      },
+      rarity: 'common',
+      quantity,
+      unitPrice,
+    });
+
+    it('lists ore, scrap and cores in their own sections, each with what it is worth', async () => {
+      server.use(
+        http.get('/v1/materials', () =>
+          HttpResponse.json({
+            locationId: 'ceres',
+            materials: [
+              holding('core_fragment', 'Core fragment', 3, 1),
+              holding('scrap', 'Scrap', 10, 2),
+              holding('iron', 'Iron', 6, 4),
+            ],
+          }),
+        ),
+      );
+      await renderPort();
+      openPortTab('Your goods');
+
+      const ore = await screen.findByTestId('goods-ore');
+      const scrap = screen.getByTestId('goods-scrap');
+      const cores = screen.getByTestId('goods-cores');
+      expect(ore.compareDocumentPosition(scrap) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(scrap.compareDocumentPosition(cores) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(screen.queryByText('Mined materials')).not.toBeInTheDocument();
+      expect(ore).toHaveTextContent('Worth 24');
+      expect(scrap).toHaveTextContent('Worth 20');
+      expect(cores).toHaveTextContent('Worth 3');
+      const desc = ore.querySelector('.goods-row-desc');
+      expect(desc).toHaveTextContent('About Iron. A long description that must be shown in full.');
+    });
+
+    it('never clamps the description', () => {
+      const css = readFileSync(join(__dirname, '../../styles/port.css'), 'utf8');
+      const rule = /\.goods-row-desc\s*\{[^}]*\}/.exec(css);
+      expect(rule).not.toBeNull();
+      expect(rule?.[0]).not.toMatch(/line-clamp/);
+    });
   });
 });

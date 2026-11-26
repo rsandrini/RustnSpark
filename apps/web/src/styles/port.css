@@ -260,7 +260,8 @@
   text-transform: lowercase;
 }
 .port-nav ~ section > h3,
-.port-nav ~ section > h2.port-subhead {
+.port-nav ~ section > h2.port-subhead,
+.port-nav ~ section h3.port-subhead {
   margin: 1em 0;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -757,4 +758,66 @@
 
 .upgrade-actions .kit-shipmap {
   align-self: flex-start;
+}
+
+/* Your goods: a section per kind of material, a row each; the description is never clamped. */
+.goods-group {
+  display: grid;
+  gap: 8px;
+}
+.goods-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.goods-group-head .port-subhead {
+  margin: 1em 0 0;
+}
+.goods-group-worth {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.goods-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline, var(--border));
+  border-radius: 6px;
+}
+.goods-row-info {
+  min-width: 0;
+}
+.goods-row-name {
+  margin: 0;
+  font-size: 14px;
+}
+.goods-row-desc {
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.goods-row-unit {
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+.goods-row-sell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .goods-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .goods-row-sell {
+    justify-content: flex-start;
+  }
 }
