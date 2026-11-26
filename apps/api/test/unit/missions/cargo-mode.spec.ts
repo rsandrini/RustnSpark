@@ -54,4 +54,9 @@ describe('delivery cargo modes', () => {
     const min = cargoTermsOf('DELIVERY', { cargo: 8 }, rules)!;
     expect(cargoLoadFor(min, 2, MIN_RATIO)).toEqual({ units: 0, fits: true });
   });
+
+  it('a hold of exactly the minimum fits despite float error (30 x 0.1)', () => {
+    const terms = cargoTermsOf('DELIVERY', { cargo: 30, cargoMode: 'fixed' }, rules)!;
+    expect(cargoLoadFor(terms, 3, 0.1).fits).toBe(true);
+  });
 });

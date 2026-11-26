@@ -156,7 +156,7 @@ describe('specialty rules', () => {
     const service = module.get(GameConfigService);
     await service.refresh();
     const { specialty } = service.snapshot().rules;
-    expect(specialty.escort.reference).toBe(0.05);
+    expect(specialty.escort.reference).toBe(0.03);
     expect(specialty.transport.min_ratio).toBe(0.5);
     expect(specialty.delivery.min_ratio).toBe(0.25);
   });

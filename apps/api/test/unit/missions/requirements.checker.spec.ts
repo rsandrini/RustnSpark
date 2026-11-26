@@ -409,7 +409,7 @@ describe('S6.3 — full requirement checklist (met and unmet), round 10', () => 
       { code: 'WEAPONS', met: false },
       // needs "mobility 2" = 1.5 unrounded; the starter has 1.6
       { code: 'MIN_MOBILITY', met: true, unit: 'mobility', needed: 1.5, actual: 1.6 },
-      { code: 'ESCORT_STRENGTH', met: false, unit: 'combat' },
+      { code: 'ESCORT_STRENGTH', met: true, unit: 'combat' },
     ]);
   });
 
@@ -486,12 +486,9 @@ describe('item 1 - the checklist follows the specialty minimum', () => {
       'MIN_MOBILITY',
       'ESCORT_STRENGTH',
     ]);
-    // need = 0.05 + 0.02 * 10 = 0.25; minimum = 0.125
-    expect(result.checklist[2]).toMatchObject({
-      code: 'ESCORT_STRENGTH',
-      unit: 'combat',
-      needed: 0.125,
-    });
+    // need = 0.03 + 0.015 * 10 = 0.18; minimum = 0.018
+    expect(result.checklist[2]).toMatchObject({ code: 'ESCORT_STRENGTH', unit: 'combat' });
+    expect((result.checklist[2] as { needed?: number }).needed).toBeCloseTo(0.018, 9);
   });
 
   it('an escort with a weapon but too weak is ineligible', () => {

@@ -127,6 +127,15 @@ const MEAN_OF = 2;
 const FLOAT_DECIMALS = 9;
 
 /**
+ * The least of the need a ship can take: `need * ratio`, trimmed first so float error (30 * 0.1 =
+ * 3.0000000000000004) never refuses a stat that is exactly the minimum; whole units (people) round up (3 of 5 at 0.5).
+ */
+export function specialtyMinimum(need: number, ratio: number, wholeUnits: boolean): number {
+  const trimmed = Number((need * ratio).toFixed(FLOAT_DECIMALS));
+  return wholeUnits ? Math.ceil(trimmed) : trimmed;
+}
+
+/**
  * What the ship has of a stat: seats the life support can keep alive (people), the hold (units), or a 0..1
  * profile axis (combat is the mean of firepower and defense).
  */
@@ -162,10 +171,7 @@ export function specialtyOf(
   const finite = (value: number): number => (Number.isFinite(value) ? value : 0);
   const need = finite(row.needOf(offer, knobs));
   const have = finite(specialtyStat(row.stat, sheet, rules));
-  const raw = need * knobs.min_ratio;
-  // Whole units round up (3 of 5 at 0.5); the product is trimmed first so float error (30 * 0.1 = 3.0000000000000004)
-  // does not push the minimum one unit too high.
-  const minimum = row.wholeUnits ? Math.ceil(Number(raw.toFixed(FLOAT_DECIMALS))) : raw;
+  const minimum = specialtyMinimum(need, knobs.min_ratio, row.wholeUnits);
   const met = have >= minimum;
   // The divisor is never below the minimum, so a zero stat gives a finite factor (the job is refused anyway).
   const divisor = Math.max(have, minimum);

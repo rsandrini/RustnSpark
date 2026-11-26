@@ -113,7 +113,7 @@ describe('mission specialty', () => {
     const sheet = sheetWith({});
     const lo = specialtyOf('ESCORT', danger(0), sheet, DEFAULT_RULES);
     const hi = specialtyOf('ESCORT', danger(10), sheet, DEFAULT_RULES);
-    expect((hi?.need ?? 0) - (lo?.need ?? 0)).toBeCloseTo(0.2, 10);
+    expect((hi?.need ?? 0) - (lo?.need ?? 0)).toBeCloseTo(0.15, 10);
   });
 
   it('escort: weaker than the need is slower, by the exponent', () => {
@@ -240,5 +240,28 @@ describe('mission specialty', () => {
     expect(peakDangerOf([{ danger: 2 }, { danger: 7 }, {}])).toBe(7);
     expect(peakDangerOf([])).toBe(0);
     expect(peakDangerOf(null)).toBe(0);
+  });
+
+  it('delivery: a hold of exactly the minimum share is met despite float error (30 x 0.1)', () => {
+    const rules = {
+      ...DEFAULT_RULES,
+      specialty: { ...DEFAULT_RULES.specialty, delivery: { min_ratio: 0.1 } },
+    };
+    const verdict = specialtyOf(
+      'DELIVERY',
+      { requirements: { cargo: 30 }, peakDanger: 0 },
+      sheetWith({ crg: 3 }),
+      rules,
+    );
+    expect(verdict?.met).toBe(true);
+  });
+
+  it('a starter-kit escort (firepower ~0.014, defense 0) takes safe routes up to danger 2, not danger 5', () => {
+    const verdictAt = (peakDanger: number) =>
+      specialtyOf('ESCORT', { requirements: {}, peakDanger }, sheetWith({ pdf: 3 }), DEFAULT_RULES);
+    // pdf 3 of ref_firepower 210 = 0.0143 firepower, defense 0: combat ~0.007
+    expect(verdictAt(0)?.met).toBe(true);
+    expect(verdictAt(2)?.met).toBe(true);
+    expect(verdictAt(5)?.met).toBe(false);
   });
 });

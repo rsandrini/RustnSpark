@@ -459,7 +459,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   specialty: {
     transport: { min_ratio: 0.5 },
     delivery: { min_ratio: 0.25 },
-    escort: { min_ratio: 0.5, exponent: 0.5, fastest: 0.85, reference: 0.05, per_danger: 0.02 },
+    escort: { min_ratio: 0.1, exponent: 0.5, fastest: 0.85, reference: 0.03, per_danger: 0.015 },
   },
   // The value that counts as a full axis of the ship profile, and the rules that read it. Derived from the
   // strongest dedicated Rare-tier builds (docs/balance/ship-profile-references.md): a good mid-game ship fills

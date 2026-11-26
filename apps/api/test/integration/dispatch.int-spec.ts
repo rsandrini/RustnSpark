@@ -1073,7 +1073,7 @@ describe('ship dispatch API (S7.2)', () => {
       });
       await prisma.partCatalog.update({
         where: { partType: weapon.partCatalog.partType },
-        data: { pdf: 2 },
+        data: { pdf: 1 },
       });
       await prisma.partCatalog.update({
         where: { partType: other.partCatalog.partType },

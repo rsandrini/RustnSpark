@@ -664,7 +664,7 @@ describe('missions accept/hold API (S6.4)', () => {
       });
       await prisma.partCatalog.update({
         where: { partType: installed.partCatalog.partType },
-        data: { partClass: 'WEAPON', pdf: 5 },
+        data: { partClass: 'WEAPON', pdf: 3 },
       });
       await configService.refresh();
       const escort = await createMission({

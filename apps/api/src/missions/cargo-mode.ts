@@ -1,4 +1,5 @@
 import type { GameRules } from '../config/game-config.types.js';
+import { specialtyMinimum } from './mission-specialty.js';
 
 /**
  * How a delivery treats the ship's cargo space (the template's `cargoMode`):
@@ -51,7 +52,7 @@ export interface CargoLoad {
  */
 export function cargoLoadFor(terms: CargoTerms, capacity: number, minRatio: number): CargoLoad {
   const room = capacity;
-  const fits = room >= terms.need * minRatio;
+  const fits = room >= specialtyMinimum(terms.need, minRatio, false);
   switch (terms.mode) {
     case 'min':
       return { units: 0, fits };
