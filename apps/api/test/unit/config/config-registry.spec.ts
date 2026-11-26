@@ -7,7 +7,7 @@ import {
   isValidConfigKey,
 } from '../../../src/config/config-registry.js';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
-import { validateGameRules } from '../../../src/config/game-rules.schema.js';
+import { validateConfigValue, validateGameRules } from '../../../src/config/game-rules.schema.js';
 
 const EXPECTED_KEYS: readonly string[] = [
   'admin.debug_fast_ops_seconds',
@@ -331,13 +331,65 @@ describe('config registry', () => {
     expect(isValidConfigKey('combat.dodge_factor')).toBe(true);
     expect(isValidConfigKey('invalid.key')).toBe(false);
   });
+
   it('registers specialty.delivery, specialty.escort and specialty.transport with en and pt-BR', () => {
     for (const key of ['specialty.delivery', 'specialty.escort', 'specialty.transport']) {
       const entry = getRegistryEntry(key);
       expect(entry?.type).toBe('json');
+      expect(entry?.factoryDefault).toEqual(
+        GAME_CONFIG_DEFAULTS.specialty[key.split('.')[1] as 'transport' | 'delivery' | 'escort'],
+      );
       expect(entry?.description.en).toMatch(/\S/);
       expect(entry?.description['pt-BR']).toMatch(/\S/);
     }
+  });
+
+  describe('specialty knobs: admin writes', () => {
+    const escort = GAME_CONFIG_DEFAULTS.specialty.escort;
+
+    it('accepts the default value of each key', () => {
+      for (const key of ['transport', 'delivery', 'escort'] as const) {
+        const value = GAME_CONFIG_DEFAULTS.specialty[key];
+        expect(validateConfigValue(`specialty.${key}`, value)).toEqual(value);
+      }
+    });
+
+    it('accepts the bounds themselves and refuses a step past them, sub-field by sub-field', () => {
+      const cases: ReadonlyArray<[string, string, number, number]> = [
+        ['specialty.transport', 'min_ratio', 0.05, 1],
+        ['specialty.delivery', 'min_ratio', 0.05, 1],
+        ['specialty.escort', 'min_ratio', 0.05, 1],
+        ['specialty.escort', 'exponent', 0, 3],
+        ['specialty.escort', 'fastest', 0.3, 1],
+        ['specialty.escort', 'reference', 0.01, 1],
+        ['specialty.escort', 'per_danger', 0, 0.2],
+      ];
+      for (const [key, field, lo, hi] of cases) {
+        const base = structuredClone(getRegistryEntry(key)?.factoryDefault) as Record<
+          string,
+          number
+        >;
+        expect(() => validateConfigValue(key, { ...base, [field]: lo })).not.toThrow();
+        expect(() => validateConfigValue(key, { ...base, [field]: hi })).not.toThrow();
+        expect(() => validateConfigValue(key, { ...base, [field]: lo - 0.01 })).toThrow();
+        expect(() => validateConfigValue(key, { ...base, [field]: hi + 0.01 })).toThrow();
+      }
+      expect(() =>
+        validateConfigValue('specialty.escort', { ...escort, min_ratio: 0.04 }),
+      ).toThrow();
+      expect(() => validateConfigValue('specialty.escort', { ...escort, exponent: 3.1 })).toThrow();
+      expect(() => validateConfigValue('specialty.escort', { ...escort, fastest: 0.29 })).toThrow();
+      expect(() => validateConfigValue('specialty.escort', { ...escort, reference: 0 })).toThrow();
+      expect(() =>
+        validateConfigValue('specialty.escort', { ...escort, per_danger: 0.21 }),
+      ).toThrow();
+      expect(() => validateConfigValue('specialty.transport', { min_ratio: 1.1 })).toThrow();
+    });
+
+    it('refuses a partial value', () => {
+      expect(() => validateConfigValue('specialty.escort', { min_ratio: 0.5 })).toThrow();
+      expect(() => validateConfigValue('specialty.transport', {})).toThrow();
+    });
   });
 
   describe('mining rework keys (v0.1.3)', () => {

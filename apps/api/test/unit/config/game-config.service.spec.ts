@@ -160,4 +160,30 @@ describe('specialty rules', () => {
     expect(specialty.transport.min_ratio).toBe(0.5);
     expect(specialty.delivery.min_ratio).toBe(0.25);
   });
+
+  it('a partial escort write is rejected and leaves the cached rules intact', async () => {
+    const repository = buildMockRepository();
+    repository.findAll.mockResolvedValue([]);
+    repository.findSnapshotByHash.mockResolvedValue({} as never);
+    repository.findLatestRevision.mockResolvedValue(null);
+    const module = await Test.createTestingModule({
+      providers: [
+        GameConfigService,
+        { provide: GameConfigRepository, useValue: repository },
+        { provide: PrismaService, useValue: {} },
+        { provide: REDIS_CLIENT, useValue: buildMockRedis() },
+      ],
+    }).compile();
+    const service = module.get(GameConfigService);
+    await service.refresh();
+    const before = service.snapshot();
+    await expect(
+      service.setValue('specialty.escort', { min_ratio: 0.5 }, 'admin', 'partial'),
+    ).rejects.toThrow();
+    expect(repository.upsert).not.toHaveBeenCalled();
+    expect(service.snapshot()).toEqual(before);
+    expect(service.snapshot().rules.specialty.escort).toEqual(
+      GAME_CONFIG_DEFAULTS.specialty.escort,
+    );
+  });
 });

@@ -315,17 +315,27 @@ const escortSchema = z.object({
   client_target_share: z.number().min(0).max(1),
 });
 
-const specialtySchema = z.object({
-  transport: z.object({ min_ratio: z.number().min(0.05).max(1) }),
-  delivery: z.object({ min_ratio: z.number().min(0.05).max(1) }),
-  escort: z.object({
-    min_ratio: z.number().min(0.05).max(1),
-    exponent: z.number().min(0).max(3),
-    fastest: z.number().min(0.3).max(1),
-    reference: z.number().min(0.01).max(1),
-    per_danger: z.number().min(0).max(0.2),
-  }),
+const specialtyTransportSchema = z.object({ min_ratio: z.number().min(0.05).max(1) });
+const specialtyDeliverySchema = z.object({ min_ratio: z.number().min(0.05).max(1) });
+const specialtyEscortSchema = z.object({
+  min_ratio: z.number().min(0.05).max(1),
+  exponent: z.number().min(0).max(3),
+  fastest: z.number().min(0.3).max(1),
+  reference: z.number().min(0.01).max(1),
+  per_danger: z.number().min(0).max(0.2),
 });
+const specialtySchema = z.object({
+  transport: specialtyTransportSchema,
+  delivery: specialtyDeliverySchema,
+  escort: specialtyEscortSchema,
+});
+
+// Json keys whose sub-fields each carry their own bounds: a write is checked against the same schema as the rules.
+const JSON_KEY_SCHEMAS: Readonly<Record<string, z.ZodType<unknown>>> = {
+  'specialty.transport': specialtyTransportSchema,
+  'specialty.delivery': specialtyDeliverySchema,
+  'specialty.escort': specialtyEscortSchema,
+};
 
 const shipProfileSchema = z.object({
   ref_cargo: z.number().min(1).max(1000000),
@@ -506,6 +516,7 @@ export function validateConfigValue(key: string, value: unknown): unknown {
 }
 
 function buildPerKeySchema(entry: {
+  key: string;
   type: string;
   min: number;
   max: number;
@@ -521,7 +532,9 @@ function buildPerKeySchema(entry: {
     case 'string':
       return z.string().min(1);
     case 'json':
-      return buildJsonSchema(entry.factoryDefault, entry.min, entry.max);
+      return (
+        JSON_KEY_SCHEMAS[entry.key] ?? buildJsonSchema(entry.factoryDefault, entry.min, entry.max)
+      );
     default:
       return z.never();
   }
