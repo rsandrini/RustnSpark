@@ -203,13 +203,13 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
       ['3x1', 1, 1],
       ['1x2 at rot 90 (the 2x1 footprint)', 1, 2],
     ])('%s: the row never overlaps the name lines', (_n, height, wantedLines) => {
-      for (const font of [0.14, 0.2, 0.28, 0.42]) {
+      for (const font of [0.14, 0.16, 0.2, 0.28, 0.42]) {
         const layout = blockTextLayout(10, height, font, wantedLines, true);
         expect(layout.lineCount).toBeGreaterThanOrEqual(1);
         const lh = layout.nameFont * 1.15;
         const lastBottom = layout.firstY + (layout.lineCount - 0.5) * lh;
         // Only when the name can fit at all between the dots (0.2) and the bar (0.24).
-        if (layout.lineCount * lh <= height - 0.44) {
+        if (font <= 0.16 || layout.lineCount * lh <= height - 0.44) {
           expect(lastBottom).toBeLessThanOrEqual(10 + height - 0.24 + 1e-9);
         }
         if (layout.row) {
@@ -224,7 +224,9 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
       const one = blockTextLayout(0, 1, 0.16, 3, true, 1, 'Cargo');
       expect(one.row).toBeNull();
       expect(one.lineCount).toBe(3);
-      expect(blockTextLayout(0, 1, 0.16, 2, true, 2, 'Tank').lineCount).toBe(2);
+      const two = blockTextLayout(0, 1, 0.16, 2, true, 2, 'Tank');
+      expect(two.lineCount).toBe(2);
+      expect(two.row).toBeNull();
       expect(blockTextLayout(0, 1, 0.16, 1, true, 1, 'Weapon').row).not.toBeNull();
       const tall = blockTextLayout(0, 2, 0.16, 3, true, 1, 'Cargo');
       expect(tall.row).not.toBeNull();
@@ -236,6 +238,20 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
       const lh = l.nameFont * 1.15;
       expect(l.firstY - lh / 2).toBeGreaterThanOrEqual(0.2 - 1e-9);
       expect(l.firstY + (l.lineCount - 0.5) * lh).toBeLessThanOrEqual(1 - 0.24 + 1e-9);
+    });
+
+    it('a 4-line name on a 1x1 is capped and ends with an ellipsis, above the bar', () => {
+      const l = blockTextLayout(0, 1, 0.16, 4, true, 1, 'Cargo');
+      expect(l.lineCount).toBe(3);
+      const lh = l.nameFont * 1.15;
+      expect(l.firstY + (l.lineCount - 0.5) * lh).toBeLessThanOrEqual(1 - 0.24 + 1e-9);
+      const { container } = art({
+        lines: ['Núcleo', 'de Energia', 'Auxiliar', 'Pesado'],
+        labelFont: 0.16,
+      });
+      const spans = container.querySelectorAll('text.block-label tspan');
+      expect(spans).toHaveLength(3);
+      expect(spans[2]?.textContent?.endsWith('…')).toBe(true);
     });
 
     it('clipNameLines ends a cut name with an ellipsis', () => {

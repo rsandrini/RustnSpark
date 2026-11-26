@@ -108,13 +108,18 @@ export function blockTextLayout(
   gx = 0,
 ): BlockTextLayout {
   const classic = (n: number, font: number) => gy + height / 2 - 0.1 - ((n - 1) * font * 1.15) / 2;
-  const noRow = (): BlockTextLayout => ({
-    row: null,
-    lineCount: nameLines,
-    // Never above gy + 0.2: the connector dots on the top edge end there.
-    firstY: Math.max(classic(nameLines, labelFont), gy + 0.2 + (labelFont * 1.15) / 2),
-    nameFont: labelFont,
-  });
+  const noRow = (): BlockTextLayout => {
+    // The name must stay between the top dots (0.2) and the condition bar (0.24); a longer one is clipped.
+    const fit = Math.max(1, Math.floor((height - 0.44) / (labelFont * 1.15)));
+    const lineCount = Math.min(nameLines, fit);
+    return {
+      row: null,
+      lineCount,
+      // Never above gy + 0.2: the connector dots on the top edge end there.
+      firstY: Math.max(classic(lineCount, labelFont), gy + 0.2 + (labelFont * 1.15) / 2),
+      nameFont: labelFont,
+    };
+  };
   if (!withRow) return noRow();
   const font = Math.min(labelFont * 0.85, KIND_ROW_MAX_FONT);
   const rowHeight = font * 1.3;
