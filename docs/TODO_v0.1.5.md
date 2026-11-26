@@ -1,7 +1,9 @@
 # To do - v0.1.5
 
 Owner's list for v0.1.5 (planned 2026-11-09 as v0.1.4; v0.1.4 shipped without it, renamed 2026-11-23). Delete an item when it ships.
-The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadmap.md` (card fix, then ALL the UI, then the mission world, then ship damage; the tutorial last or dropped).
+The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadmap.md` (card fix, then ALL the UI, then the mission world, then ship damage; the tutorial dropped by the owner on 2026-11-26).
+
+Decisions of 2026-11-26: the real tutorial is dropped (item 3); the port as a place and the parts art are deferred to the next version (item 4); fuel is sold at every place (border exceptions through an Admin list, slice 2.2 plan); the lost-fight fee is item 11; the owner asked for proposals for tank kinds (plan in progress) and options for explore/repair/fight (doc in progress); pirate places get fewer offers, mining favoured (item 12).
 
 ## 1. Missions follow the ship's own specialty (transport, escort, delivery, race)
 
@@ -20,14 +22,12 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
   Ranked default proposals (for the owner): 1) `per_danger` 0.015 -> 0.005 (predicted escort time -25..-35%, hybrid net/h about 96-98%); 2) that plus `exponent` 0.5 -> 0.35 (hybrid about 98-99%); 3) `reference` 0.03 -> 0.015 alone (hybrid about 94-95%, probably still fails).
   Known leftovers: #4 a partly used hold blocks trips in fixed/open modes (`cargoLoadFor` caps units at the whole hold, not the free room: refused with SHIP_NOT_VIABLE); #5 the sim mirror stretches on the unscaled offer while `canTakeMission` uses the scaled requirements (only with the bridge-scaling what-if hook); #8 the prologue sandbox keeps the old hard cargo>=need / passengers rules (acceptable: tutorial stricter than the game).
 
-## 3. The real tutorial hides things on the first flights (owner, 2026-11-10; moved from v0.1.3 item 10)
+## 3. The real tutorial hides things on the first flights (owner, 2026-11-10; moved from v0.1.3 item 10) - DROPPED 2026-11-26
 
-- [ ] The guided tutorial (the one after the faction pick) can hide information on the first flights: the "Your ship needs" note, the ship
-      sheet, and the "your starter kit" text. They show up later, after the first flights.
-- The first ship can arrive PRE-MOUNTED: the pilot adds only the last parts and completes it.
-- Related to the new opening: decide together how much the opening and the first minutes of the real tutorial overlap.
+- [x] Dropped for now (owner 2026-11-26: "its done for now, remove from list"); the current tutorial stays as it is.
+- Was: the guided tutorial can hide information on the first flights (the "Your ship needs" note, the ship sheet, the "your starter kit" text), and the first ship can arrive PRE-MOUNTED. Not planned.
 
-## 4. A game-like UI (moved from v0.2; no sound in this version; the art for the parts is the last task)
+## 4. A game-like UI (moved from v0.2; no sound in this version; the art for the parts is deferred to the next version)
 
 - [ ] Make the screens feel like a game, not a website: fewer words, custom components instead of default web controls, the ship's
       state in a HUD, contract cards, a star-chart map, pilot card and podium, feedback on every action.
@@ -44,7 +44,7 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
 - Slice 1.5 (part type subtitle, needs chips, empty-slot hints) built on develop and unit-tested (web suite 1180 passing, lint, prettier and build clean), NOT checked in a browser yet (the owner reviews later): part type row (icon + name) in the tray, store and part popup; the ship needs as chips that lead to the part; dashed empty-slot hints on the ship where a needed part could go (docked in port only, at most 3). The only e2e spec touching it is tutorial.spec (updated to No shield).
 - Slice 1.6 (pilot card and rankings podium) built on develop and unit-tested (web suite 1241 tests, tsc, lint, prettier and build clean), NOT checked in a browser yet (the owner reviews later): the pilot card as an ID card (avatar, ship and radar, big numbers); the profile page opens with the pilot's own card; the rankings as a podium with the pilot's own place and the gap to the pilot ahead; icon tabs for the boards and a segmented period toggle. The e2e specs touching it are rankings.spec (updated), profile-stats.spec, a11y.spec, widths.spec and smoke.spec (not run). NOT built: the rank/XP bar and the medals from the mockup (no such system exists: they need game design).
 - Slice 1.7 (juice) built on develop and unit-tested (web suite 1359 tests, tsc, lint, prettier and build clean), NOT checked in a browser yet (the owner reviews later): count-ups on the wallet, the HUD chips and the report credits; a reward moment in the mission result popup; haptics for the main actions with an opt-out in the account menu (default on); explanatory text behind a '?' help tip (9 moved, 8 kept inline because they state a rule, consequence or state). NO sound, by decision. The wallet's e2e helper (`walletOf`) now reads `data-value` (the final amount while the number counts). The e2e specs touching it are economy, a-race, prologue (via `walletOf`), smoke, a11y, keyboard, widths and dialogue (account menu), not run.
-- Open: the Port as a place (needs a mockup).
+- **DEFERRED TO THE NEXT VERSION (owner 2026-11-26: "keep it to later, maybe in next version")**: slice 1.8, the Port as a place (needs a mockup approval), and slice 1.9, the art for the parts.
 - Owner review round 1 (2026-11-25), built on develop and unit-tested, NOT checked in a browser yet (the owner reviews later). Of the owner's nine points:
   - 1: the part icon is centred in its cell.
   - 2 and 3: the ship sheet has Stats | Profile toggles and a breakdown of the profile, using the server's `profileDetail`.
@@ -52,7 +52,7 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
   - 6: repair is one bar to drag (current condition and target together).
   - 8: refuel is one bar plus a chart of the tanks.
   - 9: part lists have no stat sentences; the upgrade tab shows a mini ship with the part highlighted.
-  - Deferred follow-ups: real part art (slice 1.9), per-tank fuel from the server (the chart estimates it), and the type-icon group centring uses an estimate. The e2e literals still match (no spec changes needed).
+  - Deferred follow-ups: real part art (slice 1.9, now deferred to the next version), per-tank fuel from the server (the chart estimates it), and the type-icon group centring uses an estimate. The e2e literals still match (no spec changes needed).
 
 ## 5. More missions per port, more mission kinds, a bigger map (owner, 2026-11-23) - _needs design_
 
@@ -171,6 +171,14 @@ Today a lost combat encounter debits a flat `economy.combat_loss_penalty` (1200)
 - [ ] **Say what it is:** the amount taken is a FEE for the cargo lost and the contract broken, not a theft by the pirates. Name it so in the report and the result popup (en + pt-BR), and in the Admin knob description.
 - [ ] Owner's thinking to settle in the plan: when the mission carries cargo, a lost fight loses the cargo and the contract pays zero; when pirates only want a fight, the worst case damages parts of the ship (already so) and nothing else; the money fee is for not completing the mission. Decide whether the fee applies when there was no cargo, and whether it can exceed the mission's reward.
 - Do NOT build now; plan it with the next balance round.
+
+## 12. Pirate places have fewer offers and favour mining (owner, 2026-11-26) - *not started*
+
+Owner, about adding escort/mining templates at places that lack them, and the pirate places `veil` and `drift`: "IDK to be honest, maybe? I think those pirate places should have less jobs available. Or at least less jobs. The place will be good for mining tho."
+
+- [ ] Pirate places (`veil`, `drift`) get FEWER offers on their boards than other places of their size and favour MINING offers (they are good mining places). No new escort templates there.
+- [ ] Likely shape: an Admin knob for a board-size factor per faction/place tag. First guess: board size = 50% of the normal for the place detail, mining preferred in the board composition. Extend `apps/api/src/missions/board-composition.ts` and `board-size.ts`.
+- [ ] Needs a small plan. Sim check: income per hour must not regress.
 
 ## Bugs found testing v0.1.4 in prod
 
