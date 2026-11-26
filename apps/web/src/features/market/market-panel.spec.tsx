@@ -309,6 +309,12 @@ describe('market panel: descriptions and filters', () => {
     expect(within(panel()).getByText('Zap One')).toBeInTheDocument();
   });
 
+  it('has a single search landmark', async () => {
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    expect(within(panel()).getAllByRole('search')).toHaveLength(1);
+  });
+
   it('narrows the list by rarity and by size', async () => {
     await renderPortMarket();
     await screen.findByText('Plated Hull');

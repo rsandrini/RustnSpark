@@ -292,7 +292,7 @@ export function MarketPanel({
         onDismiss={dismissNeed}
       />
 
-      <div className="market-filters" role="search">
+      <div className="market-filters">
         <div className="market-controls">
           <select
             className="input"

@@ -317,13 +317,16 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   );
   const trayParts = parts.filter((part) => !placedIds.has(part.id));
   // The tray's own filter: a type (the shop's groups) and a name search.
-  const [trayGroup, setTrayGroup] = useState<string | null>(null);
+  const [pickedGroup, setTrayGroup] = useState<string | null>(null);
   const [traySearch, setTraySearch] = useState('');
   const groupOfPart = (part: InventoryItem) =>
     partGroupOf(part.catalog.partType, part.catalog.partClass);
   const trayGroups = Array.from(new Set(trayParts.map(groupOfPart))).sort(
     (a, b) => classOfGroup(a).localeCompare(classOfGroup(b)) || a.localeCompare(b),
   );
+  // a group whose last part was placed is gone from the tabs: fall back to All
+  const trayGroup = pickedGroup !== null && trayGroups.includes(pickedGroup) ? pickedGroup : null;
+  const trayFiltered = trayGroup !== null || traySearch.trim() !== '';
   const groupLabel = (group: string) =>
     t(`hangar.partGroups.${group}`, { defaultValue: t(`hangar.partClasses.${group}`) });
   const shownTrayParts = trayParts.filter(
@@ -1034,7 +1037,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     </div>
                   )}
                   {trayParts.length === 0 && <p className="muted">{t('hangar.trayEmpty')}</p>}
-                  {trayParts.length > 1 && (
+                  {(trayParts.length > 1 || trayFiltered) && (
                     <PartFilterBar
                       groups={trayGroups}
                       group={trayGroup}
@@ -1043,7 +1046,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       onSearch={setTraySearch}
                     />
                   )}
-                  {trayParts.length > 1 && shownTrayParts.length === 0 && (
+                  {trayParts.length > 0 && shownTrayParts.length === 0 && (
                     <p className="muted">{t('parts.filter.noMatch')}</p>
                   )}
                   {shownTrayParts.map((part) => (

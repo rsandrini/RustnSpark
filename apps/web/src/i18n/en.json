@@ -2920,8 +2920,6 @@
     "all": "All",
     "filterByType": "Filter by part type",
     "fitsFreePorts": "Fits my free ports",
-    "search": "Search parts",
-    "searchPlaceholder": "Search parts…",
     "condition": "Condition",
     "conditionAll": "New and used",
     "conditionNew": "New only",

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, onTestFinished, vi } from 'vitest';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
@@ -814,6 +814,38 @@ describe('hangar (S10.4)', () => {
     fireEvent.change(search, { target: { value: 'zzzz' } });
     expect(rowCount()).toBe(0);
     expect(screen.getByText('No part matches this filter.')).toBeInTheDocument();
+  });
+
+  it('keeps the bar and a message when the filter hides the last loose part, and drops a gone type', async () => {
+    server.use(onboarded());
+    const base = (await (await fetch('/v1/inventory')).json()) as InventoryItem[];
+    const shipNow = (await (await fetch('/v1/ships')).json()) as Array<{ layout: unknown[] }>;
+    const loose = (items: InventoryItem[]) =>
+      items.map((item) => ({ ...item, location: 'INVENTORY', shipId: null }));
+    server.use(
+      http.get('/v1/inventory', () => HttpResponse.json(loose(base))),
+      http.get('/v1/ships', () =>
+        HttpResponse.json(shipNow.map((entry) => ({ ...entry, layout: [] }))),
+      ),
+    );
+    const { queryClient } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+    const search = await screen.findByLabelText('Search by name or type');
+    fireEvent.click(screen.getByRole('tab', { name: 'Tank' }));
+    expect(screen.getByRole('tab', { name: 'Tank' })).toHaveAttribute('aria-selected', 'true');
+    // the tank is placed (leaves the tray) and the pilot searches for something else
+    const cargo = base.filter((item) => item.catalog.partClass === 'CARGO').slice(0, 1);
+    server.use(http.get('/v1/inventory', () => HttpResponse.json(loose(cargo))));
+    fireEvent.change(search, { target: { value: 'zzzz' } });
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    });
+    await waitFor(() => expect(screen.queryByRole('tab', { name: 'Tank' })).toBeNull());
+    expect(screen.getByLabelText('Search by name or type')).toBeInTheDocument();
+    expect(screen.getByText('No part matches this filter.')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.change(screen.getByLabelText('Search by name or type'), { target: { value: '' } });
+    expect(screen.getAllByRole('button', { name: /^Cargo Rack/ }).length).toBeGreaterThan(0);
   });
 
   it('hovering a tray part shows the comparison inline, without clicking (owner request)', async () => {
