@@ -164,6 +164,56 @@ describe('ShipSheetPanel headline', () => {
     expect(onShowWarnings).toHaveBeenCalledTimes(1);
   });
 
+  it('with the headline hidden by "Show all stats", the status line carries the warnings', () => {
+    const onShowWarnings = vi.fn();
+    const { container } = renderWithProviders(
+      <ShipSheetPanel
+        shipClass="BALANCED"
+        sheet={sheet}
+        problemCount={0}
+        warningCount={2}
+        engineLevels={pushed}
+        onShowWarnings={onShowWarnings}
+        installedCatalogs={[]}
+      />,
+    );
+    fireEvent.click(screen.getByText('Show all stats'));
+    expect(screen.queryByTestId('engines-pushed')).toBeNull();
+    fireEvent.click(
+      within(container.querySelector('.sheet-status') as HTMLElement).getByRole('button', {
+        name: 'Warnings (2)',
+      }),
+    );
+    expect(onShowWarnings).toHaveBeenCalledTimes(1);
+  });
+
+  it('a pushed badge with no callbacks stays a span', () => {
+    renderWithProviders(
+      <ShipSheetPanel
+        shipClass="BALANCED"
+        sheet={sheet}
+        problemCount={0}
+        engineLevels={pushed}
+        installedCatalogs={[]}
+      />,
+    );
+    expect(screen.getByTestId('engines-pushed').tagName).toBe('SPAN');
+  });
+
+  it('warnings without onShowWarnings show no warnings button anywhere', () => {
+    renderWithProviders(
+      <ShipSheetPanel
+        shipClass="BALANCED"
+        sheet={sheet}
+        problemCount={0}
+        warningCount={2}
+        engineLevels={pushed}
+        installedCatalogs={[]}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /Warnings/ })).toBeNull();
+  });
+
   it('has no (!) without warnings, and a gear on the mobility only when tuning is offered', () => {
     const onTuneEngines = vi.fn();
     const { unmount } = renderWithProviders(

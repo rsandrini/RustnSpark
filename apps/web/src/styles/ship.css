@@ -1646,9 +1646,24 @@ svg .yard-slot:focus-visible {
   font-size: 0.9em;
 }
 .sheet-status-warn {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
   color: var(--sun);
   font: inherit;
   letter-spacing: inherit;
   text-transform: inherit;
   text-decoration: underline;
+}
+/* A 44px touch target for the badge without growing the headline row. */
+@media (pointer: coarse) {
+  button.tile-push {
+    position: relative;
+  }
+  button.tile-push::after {
+    content: '';
+    position: absolute;
+    inset: -10px -6px;
+  }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { scaleSpeed, sheetStat, useDisplay } from '../../ui/display';
 import { useTranslation } from 'react-i18next';
 import type { PartCatalogStats, RouteCoverage, ShipProfile, ShipSheet } from '../../api/generated';
@@ -405,6 +405,40 @@ export function ShipSheetPanel({
   // The pushed badge (inside the headline) carries the warnings; the status line does
   // when the badge is absent or its headline is not on screen.
   const badgeVisible = enginesPushed && (profileView || !showAll);
+  const warningsAction =
+    warningCount > 0 && onShowWarnings !== undefined ? onShowWarnings : undefined;
+  let pushedBadge: ReactNode = null;
+  if (engineLevels !== undefined && enginesPushed) {
+    const pushedTitle = t('hangar.headline.pushed', {
+      chem: enginePercent(engineLevels.chem, i18n.language),
+      ion: enginePercent(engineLevels.ion, i18n.language),
+    });
+    const badgeText = t('hangar.headline.pushedBadge', {
+      value: enginePercent(Math.max(engineLevels.chem, engineLevels.ion), i18n.language),
+    });
+    const action = warningsAction ?? onTuneEngines;
+    pushedBadge =
+      action === undefined ? (
+        <span className="tile-push" data-testid="engines-pushed" title={pushedTitle}>
+          {badgeText}
+        </span>
+      ) : (
+        <button
+          type="button"
+          className="tile-push"
+          data-testid="engines-pushed"
+          aria-label={
+            warningsAction !== undefined
+              ? t('hangar.warnings.open', { count: warningCount })
+              : t('hangar.headline.tuneEngines')
+          }
+          title={pushedTitle}
+          onClick={action}
+        >
+          {badgeText}
+        </button>
+      );
+  }
   const headline = (
     <div
       className={profileView ? 'sheet-headline sheet-headline-slim' : 'sheet-headline'}
@@ -441,41 +475,7 @@ export function ShipSheetPanel({
         <span>{t('hangar.headline.mobility')}</span>
         <b className={`tone-${mobilityTone}`}>
           {mobilityNumber(sheetStat(sheet, 'mob', display))}
-          {engineLevels !== undefined &&
-            Math.max(engineLevels.chem, engineLevels.ion) > 1 &&
-            (() => {
-              const pushedTitle = t('hangar.headline.pushed', {
-                chem: enginePercent(engineLevels.chem, i18n.language),
-                ion: enginePercent(engineLevels.ion, i18n.language),
-              });
-              const badgeText = t('hangar.headline.pushedBadge', {
-                value: enginePercent(Math.max(engineLevels.chem, engineLevels.ion), i18n.language),
-              });
-              const opensWarnings = warningCount > 0 && onShowWarnings !== undefined;
-              const action = opensWarnings ? onShowWarnings : onTuneEngines;
-              if (action === undefined) {
-                return (
-                  <span className="tile-push" data-testid="engines-pushed" title={pushedTitle}>
-                    {badgeText}
-                  </span>
-                );
-              }
-              const label = opensWarnings
-                ? t('hangar.warnings.open', { count: warningCount })
-                : t('hangar.headline.tuneEngines');
-              return (
-                <button
-                  type="button"
-                  className="tile-push"
-                  data-testid="engines-pushed"
-                  aria-label={label}
-                  title={pushedTitle}
-                  onClick={action}
-                >
-                  {badgeText}
-                </button>
-              );
-            })()}
+          {pushedBadge}
           {onTuneEngines !== undefined && (
             <button
               type="button"
@@ -513,7 +513,7 @@ export function ShipSheetPanel({
           ? t('hangar.summary.problemCount', { count: problemCount })
           : t('hangar.summary.ready')}
         {warningCount > 0 && onShowWarnings !== undefined && !badgeVisible && (
-          <button type="button" className="link-btn sheet-status-warn" onClick={onShowWarnings}>
+          <button type="button" className="sheet-status-warn" onClick={onShowWarnings}>
             {t('hangar.warnings.open', { count: warningCount })}
           </button>
         )}
