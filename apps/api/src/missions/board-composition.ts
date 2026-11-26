@@ -99,12 +99,12 @@ export function nextSlot(input: {
     return { types: new Set(missing.slice(0, 1)) };
   }
 
-  const need = needs[0];
-  if (need) {
+  // A need no uncapped type can serve is skipped: asking the filler for a length it cannot meet only burns reseeds.
+  for (const need of needs) {
     const serving = [...reach.keys()].filter(
       (t) => !capped.has(t) && canServe(reach.get(t)!, need, bounds),
     );
-    return { types: new Set(serving.length > 0 ? serving : reach.keys()), length: need };
+    if (serving.length > 0) return { types: new Set(serving), length: need };
   }
 
   const liveTypes = new Set(live.map((o) => o.type));

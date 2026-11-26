@@ -25,9 +25,9 @@ describe('boardSize', () => {
   it('is tunable: the Admin can change a size', () => {
     const tuned = {
       ...rules,
-      missions: { ...rules.missions, board_min_by_detail: { main: 10, regional: 6, local: 2 } },
+      missions: { ...rules.missions, board_min_by_detail: { main: 12, regional: 6, local: 2 } },
     };
-    expect(boardSize({ type: 'port', detail: 'main' }, tuned)).toBe(10);
+    expect(boardSize({ type: 'port', detail: 'main' }, tuned)).toBe(12);
     expect(boardSize({ type: 'drydock', detail: 'local' }, tuned)).toBe(2);
   });
 });

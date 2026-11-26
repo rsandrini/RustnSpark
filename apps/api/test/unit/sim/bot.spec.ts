@@ -41,6 +41,7 @@ describe('playRun (the bot loop)', () => {
     expect(result.finalLevel).toBeGreaterThanOrEqual(1);
   });
 
+  // Seed 8, not 7: the board mix changed which offers each seed meets, and seed 7 now ends in a bot trap, not a stall.
   it('keeps finding work on a long run instead of stalling at a thin board', () => {
     const result = playRun({ snapshot, seed: 8, missions: 30 });
     expect(result.stalled).toBe(false);

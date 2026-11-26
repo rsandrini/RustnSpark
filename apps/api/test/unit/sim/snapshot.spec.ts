@@ -70,7 +70,7 @@ function fixtureSnapshot(): Snapshot {
 }
 
 describe('snapshot rules', () => {
-  it('overlays a GameConfig row over the factory default (the game\'s own merge)', () => {
+  it("overlays a GameConfig row over the factory default (the game's own merge)", () => {
     const defaultFuel = GAME_CONFIG_DEFAULTS.economy.fuel_price;
     // Inside the Admin's own bounds (0.1–20): the merged rules go through the game's schema.
     const rules = buildRules([{ key: 'economy.fuel_price', value: 9.9 }]);
@@ -105,6 +105,23 @@ describe('snapshot loading', () => {
     expect(() => assertSnapshotShape(badRow)).toThrow(/partType/);
   });
 
+  it('a snapshot exported before a slice loads with the new knobs at their defaults', () => {
+    const old = fixtureSnapshot() as unknown as { rules: { missions: Record<string, unknown> } };
+    delete old.rules.missions['board_core_types'];
+    delete old.rules.missions['board_min_by_detail'];
+    old.rules.missions['board_min_per_location'] = 99;
+
+    const snapshot = parseSnapshot(JSON.stringify(old));
+
+    expect(snapshot.rules.missions.board_core_types).toEqual(
+      GAME_CONFIG_DEFAULTS.missions.board_core_types,
+    );
+    expect(snapshot.rules.missions.board_min_by_detail).toEqual(
+      GAME_CONFIG_DEFAULTS.missions.board_min_by_detail,
+    );
+    expect(snapshot.rules.missions.board_min_per_location).toBe(99);
+  });
+
   it('freezes what it hands back, so a run cannot write through it', () => {
     const snapshot = parseSnapshot(JSON.stringify(fixtureSnapshot()));
 
@@ -128,7 +145,9 @@ describe('snapshot loading', () => {
 
     expect((original.rules.economy as { fuel_price: number }).fuel_price).not.toBe(9.9);
     expect(original.catalog).toHaveLength(1);
-    expect((original.catalog[0] as { basePrice: number }).basePrice).toBe(BASE_CATALOG_ROW.basePrice);
+    expect((original.catalog[0] as { basePrice: number }).basePrice).toBe(
+      BASE_CATALOG_ROW.basePrice,
+    );
     expect(structuredClone(original)).toEqual(before);
 
     expect((edited.rules.economy as { fuel_price: number }).fuel_price).toBe(9.9);

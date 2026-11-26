@@ -2,14 +2,10 @@
  * Reads `sim-data/snapshot.json` into a frozen `Snapshot`. Every simulation run goes through
  * here, so a malformed or hand-edited file fails loudly instead of producing quiet nonsense.
  */
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
 import { readFileSync } from 'node:fs';
 import { SNAPSHOT_PATH } from '../paths.js';
-import {
-  SNAPSHOT_KEYS,
-  type Json,
-  type Snapshot,
-  type SnapshotDraft,
-} from './types.js';
+import { SNAPSHOT_KEYS, type Json, type Snapshot, type SnapshotDraft } from './types.js';
 
 export class SnapshotFormatError extends Error {
   constructor(readonly problems: readonly string[]) {
@@ -90,16 +86,36 @@ function deepFreeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** The snapshot's values win; groups merge key by key, anything else (arrays, scalars) is taken whole. */
+function mergeUnder(defaults: unknown, own: unknown): unknown {
+  if (!isPlainObject(defaults) || !isPlainObject(own))
+    return own === undefined ? structuredClone(defaults) : own;
+  const out: Record<string, unknown> = {};
+  for (const key of new Set([...Object.keys(defaults), ...Object.keys(own)])) {
+    out[key] = mergeUnder(defaults[key], own[key]);
+  }
+  return out;
+}
+
 /** Parses and freezes a snapshot out of JSON text (the file read is a thin wrapper). */
 export function parseSnapshot(text: string): Snapshot {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch (error) {
-    throw new SnapshotFormatError([`not JSON (${error instanceof Error ? error.message : 'parse error'})`]);
+    throw new SnapshotFormatError([
+      `not JSON (${error instanceof Error ? error.message : 'parse error'})`,
+    ]);
   }
   assertSnapshotShape(parsed);
-  return deepFreeze(structuredClone(parsed));
+  const merged = structuredClone(parsed) as unknown as Record<string, unknown>;
+  // A snapshot exported before a slice lacks its new knobs: the factory defaults fill in what it does not carry.
+  merged['rules'] = mergeUnder(GAME_CONFIG_DEFAULTS, merged['rules']);
+  return deepFreeze(merged as unknown as Snapshot);
 }
 
 /** Reads the snapshot from disk (default: the one `pnpm sim export` wrote). */

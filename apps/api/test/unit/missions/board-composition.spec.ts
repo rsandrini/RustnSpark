@@ -98,6 +98,66 @@ describe('board composition', () => {
     expect(slot.length).toBe('long');
   });
 
+  it('a need no uncapped type can serve is skipped, not turned into a slot the filler cannot meet', () => {
+    const reach = reachOf({ DELIVERY: [37, 300, 8400], ESCORT: [36, 300, 1900] });
+    const live = offers(['DELIVERY', 300], ['ESCORT', 300]);
+    const rulesCore = withRules({ board_core_types: ['DELIVERY', 'ESCORT'], board_min_races: 0 });
+    expect(nextSlot({ reach, live, capped: set('DELIVERY'), rules: rulesCore })).toEqual({});
+  });
+
+  it('a live offer of exactly 600 s is short and not long; exactly 3600 s is long', () => {
+    const reach = reachOf({ DELIVERY: [37, 300, 8400] });
+    const one = withRules({ board_core_types: ['DELIVERY'], board_min_races: 0 });
+    expect(nextSlot({ reach, live: offers(['DELIVERY', 600]), capped: set(), rules: one })).toEqual(
+      {
+        types: set('DELIVERY'),
+        length: 'long',
+      },
+    );
+    expect(
+      nextSlot({ reach, live: offers(['DELIVERY', 3600]), capped: set(), rules: one }),
+    ).toEqual({
+      types: set('DELIVERY'),
+      length: 'short',
+    });
+  });
+
+  it('a clamped short bound: with the nearest trip at 675 s an offer of 700 is not short', () => {
+    const reach = reachOf({ DELIVERY: [3, 675, 8400] });
+    const one = withRules({ board_core_types: ['DELIVERY'], board_min_races: 0 });
+    expect(
+      nextSlot({ reach, live: offers(['DELIVERY', 675]), capped: set(), rules: one }).length,
+    ).toBe('long');
+    expect(
+      nextSlot({
+        reach,
+        live: offers(['DELIVERY', 700], ['DELIVERY', 3600]),
+        capped: set(),
+        rules: one,
+      }),
+    ).toEqual({
+      types: set('DELIVERY'),
+      length: 'short',
+    });
+  });
+
+  it('a short bound at or above the long bound still asks for each length once', () => {
+    const reach = reachOf({ DELIVERY: [37, 300, 8400] });
+    const odd = withRules({
+      board_core_types: ['DELIVERY'],
+      board_min_races: 0,
+      board_short_max_seconds: 4000,
+      board_long_min_seconds: 3600,
+    });
+    expect(nextSlot({ reach, live: [], capped: set(), rules: odd })).toEqual({
+      types: set('DELIVERY'),
+      length: 'long',
+    });
+    expect(
+      nextSlot({ reach, live: offers(['DELIVERY', 3700]), capped: set(), rules: odd }),
+    ).toEqual({});
+  });
+
   it('a place with no trip under the threshold counts its nearest as short', () => {
     expect(lengthBounds(reachOf({ DELIVERY: [3, 675, 1900] }), rules)).toEqual({
       shortMax: 675,

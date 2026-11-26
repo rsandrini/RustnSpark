@@ -447,7 +447,6 @@ export class BoardService {
           attempt += 1;
           epoch += 1;
         }
-        if (draft === undefined) break;
         live.push({
           type: draft.type,
           destinationId: draft.destinationId,
