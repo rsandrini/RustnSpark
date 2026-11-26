@@ -125,7 +125,7 @@ describe('ConditionSlider', () => {
       const body = kit.match(/\n\.cslider-add\s*\{([^}]*left:\s*var\(--x-now\)[^}]*)\}/)?.[1] ?? '';
       expect(body).toMatch(/background:\s*var\(--info\)/);
       expect(body).not.toMatch(/repeating-linear-gradient/);
-      expect(rule(kit, '.cslider.fuel .cslider-add')).toMatch(/background:\s*var\(--info\)/);
+      expect(kit).not.toMatch(/\.cslider\.fuel \.cslider-add/);
       expect(rule(kit, '.cslider.fuel .cslider-fill')).toMatch(/var\(--brass\)/);
     });
 
@@ -138,6 +138,12 @@ describe('ConditionSlider', () => {
       expect(block).toMatch(/\.cslider-add/);
       expect(block).toMatch(
         /transition:[^;]*width[^;]*left[^;]*1s|transition:[^;]*left[^;]*width[^;]*1s/,
+      );
+    });
+
+    it('drops the transition while the thumb is held, inside the motion block', () => {
+      expect(kit).toMatch(
+        /prefers-reduced-motion: no-preference\) \{(?:[^{}]|\{[^}]*\})*\.cslider:has\(\.cslider-input:active\) :is\(\.cslider-fill, \.cslider-add\)\s*\{[^}]*transition:\s*none/,
       );
     });
 

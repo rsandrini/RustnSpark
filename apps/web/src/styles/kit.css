@@ -422,9 +422,6 @@ button.kit-blocker:hover {
 .cslider.fuel .cslider-fill {
   background: var(--brass);
 }
-.cslider.fuel .cslider-add {
-  background: var(--info);
-}
 .cslider-add {
   left: var(--x-now);
   width: calc(var(--x-to) - var(--x-now));
@@ -437,6 +434,10 @@ button.kit-blocker:hover {
     transition:
       width 1s ease-out,
       left 1s ease-out;
+  }
+  /* while the thumb is held the bars must track it exactly; where :has is unsupported the lag just remains */
+  .cslider:has(.cslider-input:active) :is(.cslider-fill, .cslider-add) {
+    transition: none;
   }
 }
 .cslider-tick {
