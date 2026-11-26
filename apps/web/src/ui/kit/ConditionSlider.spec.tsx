@@ -126,7 +126,10 @@ describe('ConditionSlider', () => {
       expect(body).toMatch(/background:\s*var\(--info\)/);
       expect(body).not.toMatch(/repeating-linear-gradient/);
       expect(kit).not.toMatch(/\.cslider\.fuel \.cslider-add/);
-      expect(rule(kit, '.cslider.fuel .cslider-fill')).toMatch(/var\(--brass\)/);
+      expect(rule(kit, '.cslider.fuel .cslider-fill')).toMatch(/var\(--ok\)/);
+      // the default fill uses a colour the theme really defines (an undefined token left the bar black)
+      expect(rule(kit, '.cslider-fill')).toMatch(/background:\s*var\(--ok\)/);
+      expect(kit).not.toMatch(/var\(--good\)/);
     });
 
     it('animates fill and target only when motion is allowed', () => {

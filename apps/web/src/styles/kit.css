@@ -411,7 +411,7 @@ button.kit-blocker:hover {
 }
 .cslider-fill {
   width: var(--x-now);
-  background: var(--good);
+  background: var(--ok);
 }
 .cslider.warn .cslider-fill {
   background: var(--warn);
@@ -420,7 +420,7 @@ button.kit-blocker:hover {
   background: var(--bad);
 }
 .cslider.fuel .cslider-fill {
-  background: var(--brass);
+  background: var(--ok);
 }
 .cslider-add {
   left: var(--x-now);
