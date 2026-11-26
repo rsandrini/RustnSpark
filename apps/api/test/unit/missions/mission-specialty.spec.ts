@@ -155,6 +155,76 @@ describe('mission specialty', () => {
     }
   });
 
+  it('transport: float error does not raise the minimum', () => {
+    const rules = (ratio: number): GameRules => ({
+      ...DEFAULT_RULES,
+      specialty: { ...DEFAULT_RULES.specialty, transport: { min_ratio: ratio } },
+    });
+    const sheet = sheetWith({ pax: 3, lifeCap: 3 });
+    expect(specialtyOf('TRANSPORT', group(30), sheet, rules(0.1))).toMatchObject({
+      minimum: 3,
+      met: true,
+    });
+    expect(specialtyOf('TRANSPORT', group(10), sheet, rules(0.3))?.minimum).toBe(3);
+    expect(
+      specialtyOf('TRANSPORT', group(10), sheetWith({ pax: 7, lifeCap: 7 }), rules(0.7)),
+    ).toMatchObject({ minimum: 7, met: true });
+  });
+
+  it('transport: a refused group still has a finite trips value', () => {
+    const v = specialtyOf('TRANSPORT', group(6), sheetWith({ pax: 2, lifeCap: 2 }), DEFAULT_RULES);
+    expect(v).toMatchObject({ met: false, trips: 2, factor: 3 });
+  });
+
+  it('delivery: the cargo mode does not change the verdict', () => {
+    const sheet = sheetWith({ crg: 40 });
+    const base = specialtyOf('DELIVERY', load(100), sheet, DEFAULT_RULES);
+    for (const cargoMode of ['open', 'fixed', 'min']) {
+      const offer = { requirements: { cargo: 100, cargoMode }, peakDanger: 0 };
+      expect(specialtyOf('DELIVERY', offer, sheet, DEFAULT_RULES)).toEqual(base);
+    }
+  });
+
+  it('the fastest clamp shows in specialtyStretch', () => {
+    const sheet = sheetWith({ pdf: 1e6, esc: 1e6, bli: 1e6 });
+    expect(specialtyStretch('ESCORT', danger(10), sheet, DEFAULT_RULES)).toBe(0.85);
+  });
+
+  it('need 0 is met and finite', () => {
+    const v = specialtyOf(
+      'DELIVERY',
+      { requirements: { cargo: 0 }, peakDanger: 0 },
+      sheetWith({}),
+      DEFAULT_RULES,
+    );
+    expect(v?.need).toBe(1);
+    const e = specialtyOf('ESCORT', danger(0), sheetWith({}), {
+      ...DEFAULT_RULES,
+      specialty: {
+        ...DEFAULT_RULES.specialty,
+        escort: { ...DEFAULT_RULES.specialty.escort, reference: 0, per_danger: 0 },
+      },
+    });
+    expect(e).toMatchObject({ need: 0, met: true });
+    expect(Number.isFinite(e?.factor)).toBe(true);
+  });
+
+  it('no NaN leaves the verdict', () => {
+    const v = specialtyOf('ESCORT', danger(Number.NaN), sheetWith({}), DEFAULT_RULES);
+    for (const n of [v?.need, v?.have, v?.minimum, v?.factor]) {
+      expect(Number.isFinite(n)).toBe(true);
+    }
+    const t = specialtyOf(
+      'TRANSPORT',
+      { requirements: { passengers: Number.NaN }, peakDanger: 0 },
+      sheetWith({ pax: Number.NaN }),
+      DEFAULT_RULES,
+    );
+    for (const n of [t?.need, t?.have, t?.minimum, t?.factor, t?.trips]) {
+      expect(Number.isFinite(n)).toBe(true);
+    }
+  });
+
   it('every stat reads the ship', () => {
     const sheet = sheetWith({ pax: 4, lifeCap: 9, crg: 7 });
     expect(specialtyStat('passengers', sheet, DEFAULT_RULES)).toBe(4);

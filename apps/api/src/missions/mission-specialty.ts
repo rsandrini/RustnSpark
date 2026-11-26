@@ -38,6 +38,8 @@ export interface SpecialtyRow {
   readonly stat: SpecialtyStat;
   readonly curve: SpecialtyCurve;
   readonly blocker: RequirementReasonCode | null;
+  /** Whole units (people): the minimum is rounded up. Loads and strengths are not whole. */
+  readonly wholeUnits: boolean;
   readonly knobs: ((rules: GameRules) => SpecialtyKnobs) | null;
   readonly needOf: ((offer: SpecialtyOffer, knobs: SpecialtyKnobs) => number) | null;
 }
@@ -66,6 +68,7 @@ export const SPECIALTY_TABLE: Readonly<Record<MissionType, SpecialtyRow | null>>
     stat: 'passengers',
     curve: 'trips',
     blocker: 'PASSENGER_SEATS',
+    wholeUnits: true,
     knobs: (rules) => rules.specialty.transport,
     needOf: (offer) => headCountOf(requirementRecord(offer)['passengers']),
   },
@@ -75,6 +78,7 @@ export const SPECIALTY_TABLE: Readonly<Record<MissionType, SpecialtyRow | null>>
     stat: 'cargo',
     curve: 'trips',
     blocker: 'CARGO_TYPE',
+    wholeUnits: false,
     knobs: (rules) => rules.specialty.delivery,
     needOf: (offer) => {
       const cargo = requirementRecord(offer)['cargo'];
@@ -85,12 +89,34 @@ export const SPECIALTY_TABLE: Readonly<Record<MissionType, SpecialtyRow | null>>
     stat: 'combat',
     curve: 'power',
     blocker: 'ESCORT_STRENGTH' as RequirementReasonCode,
+    wholeUnits: false,
     knobs: (rules) => rules.specialty.escort,
     needOf: (offer, knobs) => (knobs.reference ?? 0) + (knobs.per_danger ?? 0) * offer.peakDanger,
   },
-  RACE: { stat: 'mobility', curve: 'built-in', blocker: null, knobs: null, needOf: null },
-  RESCUE: { stat: 'mobility', curve: 'built-in', blocker: null, knobs: null, needOf: null },
-  MINING: { stat: 'mining', curve: 'built-in', blocker: null, knobs: null, needOf: null },
+  RACE: {
+    stat: 'mobility',
+    curve: 'built-in',
+    blocker: null,
+    wholeUnits: false,
+    knobs: null,
+    needOf: null,
+  },
+  RESCUE: {
+    stat: 'mobility',
+    curve: 'built-in',
+    blocker: null,
+    wholeUnits: false,
+    knobs: null,
+    needOf: null,
+  },
+  MINING: {
+    stat: 'mining',
+    curve: 'built-in',
+    blocker: null,
+    wholeUnits: false,
+    knobs: null,
+    needOf: null,
+  },
   TRAVEL: null,
   SCAVENGE: null,
 };
@@ -98,6 +124,7 @@ export const SPECIALTY_TABLE: Readonly<Record<MissionType, SpecialtyRow | null>>
 /** Each extra trip goes there and back. */
 const LEGS_PER_TRIP = 2;
 const MEAN_OF = 2;
+const FLOAT_DECIMALS = 9;
 
 /**
  * What the ship has of a stat: seats the life support can keep alive (people), the hold (units), or a 0..1
@@ -130,11 +157,15 @@ export function specialtyOf(
   if (row === null || row.curve === 'built-in') return null;
   if (row.knobs === null || row.needOf === null || row.blocker === null) return null;
   const knobs = row.knobs(rules);
-  const need = row.needOf(offer, knobs);
-  const have = specialtyStat(row.stat, sheet, rules);
+  // A NaN or infinite need or stat (bad data) counts as 0, so no NaN ever leaves this function: a zero need is
+  // always met, a zero stat is refused (when the minimum is above 0), and every number below stays finite.
+  const finite = (value: number): number => (Number.isFinite(value) ? value : 0);
+  const need = finite(row.needOf(offer, knobs));
+  const have = finite(specialtyStat(row.stat, sheet, rules));
   const raw = need * knobs.min_ratio;
-  // A group is whole people: round the minimum up (3 of 5 at 0.5). Loads and strengths are not whole.
-  const minimum = type === 'TRANSPORT' ? Math.ceil(raw) : raw;
+  // Whole units round up (3 of 5 at 0.5); the product is trimmed first so float error (30 * 0.1 = 3.0000000000000004)
+  // does not push the minimum one unit too high.
+  const minimum = row.wholeUnits ? Math.ceil(Number(raw.toFixed(FLOAT_DECIMALS))) : raw;
   const met = have >= minimum;
   // The divisor is never below the minimum, so a zero stat gives a finite factor (the job is refused anyway).
   const divisor = Math.max(have, minimum);
