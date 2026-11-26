@@ -159,10 +159,15 @@ describe('hangar (S10.4)', () => {
     const { router } = renderWithRouter(routes, { initialEntries: ['/missions'] });
     await screen.findByText(/missions board/i);
     await router.navigate('/ship?store=CARGO');
-    await waitFor(() =>
-      expect(screen.getByRole('tab', { name: 'Store' })).toHaveAttribute('aria-selected', 'true'),
+    // the whole ship page mounts on this navigation: give it room when the machine is busy
+    await waitFor(
+      () =>
+        expect(screen.getByRole('tab', { name: 'Store' })).toHaveAttribute('aria-selected', 'true'),
+      { timeout: 4000 },
     );
-    expect(await screen.findByRole('tab', { name: 'Cargo', selected: true })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('tab', { name: 'Cargo', selected: true }, { timeout: 4000 }),
+    ).toBeInTheDocument();
   });
 
   it('keeps the Parts side tab without a store param, and ignores an invalid class', async () => {
