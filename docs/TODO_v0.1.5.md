@@ -6,28 +6,31 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
 ## 1. Missions follow the ship's own specialty (transport, escort, delivery, race)
 
 - [ ] The mining rework (v0.1.3 item 8) sets the pattern: a mission's time and difficulty come from the ship's stat that matters for it,
-  so a prepared ship does the job faster and a weak one slower, or not at all. Owner will plan each type later. First guesses:
-  transport from cargo (a load above the hold needs several trips), escort from firepower and defense, delivery and race from
-  mobility (already so). Needs the sim before any change.
+      so a prepared ship does the job faster and a weak one slower, or not at all. Owner will plan each type later. First guesses:
+      transport from cargo (a load above the hold needs several trips), escort from firepower and defense, delivery and race from
+      mobility (already so). Needs the sim before any change.
 - Status 2026-11-26: built (specialty rows for escort, transport, delivery; admin keys `specialty.escort/transport/delivery`), **gate fails: owner's call**.
   Sim gate (balanced, 300 missions, seed 1; baseline `spec1-base` at f95946e0, new `spec1-new` with `sim/edits/specialty-v1.json`; chem and hybrid re-run with 24 runs: `spec1-base24-*` vs `spec1-new24-*`).
   Net credits/h (reward+combat+sales+fuel+repair per game hour), base -> new: chem 37988 -> 37048 (97.5%, 24 runs; 8 runs 99.4%), chem-shield 36572 -> 36856 (100.8%), ion-shield 52416 -> 51814 (98.9%), hybrid 35895 -> 33290 (92.7%, 24 runs; 8 runs 94.3%).
   L2/L3 median day delta: chem -2.7%/-0.4% (24 runs), chem-shield +3.9%/-9.1%, ion-shield +1.0%/+4.3%, hybrid +3.7%/+18.9% (24 runs; 8 runs +12.8%/+15.2%).
   Stalls: base 0 in every build; new 1 chem (seed 7) and 1 hybrid (seed 5), both "nothing takeable ... NOT_ENOUGH_FUEL" (also in the 24-run sets). Failed criteria: hybrid net/h < 95%, hybrid L3 > +10%, two new stalls.
   Mix per run base -> new (24 runs): hybrid ESCORT 36.4 -> 33.8 with its mean time about doubled (16 -> 33), DELIVERY 136.9 -> 133.7; chem ESCORT 28.2 -> 27.0 (time 14 -> 20), DELIVERY 126.2 -> 120.3. TRANSPORT is taken 0 times in every build, base and new (the bots never pick it), so the transport minimum is not exercised by the sim.
-  Knob most likely to move it: `specialty.escort.reference` (lower = weaker ships stretch less; `per_danger` and `exponent` next).
+  Knob most likely to move it: `specialty.escort.per_danger` (then `exponent`), NOT `reference`: by need = reference + per_danger * peakDanger and a mean escort peak danger of about 3.3, per_danger is the larger term (0.05 vs 0.03; much larger at danger 9-10).
+  The two new stalls (chem seed 7, hybrid seed 5) list NO ESCORT_STRENGTH or CARGO_TYPE refusal in their stall reasons: they are NOT_ENOUGH_FUEL after failed unpaid danger 9-10 escorts, the same broke-and-dry bot artifact. They are the same seeds in the 8-run and 24-run sets (one stall per build, not independent repeats); confirm with SIM_DEBUG=1 `[stall]` lines.
+  Ranked default proposals (for the owner): 1) `per_danger` 0.015 -> 0.005 (predicted escort time -25..-35%, hybrid net/h about 96-98%); 2) that plus `exponent` 0.5 -> 0.35 (hybrid about 98-99%); 3) `reference` 0.03 -> 0.015 alone (hybrid about 94-95%, probably still fails).
+  Known leftovers: #4 a partly used hold blocks trips in fixed/open modes (`cargoLoadFor` caps units at the whole hold, not the free room: refused with SHIP_NOT_VIABLE); #5 the sim mirror stretches on the unscaled offer while `canTakeMission` uses the scaled requirements (only with the bridge-scaling what-if hook); #8 the prologue sandbox keeps the old hard cargo>=need / passengers rules (acceptable: tutorial stricter than the game).
 
 ## 3. The real tutorial hides things on the first flights (owner, 2026-11-10; moved from v0.1.3 item 10)
 
 - [ ] The guided tutorial (the one after the faction pick) can hide information on the first flights: the "Your ship needs" note, the ship
-  sheet, and the "your starter kit" text. They show up later, after the first flights.
+      sheet, and the "your starter kit" text. They show up later, after the first flights.
 - The first ship can arrive PRE-MOUNTED: the pilot adds only the last parts and completes it.
 - Related to the new opening: decide together how much the opening and the first minutes of the real tutorial overlap.
 
 ## 4. A game-like UI (moved from v0.2; no sound in this version; the art for the parts is the last task)
 
 - [ ] Make the screens feel like a game, not a website: fewer words, custom components instead of default web controls, the ship's
-  state in a HUD, contract cards, a star-chart map, pilot card and podium, feedback on every action.
+      state in a HUD, contract cards, a star-chart map, pilot card and podium, feedback on every action.
 - Plan, decisions and mockups: `docs/design/game-ui-v0.2-plan.md` (mockups in `docs/design/game-ui-v0.2/`). Eight phases, each
   shippable alone; the first is the component kit and the HUD.
 - Fixed by the owner: the installed parts on the ship stay as they are today (only a type subtitle is added), and the connection
@@ -51,7 +54,7 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
   - 9: part lists have no stat sentences; the upgrade tab shows a mini ship with the part highlighted.
   - Deferred follow-ups: real part art (slice 1.9), per-tank fuel from the server (the chart estimates it), and the type-icon group centring uses an estimate. The e2e literals still match (no spec changes needed).
 
-## 5. More missions per port, more mission kinds, a bigger map (owner, 2026-11-23) - *needs design*
+## 5. More missions per port, more mission kinds, a bigger map (owner, 2026-11-23) - _needs design_
 
 Related to item 1 (missions follow the ship's specialty); plan them together. Needs the sim before any number changes.
 
@@ -59,9 +62,9 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 
 - **Status (2026-11-25): built in code, sim gate result below; the owner decides the release.** A board now has the 4 core types, at least 2 races, a short and a long offer (planner in `board-composition.ts`; `topUp` and the sim's `boardAt` use it). Board sizes 10/8/6. Measured on the seeded map (25 refreshes per port, every board 10 rows, min per board: 4 core types, 2 races): offers up to 800 / from 4800 distance summed over 25 boards: ceres 99/46, tycho 80/47, gate 68/25, hedus 106/26, marsa 76/26, rennick 59/25, cair 48/25 (25 means one per board). Sim (re-measured 2026-11-26 with the bot's stuck handler: no refuel-to-unlock loop, a hop for work skips ports found empty lately, a fuel reserve of a whole tank before shopping, no tow that adds no fuel, the 3-tow cap counts tows in a row without work; balanced, 24 runs, 300 missions, seed 1, new vs base with the same bot, base = commit 17a9f2c4 in a temporary worktree), operating net credits per game hour (income minus fuel and repair), gate 95%, levels (mean day) gate +10%: **the gate still fails, now on the board, not on bot traps.** chem 95.9% (L2 +6.5%, L3 +11.7%), chem-shield 94.3% (L2 +6.2%, L3 +10.2%), hybrid 99.2% (L2 -7.3%, L3 -7.9%, passes), ion-shield 96.9% (L2 +12.9%, L3 +10.7%). Stalls: new 0, base 3 (chem-shield). ion-shield levels are 11-18% later in every run of the new board (3 gates of 24 runs), so that is the board, not noise. A playtest-calibrated persona (`steady`: pay per hour, trips inside half a tank) was tried and made it worse (ion-shield 89%, L2 +30%); not kept. The playtest data (7 guest pilots, 26 board missions) is too thin for a learned bot. Full report: `.superpowers/sim-bot-report.md`. No game number was tuned. For the balance round: the forced TRANSPORT slot is dead for kits without passenger seats, and the forced long offer usually loses money for the bot (see `sim-diagnosis.md`). Deploy: run migration `20261125120000_board_mix_sizes`, rebuild api AND worker, then re-export the sim snapshot; new knobs `missions.board_core_types`, `board_min_races`, `board_short_max_seconds`, `board_long_min_seconds`, `board_reference_mob`. Open content decision: Ruling 6 (see the slice 2.1 plan).
 - [ ] About 4 mission types on every port's board: cargo transport, people transport, escort and mining. Plus at least 2 races, and other
-  kinds. So the board limit (10/8/6 today) goes away.
+      kinds. So the board limit (10/8/6 today) goes away.
 - [ ] Rethink and balance the offers so a port always has short missions (the shortest routes around the place) and long ones (some hours
-  of mission).
+      of mission).
 
 ### 5b. New mission subtypes
 
@@ -74,7 +77,7 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 ### 5c. Review the map distances
 
 - [ ] Make zones with really long distances, hours to cross between ports, so bigger tanks are worth having and can be validated.
-  The initial zone stays as it is (or with small adjustments).
+      The initial zone stays as it is (or with small adjustments).
 
 - Owner, 2026-11-25: the NEXT version expands the map about 5x, with missions of 8+ hours. Slice 2.1's 'long' threshold (an admin knob, 1 h today) is to be raised with it.
 - Owner, 2026-11-25: the far zones / hours-long crossings are NOT part of v0.1.5; they come with the next version's 5x map. Slice 2.2 (5d) builds the route planning and stops on today's map so they scale.
@@ -87,9 +90,9 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 ## 6. The ship's type names its main point, and a spider chart shows its profile (owner, 2026-11-24)
 
 - [ ] The type is too often "Multirole" (the fallback when no cost share reaches a threshold: cargo 30%, cabin 20%, combat 45%; any
-  one mining part makes a Miner). Make it name what the ship is mainly good at, and call it balanced only when it really is.
+      one mining part makes a Miner). Make it name what the ship is mainly good at, and call it balanced only when it really is.
 - [ ] A spider (radar) chart on the ship sheet (and a small one on the pilot card): cargo, passengers, firepower, defense, mobility,
-  range, mining (sensors maybe), with a before/after ghost when a part is considered.
+      range, mining (sensors maybe), with a before/after ghost when a part is considered.
 - Decided 2026-11-24: add the Racer type, rename Multirole to Balanced, 7 axes (cargo, passengers, firepower, defense, mobility, range, mining), add a passenger-capacity stat (`pax`) to the cabin parts and the sheet.
 - Plan (tasks and what is still open: axis reference values, `pax` numbers): `docs/superpowers/plans/2026-11-24-ship-identity-and-spider-chart.md`.
   Best built with UI slice 1.5 (type subtitle and Needs chips).
@@ -114,9 +117,9 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 ## 8. People transport has no capacity: one small life support carries any number of passengers (owner, 2026-11-24)
 
 - [ ] Confirmed in the code (2026-11-24): a TRANSPORT mission only checks two yes/no flags, a pressurized part AND a life-support part
-  installed (`missionRequirementChecklist`, `apps/api/src/missions/requirements.checker.ts`; `pressurized` and `lifeSupport` are
-  booleans in the part's `specialProp`). A mission carries no number of people, a cabin has no seats, and a life-support module
-  has no limit, so the smallest of each moves any group. The same two flags also gate flying (`viability.ts`).
+      installed (`missionRequirementChecklist`, `apps/api/src/missions/requirements.checker.ts`; `pressurized` and `lifeSupport` are
+      booleans in the part's `specialProp`). A mission carries no number of people, a cabin has no seats, and a life-support module
+      has no limit, so the smallest of each moves any group. The same two flags also gate flying (`viability.ts`).
 - Design: a mission carries a head count (like the delivery `cargo` hint); a cabin gives seats (`pax`, the same new stat as the spider
   chart, item 6); a life-support module gives a capacity (`lifeCap`: how many people it keeps alive) that scales with tier and
   size, and costs power in proportion. A ship takes the job when `pax >= people` AND `lifeCap >= people`; the blocker chip says
@@ -127,12 +130,12 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 - Plan: with item 6's task A0 (the `pax` stat); see `docs/superpowers/plans/2026-11-24-ship-identity-and-spider-chart.md`.
 - Built on develop (2026-11-25) and unit-tested, NOT checked in a browser yet (the owner reviews later): `pax` and `lifeCap` on the parts (seed, migration, admin editor), a head count on TRANSPORT missions (`missions.transport_passengers_min/max`, default when none is stored), the checker needing `pax >= people` and `lifeCap >= people` with blocker chips in en and pt-BR, pay +10% per extra passenger. Deploy notes: see item 6.
 
-## 9. Hard mode: start with no flag, no money, no ship (owner, 2026-11-24) - *needs a plan*
+## 9. Hard mode: start with no flag, no money, no ship (owner, 2026-11-24) - _needs a plan_
 
 - [ ] A pilot can start WITHOUT a faction to fight for. This is the hard mode. It starts with no money and no kit: everything is
-  collected from scrap (scavenging), and the pilot picks the start point among "safe" places. Once enough is collected to mount a
-  ship, it was built without any help, and the pilot pays the price as a neutral, not as a friend of a faction.
-- Written as "0.1.4" in the request; v0.1.4 already shipped, so it is filed on the open list (v0.1.5) and flagged *needs plan*. Consider
+      collected from scrap (scavenging), and the pilot picks the start point among "safe" places. Once enough is collected to mount a
+      ship, it was built without any help, and the pilot pays the price as a neutral, not as a friend of a faction.
+- Written as "0.1.4" in the request; v0.1.4 already shipped, so it is filed on the open list (v0.1.5) and flagged _needs plan_. Consider
   v0.2: it touches onboarding, the economy and the factions at once.
 - What exists today (checked 2026-11-24): onboarding picks a faction and creates the pilot with `start_credits` and the starter kit
   (`onboarding.service.ts`: `starter_parts`, start fuel); a `free` faction already exists (the mentor NPCs belong to it); prices
@@ -147,7 +150,7 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 ## 10. Turn old parts into scrap, with a chance of more scrap by health and quality (owner, 2026-11-25)
 
 - [ ] An option to transform old parts into scrap (a "scrap it" action next to sell). The scrap yield has a CHANCE of extra pieces that
-  depends on the part's health (condition) and its quality (rarity): a healthy rare part gives more than a worn common one.
+      depends on the part's health (condition) and its quality (rarity): a healthy rare part gives more than a worn common one.
 - What exists today (checked 2026-11-25): "discard" (`parts.service.ts` ~210-250) destroys parts that are below `economy.sell_min_condition`
   (default 15%: the ones no port will buy) and gives a FIXED `economy.discard_scrap_per_part` (default 1) generic `scrap` per part
   (it can sell that scrap at once with `sellScrap`). Scrap is also found by scavenging (`scrap_min`/`scrap_max`, `scrap_share`) and used

@@ -227,8 +227,8 @@ describe('ContractFace', () => {
     );
     show(<ContractFace {...props({ offer: blocked })} />);
     const chip = within(screen.getByRole('group')).getByRole('link');
-    expect(chip).toHaveTextContent('6%');
-    expect(chip).toHaveTextContent('13%');
+    expect(chip).toHaveTextContent('6.0%');
+    expect(chip).toHaveTextContent('12.5%');
   });
 
   it('a fractional cargo minimum is shown rounded up, never 0.25', () => {

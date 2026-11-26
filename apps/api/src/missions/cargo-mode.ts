@@ -1,12 +1,12 @@
 import type { GameRules } from '../config/game-config.types.js';
-import { specialtyMinimum } from './mission-specialty.js';
 
 /**
  * How a delivery treats the ship's cargo space (the template's `cargoMode`):
- * - `min`: the ship's cargo space must reach `cargo`; nothing is loaded (the default);
- * - `fixed`: exactly `cargo` units are loaded and take that much of the cargo space, fixed pay;
- * - `open`: at least `cargo` units are needed, the ship loads all the space it has left, and every unit
- *   beyond the minimum pays `unitPay`.
+ * - `min`: the ship's cargo space must reach the `min_ratio` share of `cargo` (the rest is flown in extra
+ *   trips); nothing is loaded (the default);
+ * - `fixed`: `cargo` units are loaded, capped at the hold (a smaller hold flies them in trips), fixed pay;
+ * - `open`: the `min_ratio` share of `cargo` is the minimum, the ship loads all the space it has, and every
+ *   unit beyond `cargo` pays `unitPay`.
  */
 export type CargoMode = 'min' | 'fixed' | 'open';
 
@@ -41,25 +41,22 @@ export function cargoTermsOf(
 export interface CargoLoad {
   /** Units put aboard (0 for `min`). */
   readonly units: number;
-  /** Whether the cargo space has room for what the mission asks. */
-  readonly fits: boolean;
 }
 
 /**
- * What the mission loads, given the ship's cargo space (the pilot's goods take none). A hold below the load but at
- * or above `minRatio` of it still fits: the load is flown in trips (time only), and each trip carries what the
- * hold takes, so `units` never exceeds the cargo space.
+ * What the mission loads, given the ship's cargo space (the pilot's goods take none). Whether the hold is
+ * enough (the `min_ratio` share) is checked elsewhere; a hold below the load flies it in trips, each carrying
+ * what the hold takes, so `units` never exceeds the cargo space.
  */
-export function cargoLoadFor(terms: CargoTerms, capacity: number, minRatio: number): CargoLoad {
+export function cargoLoadFor(terms: CargoTerms, capacity: number): CargoLoad {
   const room = capacity;
-  const fits = room >= specialtyMinimum(terms.need, minRatio, false);
   switch (terms.mode) {
     case 'min':
-      return { units: 0, fits };
+      return { units: 0 };
     case 'fixed':
-      return { units: Math.min(terms.need, room), fits };
+      return { units: Math.min(terms.need, room) };
     case 'open':
-      return { units: room, fits };
+      return { units: room };
   }
 }
 

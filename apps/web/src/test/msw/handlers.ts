@@ -1903,7 +1903,7 @@ export const boardState: MissionOffer[] = [
         stat: 'passengers',
         need: 8,
         have: 4,
-        minimum: 2,
+        minimum: 4,
         factor: 3,
         trips: 2,
         met: true,
