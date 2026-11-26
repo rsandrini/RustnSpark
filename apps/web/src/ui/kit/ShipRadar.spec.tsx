@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import en from '../../i18n/en.json';
 import ptBR from '../../i18n/pt-BR.json';
 import type { ShipProfile } from '../../api/generated';
-import { ShipRadar, RADAR_AXES } from './ShipRadar';
+import { ShipRadar, RADAR_AXES, radarLabelBox } from './ShipRadar';
 
 const LABEL = 'Ship profile';
 const FLAT: ShipProfile = {
@@ -114,12 +114,12 @@ describe('ShipRadar', () => {
     expect(table.querySelector('tbody td')?.textContent).toBe('65%');
   });
 
-  it('has a short label for every axis in en and pt-BR', () => {
+  it('has a label for every axis in en and pt-BR', () => {
     for (const { key } of RADAR_AXES) {
       for (const loc of [en, ptBR]) {
         const text = (loc.hangar.profile.axis as Record<string, string>)[key];
         expect(text).toBeTruthy();
-        expect((text ?? '').length).toBeLessThanOrEqual(9);
+        expect((text ?? '').length).toBeLessThanOrEqual(11);
       }
     }
     expect(Object.keys(en.hangar.profile.axis)).toHaveLength(7);
@@ -149,4 +149,19 @@ describe('ShipRadar', () => {
     expect(icons.length).toBeGreaterThanOrEqual(7);
     icons.forEach((svg) => expect(svg.getAttribute('aria-hidden')).toBe('true'));
   });
+});
+
+describe('radar labels', () => {
+  it.each(RADAR_AXES.map((a, i) => [a.key, i] as const))(
+    '%s label stays inside the 200-unit view in both languages',
+    (key, i) => {
+      const names = [en, ptBR].map(
+        (tree) => (tree.hangar.profile.axis as Record<string, string>)[key] ?? '',
+      );
+      const longest = names.reduce((a, b) => (b.length > a.length ? b : a));
+      const box = radarLabelBox(i, longest);
+      expect(box.left).toBeGreaterThanOrEqual(0);
+      expect(box.right).toBeLessThanOrEqual(200);
+    },
+  );
 });

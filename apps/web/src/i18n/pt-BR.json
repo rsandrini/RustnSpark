@@ -800,10 +800,10 @@
       "title": "Perfil da nave",
       "axis": {
         "cargo": "Carga",
-        "passengers": "Pax",
-        "firepower": "Fogo",
-        "defense": "Def",
-        "mobility": "Veloc.",
+        "passengers": "Passageiros",
+        "firepower": "Guerra",
+        "defense": "Defesa",
+        "mobility": "Velocidade",
         "range": "Alcance",
         "mining": "Mineração"
       }

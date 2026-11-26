@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RADAR_AXES } from '../../ui/kit/ShipRadar';
 import { PartKindIcon } from '../parts/part-kind-icon';
-import type { ShipProfile, ShipProfileDetail } from '../../api/generated';
+import type { ShipProfile } from '../../api/generated';
 import { HelpTip } from '../../ui/kit/HelpTip';
 
 type Axis = keyof ShipProfile;
@@ -31,24 +31,20 @@ function pct(v: number | undefined): number {
     : 0;
 }
 
-/** One row per radar axis: its bar, its raw value over the reference, its percent, and the type marks. */
+/** One row per radar axis: its bar, its percent, and the type marks. */
 export function ProfileBreakdown({
   profile,
-  detail,
   ghost,
   shipClass,
   profileModifier,
 }: {
   profile: ShipProfile;
-  detail?: ShipProfileDetail | undefined;
   /** The saved profile while a layout preview is on: rows show the preview's change against it. */
   ghost?: ShipProfile | undefined;
   shipClass?: string | undefined;
   profileModifier?: Axis | null | undefined;
 }): ReactNode {
-  const { t, i18n } = useTranslation();
-  const num = (v: number) =>
-    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(v);
+  const { t } = useTranslation();
   const main = mainAxis(shipClass, profile);
   return (
     <div className="profile-breakdown" data-testid="profile-breakdown">
@@ -62,7 +58,6 @@ export function ProfileBreakdown({
         {RADAR_AXES.map(({ key, kind }) => {
           const percent = pct(profile[key]);
           const percentText = `${percent}%`;
-          const d = detail?.[key];
           const delta = ghost ? percent - pct(ghost[key]) : 0;
           const name = t(`hangar.profile.axis.${key}`);
           return (
@@ -97,7 +92,6 @@ export function ProfileBreakdown({
               <span className="pb-bar" aria-hidden="true">
                 <span className="pb-fill" style={{ width: `${percent}%` }} />
               </span>
-              <span className="pb-value">{d ? `${num(d.value)} / ${num(d.ref)}` : ''}</span>
               <span className="pb-percent">{percentText}</span>
               <span className="pb-delta">
                 {delta !== 0 && (

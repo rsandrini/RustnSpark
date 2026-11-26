@@ -44,6 +44,16 @@ function polygon(values: ShipProfile): string {
   }).join(' ');
 }
 
+const LABEL_GLYPH = 0.56 * 10; // the width estimate per character (font size 10), as fitKindLabel uses
+const LABEL_RADIUS = RADIUS + 20;
+
+/** The horizontal extent, in viewBox units, of the axis label centred under its icon. */
+export function radarLabelBox(index: number, text: string): { left: number; right: number } {
+  const [x] = point(index, LABEL_RADIUS);
+  const half = (text.length * LABEL_GLYPH) / 2;
+  return { left: x - half, right: x + half };
+}
+
 export function ShipRadar({
   values,
   ghost,
@@ -85,6 +95,11 @@ export function ShipRadar({
         {RADAR_AXES.map(({ key, kind }, i) => {
           const [x, y] = point(i, RADIUS + (showLabels ? 20 : 16));
           const iconSize = showLabels ? 16 : 20;
+          const name = showLabels ? t(`hangar.profile.axis.${key}`) : '';
+          const box = radarLabelBox(i, name);
+          // A label that would cross the view edge is anchored at that edge instead of centred.
+          const anchor = box.left < 0 ? 'start' : box.right > VIEW ? 'end' : 'middle';
+          const labelX = anchor === 'start' ? 0 : anchor === 'end' ? VIEW : x;
           return (
             <g key={key} className="kit-radar-axis">
               <svg
@@ -98,8 +113,8 @@ export function ShipRadar({
                 <PartKindIcon kind={kind} size={20} />
               </svg>
               {showLabels && (
-                <text className="kit-radar-label" x={x} y={y + 13} textAnchor="middle">
-                  {t(`hangar.profile.axis.${key}`)}
+                <text className="kit-radar-label" x={labelX} y={y + 13} textAnchor={anchor}>
+                  {name}
                 </text>
               )}
             </g>

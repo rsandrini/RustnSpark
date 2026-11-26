@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { renderWithProviders } from '../../test/utils';
 import en from '../../i18n/en.json';
 import ptBR from '../../i18n/pt-BR.json';
-import type { ShipProfile, ShipProfileDetail } from '../../api/generated';
+import type { ShipProfile } from '../../api/generated';
 import { ProfileBreakdown, mainAxis } from './profile-breakdown';
 
 const profile: ShipProfile = {
@@ -15,23 +17,14 @@ const profile: ShipProfile = {
   range: 0.1,
   mining: 0,
 };
-const detail: ShipProfileDetail = {
-  cargo: { value: 40, ref: 50 },
-  passengers: { value: 0, ref: 20 },
-  firepower: { value: 6, ref: 60 },
-  defense: { value: 4.2, ref: 70 },
-  mobility: { value: 1, ref: 10 },
-  range: { value: 5, ref: 50 },
-  mining: { value: 0, ref: 30 },
-};
 
 function row(name: string): HTMLElement {
   return screen.getByText(name, { selector: '.pb-name' }).closest('li') as HTMLElement;
 }
 
 describe('ProfileBreakdown', () => {
-  it('shows name, value over reference and percent per axis, plus the help line', () => {
-    renderWithProviders(<ProfileBreakdown profile={profile} detail={detail} shipClass="HAULER" />);
+  it('shows name and percent per axis, plus the help line', () => {
+    renderWithProviders(<ProfileBreakdown profile={profile} shipClass="HAULER" />);
     // the help line sits behind the "?" tip
     const help =
       "Each bar is the ship's stat over a reference value. The type is the axis that leads.";
@@ -40,8 +33,7 @@ describe('ProfileBreakdown', () => {
     expect(screen.getByRole('tooltip')).toHaveTextContent(help);
     // the tip sits at the right edge: its card hangs from the button's right edge, not off-screen
     expect(screen.getByRole('tooltip')).toHaveClass('kit-tip-card--end');
-    const def = row('Def');
-    expect(def).toHaveTextContent('4.2 / 70');
+    const def = row('Defense');
     expect(def).toHaveTextContent('6%');
     expect(screen.getAllByRole('listitem')).toHaveLength(7);
   });
@@ -50,14 +42,14 @@ describe('ProfileBreakdown', () => {
     renderWithProviders(
       <ProfileBreakdown
         profile={profile}
-        detail={detail}
+
         shipClass="HAULER"
         profileModifier="firepower"
       />,
     );
     expect(within(row('Cargo')).getByText('main')).toBeInTheDocument();
-    expect(within(row('Fire')).getByText('second')).toBeInTheDocument();
-    expect(within(row('Def')).queryByText('main')).toBeNull();
+    expect(within(row('War')).getByText('second')).toBeInTheDocument();
+    expect(within(row('Defense')).queryByText('main')).toBeNull();
   });
 
   it('a warship is named by whichever of firepower and defense is higher', () => {
@@ -68,15 +60,13 @@ describe('ProfileBreakdown', () => {
     expect(mainAxis('TRANSPORT', p)).toBe('passengers');
     expect(mainAxis('MINER', p)).toBe('mining');
     expect(mainAxis('RACER', p)).toBe('mobility');
-    renderWithProviders(<ProfileBreakdown profile={p} detail={detail} shipClass="WARSHIP" />);
-    expect(within(row('Def')).getByText('main')).toBeInTheDocument();
-    expect(within(row('Fire')).queryByText('main')).toBeNull();
+    renderWithProviders(<ProfileBreakdown profile={p} shipClass="WARSHIP" />);
+    expect(within(row('Defense')).getByText('main')).toBeInTheDocument();
+    expect(within(row('War')).queryByText('main')).toBeNull();
   });
 
   it('marks nothing for a balanced ship', () => {
-    renderWithProviders(
-      <ProfileBreakdown profile={profile} detail={detail} shipClass="BALANCED" />,
-    );
+    renderWithProviders(<ProfileBreakdown profile={profile} shipClass="BALANCED" />);
     expect(screen.queryByText('main')).toBeNull();
   });
 
@@ -85,21 +75,60 @@ describe('ProfileBreakdown', () => {
       <ProfileBreakdown
         profile={profile}
         ghost={{ ...profile, cargo: 0.7, defense: 0.1 }}
-        detail={detail}
+
         shipClass="HAULER"
       />,
     );
     const up = within(row('Cargo')).getByText('+10');
     expect(up).toHaveClass('tone-good');
-    const down = within(row('Def')).getByText('-4');
+    const down = within(row('Defense')).getByText('-4');
     expect(down).toHaveClass('tone-bad');
-    expect(within(row('Fire')).queryByText(/^[+-]/)).toBeNull();
+    expect(within(row('War')).queryByText(/^[+-]/)).toBeNull();
   });
 
-  it('shows only the percent when the detail is missing', () => {
-    renderWithProviders(<ProfileBreakdown profile={profile} shipClass="HAULER" />);
+  it('shows no value over reference', () => {
+    const { container } = renderWithProviders(
+      <ProfileBreakdown profile={profile} shipClass="HAULER" />,
+    );
+    expect(container.querySelector('.pb-value')).toBeNull();
+    expect(row('Defense')).not.toHaveTextContent('4.2 / 70');
     expect(row('Cargo')).toHaveTextContent('80%');
     expect(row('Cargo')).not.toHaveTextContent('/');
+  });
+
+  it('writes axis names in full', async () => {
+    const names = () => Array.from(document.querySelectorAll('.pb-name')).map((n) => n.textContent);
+    const { unmount } = renderWithProviders(<ProfileBreakdown profile={profile} />);
+    expect(names()).toEqual(['Cargo', 'Passengers', 'War', 'Defense', 'Speed', 'Range', 'Mining']);
+    unmount();
+    const i18n = (await import('../../i18n')).default;
+    await i18n.changeLanguage('pt-BR');
+    try {
+      renderWithProviders(<ProfileBreakdown profile={profile} />);
+      expect(names()).toEqual([
+        'Carga',
+        'Passageiros',
+        'Guerra',
+        'Defesa',
+        'Velocidade',
+        'Alcance',
+        'Mineração',
+      ]);
+    } finally {
+      await i18n.changeLanguage('en');
+    }
+  });
+
+  it('lays the row out in tracks that shrink (no fixed em columns)', () => {
+    const css = readFileSync(join(__dirname, '../../styles/ship.css'), 'utf8');
+    const rule = (sel: string) => {
+      const m = new RegExp(`(?:^|\\n)${sel.replace('.', '\\.')}\\s*\\{([^}]*)\\}`).exec(css);
+      return m?.[1] ?? '';
+    };
+    expect(rule('.pb-row')).toMatch(/grid-template-columns:\s*16px\s+minmax\(0,\s*1fr\)/);
+    expect(css).not.toContain('4.6em');
+    expect(rule('.pb-name')).not.toMatch(/text-overflow:\s*ellipsis/);
+    expect(rule('.sheet-profile')).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/);
   });
 
   it('has pt-BR labels', () => {
@@ -120,8 +149,8 @@ describe('ProfileBreakdown', () => {
       ).hangar.profileBreakdown.drives;
       for (const axis of axes) expect(drives[axis]).toBeTruthy();
     }
-    renderWithProviders(<ProfileBreakdown profile={profile} detail={detail} shipClass="HAULER" />);
-    const def = row('Def');
+    renderWithProviders(<ProfileBreakdown profile={profile} shipClass="HAULER" />);
+    const def = row('Defense');
     expect(within(def).getByText(/shield \+ armor/)).toBeInTheDocument();
     expect(within(row('Cargo')).getByText('cargo hold space')).toBeInTheDocument();
     expect(screen.getAllByTestId('pb-type-rule')).toHaveLength(1);
@@ -129,9 +158,9 @@ describe('ProfileBreakdown', () => {
   });
 
   it('notes on a warship main axis that it takes the higher combat axis', () => {
-    renderWithProviders(<ProfileBreakdown profile={profile} detail={detail} shipClass="WARSHIP" />);
+    renderWithProviders(<ProfileBreakdown profile={profile} shipClass="WARSHIP" />);
     const note = screen.getByTestId('pb-warship-note');
     expect(note).toHaveTextContent('Warship takes its higher combat axis');
-    expect(row('Fire')).toContainElement(note);
+    expect(row('War')).toContainElement(note);
   });
 });

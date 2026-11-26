@@ -1,13 +1,7 @@
 import { useState } from 'react';
 import { scaleSpeed, sheetStat, useDisplay } from '../../ui/display';
 import { useTranslation } from 'react-i18next';
-import type {
-  PartCatalogStats,
-  RouteCoverage,
-  ShipProfile,
-  ShipProfileDetail,
-  ShipSheet,
-} from '../../api/generated';
+import type { PartCatalogStats, RouteCoverage, ShipProfile, ShipSheet } from '../../api/generated';
 import { ShipRadar, RADAR_AXES } from '../../ui/kit/ShipRadar';
 import { ProfileBreakdown } from './profile-breakdown';
 import { conditionTone } from '../../ui/Gauge';
@@ -21,8 +15,6 @@ export interface ShipSheetPanelProps {
   profile?: ShipProfile | undefined;
   /** The ship's strong second axis ("Hauler, armed"), or null. */
   profileModifier?: keyof ShipProfile | null | undefined;
-  /** The raw value and reference behind each axis, for the profile breakdown. */
-  profileDetail?: ShipProfileDetail | undefined;
   /** The profile of a layout being considered (a preview): drawn as a dashed ghost when it differs. */
   ghostProfile?: ShipProfile | undefined;
   /** Shown instead of the class's own name (the opening's ship has no class yet). */
@@ -148,7 +140,6 @@ export function ShipSheetPanel({
   shipClass,
   profile,
   profileModifier,
-  profileDetail,
   ghostProfile,
   classLabel,
   shipName,
@@ -231,7 +222,6 @@ export function ShipSheetPanel({
         </div>
         <ProfileBreakdown
           profile={profile}
-          detail={profileDetail}
           ghost={ghost}
           shipClass={shipClass}
           profileModifier={profileModifier}

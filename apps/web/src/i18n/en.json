@@ -800,9 +800,9 @@
       "title": "Ship profile",
       "axis": {
         "cargo": "Cargo",
-        "passengers": "Pax",
-        "firepower": "Fire",
-        "defense": "Def",
+        "passengers": "Passengers",
+        "firepower": "War",
+        "defense": "Defense",
         "mobility": "Speed",
         "range": "Range",
         "mining": "Mining"
