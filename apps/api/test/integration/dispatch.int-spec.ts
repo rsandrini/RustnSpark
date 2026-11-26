@@ -811,6 +811,11 @@ describe('ship dispatch API (S7.2)', () => {
     const stored = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
     // starter hold 5 of 9: two trips, and the load aboard never exceeds the hold
     expect(stored.cargo).toMatchObject({ load: { mode: 'fixed', units: 5, need: 9 } });
+    // two trips: 2 * 2 - 1 = 3 times the single-trip time
+    const event = await prisma.playerEvent.findFirstOrThrow({
+      where: { playerId: player.seeded.player.id, type: 'mission.dispatch' },
+    });
+    expect((event.payload as { specialtyFactor: number }).specialtyFactor).toBe(3);
   });
 
   it('a load far above the cargo space (under the minimum share) cannot depart', async () => {
@@ -824,6 +829,9 @@ describe('ship dispatch API (S7.2)', () => {
     const refused = await dispatch(player.token, player.shipId, mission.id);
     expect(refused.status).toBe(400);
     expect(refused.body).toMatchObject({ message: { error: 'MISSION_REQUIREMENTS_NOT_MET' } });
+    const reasons = (refused.body as { message: { reasons: Array<{ code: string }> } }).message
+      .reasons;
+    expect(reasons.map((reason) => reason.code)).toContain('CARGO_TYPE');
   });
 
   it('an open-cargo delivery loads the whole cargo space', async () => {
@@ -1022,9 +1030,7 @@ describe('ship dispatch API (S7.2)', () => {
       });
     }
 
-    it('dispatch plans the stretched time', async () => {
-      await freshSeededApp();
-      const player = await onboardPlayer();
+    async function giveCabin(player: AuthPair): Promise<void> {
       const installed = await prisma.partInstance.findFirstOrThrow({
         where: { shipId: player.shipId, ownerPlayerId: player.seeded.player.id },
         include: { partCatalog: true },
@@ -1034,67 +1040,224 @@ describe('ship dispatch API (S7.2)', () => {
         data: { specialProp: { pressurized: true, lifeSupport: true, pax: 2, lifeCap: 2 } },
       });
       await configService.refresh();
-      const mission = await acceptedOfType(player, 'TRANSPORT', { cargo: { passengers: 4 } });
+    }
 
-      const response = await dispatch(player.token, player.shipId, mission.id);
-      expect(response.status).toBe(200);
+    interface DispatchAudit {
+      plannedSeconds: number;
+      quotedSeconds: number;
+      specialtyFactor: number;
+    }
 
+    async function auditOf(player: AuthPair): Promise<DispatchAudit> {
       const event = await prisma.playerEvent.findFirstOrThrow({
         where: { playerId: player.seeded.player.id, type: 'mission.dispatch' },
       });
-      const payload = event.payload as {
-        plannedSeconds: number;
-        quotedSeconds: number;
-        specialtyFactor: number;
-      };
-      expect(payload.specialtyFactor).toBe(3);
-      expect(payload.plannedSeconds).toBe(payload.quotedSeconds);
-    });
+      return event.payload as unknown as DispatchAudit;
+    }
 
-    it('dispatch re-checks the specialty', async () => {
+    // A fresh world, a 2-seat ship, a transport of `passengers`: what the dispatch planned.
+    async function transportPlan(
+      passengers: number,
+    ): Promise<{ seconds: number; arrivalMs: number; audit: DispatchAudit }> {
       await freshSeededApp();
       const player = await onboardPlayer();
-      // the starter weapon is made weak and the hold stands in for a strong shield (it is not the bridge or an engine)
-      const weapon = await prisma.partInstance.findFirstOrThrow({
-        where: {
-          shipId: player.shipId,
-          ownerPlayerId: player.seeded.player.id,
-          partCatalog: { partClass: 'WEAPON' },
-        },
-        include: { partCatalog: true },
+      await giveCabin(player);
+      const mission = await acceptedOfType(player, 'TRANSPORT', { cargo: { passengers } });
+      const before = Date.now();
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(200);
+      const body = response.body as { durationSeconds: number; arrivalAt: string };
+      const arrivalMs = new Date(body.arrivalAt).getTime() - before;
+      return { seconds: body.durationSeconds, arrivalMs, audit: await auditOf(player) };
+    }
+
+    it('dispatch plans the stretched time', async () => {
+      const single = await transportPlan(2);
+      const group = await transportPlan(4);
+
+      expect(single.audit.specialtyFactor).toBe(1);
+      expect(group.audit.specialtyFactor).toBe(3);
+      // 4 on 2 seats is three legs of the same trip: exactly 3 times the planned time, and the arrival follows it
+      expect(group.seconds).toBe(3 * single.seconds);
+      expect(group.audit.plannedSeconds).toBe(3 * single.audit.plannedSeconds);
+      expect(group.audit.plannedSeconds).toBe(group.audit.quotedSeconds);
+      expect(Math.abs(group.arrivalMs - group.seconds * 1000)).toBeLessThan(5000);
+    });
+
+    it('the engine preview quotes the stretched time for the trip and its baseline', async () => {
+      const previewOf = async (passengers: number) => {
+        await freshSeededApp();
+        const player = await onboardPlayer();
+        await giveCabin(player);
+        const mission = await acceptedOfType(player, 'TRANSPORT', { cargo: { passengers } });
+        const response = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${player.shipId}/engine-preview`)
+          .set(auth(player.token))
+          .send({ missionId: mission.id });
+        expect(response.status).toBe(200);
+        return (
+          response.body as {
+            trip: { durationSeconds: number; baseline: { durationSeconds: number } };
+          }
+        ).trip;
+      };
+      const single = await previewOf(2);
+      const group = await previewOf(4);
+      expect(group.durationSeconds).toBe(3 * single.durationSeconds);
+      expect(group.baseline.durationSeconds).toBe(3 * single.baseline.durationSeconds);
+    });
+
+    it('a weapon that faces a blocked side does not drop the stretch below what the check passed', async () => {
+      // the starter kit's layout is random: try fresh ships until the weapon can be turned into a blocked side
+      let player!: AuthPair;
+      let weaponRow!: Awaited<
+        ReturnType<typeof prisma.partInstance.findFirstOrThrow<{ include: { partCatalog: true } }>>
+      >;
+      let blocked: Placement[] | undefined;
+      for (let attempt = 0; attempt < 8 && blocked === undefined; attempt += 1) {
+        await freshSeededApp();
+        player = await onboardPlayer();
+        await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5000 } });
+        // a strong weapon and nothing else that fights: the ship meets the escort only through the weapon
+        weaponRow = await prisma.partInstance.findFirstOrThrow({
+          where: {
+            shipId: player.shipId,
+            ownerPlayerId: player.seeded.player.id,
+            partCatalog: { partClass: 'WEAPON' },
+          },
+          include: { partCatalog: true },
+        });
+        await prisma.partCatalog.updateMany({ data: { esc: 0, bli: 0 } });
+        // fast enough for an escort (it asks for mobility)
+        await prisma.partCatalog.updateMany({
+          where: { partClass: 'ENGINE' },
+          data: { pot: 100_000 },
+        });
+        await prisma.partCatalog.update({
+          where: { partType: weaponRow.partCatalog.partType },
+          data: { pdf: 1_000_000 },
+        });
+        await configService.refresh();
+        // turn the weapon so another part sits in front of it (a layout warning: the weapon loses its output)
+        const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+        const rows = await prisma.partInstance.findMany({
+          where: { shipId: player.shipId, location: 'INSTALLED' },
+          include: { partCatalog: true },
+        });
+        const catalog = new Map(rows.map((row) => [row.id, pickCatalogStats(row.partCatalog)]));
+        const connectors = new Map(
+          rows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+        );
+        const installedForConnectivity = rows.map((row) => ({
+          instance: row,
+          catalog: pickCatalogStats(row.partCatalog),
+        }));
+        const layout = ship.layout as unknown as Placement[];
+        for (const mover of layout.filter(
+          (placement) => catalog.get(placement.partInstanceId)?.partClass !== 'BRIDGE',
+        )) {
+          for (let gx = -4; gx <= 4 && blocked === undefined; gx += 1) {
+            for (let gy = -4; gy <= 4 && blocked === undefined; gy += 1) {
+              for (const rot of [0, 90, 180, 270]) {
+                const trial = layout.map((placement) =>
+                  placement.partInstanceId === mover.partInstanceId
+                    ? { ...placement, gx, gy, rot }
+                    : placement,
+                );
+                const sameCell =
+                  new Set(trial.map((entry) => `${entry.gx},${entry.gy}`)).size !== trial.length;
+                if (
+                  !sameCell &&
+                  directionErrors(trial, catalog, connectors).some(
+                    (e) =>
+                      e.partInstanceId === weaponRow.id &&
+                      (e.code === 'FACING_BLOCKED' || e.code === 'FACING_CONNECTOR'),
+                  ) &&
+                  directionErrors(trial, catalog, connectors).every(
+                    (e) => e.code === 'FACING_BLOCKED' || e.code === 'FACING_CONNECTOR',
+                  ) &&
+                  incorrectPortPartIds(trial, catalog, connectors).size === 0 &&
+                  connectedPartIds(
+                    trial,
+                    conductiveCatalog(catalog, installedForConnectivity, GAME_CONFIG_DEFAULTS),
+                    connectors,
+                  ).size === trial.length
+                ) {
+                  blocked = trial;
+                  break;
+                }
+              }
+            }
+          }
+          if (blocked !== undefined) break;
+        }
+      }
+      expect(blocked).toBeDefined();
+      await prisma.ship.update({
+        where: { id: player.shipId },
+        data: { layout: blocked as unknown as Prisma.InputJsonValue },
       });
-      const other = await prisma.partInstance.findFirstOrThrow({
-        where: {
-          shipId: player.shipId,
-          ownerPlayerId: player.seeded.player.id,
-          partCatalog: { crg: { gt: 0 } },
-        },
-        include: { partCatalog: true },
-      });
-      await prisma.partCatalog.update({
-        where: { partType: weapon.partCatalog.partType },
-        data: { pdf: 1 },
-      });
-      await prisma.partCatalog.update({
-        where: { partType: other.partCatalog.partType },
-        data: { esc: 1_000_000 },
-      });
-      await configService.refresh();
       const mission = await acceptedOfType(player, 'ESCORT', {});
 
-      // the shield leaves the ship in port, after accept
-      await prisma.partInstance.update({
-        where: { id: other.id },
-        data: { location: 'INVENTORY', shipId: null },
-      });
       const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(200);
+      const audit = await auditOf(player);
+      // the check passed on the connected parts (strong weapon): the stretch is the strong ship's (the fastest
+      // factor), not the cliff back to 1 that the penalised flight sheet would give; plan and quote agree
+      expect(audit.specialtyFactor).toBe(GAME_CONFIG_DEFAULTS.specialty.escort.fastest);
+      expect(audit.plannedSeconds).toBe(audit.quotedSeconds);
+    }, 90_000);
+
+    it('dispatch re-checks the specialty', async () => {
+      // the starter layout is random: a fresh ship whose shield can leave without cutting a part off
+      let response!: request.Response;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        await freshSeededApp();
+        const player = await onboardPlayer();
+        // the starter weapon is made weak and the hold stands in for a strong shield (it is not the bridge or an engine)
+        const weapon = await prisma.partInstance.findFirstOrThrow({
+          where: {
+            shipId: player.shipId,
+            ownerPlayerId: player.seeded.player.id,
+            partCatalog: { partClass: 'WEAPON' },
+          },
+          include: { partCatalog: true },
+        });
+        const other = await prisma.partInstance.findFirstOrThrow({
+          where: {
+            shipId: player.shipId,
+            ownerPlayerId: player.seeded.player.id,
+            partCatalog: { crg: { gt: 0 } },
+          },
+          include: { partCatalog: true },
+        });
+        await prisma.partCatalog.update({
+          where: { partType: weapon.partCatalog.partType },
+          data: { pdf: 1 },
+        });
+        await prisma.partCatalog.update({
+          where: { partType: other.partCatalog.partType },
+          data: { esc: 1_000_000 },
+        });
+        await configService.refresh();
+        const mission = await acceptedOfType(player, 'ESCORT', {});
+
+        // the shield leaves the ship in port, after accept
+        await prisma.partInstance.update({
+          where: { id: other.id },
+          data: { location: 'INVENTORY', shipId: null },
+        });
+        response = await dispatch(player.token, player.shipId, mission.id);
+        const error = (response.body as { message?: { error?: string } }).message?.error;
+        if (error !== 'SHIP_NOT_VIABLE') break;
+      }
       expect(response.status).toBe(400);
       expect(response.body).toMatchObject({ message: { error: 'MISSION_REQUIREMENTS_NOT_MET' } });
       const codes = (
         response.body as { message: { reasons: Array<{ code: string }> } }
       ).message.reasons.map((reason) => reason.code);
       expect(codes).toContain('ESCORT_STRENGTH');
-    });
+    }, 90_000);
   });
 
   describe('dispatch re-checks the mission requirements (slice 0.1)', () => {

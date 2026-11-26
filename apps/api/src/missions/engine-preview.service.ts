@@ -156,7 +156,8 @@ export class EnginePreviewService {
       if (!mission) throw new NotFoundException('mission not found');
       if (mission.type === 'SCAVENGE') throw new ConflictException({ error: 'NOT_A_FLIGHT' });
       const legs = parseDispatchLegs(mission.legs);
-      // The ship's stat for this job stretches the time (the dispatch plans the same way), per sheet.
+      // The ship's stat for this job stretches the time. The dispatch reads it from the connected parts without
+      // penalties (the sheet its requirement check uses), engine levels do not change it: one factor for both sheets.
       const template = await this.prisma.missionTemplate.findUnique({
         where: { id: mission.templateId },
         select: { requirements: true },
@@ -165,6 +166,12 @@ export class EnginePreviewService {
         requirements: offerRequirements(template?.requirements, mission.cargo),
         peakDanger: peakDangerOf(mission.legs),
       };
+      const specialtyFactor = specialtyStretch(
+        mission.type,
+        specialtyOffer,
+        deriveSheet(connected, rules),
+        rules,
+      );
       // A mining mission also digs: a free job burns fuel for every tick it was set for; a contract
       // for the time the ship's drill expects to need (the dispatch plans the same way).
       const cargo = (mission.cargo ?? {}) as {
@@ -215,7 +222,7 @@ export class EnginePreviewService {
             shortTripExemptBelow: rules.missions.short_trip_exempt_below,
             timeScale: rules.missions.time_scale,
             classCutoffs: rules.missions.duration_class_cutoffs,
-            stretch: specialtyStretch(mission.type, specialtyOffer, sheet, rules),
+            stretch: specialtyFactor,
           }).durationSeconds,
         fuelNeeded:
           digFuelOf(sheet) +

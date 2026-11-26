@@ -100,7 +100,9 @@ describe('mission specialty', () => {
   it('delivery: a hold under a quarter of the load is refused with the cargo blocker', () => {
     const v = specialtyOf('DELIVERY', load(100), sheetWith({ crg: 20 }), DEFAULT_RULES);
     expect(v).toMatchObject({ met: false, minimum: 25, blocker: 'CARGO_TYPE' });
-    expect(specialtyStretch('DELIVERY', load(100), sheetWith({ crg: 20 }), DEFAULT_RULES)).toBe(1);
+    // an unmet verdict still stretches by its (clamped, slowest allowed) factor: a ship just under the minimum must
+    // not fly faster than one that just meets it, so there is no cliff back to 1 (hold 20 of 100 floors at 25: 4 trips)
+    expect(specialtyStretch('DELIVERY', load(100), sheetWith({ crg: 20 }), DEFAULT_RULES)).toBe(7);
   });
 
   it('delivery: no hold is refused with a finite factor', () => {

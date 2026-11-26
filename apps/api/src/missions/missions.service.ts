@@ -42,7 +42,7 @@ import { fieldFor, resolveRace } from '../resolution/race/race.resolver.js';
 import { createRng } from '../common/rng/rng.js';
 import { parseCompetitors } from './resolution-input.js';
 import { missionDuration } from './duration.calculator.js';
-import { peakDangerOf, specialtyOf, specialtyStretch } from './mission-specialty.js';
+import { peakDangerOf, specialtyOf } from './mission-specialty.js';
 import { missionReward } from './mission.reward.js';
 import { missionStatusAfter } from './mission.state-machine.js';
 import {
@@ -97,7 +97,6 @@ export interface OfferInfo {
   readonly totalDistance: number;
   readonly peakDanger: number;
   readonly peakZone: number;
-  /** Time and fuel for the viewer's ship; null when they have no flyable ship. */
   /** How the viewer's ship stands against the stat this mission type follows; null for built-in types or without a ship. */
   readonly specialty: {
     readonly stat: 'passengers' | 'combat' | 'mobility' | 'mining' | 'cargo';
@@ -108,6 +107,7 @@ export interface OfferInfo {
     readonly trips: number | null;
     readonly met: boolean;
   } | null;
+  /** Time and fuel for the viewer's ship; null when they have no flyable ship. */
   readonly estimate: {
     readonly durationSeconds: number;
     readonly fuelNeeded: number;
@@ -958,7 +958,7 @@ function offerInfo(
     peakDanger,
   };
   const verdict = sheet === null ? null : specialtyOf(row.type, specialtyOffer, sheet, rules);
-  const stretch = sheet === null ? 1 : specialtyStretch(row.type, specialtyOffer, sheet, rules);
+  const stretch = verdict?.factor ?? 1;
 
   let estimate: OfferInfo['estimate'] = null;
   if (sheet !== null && tuned !== null && viability?.viable === true && tuned.sheet.mob > 0) {

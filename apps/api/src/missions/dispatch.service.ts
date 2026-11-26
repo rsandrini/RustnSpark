@@ -505,13 +505,14 @@ export class DispatchService {
         });
       }
       const totalDistance = legs.reduce((sum, leg) => sum + leg.distance, 0);
-      // The ship's stat for this job (seats, combat, hold) stretches the time: the planned time keeps that factor
-      // and the card's quote uses the same rule on the card sheet. A refused job never gets here (checked above).
+      // The ship's stat for this job (seats, combat, hold) stretches the time. It is read from the same sheet the
+      // requirement check used (`sheet`: connected parts, no penalties), so the check, the planned time, the quote and
+      // the payload agree: a blocked weapon cannot drop the verdict below what the check passed.
       const specialtyOffer = {
         requirements: offerRequirements(template?.requirements, mission.cargo),
         peakDanger: peakDangerOf(mission.legs),
       };
-      const specialtyFactor = specialtyStretch(mission.type, specialtyOffer, flight.sheet, rules);
+      const specialtyFactor = specialtyStretch(mission.type, specialtyOffer, sheet, rules);
       const planned = missionDuration({
         totalDistance,
         mobility: flight.sheet.mob,
@@ -657,7 +658,7 @@ export class DispatchService {
               shortTripExemptBelow: rules.missions.short_trip_exempt_below,
               timeScale: rules.missions.time_scale,
               classCutoffs: rules.missions.duration_class_cutoffs,
-              stretch: specialtyStretch(mission.type, specialtyOffer, cardSheet, rules),
+              stretch: specialtyFactor,
             }).durationSeconds
           : null;
       const driftPct =

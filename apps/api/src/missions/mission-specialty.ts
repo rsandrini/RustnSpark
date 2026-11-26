@@ -193,7 +193,11 @@ export function specialtyOf(
   };
 }
 
-/** The time multiplier a mission is planned with: the verdict's factor when met, else 1 (a refused one is never planned). */
+/**
+ * The time multiplier a mission is planned with: the verdict's factor, met or not (1 when the type has no verdict).
+ * An unmet verdict's factor is the slowest the curve allows (the divisor is clamped to the minimum), so a ship just
+ * below the minimum never flies faster than one that just meets it: no cliff back to 1.
+ */
 export function specialtyStretch(
   type: MissionType,
   offer: SpecialtyOffer,
@@ -201,7 +205,7 @@ export function specialtyStretch(
   rules: GameRules,
 ): number {
   const verdict = specialtyOf(type, offer, sheet, rules);
-  return verdict !== null && verdict.met ? verdict.factor : 1;
+  return verdict?.factor ?? 1;
 }
 
 /** The highest per-leg danger (0..10) of a route: what an escort's need grows with. Reads stored or parsed legs. */
