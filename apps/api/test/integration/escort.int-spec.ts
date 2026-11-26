@@ -128,6 +128,35 @@ describe('escort to a safe port', () => {
     expect((await call(pilot.token, pilot.shipId)).status).toBe(409);
   });
 
+  // An empty tank is stuck only when the pilot cannot fill it here (owner, 2026-11-25).
+  it('is refused with an empty tank the pilot can pay to fill', async () => {
+    const pilot = await stuckPilot(50000);
+    await prisma.ship.update({ where: { id: pilot.shipId }, data: { fuel: 0 } });
+    const offer = (await info(pilot.token, pilot.shipId)).body as EscortBody;
+    expect(offer.state).toBe('unavailable');
+    expect(offer.reasons).toContain('NOT_STUCK');
+  });
+
+  it('is offered with an empty tank and no money for fuel', async () => {
+    const pilot = await stuckPilot(0);
+    await prisma.ship.update({ where: { id: pilot.shipId }, data: { fuel: 0 } });
+    const offer = (await info(pilot.token, pilot.shipId)).body as EscortBody;
+    expect(offer.reasons).toEqual([]);
+    expect(offer.state).toBe('available');
+  });
+
+  it('is offered with an empty tank at a place that sells no fuel, whatever the money', async () => {
+    const pilot = await stuckPilot(50000);
+    await prisma.ship.update({ where: { id: pilot.shipId }, data: { fuel: 0 } });
+    const hedus = await prisma.location.findUniqueOrThrow({ where: { id: 'hedus' } });
+    await prisma.location.update({
+      where: { id: 'hedus' },
+      data: { services: { ...(hedus.services as Record<string, boolean>), refuel: false } },
+    });
+    const offer = (await info(pilot.token, pilot.shipId)).body as EscortBody;
+    expect(offer.state).toBe('available');
+  });
+
   it('is refused at a port of the pilot’s own faction', async () => {
     const pilot = await stuckPilot(-5000);
     await prisma.ship.update({ where: { id: pilot.shipId }, data: { currentLocationId: 'ceres' } });

@@ -9,7 +9,10 @@ import { RESCUE_BASE_TYPES } from '../ships/floating.js';
 import { rawMobility } from '../ships/sheet.deriver.js';
 import { ShipsService } from '../ships/ships.service.js';
 import { ACTIVE_STATUSES } from '../missions/missions.service.js';
+import { fuelToLeave, isStuck } from './escort-stuck.js';
+import { refuelCost } from './fuel-cost.calculator.js';
 import { InventoryService } from './inventory.service.js';
+import { PricingService } from './pricing.service.js';
 
 export const ESCORT_EVENT = 'escort';
 
@@ -72,7 +75,8 @@ function distancesFrom(from: string, routes: readonly Edge[]): Map<string, numbe
 
 /**
  * The escort for a stuck pilot (owner, 2026-11-06): a ship that failed to get to a safe port, lost
- * parts and sits in debt where nothing can be bought or repaired is taken by an escort to the nearest
+ * parts and sits in debt where nothing can be bought or repaired (or with an empty tank it cannot
+ * fill there: see `isStuck`) is taken by an escort to the nearest
  * port of its faction. The pilot accepts and watches it: no fights, no damage, a slow fixed pace
  * (`economy.escort_seconds_per_distance`), free, and once per `economy.escort_cooldown_days`.
  * The ship is ON_MISSION meanwhile; on arrival it is docked at the port with the restart kit and a
@@ -87,6 +91,7 @@ export class EscortService {
     private readonly inventory: InventoryService,
     private readonly ships: ShipsService,
     private readonly clock: Clock,
+    private readonly pricing: PricingService,
   ) {}
 
   /** What the escort offers now; a transport whose time is up arrives first. */
@@ -225,7 +230,14 @@ export class EscortService {
         select: { credits: true, factionId: true },
       }),
       this.prisma.location.findMany({ select: { id: true, type: true, factionId: true } }),
-      this.prisma.route.findMany({ select: { nodeAId: true, nodeBId: true, distance: true } }),
+      this.prisma.route.findMany({
+        select: {
+          nodeAId: true,
+          nodeBId: true,
+          distance: true,
+          routeEnvironments: { select: { environment: { select: { fuelMult: true } } } },
+        },
+      }),
       this.prisma.playerEvent.findFirst({
         where: { playerId, type: ESCORT_EVENT },
         orderBy: { at: 'desc' },
@@ -238,16 +250,50 @@ export class EscortService {
       RESCUE_BASE_TYPES.has(place.type) && place.factionId === player.factionId;
     if (here !== undefined && isOwnPort(here)) reasons.push('ALREADY_SAFE');
 
-    // Stuck: in debt (nothing can be bought or repaired) or a ship that cannot fly at all.
+    // Stuck = cannot get out on their own: in debt, a hull that cannot fly, or an empty tank the
+    // pilot cannot fill here (no fuel sold, or not enough money for the fuel of the cheapest route out).
     const sheet = (await this.ships.findById(shipId)).sheet;
-    const cannotFly =
+    const hullCannotFly =
       sheet.structureBudget <= ZERO ||
       sheet.pot <= ZERO ||
-      rawMobility(sheet.pot, sheet.mass, rules) < 1 ||
-      (sheet.fuelUse > ZERO && ship.fuel <= ZERO);
-    if (player.credits >= ZERO && !cannotFly && !reasons.includes('ALREADY_SAFE')) {
-      reasons.push('NOT_STUCK');
+      rawMobility(sheet.pot, sheet.mass, rules) < 1;
+    const outOfFuel = sheet.fuelUse > ZERO && ship.fuel <= ZERO;
+    let sellsFuel = true;
+    let costToLeave = ZERO;
+    if (outOfFuel) {
+      const market = await this.pricing.contextForLocation(ship.currentLocationId, playerId);
+      const services = (market.location.services ?? {}) as Record<string, unknown>;
+      sellsFuel = services.refuel !== false;
+      const units = fuelToLeave(
+        sheet.fuelUse,
+        routes
+          .filter(
+            (edge) =>
+              edge.nodeAId === ship.currentLocationId || edge.nodeBId === ship.currentLocationId,
+          )
+          .map((edge) => ({
+            distance: edge.distance,
+            envFuelMult: Math.max(
+              1,
+              ...edge.routeEnvironments.map((link) => link.environment.fuelMult),
+            ),
+          })),
+      );
+      // Priced exactly like the refuel: whole credits, never free.
+      costToLeave = Math.max(
+        1,
+        Math.round(refuelCost(units, market.location.isolation, market.factionRelation, rules)),
+      );
     }
+    const stuck = isStuck({
+      credits: player.credits,
+      hullCannotFly,
+      fuelUse: sheet.fuelUse,
+      fuel: ship.fuel,
+      sellsFuel,
+      costToLeave,
+    });
+    if (!stuck && !reasons.includes('ALREADY_SAFE')) reasons.push('NOT_STUCK');
 
     const cooldownMs = rules.economy.escort_cooldown_days * MS_PER_DAY;
     if (last !== null && cooldownMs > ZERO) {
