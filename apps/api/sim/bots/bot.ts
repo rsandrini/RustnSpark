@@ -18,6 +18,7 @@ import {
 import { refuel, refuelQuote } from '../actions/fuel.js';
 import { repair, repairQuote } from '../actions/repair.js';
 import { rescue, rescueQuote } from '../actions/rescue.js';
+import { EmptyPortMemory, isRealUnlock, pickWorkPort, TowBudget } from './stuck.js';
 import { travel, travelOffer } from '../actions/travel.js';
 import { canMine, mine, miningOffer } from '../actions/mining.js';
 import { scavenge, scavengeCooldownLeft, scavengeOffer } from '../actions/scavenge.js';
@@ -81,9 +82,6 @@ const WEAR_SAMPLE_WINDOW = 30;
 const MAX_EMPTY_ROUNDS = 30;
 /** Empty board turns tolerated before the pilot calls a rescue (a board can be thin for a while). */
 const RESCUE_AFTER_EMPTY_ROUNDS = 3;
-/** Rescue attempts after that point before the run is declared stalled (a rescue that buys
- *  nothing is a money pit, so the pilot gives up rather than pay for a tow forever). */
-const RESCUE_MAX_ATTEMPTS = 3;
 /** How long to wait when the board is empty of offers at all. */
 const FALLBACK_WAIT_SECONDS = 60;
 
@@ -387,7 +385,10 @@ export function playRun(input: PlayRunInput): RunResult {
   let emptyRounds = 0;
   /** The last empty board was blocked by mining work the ship has no rig for. */
   let minerBlocked = false;
-  let rescuesTaken = 0;
+  /** Tows in a row with no work flown between them (three is a stall, see `TowBudget`). */
+  const tows = new TowBudget();
+  /** Ports found with nothing takeable lately, so a hop for work tries somewhere new. */
+  const emptyPorts = new EmptyPortMemory();
   // Phase 3: ratio windows over mission opportunities, the repair bills the reserve averages,
   // and the wallet trail the progress-stall detector compares against.
   const scavengeFlags: boolean[] = [];
@@ -600,8 +601,10 @@ export function playRun(input: PlayRunInput): RunResult {
       );
     }
 
+    emptyPorts.tick();
     if (offer === null) {
       emptyRounds += 1;
+      emptyPorts.markEmpty(state.locationId);
       minerBlocked = offers.some((entry) => {
         const take = canTakeMission(state, entry, ctx);
         return !take.ok && take.reasons.includes('MINER');
@@ -634,7 +637,7 @@ export function playRun(input: PlayRunInput): RunResult {
       // A rescue that buys nothing is a money pit. The pilot will pay for a few tows — a stranded
       // ship has no other way home — but once they stop yielding takeable work the run is over,
       // and the stall must be reported rather than the wallet drained on a loop.
-      if (rescuesTaken >= RESCUE_MAX_ATTEMPTS || emptyRounds > MAX_EMPTY_ROUNDS) {
+      if (tows.exhausted || emptyRounds > MAX_EMPTY_ROUNDS) {
         stalled = true;
         stallReason =
           `nothing takeable for ${emptyRounds} board turns @ ${state.locationId}` +
@@ -707,7 +710,8 @@ export function playRun(input: PlayRunInput): RunResult {
         }))
         .filter(({ need }) => need > state.ship.fuel)
         .sort((left, right) => left.need - right.need);
-      const cheapestUnlock = unlockable[0];
+      const shipFuelCap = fuelCapOfShip(state, ctx);
+      const cheapestUnlock = unlockable.find(({ need }) => need <= shipFuelCap);
       if (cheapestUnlock !== undefined && spend) {
         const shortfall = cheapestUnlock.need - state.ship.fuel;
         const quote = refuelQuote(
@@ -719,7 +723,12 @@ export function playRun(input: PlayRunInput): RunResult {
           shortfall,
         );
         currentAction = 'fuel';
-        if (quote.cost <= state.wallet) {
+        // Only a refuel that really unlocks the offer resets the stall count: a pump that adds
+        // nothing (the tank is already as full as it gets) was a loop of idle turns at one port.
+        if (
+          quote.cost <= state.wallet &&
+          isRealUnlock(cheapestUnlock.need, state.ship.fuel, shipFuelCap, quote.units)
+        ) {
           currentAction = 'fuel';
           refuel(state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall);
           state.log.push(
@@ -735,7 +744,15 @@ export function playRun(input: PlayRunInput): RunResult {
       // a mission and refuelled like any other. The board here offers nothing, so leaving is the
       // offer. This is what keeps the run alive when a port's board is thin or all hard — the
       // pilot does not wait to be rescued, they go looking for work.
-      const hop = repositionOffer(state, snapshot, ctx.rules, catalogByType, world, nowMs);
+      const hop = repositionOffer(
+        state,
+        snapshot,
+        ctx.rules,
+        catalogByType,
+        world,
+        nowMs,
+        (ports) => pickWorkPort(ports, state.locationId, emptyPorts),
+      );
       if (hop !== null) {
         const need = missionFuelNeed(state, hop, { rules: ctx.rules, catalogByType });
         const shortfall = need - state.ship.fuel;
@@ -780,12 +797,15 @@ export function playRun(input: PlayRunInput): RunResult {
       // A rescue is how a stranded pilot gets back to safety: a tow to the nearest base, at the
       // game's price, with an emergency ration when the tank is dry. The ship keeps every part —
       // the tow buys a way home, not a new build. It fires only when the pilot cannot reach any
-      // other port, or has bought their way as far as they can and still has no work.
+      // other port, or has bought their way as far as they can and still has no work. A tank at
+      // or above the ration gains nothing from a tow (the ration is all it adds), so the pilot
+      // waits for the board or the foot search instead of paying for the same tow again.
       const dry = state.ship.fuel < rescueRationOf(state, ctx);
       if (
         spend &&
+        dry &&
         (!canReachAnywhereSafe(state, ctx, world, nowMs) ||
-          (emptyRounds >= RESCUE_AFTER_EMPTY_ROUNDS && dry))
+          emptyRounds >= RESCUE_AFTER_EMPTY_ROUNDS)
       ) {
         currentAction = 'rescue';
         const out = rescue(state, ctx.snapshot, ctx.rules, catalogByType);
@@ -795,7 +815,7 @@ export function playRun(input: PlayRunInput): RunResult {
         );
         state.clock.advance(budget.humanPauseSeconds);
         emptyRounds = 0;
-        rescuesTaken += 1;
+        tows.onTow();
         continue;
       }
       // Wait until the earliest live offer actually expires so the board regenerates.
@@ -810,6 +830,8 @@ export function playRun(input: PlayRunInput): RunResult {
       continue;
     }
     emptyRounds = 0;
+    tows.onWork();
+    emptyPorts.markWorked(state.locationId);
 
     // Before flying: decide whether to repair and where (the plan's "buy at the right port" rule).
     // A bill the wallet cannot cover is deferred, not thrown: the pilot earns it next mission —

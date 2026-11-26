@@ -11,6 +11,7 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import { missionDuration } from '../../../src/missions/duration.calculator.js';
 import { buyPrice, sellPrice } from '../../../src/economy/price.calculator.js';
 import { deriveSheet } from '../../../src/ships/sheet.deriver.js';
+import { fullTankCost } from '../../../sim/actions/fuel.js';
 import { missionContext } from '../../../sim/actions/mission.js';
 import { scavenge, scavengeCooldownLeft, scavengeOffer } from '../../../sim/actions/scavenge.js';
 import { canMine, mine, miningEligible, miningOffer } from '../../../sim/actions/mining.js';
@@ -922,12 +923,12 @@ describe('spending plan', () => {
     const snapshot = econSnapshot();
     const ctx = missionContext(snapshot);
     const state = starterPlayer(snapshot, 'luna');
-    state.ship.fuel = 300; // a full tank: the reserve's refill is 0
+    state.ship.fuel = 300; // a full tank: the gap is 0, but the reserve is still a whole tank
     const hull = state.ship.parts.find((part) => part.partType === 'hull');
     if (hull !== undefined) hull.condition = 100;
     // One credit under the dearest thing the plan could do — today's own cheapest listing
-    // (the used shelf really has one) or the upgrade quote — so the reserve (the refill: the
-    // tank is full, 0 — plus the standing repair fallback) leaves nothing affordable.
+    // (the used shelf really has one) or the upgrade quote — so the reserve (a whole tank here,
+    // plus the standing repair fallback) leaves nothing affordable.
     const quote = upgradeQuote(state, snapshot, ctx.rules, ctx.catalogByType, hullIdOf(snapshot));
     const cheapestCash = Math.min(
       quote.cost ?? Number.POSITIVE_INFINITY,
@@ -940,11 +941,14 @@ describe('spending plan', () => {
       ),
     );
     expect(Number.isFinite(cheapestCash)).toBe(true);
-    state.wallet = REPAIR_BILL_FALLBACK_CREDITS + cheapestCash - 1; // available = cheapestCash − 1 → no option fits
+    const tank = fullTankCost(state, snapshot, ctx.rules, ctx.catalogByType, state.locationId);
+    expect(tank).toBeGreaterThan(0);
+    const wallet = REPAIR_BILL_FALLBACK_CREDITS + tank + cheapestCash - 1;
+    state.wallet = wallet; // available = cheapestCash − 1 → no option fits
     const plan = spendPlan(state, snapshot, ctx.rules, ctx.catalogByType, []);
     expect(plan.action).toMatchObject({ kind: 'none' });
     expect((plan.action as { reason: string }).reason).toMatch(/^saving /);
-    expect(state.wallet).toBe(REPAIR_BILL_FALLBACK_CREDITS + cheapestCash - 1);
+    expect(state.wallet).toBe(wallet);
   });
 });
 

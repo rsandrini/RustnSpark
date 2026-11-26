@@ -16,7 +16,7 @@ import { deriveSheet } from '../../src/ships/sheet.deriver.js';
 import { checkViability } from '../../src/ships/viability.js';
 import { canTakeMission } from '../actions/mission.js';
 import { travelOffer } from '../actions/travel.js';
-import { refuelQuote } from '../actions/fuel.js';
+import { fullTankCost, refuelQuote } from '../actions/fuel.js';
 import { fitWouldBeViable, marketShelf, priceInputAt } from '../actions/market.js';
 import {
   priorityBasesOf,
@@ -245,17 +245,22 @@ export function repositionOffer(
   catalogByType: ReadonlyMap<string, CatalogRow>,
   world: FillerWorld,
   nowMs: number,
+  /** Chooses among the reachable ports (the stuck handler skips ports found empty lately);
+   *  omitted, the cheapest wins. */
+  choose?: (ports: readonly { locationId: string; factor: number }[]) => string | null,
 ): Offer | null {
   const fullTank = fuelCapOf(state, catalogByType, rules);
   const reachable = reachablePorts(state, snapshot, rules, catalogByType, fullTank)
     .filter((locationId) => locationId !== state.locationId);
   if (reachable.length === 0) return null;
-  const target = reachable
-    .map((locationId) => ({
-      locationId,
-      factor: portFactor(snapshot, rules, locationId, state.factionId),
-    }))
-    .sort((a, b) => a.factor - b.factor)[0]?.locationId;
+  const ports = reachable.map((locationId) => ({
+    locationId,
+    factor: portFactor(snapshot, rules, locationId, state.factionId),
+  }));
+  const target =
+    choose === undefined
+      ? [...ports].sort((a, b) => a.factor - b.factor)[0]?.locationId
+      : (choose(ports) ?? undefined);
   if (target === undefined) return null;
   return travelOffer({ snapshot, world, state, destinationId: target, nowMs });
 }
@@ -884,7 +889,13 @@ export function spendPlan(
   // unpaid for is not spendable, whatever the last few bills averaged.
   const fullRepair = repairQuote(state, snapshot, rules, catalogByType, state.locationId).cost;
   const expectedRepair = Math.max(typicalBill, fullRepair);
-  const available = state.wallet - refill.cost - expectedRepair;
+  // The fuel reserve is a whole tank, not the gap left now: a full tank before a chain of
+  // hops to buy parts would otherwise reserve nothing and end the chain dry and broke.
+  const fuelReserve = Math.max(
+    refill.cost,
+    fullTankCost(state, snapshot, rules, catalogByType, state.locationId),
+  );
+  const available = state.wallet - fuelReserve - expectedRepair;
   const keepNeedsOfTarget = (target: SpendTarget): readonly MaterialNeed[] =>
     keepNeedsOf(target, rules);
   if (available < 1) {

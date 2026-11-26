@@ -38,6 +38,20 @@ export function refuelQuote(
   };
 }
 
+/** What a whole tank, from empty, costs here: the fuel money a pilot keeps back before shopping,
+ *  so a spree of hops to buy parts never leaves the ship dry and the wallet empty. */
+export function fullTankCost(
+  state: PlayerState,
+  snapshot: Snapshot,
+  rules: GameRules,
+  catalogByType: ReadonlyMap<string, CatalogRow>,
+  locationId: string,
+): number {
+  const facts = portFactsOf(snapshot, locationId, state.factionId);
+  const fuelCap = fuelCapOf(state, catalogByType, rules);
+  return refuelCostCharged(fuelCap, facts.isolation, facts.factionRelation, rules);
+}
+
 /**
  * Buy `units` of fuel (default: fill the tank) at `locationId`. The ship must be in port — the
  * same rule as the live service, which refuses to refuel a ship that is `ON_MISSION`.
