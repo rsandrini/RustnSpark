@@ -140,11 +140,8 @@
       "universal": "Universal connector"
     },
     "fit": {
-      "full": "All ports match free ports on your ship",
-      "partial": "{{matching}} of {{total}} ports match free ports on your ship",
       "none": "No free port of your ship joins these ports",
       "noneFree": "Your ship has no free port",
-      "chipJoins": "Joins {{count}}",
       "chipNone": "No fit"
     },
     "states": {

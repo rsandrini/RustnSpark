@@ -38,6 +38,8 @@ export interface TrayPartRowProps {
 
 // One tray row: its own button, the (i) popup, and (owner request, round 5/6) a hover card
 // showing the same comparison, positioned beside the cursor and clamped to stay fully visible.
+const NO_FIT_MARK = '✕';
+
 export function TrayPartRow({
   part,
   name,
@@ -60,10 +62,7 @@ export function TrayPartRow({
       ? undefined
       : {
           tone: view.tone,
-          text:
-            view.tone === 'ok'
-              ? t('connectors.fit.chipJoins', { count: view.counts.matching })
-              : t('connectors.fit.chipNone'),
+          text: t('connectors.fit.chipNone'),
           sentence: t(`connectors.fit.${view.key}`, view.counts),
         };
 
@@ -110,8 +109,7 @@ export function TrayPartRow({
             title={chip.sentence}
           >
             <span aria-hidden="true">
-              {chip.tone === 'ok' ? '✓ ' : '✕ '}
-              {chip.text}
+              {NO_FIT_MARK} {chip.text}
             </span>
           </span>
         )}

@@ -140,11 +140,8 @@
       "universal": "Conector universal"
     },
     "fit": {
-      "full": "Todas as portas combinam com portas livres da sua nave",
-      "partial": "{{matching}} de {{total}} portas combinam com portas livres da sua nave",
       "none": "Nenhuma porta livre da sua nave se une a estas portas",
       "noneFree": "Sua nave não tem porta livre",
-      "chipJoins": "Encaixa {{count}}",
       "chipNone": "Não encaixa"
     },
     "states": {

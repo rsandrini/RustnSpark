@@ -59,20 +59,16 @@ function row(fit?: PortFit) {
 }
 
 describe('tray part row fit chip', () => {
-  it('shows an ok chip with the count for a partial fit', () => {
+  it('shows no chip for a partial or a full fit', () => {
     row({ level: 'partial', matching: 2, total: 3 });
-    const chip = screen.getByTestId('tray-fit');
-    expect(chip).toHaveClass('ok');
-    expect(chip).toHaveTextContent('2');
-    expect(chip).toHaveAccessibleName(/2 of 3/);
-  });
-  it('shows an ok chip for a full fit', () => {
     row({ level: 'full', matching: 3, total: 3 });
-    expect(screen.getByTestId('tray-fit')).toHaveClass('ok');
+    expect(screen.queryByTestId('tray-fit')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Joins|Encaixa/);
   });
   it('shows a bad chip when nothing joins', () => {
     row({ level: 'none', matching: 0, total: 3 });
     expect(screen.getByTestId('tray-fit')).toHaveClass('bad');
+    expect(screen.getByTestId('tray-fit')).toHaveTextContent('No fit');
     row({ level: 'none-free' });
     expect(screen.getAllByTestId('tray-fit')[1]).toHaveClass('bad');
   });

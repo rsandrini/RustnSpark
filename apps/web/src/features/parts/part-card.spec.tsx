@@ -57,10 +57,10 @@ function renderCard(connectors: ConnectorCell[] | undefined, fit?: PortFit) {
 }
 
 describe('PartCard: ports first', () => {
-  it('shows the large port diagram and the verdict but no port-words line', () => {
+  it('shows the large port diagram and no verdict for a full fit and no port-words line', () => {
     renderCard(cells, { level: 'full', matching: 3, total: 3 });
     expect(screen.getByTestId('connector-grid')).toHaveClass('connector-grid-large');
-    expect(screen.getByTestId('part-fit')).toBeInTheDocument();
+    expect(screen.queryByTestId('part-fit')).toBeNull();
     expect(screen.queryByTestId('part-ports')).toBeNull();
     expect(screen.queryByText(/North · 2 × Central connector/)).toBeNull();
   });
@@ -78,18 +78,16 @@ describe('PartCard: ports first', () => {
     expect(screen.queryByTestId('part-fit')).toBeNull();
   });
 
-  it('says how many of its ports match a free port (partial, ok tone)', () => {
-    renderCard(cells, { level: 'partial', matching: 2, total: 3 });
-    const fit = screen.getByTestId('part-fit');
-    expect(fit).toHaveTextContent('2 of 3 ports match free ports on your ship');
-    expect(fit).toHaveClass('ok');
-  });
-
-  it('says every port matches (full, ok tone)', () => {
-    renderCard(cells, { level: 'full', matching: 3, total: 3 });
-    const fit = screen.getByTestId('part-fit');
-    expect(fit).toHaveTextContent('All ports match free ports on your ship');
-    expect(fit).toHaveClass('ok');
+  it('says nothing when ports match (partial or full)', () => {
+    for (const fit of [
+      { level: 'partial', matching: 2, total: 3 } as const,
+      { level: 'full', matching: 3, total: 3 } as const,
+    ]) {
+      const view = renderWithProviders(<PartCard part={part(cells)} fit={fit} />);
+      expect(screen.queryByTestId('part-fit')).toBeNull();
+      expect(view.container.textContent).not.toMatch(/Joins|Encaixa|All ports match|ports match/);
+      view.unmount();
+    }
   });
 
   it('names the reason when nothing joins (bad tone)', () => {

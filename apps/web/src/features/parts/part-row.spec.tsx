@@ -56,7 +56,8 @@ describe('PartRow', () => {
     expect(screen.getByTestId('part-art')).toHaveClass('part-art-40');
     expect(container.querySelector('.kind-tag')).not.toBeNull();
     expect(container).toHaveTextContent('2×1');
-    expect(screen.getByTestId('part-fit')).toHaveClass('ok');
+    expect(screen.queryByTestId('part-fit')).toBeNull();
+    expect(container.textContent).not.toMatch(/Joins|Encaixa|All ports match/);
     expect(container).toHaveTextContent('1,200 ¢');
     expect(screen.getByRole('button', { name: 'Buy' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Details: Cargo Rack/ })).toBeInTheDocument();

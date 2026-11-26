@@ -654,10 +654,6 @@
   font-weight: 600;
   border: 1px solid currentColor;
 }
-.pcard-fit.ok {
-  color: var(--ok-hi);
-  background: color-mix(in oklch, var(--ok) 14%, transparent);
-}
 .pcard-fit.bad {
   color: var(--bad);
   background: color-mix(in oklch, var(--bad) 14%, transparent);
@@ -675,10 +671,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.tray-fit.ok {
-  color: var(--ok-hi);
-  background: color-mix(in oklch, var(--ok) 14%, transparent);
 }
 .tray-fit.bad {
   color: var(--bad);
