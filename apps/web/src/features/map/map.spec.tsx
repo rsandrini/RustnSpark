@@ -775,3 +775,41 @@ describe('map layers (slice 1.4)', () => {
     expect(drift.svg.querySelector('[data-testid="range-layer"]')).toBeNull();
   });
 });
+
+describe('map: the escort home', () => {
+  // earlier map specs leave the ship adrift, and an adrift ship asks nothing of the escort
+  beforeEach(() => {
+    setShipStatus('IN_PORT');
+    resetActiveState();
+  });
+
+  const escortAs = (over: Record<string, unknown>) =>
+    http.get('/v1/ships/:id/escort', () =>
+      HttpResponse.json({
+        state: 'available',
+        reasons: [],
+        destinationId: 'ceres',
+        durationSeconds: 600,
+        arrivesAt: null,
+        nextAvailableAt: null,
+        ...over,
+      }),
+    );
+
+  it('is a compact button by the legend, only while on offer, and asks before it sends', async () => {
+    server.use(escortAs({}));
+    await renderMap();
+    const call = await screen.findByTestId('escort-call');
+    expect(call.closest('.legend')).not.toBeNull();
+    expect(screen.queryByTestId('escort-offer')).toBeNull();
+    fireEvent.click(call);
+    expect(await screen.findByRole('button', { name: 'Yes, send the escort' })).toBeVisible();
+  });
+
+  it('shows no button when the escort is not on offer', async () => {
+    server.use(escortAs({ state: 'unavailable', reasons: ['NOT_STUCK'] }));
+    await renderMap();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(screen.queryByTestId('escort-call')).toBeNull();
+  });
+});

@@ -1654,3 +1654,9 @@ svg .yard-slot:focus-visible .yard-slot-box {
 svg .yard-slot:focus-visible {
   outline: none;
 }
+
+/* The escort: a slim status line (in flight, or the weekly wait), never a panel. */
+.escort-line {
+  margin: 4px 0 8px;
+  font-size: 0.9em;
+}

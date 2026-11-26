@@ -1775,3 +1775,50 @@ describe('hangar (S10.4)', () => {
     expect(before).toBeGreaterThan(0);
   });
 });
+
+describe('hangar: the escort', () => {
+  const escortAs = (over: Record<string, unknown>) =>
+    http.get('/v1/ships/:id/escort', () =>
+      HttpResponse.json({
+        state: 'available',
+        reasons: [],
+        destinationId: 'ceres',
+        durationSeconds: 600,
+        arrivesAt: null,
+        nextAvailableAt: null,
+        ...over,
+      }),
+    );
+
+  it('has no escort card on the ship screen, even when the escort is on offer', async () => {
+    server.use(onboarded(), escortAs({}));
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(screen.queryByTestId('escort-offer')).toBeNull();
+    expect(screen.queryByText('Stuck? An escort can take you home')).toBeNull();
+  });
+
+  it('says the weekly wait in one small line on the ship screen', async () => {
+    server.use(
+      onboarded(),
+      escortAs({
+        state: 'unavailable',
+        reasons: ['COOLDOWN'],
+        nextAvailableAt: new Date(Date.now() + 86_400_000).toISOString(),
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    expect(await screen.findByTestId('escort-wait')).toBeInTheDocument();
+  });
+
+  it('shows the escort in flight as one slim status line', async () => {
+    server.use(
+      onboarded(),
+      escortAs({ state: 'underway', arrivesAt: new Date(Date.now() + 600_000).toISOString() }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/missions'] });
+    await screen.findByTestId('escort-underway');
+    expect(screen.getAllByTestId('escort-underway')).toHaveLength(1);
+  });
+});

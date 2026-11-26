@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useIsPhone } from '../../ui/use-phone';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
-import { EscortNotice } from '../ship/escort-notice';
+import { EscortButton, EscortUnderway } from '../ship/escort';
 import { client, serverNow } from '../../api/client';
 import type {
   ActiveMission,
@@ -417,7 +417,7 @@ export function MapPage({ guided = false }: MapPageProps) {
         }
       />
       <EmptyShipNotice />
-      <EscortNotice />
+      <EscortUnderway />
 
       <div className="legend">
         <span>
@@ -450,6 +450,8 @@ export function MapPage({ guided = false }: MapPageProps) {
             testId="layer-range"
           />
         )}
+        {/* The escort home, only while the server offers it: a compact button, no card. */}
+        <EscortButton />
       </div>
 
       <div className="map-layout">

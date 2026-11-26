@@ -1103,4 +1103,43 @@ describe('board (S10.6)', () => {
     expect(screen.getAllByTestId('starter-badge')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Accept' })).toBeEnabled();
   });
+
+  describe('the escort home', () => {
+    const escort = (state: string) =>
+      http.get('/v1/ships/:id/escort', () =>
+        HttpResponse.json({
+          state,
+          reasons: state === 'available' ? [] : ['NOT_STUCK'],
+          destinationId: 'ceres',
+          durationSeconds: 600,
+          arrivesAt: null,
+          nextAvailableAt: null,
+        }),
+      );
+
+    it('is one small chip among the blockers, said once on the missions screen', async () => {
+      server.use(escort('available'));
+      await renderBoard();
+      const chip = await screen.findByTestId('escort-chip');
+      expect(within(screen.getByTestId('ship-faults')).getByTestId('escort-chip')).toBe(chip);
+      expect(screen.getAllByText('Stuck? Call the escort home')).toHaveLength(1);
+      // no card, and the title is not printed outside the popup
+      expect(screen.queryByTestId('escort-offer')).toBeNull();
+      expect(screen.queryByText('Stuck? An escort can take you home')).toBeNull();
+    });
+
+    it('opens the confirmation popup from the chip', async () => {
+      server.use(escort('available'));
+      await renderBoard();
+      fireEvent.click(await screen.findByTestId('escort-chip'));
+      expect(await screen.findByRole('button', { name: 'Yes, send the escort' })).toBeVisible();
+    });
+
+    it('shows no chip when the escort is not on offer', async () => {
+      server.use(escort('unavailable'));
+      await renderBoard();
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      expect(screen.queryByTestId('escort-chip')).toBeNull();
+    });
+  });
 });

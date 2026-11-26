@@ -2463,8 +2463,9 @@
   },
   "escort": {
     "title": "Preso? Uma escolta pode levar você para casa",
+    "chip": "Preso? Chame a escolta para casa",
     "body": "Uma escolta vai levar sua nave até {{place}}, o porto mais próximo da sua facção. É de graça e sem combates, mas é lento: cerca de {{time}}. Dá para chamar uma vez por semana.",
-    "accept": "Aceitar a escolta",
+    "call": "Chamar a escolta",
     "confirm": "Mandar sua nave para {{place}} com a escolta? A viagem leva cerca de {{time}}, você não pode voar nesse tempo e só dá para chamar uma vez por semana.",
     "confirmAction": "Sim, mandar a escolta",
     "failed": "A escolta não pôde partir. Recarregue e tente de novo.",

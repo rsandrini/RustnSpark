@@ -11,7 +11,7 @@ import { EmptyShipNotice } from '../ship/empty-ship-notice';
 import { BoardFilters, type SortKey } from './board-filters';
 import { fixHref, fixOf } from './requirement-fix';
 import { reasonLabel } from './reason-label';
-import { EscortNotice } from '../ship/escort-notice';
+import { useEscort } from '../ship/escort';
 import { client } from '../../api/client';
 import { haptic } from '../../ui/haptics';
 import { errorText } from '../../api/errors';
@@ -74,6 +74,8 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
   const [onlyEligible, setOnlyEligible] = useState(!opening);
   const [sortKey, setSortKey] = useState<SortKey>('reward');
   const [actionError, setActionError] = useState<string | null>(null);
+  // The escort home for a stuck pilot: one small chip among the ship's blockers, never a panel.
+  const escort = useEscort();
 
   const shipsQuery = useQuery({
     queryKey: ['ships'],
@@ -203,9 +205,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
           {t('board.summary', { open: ofType.length, can: takeableCount })}
         </p>
       )}
-      <EscortNotice />
-
-      {shipFaults.length > 0 && (
+      {(shipFaults.length > 0 || escort.available) && (
         <div
           className="board-faults"
           data-testid="ship-faults"
@@ -224,8 +224,17 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
               <BlockerChip key={fault.code} label={label} {...(to !== undefined ? { to } : {})} />
             );
           })}
+          {escort.available && (
+            <BlockerChip
+              label={t('escort.chip')}
+              onFix={escort.open}
+              className="escort-chip"
+              testId="escort-chip"
+            />
+          )}
         </div>
       )}
+      {escort.popup}
 
       {/* An unassembled ship with nothing on the shelf has no offer to carry the fault chips: the notice
           speaks for it then (and only then, so the problem is never told twice). */}

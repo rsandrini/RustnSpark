@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateShip } from './invalidate-ship';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +11,7 @@ import { formatDuration } from '../../ui/duration';
 import { Popup } from '../../ui/Popup';
 
 /** What the server says about the escort to a safe port (`GET /v1/ships/:id/escort`). */
-interface EscortInfo {
+export interface EscortInfo {
   state: 'available' | 'underway' | 'unavailable';
   reasons: string[];
   destinationId: string | null;
@@ -21,11 +21,11 @@ interface EscortInfo {
 }
 
 /**
- * The way out for a stuck pilot: broke, far from the faction's ports, with a ship that cannot fly.
- * Shown only when the server offers the escort (or one is flying, or the weekly wait is the only
- * thing in the way). The pilot accepts, then watches the transport arrive; no fights, no cost.
+ * The escort to a safe port, for a pilot who cannot get out on their own (the server decides who is
+ * stuck). One hook owns the query, the confirmation popup and the call, so every entry point (the
+ * board's chip, the map's button) asks the same question and sends the same request.
  */
-export function EscortNotice() {
+export function useEscort() {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const key = useIntentKey();
@@ -62,44 +62,23 @@ export function EscortNotice() {
     onError: () => setConfirming(false),
   });
 
-  const info = escortQuery.data;
-  if (ship === undefined || info === undefined) return null;
+  const info = ship === undefined ? undefined : escortQuery.data;
   const placeName = (id: string | null) => {
     const place = worldQuery.data?.locations.find((entry) => entry.id === id);
     return place === undefined ? (id ?? '') : pickLocalized(place.displayName, i18n.language);
   };
 
-  if (info.state === 'underway') {
-    return (
-      <div className="panel kit-note" role="status" data-testid="escort-underway">
-        <b>{t('escort.underwayTitle', { place: placeName(info.destinationId) })}</b>
-        <p className="muted">
-          {t('escort.underwayBody')}{' '}
-          {info.arrivesAt !== null && <Countdown until={info.arrivesAt} onElapsed={refresh} />}
-        </p>
-      </div>
-    );
-  }
-  if (info.state === 'available') {
-    return (
-      <div className="panel kit-note" role="note" data-testid="escort-offer">
-        <b>{t('escort.title')}</b>
-        <p className="muted">
-          {t('escort.body', {
-            place: placeName(info.destinationId),
-            time: formatDuration(info.durationSeconds ?? 0, t),
-          })}
-        </p>
-        <button
-          type="button"
-          className="btn primary"
-          disabled={accept.isPending}
-          onClick={() => setConfirming(true)}
-        >
-          {t('escort.accept')}
-        </button>
+  const popup: ReactNode =
+    info?.state === 'available' ? (
+      <>
         <Popup open={confirming} title={t('escort.title')} onClose={() => setConfirming(false)}>
           <div className="stack">
+            <p className="muted">
+              {t('escort.body', {
+                place: placeName(info.destinationId),
+                time: formatDuration(info.durationSeconds ?? 0, t),
+              })}
+            </p>
             <p>
               {t('escort.confirm', {
                 place: placeName(info.destinationId),
@@ -117,27 +96,78 @@ export function EscortNotice() {
           </div>
         </Popup>
         {accept.isError && <p className="error-text">{t('escort.failed')}</p>}
-      </div>
-    );
-  }
-  // Only the weekly wait is in the way: say when help comes back, so the pilot is not left guessing.
+      </>
+    ) : null;
+
+  return {
+    info,
+    available: info?.state === 'available',
+    pending: accept.isPending,
+    open: () => setConfirming(true),
+    popup,
+    placeName,
+    refresh,
+  };
+}
+
+/** The map's entry: a compact button by the legend, only while the escort is on offer. */
+export function EscortButton() {
+  const { t } = useTranslation();
+  const escort = useEscort();
+  if (!escort.available) return null;
+  return (
+    <>
+      <button
+        type="button"
+        className="btn tiny"
+        data-testid="escort-call"
+        disabled={escort.pending}
+        onClick={escort.open}
+      >
+        {t('escort.call')}
+      </button>
+      {escort.popup}
+    </>
+  );
+}
+
+/** A slim status line while the transport flies (nothing otherwise). */
+export function EscortUnderway() {
+  const { t } = useTranslation();
+  const escort = useEscort();
+  const info = escort.info;
+  if (info?.state !== 'underway') return null;
+  return (
+    <p className="escort-line" role="status" data-testid="escort-underway">
+      <b>{t('escort.underwayTitle', { place: escort.placeName(info.destinationId) })}</b>{' '}
+      <span className="muted">
+        {t('escort.underwayBody')}{' '}
+        {info.arrivesAt !== null && <Countdown until={info.arrivesAt} onElapsed={escort.refresh} />}
+      </span>
+    </p>
+  );
+}
+
+/** A small line when only the weekly wait keeps the escort away: when help comes back. */
+export function EscortWait() {
+  const { t, i18n } = useTranslation();
+  const { info } = useEscort();
   if (
-    info.reasons.length === 1 &&
-    info.reasons[0] === 'COOLDOWN' &&
-    info.nextAvailableAt !== null
+    info === undefined ||
+    info.reasons.length !== 1 ||
+    info.reasons[0] !== 'COOLDOWN' ||
+    info.nextAvailableAt === null
   ) {
-    return (
-      <div className="panel kit-note" role="note" data-testid="escort-wait">
-        <p className="muted">
-          {t('escort.cooldown', {
-            date: new Intl.DateTimeFormat(i18n.language, {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-            }).format(new Date(info.nextAvailableAt)),
-          })}
-        </p>
-      </div>
-    );
+    return null;
   }
-  return null;
+  return (
+    <p className="escort-line muted" role="note" data-testid="escort-wait">
+      {t('escort.cooldown', {
+        date: new Intl.DateTimeFormat(i18n.language, {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(new Date(info.nextAvailableAt)),
+      })}
+    </p>
+  );
 }
