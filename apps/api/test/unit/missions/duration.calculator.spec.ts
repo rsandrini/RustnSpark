@@ -97,4 +97,58 @@ describe('mission duration calculator (S7.2)', () => {
     // without the rule there is no floor
     expect(missionDuration({ ...base, totalDistance: 100 }).durationSeconds).toBe(20);
   });
+
+  describe('specialty stretch', () => {
+    const cutoffs = { fast: 600, medium: 1800 };
+    const short = { shortTripBelow: 400, shortTripMinSeconds: 300 };
+
+    it('stretch multiplies after the short-trip floor and before time_scale', () => {
+      const result = missionDuration({
+        totalDistance: 100,
+        mobility: 10,
+        durationK: 2,
+        timeScale: 0.5,
+        classCutoffs: cutoffs,
+        ...short,
+        stretch: 3,
+      });
+      expect(result.durationSeconds).toBe(300 * 3 * 0.5);
+    });
+
+    it('stretch 1 or absent leaves the value unchanged', () => {
+      const input = {
+        totalDistance: 100,
+        mobility: 10,
+        durationK: 2,
+        timeScale: 0.5,
+        classCutoffs: cutoffs,
+        ...short,
+      };
+      expect(missionDuration({ ...input, stretch: 1 })).toEqual(missionDuration(input));
+    });
+
+    it('stretch changes the class', () => {
+      const input = {
+        totalDistance: 600,
+        mobility: 1,
+        durationK: 1,
+        timeScale: 1,
+        classCutoffs: cutoffs,
+      };
+      expect(missionDuration(input).durationClass).toBe('fast');
+      expect(missionDuration({ ...input, stretch: 4 }).durationClass).toBe('long');
+    });
+
+    it('a fractional stretch rounds once, before time_scale', () => {
+      const result = missionDuration({
+        totalDistance: 100,
+        mobility: 1,
+        durationK: 1,
+        timeScale: 2,
+        classCutoffs: cutoffs,
+        stretch: 0.85,
+      });
+      expect(result.durationSeconds).toBe(Math.round(100 * 0.85) * 2);
+    });
+  });
 });

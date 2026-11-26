@@ -4,6 +4,7 @@ import { headCountOf } from '../economy/reward.calculator.js';
 import type { InstalledPart } from '../parts/part.types.js';
 import { rawMobility } from '../ships/sheet.deriver.js';
 import type { ShipSheet } from '../ships/sheet.types.js';
+import { specialtyOf } from './mission-specialty.js';
 
 export type RequirementReasonCode =
   | 'CARGO_TYPE'
@@ -15,7 +16,8 @@ export type RequirementReasonCode =
   | 'MINER'
   | 'SPEED'
   | 'RACE_SPEED'
-  | 'FUEL_CAPACITY';
+  | 'FUEL_CAPACITY'
+  | 'ESCORT_STRENGTH';
 
 export interface RequirementReason {
   code: RequirementReasonCode;
@@ -63,6 +65,11 @@ const RACE_SPEED: RequirementReason = {
   message: 'Mobility is below the race entry minimum.',
 };
 
+const ESCORT_STRENGTH: RequirementReason = {
+  code: 'ESCORT_STRENGTH',
+  message: 'The ship is too weak to protect this client.',
+};
+
 const ESCORT_MOBILITY_MIN = 2;
 
 /**
@@ -82,6 +89,8 @@ export interface MissionRequirementInput {
   readonly requirements?: unknown;
   readonly sheet: ShipSheet;
   readonly parts: readonly InstalledPart[];
+  /** The route's highest danger (0..10): an escort's need grows with it. */
+  readonly peakDanger: number;
 }
 
 interface RequirementHints {
@@ -129,7 +138,7 @@ function parseHints(requirements: unknown): RequirementHints {
 
 /** What a numeric requirement compares: the ship has `actual` of `needed` (mobility in game units,
     unrounded — the web shows it on the display scale, like the ship sheet). */
-export type RequirementUnit = 'mobility' | 'cargo' | 'mining' | 'fuel' | 'passengers';
+export type RequirementUnit = 'mobility' | 'cargo' | 'mining' | 'fuel' | 'passengers' | 'combat';
 
 export interface RequirementCheck extends RequirementReason {
   met: boolean;
@@ -185,19 +194,30 @@ export function missionRequirementChecklist(
     unit,
   });
 
+  // The specialty minimum replaces the hard "enough" check for the types whose time follows the ship.
+  const verdict = specialtyOf(
+    missionType,
+    { requirements: input.requirements, peakDanger: input.peakDanger },
+    sheet,
+    rules,
+  );
+  const minimum = verdict?.minimum ?? 0;
+
   switch (missionType) {
     case 'DELIVERY':
-      return [numeric(CARGO_TYPE, 'cargo', cargoNeeded, sheet.crg)];
+      // A hold below the load is flown in trips; only a hold under the minimum share of it is refused.
+      return [numeric(CARGO_TYPE, 'cargo', minimum, sheet.crg)];
     case 'TRANSPORT':
       return [
         { ...PRESSURIZED_LIFE_SUPPORT, met: hasCabin },
-        numeric(PASSENGER_SEATS, 'passengers', hints.passengers, sheet.pax),
-        numeric(LIFE_SUPPORT_CAPACITY, 'passengers', hints.passengers, sheet.lifeCap),
+        numeric(PASSENGER_SEATS, 'passengers', minimum, sheet.pax),
+        numeric(LIFE_SUPPORT_CAPACITY, 'passengers', minimum, sheet.lifeCap),
       ];
     case 'ESCORT':
       return [
         { ...WEAPONS, met: hasWeapon },
         numeric(MIN_MOBILITY, 'mobility', unroundedThreshold(ESCORT_MOBILITY_MIN), mobility),
+        numeric(ESCORT_STRENGTH, 'combat', minimum, verdict?.have ?? 0),
       ];
     case 'MINING':
       return [

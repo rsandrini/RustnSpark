@@ -379,7 +379,8 @@ export class DispatchService {
         select: { requirements: true },
       });
       const terms = cargoTermsOf(mission.type, template?.requirements, rules);
-      const load = terms === null ? null : cargoLoadFor(terms, sheet.crg);
+      const load =
+        terms === null ? null : cargoLoadFor(terms, sheet.crg, rules.specialty.delivery.min_ratio);
       const hold = await loadHold(
         tx,
         playerId,

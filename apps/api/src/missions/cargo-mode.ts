@@ -44,16 +44,21 @@ export interface CargoLoad {
   readonly fits: boolean;
 }
 
-/** What the mission loads, given the ship's cargo space (the pilot's goods take none). */
-export function cargoLoadFor(terms: CargoTerms, capacity: number): CargoLoad {
+/**
+ * What the mission loads, given the ship's cargo space (the pilot's goods take none). A hold below the load but at
+ * or above `minRatio` of it still fits: the load is flown in trips (time only), and each trip carries what the
+ * hold takes, so `units` never exceeds the cargo space.
+ */
+export function cargoLoadFor(terms: CargoTerms, capacity: number, minRatio: number): CargoLoad {
   const room = capacity;
+  const fits = room >= terms.need * minRatio;
   switch (terms.mode) {
     case 'min':
-      return { units: 0, fits: capacity >= terms.need };
+      return { units: 0, fits };
     case 'fixed':
-      return { units: terms.need, fits: room >= terms.need };
+      return { units: Math.min(terms.need, room), fits };
     case 'open':
-      return { units: Math.max(terms.need, room), fits: room >= terms.need };
+      return { units: room, fits };
   }
 }
 

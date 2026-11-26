@@ -13,6 +13,8 @@ export interface MissionDurationInput {
   readonly shortTripMinSeconds?: number;
   /** A trip shorter than this is not floored at all (the first mission's test pad). */
   readonly shortTripExemptBelow?: number;
+  /** The specialty time multiplier (1 = as flown); applied after the short-trip floor, before `timeScale`. */
+  readonly stretch?: number;
   readonly classCutoffs: Readonly<Record<string, number>>;
 }
 
@@ -37,7 +39,7 @@ export function missionDuration(input: MissionDurationInput): MissionDuration {
     input.totalDistance < input.shortTripBelow &&
     input.totalDistance >= (input.shortTripExemptBelow ?? 0);
   const rounded = short ? Math.max(flown, input.shortTripMinSeconds) : flown;
-  const durationSeconds = rounded * input.timeScale;
+  const durationSeconds = Math.round(rounded * (input.stretch ?? 1)) * input.timeScale;
   return {
     durationSeconds,
     durationClass: classify(durationSeconds, input.classCutoffs),

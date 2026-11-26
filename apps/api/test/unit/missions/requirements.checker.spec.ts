@@ -10,18 +10,29 @@ import { deriveSheet } from '../../../src/ships/sheet.deriver.js';
 import { buildInstalled } from '../ships/fixtures/catalog.js';
 
 const rules = GAME_CONFIG_DEFAULTS;
+// The fixture ships are small (combat 0.012 of the reference), so the escort strength minimum is lowered for the
+// tests that are about something else than strength.
+const LENIENT = {
+  ...rules,
+  specialty: { ...rules.specialty, escort: { ...rules.specialty.escort, min_ratio: 0.05 } },
+};
 
 function check(
   missionType: MissionType,
   parts: ReturnType<typeof buildInstalled>,
   requirements?: unknown,
+  peakDanger = 0,
+  gameRules = rules,
 ): {
   eligible: boolean;
   reasons: { code: string }[];
   checklist: { code: string; message: string; met: boolean }[];
 } {
   const sheet = deriveSheet(parts, rules);
-  return checkMissionRequirements({ missionType, requirements, sheet, parts: parts }, rules);
+  return checkMissionRequirements(
+    { missionType, requirements, sheet, parts: parts, peakDanger },
+    gameRules,
+  );
 }
 
 function codes(result: { reasons: { code: string }[] }): string[] {
@@ -133,7 +144,7 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
 
   it('fails DELIVERY with CARGO_TYPE when cargo capacity is insufficient', () => {
     expect(codes(check('DELIVERY', buildInstalled(NO_CARGO)))).toEqual(['CARGO_TYPE']);
-    expect(codes(check('DELIVERY', buildInstalled(STARTER), { cargo: 40 }))).toEqual([
+    expect(codes(check('DELIVERY', buildInstalled(STARTER), { cargo: 41 }))).toEqual([
       'CARGO_TYPE',
     ]);
   });
@@ -184,23 +195,23 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
       ]);
     });
 
-    it('too few seats names PASSENGER_SEATS with needed 4 and actual 2', () => {
-      const result = check('TRANSPORT', cabin(2, 6), { passengers: 4 });
+    it('too few seats names PASSENGER_SEATS with the minimum (2 of 4) needed and actual 1', () => {
+      const result = check('TRANSPORT', cabin(1, 6), { passengers: 4 });
       expect(codes(result)).toEqual(['PASSENGER_SEATS']);
       expect(result.checklist.find((entry) => entry.code === 'PASSENGER_SEATS')).toMatchObject({
         met: false,
-        needed: 4,
-        actual: 2,
+        needed: 2,
+        actual: 1,
         unit: 'passengers',
       });
     });
 
     it('too little life-support capacity names LIFE_SUPPORT_CAPACITY', () => {
-      const result = check('TRANSPORT', cabin(4, 3), { passengers: 4 });
+      const result = check('TRANSPORT', cabin(4, 1), { passengers: 4 });
       expect(codes(result)).toEqual(['LIFE_SUPPORT_CAPACITY']);
       expect(
         result.checklist.find((entry) => entry.code === 'LIFE_SUPPORT_CAPACITY'),
-      ).toMatchObject({ needed: 4, actual: 3, unit: 'passengers' });
+      ).toMatchObject({ needed: 2, actual: 1, unit: 'passengers' });
     });
 
     it('a cabin without life support fails PRESSURIZED_LIFE_SUPPORT', () => {
@@ -210,8 +221,8 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
       ]);
     });
 
-    it('the offer cargo head count joins the template requirements, so a 2-seat ship is unmet for 4 and met without it', () => {
-      const ship = cabin(2, 6);
+    it('the offer cargo head count joins the template requirements, so a 1-seat ship is unmet for 4 and met without it', () => {
+      const ship = cabin(1, 6);
       const sheet = deriveSheet(ship, rules);
       const run = (cargo: unknown) =>
         checkMissionRequirements(
@@ -220,14 +231,15 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
             requirements: offerRequirements({ originFactions: ['luna'] }, cargo),
             sheet,
             parts: ship,
+            peakDanger: 0,
           },
           rules,
         );
       const group = run({ passengers: 4 });
       expect(group.reasons.map((reason) => reason.code)).toEqual(['PASSENGER_SEATS']);
       expect(group.checklist.find((entry) => entry.code === 'PASSENGER_SEATS')).toMatchObject({
-        needed: 4,
-        actual: 2,
+        needed: 2,
+        actual: 1,
       });
       expect(run({}).eligible).toBe(true);
     });
@@ -236,18 +248,24 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
       expect(check('TRANSPORT', cabin(1, 1)).eligible).toBe(true);
       expect(check('TRANSPORT', cabin(1, 1), { passengers: 0 }).eligible).toBe(true);
       expect(check('TRANSPORT', cabin(1, 1), { passengers: 2.5 }).eligible).toBe(true);
-      expect(check('TRANSPORT', cabin(1, 1), { passengers: 2 }).eligible).toBe(false);
+      expect(check('TRANSPORT', cabin(1, 1), { passengers: 3 }).eligible).toBe(false);
     });
   });
 
   it('passes ESCORT with weapons and mobility, failing each dimension separately', () => {
-    expect(check('ESCORT', buildInstalled(ARMED_MOBILE)).eligible).toBe(true);
+    expect(check('ESCORT', buildInstalled(ARMED_MOBILE), undefined, 0, LENIENT).eligible).toBe(
+      true,
+    );
 
     // No weapons (starter has pdf 0) but mobility is fine.
-    expect(codes(check('ESCORT', buildInstalled(STARTER)))).toEqual(['WEAPONS']);
+    expect(codes(check('ESCORT', buildInstalled(STARTER), undefined, 0, LENIENT))).toEqual([
+      'WEAPONS',
+    ]);
 
     // Armed but too slow.
-    expect(codes(check('ESCORT', buildInstalled(ARMED_SLOW)))).toEqual(['MIN_MOBILITY']);
+    expect(codes(check('ESCORT', buildInstalled(ARMED_SLOW), undefined, 0, LENIENT))).toEqual([
+      'MIN_MOBILITY',
+    ]);
   });
 
   it('passes MINING with a rig and cargo, failing miner and cargo separately', () => {
@@ -314,7 +332,7 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
   });
 
   it('ignores placement-filter keys mixed into the requirements JSON', () => {
-    const mixed = { originFactions: ['luna'], originTypes: ['port'], cargo: 40 };
+    const mixed = { originFactions: ['luna'], originTypes: ['port'], cargo: 41 };
     expect(codes(check('DELIVERY', buildInstalled(STARTER), mixed))).toEqual(['CARGO_TYPE']);
     expect(
       check('DELIVERY', buildInstalled(DEEP_CARGO), {
@@ -334,6 +352,7 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
       'MIN_MOBILITY',
       'MINER',
       'SPEED',
+      'ESCORT_STRENGTH',
     ]);
     const types: MissionType[] = ['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING', 'RESCUE'];
     for (const type of types) {
@@ -375,12 +394,12 @@ describe('S6.3 — full requirement checklist (met and unmet), round 10', () => 
   it('DELIVERY checklist reports cargo met or unmet, never omitted on success', () => {
     const ok = check('DELIVERY', buildInstalled(STARTER));
     expect(ok.checklist).toMatchObject([
-      { code: 'CARGO_TYPE', met: true, unit: 'cargo', needed: 1 },
+      { code: 'CARGO_TYPE', met: true, unit: 'cargo', needed: 0.25 },
     ]);
 
     const bad = check('DELIVERY', buildInstalled(NO_CARGO));
     expect(bad.checklist).toMatchObject([
-      { code: 'CARGO_TYPE', met: false, unit: 'cargo', needed: 1, actual: 0 },
+      { code: 'CARGO_TYPE', met: false, unit: 'cargo', needed: 0.25, actual: 0 },
     ]);
   });
 
@@ -390,6 +409,7 @@ describe('S6.3 — full requirement checklist (met and unmet), round 10', () => 
       { code: 'WEAPONS', met: false },
       // needs "mobility 2" = 1.5 unrounded; the starter has 1.6
       { code: 'MIN_MOBILITY', met: true, unit: 'mobility', needed: 1.5, actual: 1.6 },
+      { code: 'ESCORT_STRENGTH', met: false, unit: 'combat' },
     ]);
   });
 
@@ -432,5 +452,78 @@ describe('fuelCapacityCheck: a trip longer than the tank is a warning row', () =
   it('is met when the tank holds the whole trip (it may still need refuelling first)', () => {
     expect(fuelCapacityCheck(300, 300).met).toBe(true);
     expect(fuelCapacityCheck(120, 300).met).toBe(true);
+  });
+});
+
+describe('item 1 - the checklist follows the specialty minimum', () => {
+  const cabinShip = (pax: number, lifeCap: number): ReturnType<typeof buildInstalled> =>
+    withCabinFlags(STARTER, { pressurized: true, lifeSupport: true, pax, lifeCap });
+
+  it('transport needs only the minimum seats', () => {
+    const result = check('TRANSPORT', cabinShip(3, 3), { passengers: 5 });
+    expect(result.eligible).toBe(true);
+    expect(result.checklist.find((entry) => entry.code === 'PASSENGER_SEATS')).toMatchObject({
+      met: true,
+      needed: 3,
+    });
+  });
+
+  it('transport short on life support names it', () => {
+    const result = check('TRANSPORT', cabinShip(6, 2), { passengers: 6 });
+    expect(codes(result)).toEqual(['LIFE_SUPPORT_CAPACITY']);
+  });
+
+  it('transport below the minimum seats is refused with PASSENGER_SEATS', () => {
+    expect(codes(check('TRANSPORT', cabinShip(2, 6), { passengers: 6 }))).toEqual([
+      'PASSENGER_SEATS',
+    ]);
+  });
+
+  it('escort lists ESCORT_STRENGTH with combat units, after WEAPONS and MIN_MOBILITY', () => {
+    const result = check('ESCORT', buildInstalled(ARMED_MOBILE), undefined, 10);
+    expect(result.checklist.map((entry) => entry.code)).toEqual([
+      'WEAPONS',
+      'MIN_MOBILITY',
+      'ESCORT_STRENGTH',
+    ]);
+    // need = 0.05 + 0.02 * 10 = 0.25; minimum = 0.125
+    expect(result.checklist[2]).toMatchObject({
+      code: 'ESCORT_STRENGTH',
+      unit: 'combat',
+      needed: 0.125,
+    });
+  });
+
+  it('an escort with a weapon but too weak is ineligible', () => {
+    const result = check('ESCORT', buildInstalled(ARMED_MOBILE), undefined, 10);
+    expect(result.eligible).toBe(false);
+    expect(codes(result)).toContain('ESCORT_STRENGTH');
+  });
+
+  it('a safe route asks less: the same ship passes with a lower minimum', () => {
+    expect(check('ESCORT', buildInstalled(ARMED_MOBILE), undefined, 0, LENIENT).eligible).toBe(
+      true,
+    );
+  });
+
+  it('delivery is refused only below the minimum share of the load', () => {
+    // starter hold is 10: load 40 -> minimum 10 (met, flown in trips); load 41 -> minimum 10.25 (refused)
+    expect(check('DELIVERY', buildInstalled(STARTER), { cargo: 40 }).eligible).toBe(true);
+    expect(codes(check('DELIVERY', buildInstalled(STARTER), { cargo: 41 }))).toEqual([
+      'CARGO_TYPE',
+    ]);
+  });
+
+  it('mining keeps the hard cargo check', () => {
+    const rig = [
+      'bridge',
+      'engine_chem_small',
+      'tank_small',
+      'battery_small',
+      'mining_rig',
+      'cargo',
+      'hull',
+    ];
+    expect(codes(check('MINING', buildInstalled(rig), { cargo: 40 }))).toEqual(['CARGO_TYPE']);
   });
 });

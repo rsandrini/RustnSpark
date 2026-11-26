@@ -8,6 +8,7 @@ describe('fixOf', () => {
     ['PASSENGER_SEATS', 'CARGO'],
     ['LIFE_SUPPORT_CAPACITY', 'UTILITY'],
     ['WEAPONS', 'WEAPON'],
+    ['ESCORT_STRENGTH', 'WEAPON'],
     ['MIN_MOBILITY', 'ENGINE'],
     ['SPEED', 'ENGINE'],
     ['RACE_SPEED', 'ENGINE'],

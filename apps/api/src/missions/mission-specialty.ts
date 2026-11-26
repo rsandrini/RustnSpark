@@ -88,7 +88,7 @@ export const SPECIALTY_TABLE: Readonly<Record<MissionType, SpecialtyRow | null>>
   ESCORT: {
     stat: 'combat',
     curve: 'power',
-    blocker: 'ESCORT_STRENGTH' as RequirementReasonCode,
+    blocker: 'ESCORT_STRENGTH',
     wholeUnits: false,
     knobs: (rules) => rules.specialty.escort,
     needOf: (offer, knobs) => (knobs.reference ?? 0) + (knobs.per_danger ?? 0) * offer.peakDanger,
