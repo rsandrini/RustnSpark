@@ -7,6 +7,8 @@ Decisions of 2026-11-26: the real tutorial is dropped (item 3); the port as a pl
 
 ## 1. Missions follow the ship's own specialty (transport, escort, delivery, race)
 
+- **Owner, 2026-11-26: keep the escort defaults as they are** (`specialty.escort.per_danger` stays 0.015); tune live from Admin if needed. The sim gate result below stands as measured.
+
 - [ ] The mining rework (v0.1.3 item 8) sets the pattern: a mission's time and difficulty come from the ship's stat that matters for it,
       so a prepared ship does the job faster and a weak one slower, or not at all. Owner will plan each type later. First guesses:
       transport from cargo (a load above the hold needs several trips), escort from firepower and defense, delivery and race from
@@ -73,6 +75,9 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 - [ ] **Fight in a zone** (decided 2026-11-23): waves of pirates with a target; a score is kept and a partial result that reaches the target is still a victory. Seed of the v0.2 War idea (factions conquering zones): for now only the fight, no faction points.
 - [ ] **Repair something:** may need a specialized tool fitted on the ship.
 - [ ] Others of the same kind (each subtype asks for the part that fits it, like mining asks for a drill).
+
+- **Decisions (owner, 2026-11-26) for explore, repair and fight: take the recommendations of `docs/superpowers/plans/2026-11-26-new-mission-types-options.md`** (explore with the radar the store sells, paid by the area; repair with a new Repair Rig part; fight as waves on site, a share of the pay below the target; build order explore, repair, fight). The owner wrote "okay?": confirm if any of the six questions needs another answer (the fee of item 11 on a fight contract is still open).
+- **Tank cargo:** the owner asked for proposals; the plan is `docs/superpowers/plans/2026-11-26-tank-cargo-missions.md` (in progress).
 
 ### 5c. Review the map distances
 
@@ -146,6 +151,8 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
   whether a cheap used hull is sold; the neutral price relation (worse prices and what else); whether the pilot can join a faction
   later and how; the guide and the opening for this mode; ranking (a separate board or the same); the sim to tune the scrap economy.
 - Open question for the owner: is "start with nothing" a choice on the faction screen (a fourth card) or a separate "hard mode" switch?
+- **Decisions (owner, 2026-11-26): use the defaults, except the prices.** Entry = a fourth card on the faction screen ("Independent"); start place = the ports of the safe core zones 0 and 1, the pilot picks one; earns by scavenging at the start place and selling scrap at the fixed price; first ship = buy parts and assemble (the sim sets the minimal ship price); all missions at normal pay; can join a faction later (one-way, no penalty); a separate "Independent" ranking board. **Prices: no penalty and no discount for an independent** (the neutral relation, factor 1.0). Prices already depend on the player's relation to the place's faction (`economy.faction_mult`: ally 0.8, neutral 1.0, hostile 2.5; the seed has no ally and nobody lists itself, so buying in your own faction's port gets no discount today): see item 13 for the own-faction discount.
+
 
 ## 10. Turn old parts into scrap, with a chance of more scrap by health and quality (owner, 2026-11-25)
 
@@ -179,6 +186,13 @@ Owner, about adding escort/mining templates at places that lack them, and the pi
 - [ ] Pirate places (`veil`, `drift`) get FEWER offers on their boards than other places of their size and favour MINING offers (they are good mining places). No new escort templates there.
 - [ ] Likely shape: an Admin knob for a board-size factor per faction/place tag. First guess: board size = 50% of the normal for the place detail, mining preferred in the board composition. Extend `apps/api/src/missions/board-composition.ts` and `board-size.ts`.
 - [ ] Needs a small plan. Sim check: income per hour must not regress.
+
+## 13. A 10% discount for buying in a port of your own faction (owner, 2026-11-26) - *not started*
+
+Prices already depend on the relation of the player's faction to the place's faction (`economy.faction_mult` in `pricing.service.ts` / `price.calculator.ts`: ally 0.8, neutral 1.0, hostile 2.5, same for buy, sell and repair). Nobody is `ally` in the seed and a faction does not list itself, so your own faction's ports charge the neutral price today.
+
+- [ ] Add an `own` relation: when the place's faction is the player's own faction, apply `economy.faction_mult.own` = 0.9 (an Admin knob, DB wins; check that selling stays below the cheapest purchase so the haul and repair loops stay closed: sell uses `min(1, isolation x faction)`, so a discount does not raise sell prices). Independent pilots (item 9) are never "own": no discount. Needs the sim (it changes costs).
+- [ ] Decide with it whether the discount applies to fuel and repair too (`repair-cost.calculator.ts` and refuel use the same factor).
 
 ## Bugs found testing v0.1.4 in prod
 
