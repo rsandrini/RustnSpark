@@ -397,7 +397,7 @@ button.kit-blocker:hover {
   border: 1px solid var(--rule);
   overflow: hidden;
   /* the native thumb's border-box width; the positions below put its centre on the fill and tick */
-  --thumb: 12px;
+  --thumb: 16px;
   --span: max(0px, calc(100% - var(--from, 0%) - var(--thumb)));
   --x-now: calc(var(--from, 0%) + var(--thumb) / 2 + var(--span) * var(--now, 0));
   --x-to: calc(var(--from, 0%) + var(--thumb) / 2 + var(--span) * var(--to, 0));
@@ -422,15 +422,22 @@ button.kit-blocker:hover {
 .cslider.fuel .cslider-fill {
   background: var(--brass);
 }
+.cslider.fuel .cslider-add {
+  background: var(--info);
+}
 .cslider-add {
   left: var(--x-now);
   width: calc(var(--x-to) - var(--x-now));
-  background: repeating-linear-gradient(
-    45deg,
-    color-mix(in oklab, var(--ink-2, var(--ink)) 38%, transparent) 0 4px,
-    color-mix(in oklab, var(--ink-2, var(--ink)) 12%, transparent) 4px 8px
-  );
+  background: var(--info);
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink-2, var(--ink)) 40%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cslider-fill,
+  .cslider-add {
+    transition:
+      width 1s ease-out,
+      left 1s ease-out;
+  }
 }
 .cslider-tick {
   position: absolute;
@@ -466,18 +473,20 @@ button.kit-blocker:hover {
   appearance: none;
   box-sizing: border-box;
   width: var(--thumb);
-  height: 18px; /* the track's inner height: 20px less its two 1px borders */
-  border-radius: 2px;
+  height: 16px;
+  border-radius: 50%;
   background: var(--paper);
   border: 2px solid var(--ink);
+  box-shadow: 0 1px 3px color-mix(in oklab, var(--ink) 35%, transparent);
 }
 .cslider-input::-moz-range-thumb {
   box-sizing: border-box;
   width: var(--thumb);
-  height: 18px; /* the track's inner height: 20px less its two 1px borders */
-  border-radius: 2px;
+  height: 16px;
+  border-radius: 50%;
   background: var(--paper);
   border: 2px solid var(--ink);
+  box-shadow: 0 1px 3px color-mix(in oklab, var(--ink) 35%, transparent);
 }
 .cslider-track:focus-within {
   /* on the track itself: an outline is drawn outside its own box, so overflow:hidden does not clip it */
@@ -533,6 +542,14 @@ button.kit-blocker:hover {
 }
 .tank-fill {
   fill: var(--brass);
+  transform-box: fill-box;
+  transform-origin: bottom;
+  transform: scaleY(var(--level, 0));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tank-fill {
+    transition: transform 1s ease-out;
+  }
 }
 .tank-target {
   stroke: var(--ink);

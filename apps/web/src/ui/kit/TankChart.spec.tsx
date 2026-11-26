@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { TankChart } from './TankChart';
 
 const base = { fuel: 45, capacity: 120, caption: 'Fuel is shared by all tanks', label: 'Tanks' };
@@ -62,5 +64,22 @@ describe('TankChart', () => {
         name: 'Tanks: 45 of 120 fuel, 3 tanks. Fuel is shared by all tanks',
       }),
     ).toBeInTheDocument();
+  });
+
+  it('scales a full-height fill by --level (animatable)', () => {
+    render(<TankChart {...base} fuel={50} capacity={100} tanks={[{ id: 'a', capacity: 100 }]} />);
+    const fill = screen.getByTestId('tank-fill');
+    const glyph = screen.getByTestId('tank-glyph');
+    expect(fill.style.getPropertyValue('--level')).toBe('0.5');
+    expect(Number(fill.getAttribute('height'))).toBe(Number(glyph.dataset.height) - 2);
+  });
+
+  it('styles the fill with scaleY and a reduced-motion-guarded transition', () => {
+    const css = readFileSync(join(__dirname, '../../styles/kit.css'), 'utf8');
+    expect(css).toMatch(/\.tank-fill\s*\{[^}]*transform-box:\s*fill-box/);
+    expect(css).toMatch(/\.tank-fill\s*\{[^}]*transform:\s*scaleY\(var\(--level/);
+    expect(css).toMatch(
+      /prefers-reduced-motion: no-preference\) \{(?:[^{}]|\{[^}]*\})*\.tank-fill\s*\{[^}]*transition:\s*transform 1s ease-out/,
+    );
   });
 });

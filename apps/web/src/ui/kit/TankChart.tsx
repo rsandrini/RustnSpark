@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 export interface TankChartTank {
   id: string;
   capacity: number;
@@ -50,7 +52,6 @@ export function TankChart({
       <div className="tank-chart-row" aria-hidden="true">
         {tanks.map((tank) => {
           const height = Math.max(MIN_HEIGHT, (tank.capacity / largest) * MAX_HEIGHT);
-          const filled = height * level;
           return (
             <div className="tank-chart-item" key={tank.id}>
               <svg
@@ -73,10 +74,11 @@ export function TankChart({
                   className="tank-fill"
                   data-testid="tank-fill"
                   data-fraction={level}
+                  style={{ '--level': level } as CSSProperties}
                   x={2}
-                  y={MAX_HEIGHT + 1 - filled}
+                  y={MAX_HEIGHT + 2 - height}
                   width={WIDTH - 4}
-                  height={filled}
+                  height={height - 2}
                   rx={3}
                 />
                 {targetLevel !== null && (

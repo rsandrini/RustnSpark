@@ -99,4 +99,56 @@ describe('ConditionSlider', () => {
     render(<ConditionSlider {...props} current={99.5} value={99.5} />);
     expect(screen.getByRole<HTMLInputElement>('slider').min).toBe('99.5');
   });
+
+  describe('repair and refuel bar styling', () => {
+    const kit = readFileSync(join(__dirname, '../../styles/kit.css'), 'utf8');
+    const rule = (css: string, sel: string) => {
+      const m = css.match(
+        new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}'),
+      );
+      return m?.[1] ?? '';
+    };
+
+    it('has a 16px round thumb', () => {
+      expect(kit).toMatch(/--thumb:\s*16px/);
+      for (const sel of [
+        '.cslider-input::-webkit-slider-thumb',
+        '.cslider-input::-moz-range-thumb',
+      ]) {
+        const body = rule(kit, sel);
+        expect(body).toMatch(/border-radius:\s*50%/);
+        expect(body).toMatch(/height:\s*16px/);
+      }
+    });
+
+    it('paints the target segment solid info, not hatched', () => {
+      const body = kit.match(/\n\.cslider-add\s*\{([^}]*left:\s*var\(--x-now\)[^}]*)\}/)?.[1] ?? '';
+      expect(body).toMatch(/background:\s*var\(--info\)/);
+      expect(body).not.toMatch(/repeating-linear-gradient/);
+      expect(rule(kit, '.cslider.fuel .cslider-add')).toMatch(/background:\s*var\(--info\)/);
+      expect(rule(kit, '.cslider.fuel .cslider-fill')).toMatch(/var\(--brass\)/);
+    });
+
+    it('animates fill and target only when motion is allowed', () => {
+      const m = kit.match(
+        /@media \(prefers-reduced-motion: no-preference\) \{(?:[^{}]|\{[^}]*\})*?\.cslider-fill(?:[^{}]|\{[^}]*\})*\}/,
+      );
+      expect(m).not.toBeNull();
+      const block = m![0];
+      expect(block).toMatch(/\.cslider-add/);
+      expect(block).toMatch(
+        /transition:[^;]*width[^;]*left[^;]*1s|transition:[^;]*left[^;]*width[^;]*1s/,
+      );
+    });
+
+    it('keeps the thumb on the fill edge at fuel 40% and at 0', () => {
+      expect(thumbCentre(40, 0, 16, 300)).toBe(128);
+      expect(thumbCentre(0, 1, 16, 300)).toBe(292);
+    });
+
+    it('does not override the range width in the refuel panel', () => {
+      const port = readFileSync(join(__dirname, '../../styles/port.css'), 'utf8');
+      expect(rule(port, ".refuel-panel input[type='range']")).not.toMatch(/width/);
+    });
+  });
 });
