@@ -6,6 +6,7 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import { GameConfigRepository } from '../../../src/config/game-config.repository.js';
 import { GameConfigService, hashGameRules } from '../../../src/config/game-config.service.js';
 import { ConfigNotLoadedError, type GameRules } from '../../../src/config/game-config.types.js';
+import { validateGameRules } from '../../../src/config/game-rules.schema.js';
 import { PrismaService } from '../../../src/prisma/prisma.service.js';
 
 type MockedRepository = jest.Mocked<
@@ -79,6 +80,7 @@ describe('hashGameRules', () => {
       race: GAME_CONFIG_DEFAULTS.race,
       rescue: GAME_CONFIG_DEFAULTS.rescue,
       escort: GAME_CONFIG_DEFAULTS.escort,
+      specialty: GAME_CONFIG_DEFAULTS.specialty,
       ship_profile: GAME_CONFIG_DEFAULTS.ship_profile,
       missions: GAME_CONFIG_DEFAULTS.missions,
       scavenging: GAME_CONFIG_DEFAULTS.scavenging,
@@ -108,5 +110,54 @@ describe('GameConfigService cache', () => {
 
   it('throws ConfigNotLoadedError before refresh() is called', () => {
     expect(() => service.snapshot()).toThrow(ConfigNotLoadedError);
+  });
+});
+
+describe('specialty rules', () => {
+  function withSpecialty(patch: (specialty: Record<string, Record<string, number>>) => void) {
+    const rules = structuredClone(GAME_CONFIG_DEFAULTS) as unknown as {
+      specialty: Record<string, Record<string, number>>;
+    };
+    patch(rules.specialty);
+    return rules;
+  }
+
+  it('rejects a specialty min_ratio below 0.05 or above 1', () => {
+    for (const type of ['transport', 'escort', 'delivery']) {
+      for (const bad of [0.04, 1.01]) {
+        const rules = withSpecialty((s) => {
+          (s[type] as Record<string, number>)['min_ratio'] = bad;
+        });
+        expect(() => validateGameRules(rules)).toThrow();
+      }
+    }
+  });
+
+  it('rejects escort fastest above 1', () => {
+    const rules = withSpecialty((s) => {
+      (s['escort'] as Record<string, number>)['fastest'] = 1.01;
+    });
+    expect(() => validateGameRules(rules)).toThrow();
+  });
+
+  it('a DB without specialty keys falls back to the defaults', async () => {
+    const repository = buildMockRepository();
+    repository.findAll.mockResolvedValue([]);
+    repository.findSnapshotByHash.mockResolvedValue({} as never);
+    repository.findLatestRevision.mockResolvedValue(null);
+    const module = await Test.createTestingModule({
+      providers: [
+        GameConfigService,
+        { provide: GameConfigRepository, useValue: repository },
+        { provide: PrismaService, useValue: {} },
+        { provide: REDIS_CLIENT, useValue: buildMockRedis() },
+      ],
+    }).compile();
+    const service = module.get(GameConfigService);
+    await service.refresh();
+    const { specialty } = service.snapshot().rules;
+    expect(specialty.escort.reference).toBe(0.05);
+    expect(specialty.transport.min_ratio).toBe(0.5);
+    expect(specialty.delivery.min_ratio).toBe(0.25);
   });
 });

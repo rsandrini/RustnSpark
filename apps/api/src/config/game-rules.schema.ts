@@ -315,6 +315,18 @@ const escortSchema = z.object({
   client_target_share: z.number().min(0).max(1),
 });
 
+const specialtySchema = z.object({
+  transport: z.object({ min_ratio: z.number().min(0.05).max(1) }),
+  delivery: z.object({ min_ratio: z.number().min(0.05).max(1) }),
+  escort: z.object({
+    min_ratio: z.number().min(0.05).max(1),
+    exponent: z.number().min(0).max(3),
+    fastest: z.number().min(0.3).max(1),
+    reference: z.number().min(0.01).max(1),
+    per_danger: z.number().min(0).max(0.2),
+  }),
+});
+
 const shipProfileSchema = z.object({
   ref_cargo: z.number().min(1).max(1000000),
   ref_passengers: z.number().min(1).max(1000000),
@@ -442,6 +454,7 @@ const gameRulesSchema = z.object({
   race: raceSchema,
   rescue: rescueSchema,
   escort: escortSchema,
+  specialty: specialtySchema,
   ship_profile: shipProfileSchema,
   missions: missionsSchema,
   scavenging: scavengingSchema,

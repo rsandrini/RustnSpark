@@ -231,6 +231,9 @@ const EXPECTED_KEYS: readonly string[] = [
   'ship_profile.ref_range',
   'ship_profile.second_min',
   'ship_profile.second_share',
+  'specialty.delivery',
+  'specialty.escort',
+  'specialty.transport',
   'stance.neutral_attack_ratio',
   'stance.rating_armor_weight',
   'wear.base_max',
@@ -284,6 +287,7 @@ const EXPECTED_GROUPS: readonly string[] = [
   'scavenging',
   'ship',
   'ship_profile',
+  'specialty',
   'stance',
   'wear',
   'world',
@@ -327,6 +331,15 @@ describe('config registry', () => {
     expect(isValidConfigKey('combat.dodge_factor')).toBe(true);
     expect(isValidConfigKey('invalid.key')).toBe(false);
   });
+  it('registers specialty.delivery, specialty.escort and specialty.transport with en and pt-BR', () => {
+    for (const key of ['specialty.delivery', 'specialty.escort', 'specialty.transport']) {
+      const entry = getRegistryEntry(key);
+      expect(entry?.type).toBe('json');
+      expect(entry?.description.en).toMatch(/\S/);
+      expect(entry?.description['pt-BR']).toMatch(/\S/);
+    }
+  });
+
   describe('mining rework keys (v0.1.3)', () => {
     it('carry the calibrated defaults', () => {
       const mining = GAME_CONFIG_DEFAULTS.mining;

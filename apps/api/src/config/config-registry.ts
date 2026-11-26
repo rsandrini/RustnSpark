@@ -2309,6 +2309,45 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'specialty.transport',
+    group: 'specialty',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.specialty.transport),
+    description: {
+      en: 'Passenger jobs. min_ratio (0.05 to 1): below this share of the group the ship cannot take the job; a group above the ship passenger capacity is flown in trips (time only).',
+      'pt-BR':
+        'Trabalhos de passageiros. min_ratio (0,05 a 1): abaixo desta fração do grupo a nave não pode aceitar o trabalho; um grupo maior que a capacidade de passageiros da nave é levado em viagens (só tempo).',
+    },
+  },
+  {
+    key: 'specialty.delivery',
+    group: 'specialty',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.specialty.delivery),
+    description: {
+      en: 'Cargo deliveries. min_ratio (0.05 to 1): below this share of the load the hold cannot take the job; a load above the hold is flown in trips (time only).',
+      'pt-BR':
+        'Entregas de carga. min_ratio (0,05 a 1): abaixo desta fração da carga o porão não pode aceitar o trabalho; uma carga maior que o porão é levada em viagens (só tempo).',
+    },
+  },
+  {
+    key: 'specialty.escort',
+    group: 'specialty',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.specialty.escort),
+    description: {
+      en: 'Escort jobs. min_ratio (0.05 to 1): below this share of the need the ship cannot take the job. exponent (0 to 3): how strongly the time follows the ship. fastest (0.3 to 1): the fastest a strong ship can make it. reference (0.01 to 1): the combat strength an escort needs on a safe route. per_danger (0 to 0.2): extra strength needed per danger level.',
+      'pt-BR':
+        'Trabalhos de escolta. min_ratio (0,05 a 1): abaixo desta fração da necessidade a nave não pode aceitar o trabalho. exponent (0 a 3): o quanto o tempo acompanha a nave. fastest (0,3 a 1): o mais rápido que uma nave forte consegue. reference (0,01 a 1): a força de combate que uma escolta precisa numa rota segura. per_danger (0 a 0,2): força extra necessária por nível de perigo.',
+    },
+  },
+  {
     key: 'ship_profile.ref_cargo',
     group: 'ship_profile',
     type: 'number',

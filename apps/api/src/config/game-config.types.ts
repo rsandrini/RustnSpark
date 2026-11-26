@@ -21,6 +21,7 @@ export type ConfigGroup =
   | 'scavenging'
   | 'ship'
   | 'ship_profile'
+  | 'specialty'
   | 'stance'
   | 'wear'
   | 'world';
@@ -131,6 +132,9 @@ export type ConfigKey =
   | 'escape.preset_bonus'
   | 'escort.client_target_share'
   | 'escort.encounter_multiplier'
+  | 'specialty.delivery'
+  | 'specialty.escort'
+  | 'specialty.transport'
   | 'failure.tank_leak_max'
   | 'failure.tank_leak_min'
   | 'failure.weapon_skip_ratio'
@@ -635,6 +639,17 @@ export type GameRules = Readonly<{
   escort: Readonly<{
     encounter_multiplier: number;
     client_target_share: number;
+  }>;
+  specialty: Readonly<{
+    transport: Readonly<{ min_ratio: number }>;
+    delivery: Readonly<{ min_ratio: number }>;
+    escort: Readonly<{
+      min_ratio: number;
+      exponent: number;
+      fastest: number;
+      reference: number;
+      per_danger: number;
+    }>;
   }>;
   ship_profile: Readonly<{
     ref_cargo: number;

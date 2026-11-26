@@ -454,6 +454,13 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     encounter_multiplier: 1.5,
     client_target_share: 0.4,
   },
+  // How much a ship's specialty shapes a job: below min_ratio of the need the ship cannot take it; escort time
+  // also follows the ship's combat strength. First guesses for the sim to judge.
+  specialty: {
+    transport: { min_ratio: 0.5 },
+    delivery: { min_ratio: 0.25 },
+    escort: { min_ratio: 0.5, exponent: 0.5, fastest: 0.85, reference: 0.05, per_danger: 0.02 },
+  },
   // The value that counts as a full axis of the ship profile, and the rules that read it. Derived from the
   // strongest dedicated Rare-tier builds (docs/balance/ship-profile-references.md): a good mid-game ship fills
   // about 65% of its main axis.
