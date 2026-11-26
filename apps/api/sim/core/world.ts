@@ -35,6 +35,7 @@ import type {
   MissionDraft,
 } from '../../src/missions/generator/template.filler.js';
 import { missionSeed } from '../../src/missions/generator/mission.generator.js';
+import { peakDangerOf } from '../../src/missions/mission-specialty.js';
 import { boardSize, maxOffersOfOneType } from '../../src/missions/board-size.js';
 import {
   boardTarget,
@@ -367,6 +368,7 @@ function requirementsMet(
       requirements: offerRequirements(template?.requirements, draft.cargo),
       sheet,
       parts,
+      peakDanger: peakDangerOf(legsOf(draft)),
     },
     rules,
   );

@@ -1,0 +1,13 @@
+{
+  "rules": {
+    "specialty.escort": {
+      "min_ratio": 0.1,
+      "exponent": 0.5,
+      "fastest": 0.85,
+      "reference": 0.03,
+      "per_danger": 0.015
+    },
+    "specialty.transport": { "min_ratio": 0.5 },
+    "specialty.delivery": { "min_ratio": 0.25 }
+  }
+}

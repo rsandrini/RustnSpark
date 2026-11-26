@@ -9,6 +9,13 @@ The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadm
   so a prepared ship does the job faster and a weak one slower, or not at all. Owner will plan each type later. First guesses:
   transport from cargo (a load above the hold needs several trips), escort from firepower and defense, delivery and race from
   mobility (already so). Needs the sim before any change.
+- Status 2026-11-26: built (specialty rows for escort, transport, delivery; admin keys `specialty.escort/transport/delivery`), **gate fails: owner's call**.
+  Sim gate (balanced, 300 missions, seed 1; baseline `spec1-base` at f95946e0, new `spec1-new` with `sim/edits/specialty-v1.json`; chem and hybrid re-run with 24 runs: `spec1-base24-*` vs `spec1-new24-*`).
+  Net credits/h (reward+combat+sales+fuel+repair per game hour), base -> new: chem 37988 -> 37048 (97.5%, 24 runs; 8 runs 99.4%), chem-shield 36572 -> 36856 (100.8%), ion-shield 52416 -> 51814 (98.9%), hybrid 35895 -> 33290 (92.7%, 24 runs; 8 runs 94.3%).
+  L2/L3 median day delta: chem -2.7%/-0.4% (24 runs), chem-shield +3.9%/-9.1%, ion-shield +1.0%/+4.3%, hybrid +3.7%/+18.9% (24 runs; 8 runs +12.8%/+15.2%).
+  Stalls: base 0 in every build; new 1 chem (seed 7) and 1 hybrid (seed 5), both "nothing takeable ... NOT_ENOUGH_FUEL" (also in the 24-run sets). Failed criteria: hybrid net/h < 95%, hybrid L3 > +10%, two new stalls.
+  Mix per run base -> new (24 runs): hybrid ESCORT 36.4 -> 33.8 with its mean time about doubled (16 -> 33), DELIVERY 136.9 -> 133.7; chem ESCORT 28.2 -> 27.0 (time 14 -> 20), DELIVERY 126.2 -> 120.3. TRANSPORT is taken 0 times in every build, base and new (the bots never pick it), so the transport minimum is not exercised by the sim.
+  Knob most likely to move it: `specialty.escort.reference` (lower = weaker ships stretch less; `per_danger` and `exponent` next).
 
 ## 3. The real tutorial hides things on the first flights (owner, 2026-11-10; moved from v0.1.3 item 10)
 

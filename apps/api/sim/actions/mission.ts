@@ -11,6 +11,7 @@ import { applyEngineLevels, type EngineLevels } from '../../src/resolution/engin
 import { fuelUnits } from '../../src/economy/fuel-cost.calculator.js';
 import type { DispatchLeg, DispatchSnapshot } from '../../src/missions/dispatch.service.js';
 import { missionDuration } from '../../src/missions/duration.calculator.js';
+import { peakDangerOf, specialtyStretch } from '../../src/missions/mission-specialty.js';
 import { missionReward } from '../../src/missions/mission.reward.js';
 import { buildResolveInput, contextFromLive } from '../../src/missions/resolution-input.js';
 import { miningMaterialsFor } from '../../src/missions/generator/template.filler.js';
@@ -58,6 +59,23 @@ export function missionContext(snapshot: Snapshot, bridgeScaling?: BridgeScaling
   };
 }
 
+/**
+ * The specialty time multiplier (seats, combat, hold) for this offer on this sheet, like `offerInfo` and
+ * `dispatch.service.ts` (the same sheet the requirement check used: no engine levels, no penalties).
+ */
+export function offerStretch(
+  offer: Offer,
+  sheet: ReturnType<typeof deriveSheet>,
+  rules: GameRules,
+): number {
+  return specialtyStretch(
+    offer.type,
+    { requirements: offer.requirements, peakDanger: peakDangerOf(offer.legs) },
+    sheet,
+    rules,
+  );
+}
+
 export interface TakeCheck {
   readonly ok: boolean;
   /** Requirement codes and ship-side blockers, for the log and the report. */
@@ -89,7 +107,13 @@ export function canTakeMission(state: PlayerState, offer: Offer, ctx: MissionCon
   const scaling = ctx.bridgeScaling ?? NO_SCALING;
   const scaled = scaleOffer(offer, scaling, bridgeRarityIndex(state, ctx.catalogByType));
   const requirement = checkMissionRequirements(
-    { missionType: offer.type, requirements: scaled.requirements, sheet, parts: installed },
+    {
+      missionType: offer.type,
+      requirements: scaled.requirements,
+      sheet,
+      parts: installed,
+      peakDanger: peakDangerOf(offer.legs),
+    },
     ctx.rules,
   );
   if (!requirement.eligible) reasons.push(...requirement.reasons.map((reason) => reason.code));
@@ -246,6 +270,7 @@ export function takeMission(
     shortTripExemptBelow: rules.missions.short_trip_exempt_below,
     timeScale: rules.missions.time_scale,
     classCutoffs: rules.missions.duration_class_cutoffs,
+    stretch: offerStretch(offer, deriveSheet(installed, rules), rules),
   });
 
   const cargo = offer.cargo as Record<string, unknown>;
