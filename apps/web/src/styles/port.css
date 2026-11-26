@@ -737,7 +737,7 @@
   }
 }
 
-/* the class tabs: icons that slide sideways inside their own box on a phone, never widening the page */
+/* the class tabs: icons that wrap onto a second row on a phone, never widening the page */
 .market-types {
   display: flex;
   flex-wrap: wrap;

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it, expect, afterEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
@@ -233,6 +235,7 @@ describe('rankings page', () => {
     const row = container.querySelector('.rankings-boards') as HTMLElement;
     fireEvent.focus(within(row).getByRole('button', { name: 'Help' }));
     const card = screen.getByRole('tooltip');
+    expect(card).toHaveClass('kit-tip-card--end');
     const items = within(card).getAllByRole('listitem');
     expect(items).toHaveLength(8);
     for (const name of [
@@ -248,6 +251,13 @@ describe('rankings page', () => {
     }
     expect(card).toHaveTextContent("The badge is the pilot's faction.");
     expect(card).toHaveTextContent('Your own row is highlighted.');
+  });
+
+  it('keeps the tab strip from stretching: the override outranks the help-row rule', () => {
+    const css = readFileSync(join(__dirname, '../../styles/rankings.css'), 'utf8');
+    const rule =
+      /\.rankings-boards\.help-row\s*>\s*:first-child\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toMatch(/flex:\s*0 1 auto/);
   });
 
   it('reads in Portuguese', async () => {
