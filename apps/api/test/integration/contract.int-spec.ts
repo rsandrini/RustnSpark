@@ -30,6 +30,8 @@ import {
   RepairStartResponseSchema,
   RescueResponseSchema,
   ScavengeInfoSchema,
+  ScrapPartResponseSchema,
+  ScrapQuoteResponseSchema,
   TravelQuoteSchema,
   SellMaterialResponseSchema,
   SellResponseSchema,
@@ -225,6 +227,19 @@ describe('HTTP contract: real responses match packages/contract', () => {
     });
     expect(auto.status).toBe(200);
     contract(ShipResponseSchema, auto.body, 'POST /ships/:id/auto-assemble');
+  });
+
+  it('scrap: quote and turn a loose part into scrap', async () => {
+    const loose = await prisma.partInstance.create({
+      data: { partType: 'hull', ownerPlayerId: playerId, condition: 80, location: 'INVENTORY' },
+    });
+    const id = loose.id;
+    const scrapQuote = await post(`/v1/inventory/${id}/scrap/quote`);
+    expect(scrapQuote.status).toBe(200);
+    contract(ScrapQuoteResponseSchema, scrapQuote.body, 'POST /inventory/:id/scrap/quote');
+    const scrapped = await post(`/v1/inventory/${id}/scrap`);
+    expect(scrapped.status).toBe(200);
+    contract(ScrapPartResponseSchema, scrapped.body, 'POST /inventory/:id/scrap');
   });
 
   it('market: board, buy, sell quote and sell', async () => {

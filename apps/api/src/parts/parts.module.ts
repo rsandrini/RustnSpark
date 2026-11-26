@@ -5,6 +5,7 @@ import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { PartsController } from './parts.controller.js';
 import { PartsService } from './parts.service.js';
+import { ScrapPartService } from './scrap-part.service.js';
 import { StatsModule } from '../stats/stats.module.js';
 
 // Wallet/Pricing/PlayerEvent are provided directly (same pattern as EconomyModule and
@@ -13,7 +14,7 @@ import { StatsModule } from '../stats/stats.module.js';
 @Module({
   imports: [StatsModule, ConfigModule],
   controllers: [PartsController],
-  providers: [PartsService, PricingService, WalletService, PlayerEventService],
+  providers: [PartsService, ScrapPartService, PricingService, WalletService, PlayerEventService],
   exports: [PartsService],
 })
 export class PartsModule {}

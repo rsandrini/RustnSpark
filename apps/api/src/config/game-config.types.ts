@@ -90,6 +90,10 @@ export type ConfigKey =
   | 'economy.reward_by_bridge'
   | 'economy.sell_min_condition'
   | 'economy.discard_scrap_per_part'
+  | 'economy.scrap_yield_base'
+  | 'economy.scrap_yield_per_cell'
+  | 'economy.scrap_bonus_rolls'
+  | 'economy.scrap_bonus_chance'
   | 'economy.repair_points_per_scrap'
   | 'economy.repair_scrap_max'
   | 'economy.sell_ratio'
@@ -452,6 +456,10 @@ export type GameRules = Readonly<{
     /** Parts below this condition (%) cannot be sold: no port takes them, even for nothing. */
     sell_min_condition: number;
     discard_scrap_per_part: number;
+    scrap_yield_base: Readonly<Record<string, number>>;
+    scrap_yield_per_cell: number;
+    scrap_bonus_rolls: number;
+    scrap_bonus_chance: Readonly<Record<string, number>>;
     repair_points_per_scrap: number;
     repair_scrap_max: number;
     sell_ratio: number;

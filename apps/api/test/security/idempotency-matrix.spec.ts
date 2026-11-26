@@ -43,6 +43,7 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
     'per-location cooldown (D28): a repeat inside the window is a 409 SCAVENGE_COOL_DOWN with no second roll',
   'POST /v1/locations/:id/mine':
     'the one-active-mission unique index: a repeat while a dig is flying is a 409 with no second effect',
+  'POST /v1/inventory/:id/scrap/quote': 'read-shaped: no state change',
   'POST /v1/parts/:id/upgrade/quote': 'read-shaped: no state change',
   'POST /v1/parts/:id/expand/quote': 'read-shaped: no state change',
   'POST /v1/parts/:id/shrink/quote': 'read-shaped: no state change',

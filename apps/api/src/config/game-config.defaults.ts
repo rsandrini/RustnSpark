@@ -219,6 +219,11 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // destroys (they cannot be sold, only scrapped). 1 = only a dead (0%) part qualifies; the game runs on 15.
     sell_min_condition: 15,
     discard_scrap_per_part: 1,
+    // Turn a loose part into scrap: base by rarity + per extra cell, then bonus rolls by condition.
+    scrap_yield_base: { COMMON: 1, UNCOMMON: 2, RARE: 3, EPIC: 5, LEGENDARY: 8 },
+    scrap_yield_per_cell: 0.5,
+    scrap_bonus_rolls: 3,
+    scrap_bonus_chance: { COMMON: 0.15, UNCOMMON: 0.25, RARE: 0.35, EPIC: 0.45, LEGENDARY: 0.55 },
     repair_points_per_scrap: 50,
     repair_scrap_max: 3,
     sell_ratio: 0.6,

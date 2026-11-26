@@ -1114,6 +1114,58 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.scrap_yield_base',
+    group: 'economy',
+    type: 'json',
+    min: 0,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.scrap_yield_base),
+    description: {
+      en: 'Scrap a part gives when turned into scrap, by rarity (COMMON..LEGENDARY), before the extra-cell and bonus parts.',
+      'pt-BR':
+        'Sucata que uma peça dá ao virar sucata, por raridade (COMMON..LEGENDARY), antes das partes de células extras e bônus.',
+    },
+  },
+  {
+    key: 'economy.scrap_yield_per_cell',
+    group: 'economy',
+    type: 'number',
+    min: 0,
+    max: 5,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.scrap_yield_per_cell),
+    description: {
+      en: "Extra scrap for each cell beyond the first in the part's footprint (rounded down).",
+      'pt-BR':
+        'Sucata extra por cada célula além da primeira na área da peça (arredondado para baixo).',
+    },
+  },
+  {
+    key: 'economy.scrap_bonus_rolls',
+    group: 'economy',
+    type: 'integer',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.scrap_bonus_rolls),
+    description: {
+      en: 'Number of bonus rolls when a part is turned into scrap: each success adds one scrap. 0 turns the bonus off.',
+      'pt-BR':
+        'Número de sorteios de bônus ao transformar uma peça em sucata: cada sucesso soma uma sucata. 0 desliga o bônus.',
+    },
+  },
+  {
+    key: 'economy.scrap_bonus_chance',
+    group: 'economy',
+    type: 'json',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.scrap_bonus_chance),
+    description: {
+      en: "Chance of each bonus roll by rarity (COMMON..LEGENDARY), multiplied by the part's condition (100% = full chance).",
+      'pt-BR':
+        'Chance de cada sorteio de bônus por raridade (COMMON..LEGENDARY), multiplicada pela condição da peça (100% = chance cheia).',
+    },
+  },
+  {
     key: 'economy.repair_points_per_scrap',
     group: 'economy',
     type: 'number',

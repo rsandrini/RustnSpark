@@ -2712,6 +2712,8 @@
     "REPORT_ALREADY_REVIEWED": "This report was already reviewed.",
     "MINING_TICKS_INVALID": "That mining length is not allowed.",
     "PART_IN_REPAIR": "That part is still being repaired: wait for the workshop to finish.",
+    "PART_INSTALLED": "Take the part off the ship first.",
+    "PART_NOT_SCRAPPABLE": "This part cannot be turned into scrap.",
     "JOB_PAST_START_DEADLINE": "That would end after your waiting mission has to start. Start the mission first, or pick something shorter."
   },
   "language": {

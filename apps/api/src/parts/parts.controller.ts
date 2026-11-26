@@ -3,6 +3,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from '../common/decorators/current-user.decorator.js';
+import { Idempotent } from '../common/idempotency/idempotent.decorator.js';
 import { DiscardInventoryDto } from './dto/discard.dto.js';
 import {
   PartsService,
@@ -10,10 +11,14 @@ import {
   type CatalogItem,
   type InventoryItem,
 } from './parts.service.js';
+import { ScrapPartService, type ScrapQuote, type ScrapResult } from './scrap-part.service.js';
 
 @Controller()
 export class PartsController {
-  constructor(private readonly partsService: PartsService) {}
+  constructor(
+    private readonly partsService: PartsService,
+    private readonly scrapService: ScrapPartService,
+  ) {}
 
   @Get('parts/catalog')
   catalog(
@@ -42,6 +47,26 @@ export class PartsController {
     return this.partsService.discardDamaged(user.playerId, {
       sellScrap: dto.sellScrap === true,
     });
+  }
+
+  // Dry run: the range and the odds, never the rolled value (that is fixed per part).
+  @Post('inventory/:id/scrap/quote')
+  @HttpCode(HttpStatus.OK)
+  scrapQuote(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') partInstanceId: string,
+  ): Promise<ScrapQuote> {
+    return this.scrapService.quote(user.playerId, partInstanceId);
+  }
+
+  @Post('inventory/:id/scrap')
+  @HttpCode(HttpStatus.OK)
+  @Idempotent()
+  scrap(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') partInstanceId: string,
+  ): Promise<ScrapResult> {
+    return this.scrapService.scrap(user.playerId, partInstanceId);
   }
 
   @Get('inventory')

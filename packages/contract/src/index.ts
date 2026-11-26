@@ -1501,6 +1501,25 @@ export const PartUpgradeResponseSchema = z.object({
 });
 export type PartUpgradeResponse = z.infer<typeof PartUpgradeResponseSchema>;
 
+// Turn a loose part into scrap. The quote gives the range and the odds, never the rolled value:
+// the result is fixed per part, so it cannot be re-rolled by quoting again.
+export const ScrapQuoteResponseSchema = z.object({
+  partInstanceId: z.string(),
+  min: z.number(),
+  max: z.number(),
+  chance: z.number(),
+});
+export type ScrapQuoteResponse = z.infer<typeof ScrapQuoteResponseSchema>;
+
+export const ScrapPartResponseSchema = z.object({
+  partInstanceId: z.string(),
+  base: z.number(),
+  bonus: z.number(),
+  pieces: z.number(),
+  scrapHeld: z.number(),
+});
+export type ScrapPartResponse = z.infer<typeof ScrapPartResponseSchema>;
+
 /** Changing a bridge's size (Expand 1x1 -> 2x2 one rarity below, Shrink 2x2 -> 1x1 same rarity). */
 export const BridgeResizeQuoteResponseSchema = z.object({
   partInstanceId: z.string(),

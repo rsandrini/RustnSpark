@@ -2712,6 +2712,8 @@
     "REPORT_ALREADY_REVIEWED": "Esta denúncia já foi analisada.",
     "MINING_TICKS_INVALID": "Essa duração de mineração não é permitida.",
     "PART_IN_REPAIR": "Essa peça ainda está em reparo: espere a oficina terminar.",
+    "PART_INSTALLED": "Tire a peça da nave primeiro.",
+    "PART_NOT_SCRAPPABLE": "Esta peça não pode virar sucata.",
     "JOB_PAST_START_DEADLINE": "Isso terminaria depois de a sua missão em espera precisar começar. Comece a missão antes, ou escolha algo mais curto."
   },
   "language": {
