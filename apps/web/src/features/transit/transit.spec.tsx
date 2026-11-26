@@ -284,6 +284,43 @@ describe('transit (S10.7)', () => {
     expect(items).toEqual(['Vega Dart — speed 41', 'Comet Runner — speed 24']);
   });
 
+  it('a flight shows a compact hold chip that opens the hold view', async () => {
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              status: 'IN_TRANSIT',
+              arrivalAt: iso(60_000),
+              info: {
+                title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
+                description: { en: 'Haul.', 'pt-BR': 'Carga.' },
+                legCount: 1,
+                totalDistance: 400,
+                peakDanger: 1,
+                peakZone: 0,
+                estimate: null,
+                material: null,
+                requirements: [],
+                mining: null,
+                race: null,
+                cargo: { mode: 'fixed', need: 8, unitPay: 0 },
+              },
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    const chip = await screen.findByTestId('hold-chip');
+    expect(chip).toHaveTextContent(/Hold/);
+    expect(chip).toHaveTextContent(/8 \/ 10/);
+    fireEvent.click(chip);
+    await waitFor(() => expect(screen.getByTestId('hold-panel')).toHaveAttribute('open'));
+    expect(await screen.findByTestId('goods-ore')).toBeInTheDocument();
+  });
+
   it('a race in flight shows the projected order after the last finished leg', async () => {
     const leg = (rows: Array<[string, boolean]>) => ({
       standings: rows.map(([name, you], index) => ({

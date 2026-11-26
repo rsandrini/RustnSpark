@@ -1678,3 +1678,46 @@ svg .yard-slot:focus-visible {
     inset: -10px -6px;
   }
 }
+
+/* The hold: a chip in the flight summary that opens it, and the read-only list on the Ship screen. */
+.hold-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  margin: 0 0 var(--space-2, 8px);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.hold-panel {
+  margin: var(--space-3, 12px) 0;
+  min-width: 0;
+}
+
+.hold-panel-summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.hold-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (pointer: coarse) {
+  .hold-chip,
+  .hold-panel-summary {
+    min-height: 44px;
+  }
+  .hold-chip {
+    min-width: 44px;
+  }
+  .hold-panel-summary {
+    display: flex;
+    align-items: center;
+  }
+}

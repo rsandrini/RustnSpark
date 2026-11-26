@@ -783,6 +783,16 @@
       "partsOver": "Too many spare parts to depart: sell or leave some.",
       "hint": "Spare parts ride free in the bridge slots (one slot per part, any size or rarity). Only the cargo a mission loads takes cargo space."
     },
+    "holdView": {
+      "title": "Hold",
+      "summary": "{{count}} items",
+      "chipLabel": "Hold",
+      "chipAria": "Hold: {{used}} of {{capacity}} cargo space. Open the hold.",
+      "usage": "Spare parts {{parts}} of {{slots}} · Cargo space {{used}} of {{capacity}}",
+      "carrying": "Carrying {{units}} units for {{mission}}",
+      "noParts": "No loose spare parts.",
+      "sellHint": "Sell at a port."
+    },
     "partGroups": {
       "HULL": "Hull",
       "ARMOR": "Armor",

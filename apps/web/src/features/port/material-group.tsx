@@ -10,20 +10,16 @@ interface MaterialGroupProps {
   group: GoodsGroup;
   holdings: readonly Holding[];
   money: (value: number) => string;
-  sellAmountOf: (materialId: string, held: number) => number;
-  onAmount: (materialId: string, amount: number) => void;
-  onSell: (holding: Holding, amount: number) => void;
+  /** The port's sell controls; left out, the group is a read-only view of what is held. */
+  sell?: {
+    amountOf: (materialId: string, held: number) => number;
+    onAmount: (materialId: string, amount: number) => void;
+    onSell: (holding: Holding, amount: number) => void;
+  };
 }
 
 /** One section of the goods screen: a title with what the group is worth, then a row per material. */
-export function MaterialGroup({
-  group,
-  holdings,
-  money,
-  sellAmountOf,
-  onAmount,
-  onSell,
-}: MaterialGroupProps): ReactNode {
+export function MaterialGroup({ group, holdings, money, sell }: MaterialGroupProps): ReactNode {
   const { t, i18n } = useTranslation();
   const worth = holdings.reduce((sum, holding) => sum + holding.unitPrice * holding.quantity, 0);
   return (
@@ -34,7 +30,7 @@ export function MaterialGroup({
       </header>
       {holdings.map((holding) => {
         const name = pickLocalized(holding.displayName, i18n.language);
-        const amount = sellAmountOf(holding.materialId, holding.quantity);
+        const amount = sell?.amountOf(holding.materialId, holding.quantity) ?? 0;
         return (
           <article key={holding.materialId} className="goods-row">
             <div className="goods-row-info">
@@ -48,28 +44,36 @@ export function MaterialGroup({
                 {t('port.unitPrice', { price: holding.unitPrice })}
               </small>
             </div>
-            <div className="goods-row-sell">
-              {holding.quantity > 1 && (
-                <label className="sell-amount">
-                  <span className="sub">{t('port.sellAmount')}</span>
-                  <input
-                    type="range"
-                    min={1}
-                    max={holding.quantity}
-                    value={amount}
-                    aria-label={t('port.sellAmountFor', { name })}
-                    data-testid={`sell-amount-${holding.materialId}`}
-                    onChange={(event) => onAmount(holding.materialId, Number(event.target.value))}
-                  />
-                  <b>{amount}</b>
-                </label>
-              )}
-              <button type="button" className="btn primary" onClick={() => onSell(holding, amount)}>
-                {amount === holding.quantity
-                  ? t('port.sellAll')
-                  : t('port.sellSome', { count: amount })}
-              </button>
-            </div>
+            {sell !== undefined && (
+              <div className="goods-row-sell">
+                {holding.quantity > 1 && (
+                  <label className="sell-amount">
+                    <span className="sub">{t('port.sellAmount')}</span>
+                    <input
+                      type="range"
+                      min={1}
+                      max={holding.quantity}
+                      value={amount}
+                      aria-label={t('port.sellAmountFor', { name })}
+                      data-testid={`sell-amount-${holding.materialId}`}
+                      onChange={(event) =>
+                        sell.onAmount(holding.materialId, Number(event.target.value))
+                      }
+                    />
+                    <b>{amount}</b>
+                  </label>
+                )}
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={() => sell.onSell(holding, amount)}
+                >
+                  {amount === holding.quantity
+                    ? t('port.sellAll')
+                    : t('port.sellSome', { count: amount })}
+                </button>
+              </div>
+            )}
           </article>
         );
       })}

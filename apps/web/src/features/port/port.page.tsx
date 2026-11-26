@@ -990,19 +990,20 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               group={group}
               holdings={items}
               money={money}
-              sellAmountOf={sellAmountOf}
-              onAmount={(materialId, amount) =>
-                setSellAmounts((current) => ({ ...current, [materialId]: amount }))
-              }
-              onSell={(holding, amount) => {
-                setNotice(null);
-                setConfirm({
-                  kind: 'sellMaterial',
-                  name: pickLocalized(holding.displayName, i18n.language),
-                  price: holding.unitPrice * amount,
-                  materialId: holding.materialId,
-                  quantity: amount,
-                });
+              sell={{
+                amountOf: sellAmountOf,
+                onAmount: (materialId, amount) =>
+                  setSellAmounts((current) => ({ ...current, [materialId]: amount })),
+                onSell: (holding, amount) => {
+                  setNotice(null);
+                  setConfirm({
+                    kind: 'sellMaterial',
+                    name: pickLocalized(holding.displayName, i18n.language),
+                    price: holding.unitPrice * amount,
+                    materialId: holding.materialId,
+                    quantity: amount,
+                  });
+                },
               }}
             />
           ))}

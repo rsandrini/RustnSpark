@@ -53,6 +53,7 @@ import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
 import { RescueBanner } from '../rescue/rescue-banner';
 import { TransitPage } from '../transit/transit.page';
+import { HoldPanel } from './hold-panel';
 import { useIsPhone } from '../../ui/use-phone';
 import { useAnswer, useFeedback } from '../../ui/feedback';
 import { useProblemText } from './problem-text';
@@ -230,6 +231,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // Phones: Parts and Store are a sheet opened from the action bar, not a list under the yard.
   const phone = useIsPhone();
   const [partsOpen, setPartsOpen] = useState(false);
+  // The read-only hold list under the flight summary; the transit chip opens it and scrolls to it.
+  const [holdOpen, setHoldOpen] = useState(false);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   // `/ship?store=CLASS` (a mission blocker's fix link) opens the Store on that class. It is read when
@@ -938,8 +941,18 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           onGoToBoard={() => {
             void goToTab('board');
           }}
+          onGoToHold={() => {
+            setHoldOpen(true);
+            // the panel is already in the page; scroll once it has opened
+            window.setTimeout(() => {
+              document
+                .getElementById('ship-hold')
+                ?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+            }, 0);
+          }}
         />
       )}
+      {pageTab === 'ship' && <HoldPanel open={holdOpen} onToggle={setHoldOpen} />}
       {/* (the Port tabs carry their own rescue banner) */}
       {pageTab === 'board' && <RescueBanner />}
 

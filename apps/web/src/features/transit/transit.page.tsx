@@ -34,6 +34,8 @@ import { EngineTuning } from '../hangar/engine-tuning';
 import { flushEngineTuning } from '../hangar/engine-tuning-sync';
 import { activeAsOffer } from '../board/active-offer';
 import { MissionCard } from '../board/mission-card';
+import { ResourceChip } from '../../ui/kit/ResourceChip';
+import { missionLoadUnits } from '../hangar/hold-load';
 
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -45,9 +47,16 @@ export interface TransitPageProps {
   /** Embedded only: switches the host to its own "Board" tab (a route Link there would just
       reload the current page, since /board now redirects back to /hangar). */
   onGoToBoard?: () => void;
+  /** Embedded only: opens the host's read-only Hold view (the chip shown while the ship flies). */
+  onGoToHold?: () => void;
 }
 
-export function TransitPage({ guided = false, embedded = false, onGoToBoard }: TransitPageProps) {
+export function TransitPage({
+  guided = false,
+  embedded = false,
+  onGoToBoard,
+  onGoToHold,
+}: TransitPageProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const legSeparator = ' · ';
@@ -273,6 +282,8 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
   };
 
   const offer = activeAsOffer(mission);
+  const holdCapacity = ship?.hold?.capacity ?? ship?.sheet.crg ?? 0;
+  const holdUsed = missionLoadUnits(mission.info?.cargo, holdCapacity);
   const briefTitle = pickLocalized(mission.brief.title, i18n.language);
   const briefText = pickLocalized(mission.brief.description, i18n.language);
 
@@ -369,6 +380,26 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
           <span className="sub">{routeLabel}</span>
         </header>
       )}
+      {onGoToHold !== undefined &&
+        ship !== undefined &&
+        (mission.status === 'IN_TRANSIT' || mission.status === 'RESOLVING') && (
+          <button
+            type="button"
+            className="hold-chip"
+            data-testid="hold-chip"
+            aria-label={t('hangar.holdView.chipAria', {
+              used: holdUsed,
+              capacity: holdCapacity,
+            })}
+            onClick={onGoToHold}
+          >
+            <ResourceChip
+              label={t('hangar.holdView.chipLabel')}
+              value={holdUsed}
+              unit={`/ ${holdCapacity}`}
+            />
+          </button>
+        )}
       <div className="transit-layout">
         <div className="transit-main">
           {offer !== null ? (
