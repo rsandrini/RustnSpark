@@ -15,7 +15,7 @@ import {
   portFactor,
   reachablePorts,
 } from '../../../sim/core/fleet.js';
-import { catalogIndex, starterPlayer } from '../../../sim/core/state.js';
+import { catalogIndex, installedParts, starterPlayer } from '../../../sim/core/state.js';
 import { buildFillerWorld, type Offer } from '../../../sim/core/world.js';
 import {
   CHEAP_PORT_TOLERANCE,
@@ -27,9 +27,11 @@ import {
   decideRepair,
   hasDefensePart,
   isShipGrounded,
+  missionFuelNeed,
   needsRepair,
   repositionOffer,
 } from '../../../sim/bots/policy.js';
+import { deriveSheet } from '../../../src/ships/sheet.deriver.js';
 import { fixtureSnapshot } from './fixture.js';
 
 const snapshot = fixtureSnapshot();
@@ -357,6 +359,35 @@ describe('decideFuel (the "no other way" rule)', () => {
     state.ship.fuel = 50;
     const decision = decideFuel(state, snapshot, rules, catalogByType, offerAt(1, 400));
     expect(decision).toEqual({ shouldRefuel: false, reason: 'enough-for-next' });
+  });
+});
+
+describe('missionFuelNeed (the pump margin stays inside the tank)', () => {
+  const ctx = { rules, catalogByType };
+  const state = starterPlayer(snapshot, 'luna');
+  const sheet = deriveSheet(installedParts(state.ship, catalogByType), rules);
+  const factor = Math.max(1, rules.power.pump_fuel_factor);
+  // Distance whose bare burn is `share` of the tank (fuelUse x distance / 100, one open leg).
+  const distanceFor = (share: number): number =>
+    Math.floor((sheet.fuelCap * share * 100) / sheet.fuelUse);
+
+  it('asks for the burn times the pump factor while that fits the tank', () => {
+    const offer = offerAt(1, distanceFor(0.4));
+    const burn = (sheet.fuelUse * offer.legs[0]!.distance) / 100;
+    expect(factor).toBeGreaterThan(1);
+    expect(missionFuelNeed(state, offer, ctx)).toBe(Math.ceil(burn * factor));
+    expect(missionFuelNeed(state, offer, ctx)).toBeLessThanOrEqual(sheet.fuelCap);
+  });
+
+  it('asks for a full tank when only the bare burn fits it (it used to ask for more than the tank holds)', () => {
+    const offer = offerAt(1, distanceFor(0.8));
+    expect(Math.ceil(0.8 * sheet.fuelCap * factor)).toBeGreaterThan(sheet.fuelCap);
+    expect(missionFuelNeed(state, offer, ctx)).toBe(sheet.fuelCap);
+  });
+
+  it('keeps asking for more than the tank when even the bare burn does not fit', () => {
+    const offer = offerAt(1, distanceFor(1.2));
+    expect(missionFuelNeed(state, offer, ctx)).toBeGreaterThan(sheet.fuelCap);
   });
 });
 

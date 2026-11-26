@@ -108,15 +108,20 @@ export function decideDanger(
  * How much fuel the pilot wants aboard for a mission: what its legs burn at this ship's
  * `fuelUse`, times the tank pump's worst case (`power.pump_fuel_factor`). A leg whose pump roll
  * fails burns that much more, and a ship that left with exactly the burn ran dry and was towed:
- * the game lets you leave on the bare figure, a careful pilot does not.
+ * the game lets you leave on the bare figure, a careful pilot does not. The margin never asks for
+ * more than the tank holds: when the bare burn fits the tank but the margin does not, a full tank
+ * is the most careful departure there is (the old rule left such a ship parked, never calling a
+ * tow, for a hundred game hours).
  */
 export function missionFuelNeed(state: PlayerState, offer: Offer, ctx: { rules: GameRules; catalogByType: ReadonlyMap<string, CatalogRow> }): number {
-  const fuelUse = deriveSheet(installedParts(state.ship, ctx.catalogByType), ctx.rules).fuelUse;
+  const sheet = deriveSheet(installedParts(state.ship, ctx.catalogByType), ctx.rules);
+  const fuelUse = sheet.fuelUse;
   const burn = offer.legs.reduce(
     (sum, leg) => sum + fuelUnits({ fuelUse, distance: leg.distance, envFuelMult: leg.env.fuelMult }),
     0,
   );
-  return Math.ceil(burn * Math.max(1, ctx.rules.power.pump_fuel_factor));
+  const margin = Math.ceil(burn * Math.max(1, ctx.rules.power.pump_fuel_factor));
+  return burn <= sheet.fuelCap ? Math.min(margin, sheet.fuelCap) : margin;
 }
 
 /** Does the ship need a repair right now, by the plan's own thresholds? */
