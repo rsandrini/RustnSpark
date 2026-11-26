@@ -233,6 +233,15 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [partsOpen, setPartsOpen] = useState(false);
   // The read-only hold list under the flight summary; the transit chip opens it and scrolls to it.
   const [holdOpen, setHoldOpen] = useState(false);
+  const [holdFocusRequest, setHoldFocusRequest] = useState(false);
+  const holdSummaryRef = useRef<HTMLElement>(null);
+  // The chip opened the hold: bring its heading into view and focus it once it has rendered open.
+  useEffect(() => {
+    if (!holdFocusRequest || !holdOpen) return;
+    holdSummaryRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    holdSummaryRef.current?.focus();
+    setHoldFocusRequest(false);
+  }, [holdFocusRequest, holdOpen]);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   // `/ship?store=CLASS` (a mission blocker's fix link) opens the Store on that class. It is read when
@@ -941,18 +950,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           onGoToBoard={() => {
             void goToTab('board');
           }}
+          holdOpen={holdOpen}
           onGoToHold={() => {
-            setHoldOpen(true);
-            // the panel is already in the page; scroll once it has opened
-            window.setTimeout(() => {
-              document
-                .getElementById('ship-hold')
-                ?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-            }, 0);
+            // a second press closes it; opening moves focus to the panel (effect above)
+            setHoldFocusRequest(!holdOpen);
+            setHoldOpen(!holdOpen);
           }}
         />
       )}
-      {pageTab === 'ship' && <HoldPanel open={holdOpen} onToggle={setHoldOpen} />}
+      {pageTab === 'ship' && (
+        <HoldPanel open={holdOpen} onToggle={setHoldOpen} summaryRef={holdSummaryRef} />
+      )}
       {/* (the Port tabs carry their own rescue banner) */}
       {pageTab === 'board' && <RescueBanner />}
 

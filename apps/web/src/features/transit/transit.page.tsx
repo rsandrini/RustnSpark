@@ -35,7 +35,7 @@ import { flushEngineTuning } from '../hangar/engine-tuning-sync';
 import { activeAsOffer } from '../board/active-offer';
 import { MissionCard } from '../board/mission-card';
 import { ResourceChip } from '../../ui/kit/ResourceChip';
-import { missionLoadUnits } from '../hangar/hold-load';
+import { holdFigureOf } from '../hangar/hold-load';
 
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -49,6 +49,8 @@ export interface TransitPageProps {
   onGoToBoard?: () => void;
   /** Embedded only: opens the host's read-only Hold view (the chip shown while the ship flies). */
   onGoToHold?: () => void;
+  /** Embedded only: whether that Hold view is open (the chip is its disclosure button). */
+  holdOpen?: boolean;
 }
 
 export function TransitPage({
@@ -56,6 +58,7 @@ export function TransitPage({
   embedded = false,
   onGoToBoard,
   onGoToHold,
+  holdOpen = false,
 }: TransitPageProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -283,7 +286,7 @@ export function TransitPage({
 
   const offer = activeAsOffer(mission);
   const holdCapacity = ship?.hold?.capacity ?? ship?.sheet.crg ?? 0;
-  const holdUsed = missionLoadUnits(mission.info?.cargo, holdCapacity);
+  const holdFigure = holdFigureOf(mission, holdCapacity);
   const briefTitle = pickLocalized(mission.brief.title, i18n.language);
   const briefText = pickLocalized(mission.brief.description, i18n.language);
 
@@ -382,22 +385,33 @@ export function TransitPage({
       )}
       {onGoToHold !== undefined &&
         ship !== undefined &&
+        holdFigure !== null &&
         (mission.status === 'IN_TRANSIT' || mission.status === 'RESOLVING') && (
           <button
             type="button"
             className="hold-chip"
             data-testid="hold-chip"
-            aria-label={t('hangar.holdView.chipAria', {
-              used: holdUsed,
-              capacity: holdCapacity,
-            })}
+            aria-expanded={holdOpen}
+            aria-controls="ship-hold"
+            aria-label={
+              holdFigure.kind === 'ore'
+                ? t('hangar.holdView.chipAriaOre', { space: holdFigure.space })
+                : t('hangar.holdView.chipAriaCargo', {
+                    used: holdFigure.used,
+                    capacity: holdFigure.capacity,
+                  })
+            }
             onClick={onGoToHold}
           >
-            <ResourceChip
-              label={t('hangar.holdView.chipLabel')}
-              value={holdUsed}
-              unit={`/ ${holdCapacity}`}
-            />
+            {holdFigure.kind === 'ore' ? (
+              <ResourceChip label={t('hangar.holdView.chipOre')} value={holdFigure.space} />
+            ) : (
+              <ResourceChip
+                label={t('hangar.holdView.chipCargo')}
+                value={holdFigure.used}
+                unit={`/ ${holdFigure.capacity}`}
+              />
+            )}
           </button>
         )}
       <div className="transit-layout">

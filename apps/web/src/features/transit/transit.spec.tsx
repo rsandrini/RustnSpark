@@ -314,11 +314,61 @@ describe('transit (S10.7)', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
     const chip = await screen.findByTestId('hold-chip');
-    expect(chip).toHaveTextContent(/Hold/);
+    expect(chip).toHaveTextContent(/Cargo/);
     expect(chip).toHaveTextContent(/8 \/ 10/);
+    expect(chip).toHaveAttribute('aria-expanded', 'false');
+    expect(chip).toHaveAttribute('aria-controls', 'ship-hold');
+    // the panel is a sibling of the yard layout that a phone hides while the ship flies
+    expect(screen.getByTestId('hold-panel').closest('.hangar-layout')).toBeNull();
     fireEvent.click(chip);
     await waitFor(() => expect(screen.getByTestId('hold-panel')).toHaveAttribute('open'));
+    expect(chip).toHaveAttribute('aria-expanded', 'true');
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByText('Hold', { selector: 'summary' })),
+    );
     expect(await screen.findByTestId('goods-ore')).toBeInTheDocument();
+  });
+
+  it('a mining run shows its ore space on the chip, not cargo units', async () => {
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              type: 'MINING',
+              status: 'IN_TRANSIT',
+              arrivalAt: iso(60_000),
+              info: {
+                title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
+                description: { en: 'Haul.', 'pt-BR': 'Carga.' },
+                legCount: 1,
+                totalDistance: 400,
+                peakDanger: 1,
+                peakZone: 0,
+                estimate: null,
+                material: null,
+                requirements: [],
+                mining: {
+                  required: 1,
+                  materialId: 'iron',
+                  expectedSeconds: 60,
+                  capSeconds: 120,
+                  successChance: 0.9,
+                  spaceUnits: 20,
+                },
+                race: null,
+                cargo: { mode: 'fixed', need: 8, unitPay: 0 },
+              },
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    const chip = await screen.findByTestId('hold-chip');
+    expect(chip).toHaveTextContent(/Ore space/);
+    expect(chip).toHaveTextContent(/20/);
   });
 
   it('a race in flight shows the projected order after the last finished leg', async () => {

@@ -20,3 +20,26 @@ export function missionLoadUnits(terms: CargoTerms | null | undefined, capacity:
       return capacity;
   }
 }
+
+/** What the flight chip and the hold's usage line count: the mission's cargo units, or a dig's ore space. */
+export type HoldFigure =
+  { kind: 'cargo'; used: number; capacity: number } | { kind: 'ore'; space: number };
+
+/**
+ * A mining run keeps its ore in a separate in-flight ore space (the server's `floor(crg * space_factor)`,
+ * sent on the offer as `info.mining.spaceUnits`); every other mission counts the cargo it loads. Null
+ * when a mining run has no ore space figure (no rig).
+ */
+export function holdFigureOf(
+  mission: {
+    type: string;
+    info?: { cargo?: CargoTerms | null; mining?: { spaceUnits: number } | null } | undefined;
+  },
+  capacity: number,
+): HoldFigure | null {
+  if (mission.type === 'MINING') {
+    const space = mission.info?.mining?.spaceUnits;
+    return space === undefined ? null : { kind: 'ore', space };
+  }
+  return { kind: 'cargo', used: missionLoadUnits(mission.info?.cargo, capacity), capacity };
+}

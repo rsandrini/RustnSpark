@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
@@ -12,11 +12,13 @@ import { pickLocalized } from '../../i18n/localized';
 import { groupGoods } from '../port/goods-groups';
 import { MaterialGroup } from '../port/material-group';
 import { PartCard } from '../parts/part-card';
-import { missionLoadUnits } from './hold-load';
+import { holdFigureOf } from './hold-load';
 
 export interface HoldPanelProps {
   open: boolean;
   onToggle: (open: boolean) => void;
+  /** The summary line, so the host can move focus to it when it opens the panel. */
+  summaryRef?: Ref<HTMLElement>;
 }
 
 /**
@@ -24,7 +26,7 @@ export interface HoldPanelProps {
  * and the materials with their quantities, the spare-part slots and cargo space in use, and the load a
  * mission carries. Selling stays at the port. Nothing is fetched while it is closed.
  */
-export function HoldPanel({ open, onToggle }: HoldPanelProps): ReactNode {
+export function HoldPanel({ open, onToggle, summaryRef }: HoldPanelProps): ReactNode {
   const { t } = useTranslation();
   return (
     <details
@@ -34,7 +36,9 @@ export function HoldPanel({ open, onToggle }: HoldPanelProps): ReactNode {
       open={open}
       onToggle={(event) => onToggle(event.currentTarget.open)}
     >
-      <summary className="hold-panel-summary">{t('hangar.holdView.title')}</summary>
+      <summary className="hold-panel-summary" ref={summaryRef}>
+        {t('hangar.holdView.title')}
+      </summary>
       {open && <HoldBody />}
     </details>
   );
@@ -69,18 +73,29 @@ function HoldBody(): ReactNode {
   const mission = (activeQuery.data ?? [])[0];
   const hold = ship?.hold;
   const capacity = hold?.capacity ?? ship?.sheet.crg ?? 0;
-  const carried = mission === undefined ? 0 : missionLoadUnits(mission.info?.cargo, capacity);
-  const sellable = parts.length > 0 || materials.length > 0;
+  const figure =
+    mission === undefined
+      ? { kind: 'cargo' as const, used: 0, capacity }
+      : holdFigureOf(mission, capacity);
+  const carried = figure?.kind === 'cargo' ? figure.used : 0;
+  // Docked, the port is one tab away: the hint is for the ship that is away.
+  const sellable = (parts.length > 0 || materials.length > 0) && ship?.status !== 'IN_PORT';
   return (
     <div className="stack hold-body">
-      {hold !== undefined && (
+      {hold !== undefined && figure !== null && (
         <p className="sub" data-testid="hold-usage">
-          {t('hangar.holdView.usage', {
-            parts: hold.parts,
-            slots: hold.slots,
-            used: carried,
-            capacity,
-          })}
+          {figure.kind === 'ore'
+            ? t('hangar.holdView.usageOre', {
+                parts: hold.parts,
+                slots: hold.slots,
+                space: figure.space,
+              })
+            : t('hangar.holdView.usageCargo', {
+                parts: hold.parts,
+                slots: hold.slots,
+                used: figure.used,
+                capacity: figure.capacity,
+              })}
         </p>
       )}
       {mission !== undefined && carried > 0 && (

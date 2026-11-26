@@ -174,4 +174,5 @@ Today a lost combat encounter debits a flat `economy.combat_loss_penalty` (1200)
 
 ## Bugs found testing v0.1.4 in prod
 
+- [ ] `ships.service.ts` ~962 never passes `missionCargo` to `computeHold` (only dispatch does), so the ship response's `hold.used`/`missionCargo` are always 0; the web re-derives the load in `hold-load.ts` and may drift: make the server fill them.
 - [ ] (the owner will add them here as they are found; each ships in v0.1.5, or as a `v0.1.4b` hotfix if it blocks play)

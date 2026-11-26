@@ -785,10 +785,12 @@
     },
     "holdView": {
       "title": "Hold",
-      "summary": "{{count}} items",
-      "chipLabel": "Hold",
-      "chipAria": "Hold: {{used}} of {{capacity}} cargo space. Open the hold.",
-      "usage": "Spare parts {{parts}} of {{slots}} · Cargo space {{used}} of {{capacity}}",
+      "chipCargo": "Cargo",
+      "chipOre": "Ore space",
+      "chipAriaCargo": "Cargo: {{used}} of {{capacity}} units carried. Show the hold.",
+      "chipAriaOre": "Ore space: {{space}} units. Show the hold.",
+      "usageCargo": "Spare parts {{parts}} of {{slots}} · Cargo space {{used}} of {{capacity}}",
+      "usageOre": "Spare parts {{parts}} of {{slots}} · Ore space {{space}}",
       "carrying": "Carrying {{units}} units for {{mission}}",
       "noParts": "No loose spare parts.",
       "sellHint": "Sell at a port."

@@ -47,6 +47,10 @@ describe('HoldPanel', () => {
     expect(await screen.findByTestId('goods-ore')).toHaveTextContent('Iron');
     expect(screen.getByTestId('goods-ore')).toHaveTextContent('6');
     expect(screen.queryByRole('button', { name: /sell/i })).toBeNull();
+    // a part card in the hold carries no action beyond its details button
+    const cards = document.querySelectorAll('.pcard');
+    expect(cards.length).toBeGreaterThan(0);
+    cards.forEach((card) => expect(card.querySelectorAll('button:not(.info-btn)')).toHaveLength(0));
     expect(screen.getByText('Sell at a port.')).toBeInTheDocument();
   });
 
@@ -56,6 +60,34 @@ describe('HoldPanel', () => {
     expect(await screen.findByTestId('hold-usage')).toHaveTextContent('Cargo space 12 of 40');
     expect(screen.getByTestId('hold-usage')).toHaveTextContent('1 of 3');
     expect(screen.getByTestId('hold-carrying')).toHaveTextContent('Carrying 12 units for Ore run');
+  });
+
+  it('counts the ore space of a mining run and leaves the sell hint to a ship that is away', async () => {
+    server.use(
+      http.get('/v1/ships', () => HttpResponse.json([onMissionShip()])),
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json([
+          {
+            ...flying({ mode: 'min', need: 1 }),
+            type: 'MINING',
+            info: { mining: { spaceUnits: 20 } },
+          },
+        ]),
+      ),
+    );
+    renderWithProviders(<HoldPanel open onToggle={() => undefined} />);
+    expect(await screen.findByTestId('hold-usage')).toHaveTextContent('Ore space 20');
+    expect(screen.getByTestId('hold-usage')).not.toHaveTextContent('Cargo space');
+  });
+
+  it('hides the sell hint while docked', async () => {
+    server.use(
+      http.get('/v1/ships', () => HttpResponse.json([{ ...onMissionShip(), status: 'IN_PORT' }])),
+      http.get('/v1/missions/active', () => HttpResponse.json([])),
+    );
+    renderWithProviders(<HoldPanel open onToggle={() => undefined} />);
+    await screen.findByTestId('goods-ore');
+    expect(screen.queryByText('Sell at a port.')).toBeNull();
   });
 
   it('says nothing about a load when the mission carries none', async () => {

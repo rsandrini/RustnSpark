@@ -785,10 +785,12 @@
     },
     "holdView": {
       "title": "Porão",
-      "summary": "{{count}} itens",
-      "chipLabel": "Porão",
-      "chipAria": "Porão: {{used}} de {{capacity}} de espaço de carga. Abrir o porão.",
-      "usage": "Peças sobressalentes {{parts}} de {{slots}} · Espaço de carga {{used}} de {{capacity}}",
+      "chipCargo": "Carga",
+      "chipOre": "Espaço de minério",
+      "chipAriaCargo": "Carga: {{used}} de {{capacity}} unidades levadas. Mostrar o porão.",
+      "chipAriaOre": "Espaço de minério: {{space}} unidades. Mostrar o porão.",
+      "usageCargo": "Peças sobressalentes {{parts}} de {{slots}} · Espaço de carga {{used}} de {{capacity}}",
+      "usageOre": "Peças sobressalentes {{parts}} de {{slots}} · Espaço de minério {{space}}",
       "carrying": "Levando {{units}} unidades para {{mission}}",
       "noParts": "Nenhuma peça sobressalente solta.",
       "sellHint": "Venda em um porto."
