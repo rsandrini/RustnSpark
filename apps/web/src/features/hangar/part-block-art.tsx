@@ -93,9 +93,9 @@ const ROW_GAP = 0.05;
  * dots sit on the edge at inset 0.13 with radius <= 0.075 (central) or 0.05 (the two small ones), so the top-edge
  * dots end at gy + 0.205 at the lowest, and the side dots (centred at half the height, from gy + 0.425 on a 1-cell
  * footprint) start below the icon (its bottom is <= gy + 0.42); 0.3 would leave a 1x1 no room for any name.
- * The name block is pushed down just enough to clear the row. When room runs short it degrades in steps: all the
- * name lines, then one line, then one line in a smaller font; only when even that does not fit is the whole row
- * dropped and the name keeps its classic place.
+ * The name block is pushed down just enough to clear the row. The whole name always wins over the row: all the
+ * name lines with the row, or (a one-line name only) one line in a smaller font with the row; when neither fits
+ * the row is dropped and every name line keeps its classic place.
  */
 export function blockTextLayout(
   gy: number,
@@ -111,7 +111,8 @@ export function blockTextLayout(
   const noRow = (): BlockTextLayout => ({
     row: null,
     lineCount: nameLines,
-    firstY: classic(nameLines, labelFont),
+    // Never above gy + 0.2: the connector dots on the top edge end there.
+    firstY: Math.max(classic(nameLines, labelFont), gy + 0.2 + (labelFont * 1.15) / 2),
     nameFont: labelFont,
   });
   if (!withRow) return noRow();
@@ -120,11 +121,9 @@ export function blockTextLayout(
   const top = gy + KIND_ROW_TOP;
   const free = top + rowHeight + KIND_ROW_GAP;
   const limit = gy + height - BAR_CLEARANCE;
-  const n0 = height < 2 ? Math.min(nameLines, 1) : nameLines;
   const squeezed = Math.max(MIN_NAME_FONT, (limit - free) / 1.15);
-  const attempts: Array<[number, number]> = [[n0, labelFont]];
-  if (n0 > 1) attempts.push([1, labelFont]);
-  if (squeezed < labelFont) attempts.push([1, squeezed]);
+  const attempts: Array<[number, number]> = [[nameLines, labelFont]];
+  if (nameLines === 1 && squeezed < labelFont) attempts.push([1, squeezed]);
   for (const [lineCount, nameFont] of attempts) {
     const lineHeight = nameFont * 1.15;
     const firstY = Math.max(classic(lineCount, nameFont), free + lineHeight / 2);
@@ -152,6 +151,16 @@ export function blockTextLayout(
     }
   }
   return noRow();
+}
+
+/** Keeps the first `count` lines; a cut name ends its last kept line with an ellipsis. */
+export function clipNameLines(lines: readonly string[], count: number): string[] {
+  const kept = lines.slice(0, Math.max(0, count));
+  if (count < lines.length && kept.length > 0) {
+    const last = kept[kept.length - 1] ?? '';
+    if (!last.endsWith('…')) kept[kept.length - 1] = `${last}…`;
+  }
+  return kept;
 }
 
 /** Shortens a label with an ellipsis so it fits `maxWidth` cells at `font` (average glyph ~0.56 em). */
@@ -233,8 +242,8 @@ export function PartBlockArt({
   const lineHeight = layout.nameFont * 1.15;
   // A broken part always keeps its "Broken" line; the name lines give way to it when the block is short of room.
   const drawnLines = broken
-    ? [...lines.slice(0, layout.lineCount - 1), t('parts.broken')]
-    : lines.slice(0, layout.lineCount);
+    ? [...clipNameLines(lines, layout.lineCount - 1), t('parts.broken')]
+    : clipNameLines(lines, layout.lineCount);
   return (
     <>
       <rect

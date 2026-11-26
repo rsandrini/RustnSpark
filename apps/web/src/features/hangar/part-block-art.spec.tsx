@@ -3,7 +3,7 @@ import { render } from '@testing-library/react';
 import type { PartCatalogStats } from '../../api/generated';
 import { renderWithProviders } from '../../test/utils';
 import { facingOf } from './hangar.geometry';
-import { blockTextLayout, fitKindLabel, PartBlockArt } from './part-block-art';
+import { blockTextLayout, clipNameLines, fitKindLabel, PartBlockArt } from './part-block-art';
 
 const cannon = {
   partType: 'cannon',
@@ -102,11 +102,14 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
       expect(container.querySelector('title')?.textContent).toContain('Engine');
     });
 
-    it('a 1x1 part shows only the icon and keeps one name line', () => {
+    it('a 1x1 part with a one-line name shows only the icon; a two-line name keeps both lines and drops the icon', () => {
+      const one = art({ lines: ['Plasma'] });
+      expect(one.container.querySelector('[data-testid="block-kind-icon"]')).not.toBeNull();
+      expect(one.container.querySelector('[data-testid="block-kind-label"]')).toBeNull();
+      one.unmount();
       const { container } = art({ lines: ['Plasma', 'Cannon'] });
-      expect(container.querySelector('[data-testid="block-kind-icon"]')).not.toBeNull();
-      expect(container.querySelector('[data-testid="block-kind-label"]')).toBeNull();
-      expect(container.querySelectorAll('text.block-label tspan')).toHaveLength(1);
+      expect(container.querySelector('[data-testid="block-kind-icon"]')).toBeNull();
+      expect(container.querySelectorAll('text.block-label tspan')).toHaveLength(2);
       expect(container.querySelector('title')?.textContent).toContain('Weapon');
     });
 
@@ -202,15 +205,53 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
     ])('%s: the row never overlaps the name lines', (_n, height, wantedLines) => {
       for (const font of [0.14, 0.2, 0.28, 0.42]) {
         const layout = blockTextLayout(10, height, font, wantedLines, true);
-        expect(layout.row).not.toBeNull();
-        const row = layout.row!;
+        expect(layout.lineCount).toBeGreaterThanOrEqual(1);
         const lh = layout.nameFont * 1.15;
-        expect(row.top + row.height).toBeLessThanOrEqual(layout.firstY - lh / 2 + 1e-9);
         const lastBottom = layout.firstY + (layout.lineCount - 0.5) * lh;
-        expect(lastBottom).toBeLessThanOrEqual(10 + height - 0.24);
-        expect(row.showLabel).toBe(height >= 2);
-        if (height < 2) expect(layout.lineCount).toBe(1);
+        // Only when the name can fit at all between the dots (0.2) and the bar (0.24).
+        if (layout.lineCount * lh <= height - 0.44) {
+          expect(lastBottom).toBeLessThanOrEqual(10 + height - 0.24 + 1e-9);
+        }
+        if (layout.row) {
+          const row = layout.row;
+          expect(row.top + row.height).toBeLessThanOrEqual(layout.firstY - lh / 2 + 1e-9);
+          expect(row.showLabel).toBe(height >= 2);
+        }
       }
+    });
+
+    it('drops the type row, not the name, when a short block cannot hold both (guest ship evidence)', () => {
+      const one = blockTextLayout(0, 1, 0.16, 3, true, 1, 'Cargo');
+      expect(one.row).toBeNull();
+      expect(one.lineCount).toBe(3);
+      expect(blockTextLayout(0, 1, 0.16, 2, true, 2, 'Tank').lineCount).toBe(2);
+      expect(blockTextLayout(0, 1, 0.16, 1, true, 1, 'Weapon').row).not.toBeNull();
+      const tall = blockTextLayout(0, 2, 0.16, 3, true, 1, 'Cargo');
+      expect(tall.row).not.toBeNull();
+      expect(tall.lineCount).toBe(3);
+    });
+
+    it('keeps the name text inside the block whenever the row is dropped', () => {
+      const l = blockTextLayout(0, 1, 0.16, 3, true, 1, 'Cargo');
+      const lh = l.nameFont * 1.15;
+      expect(l.firstY - lh / 2).toBeGreaterThanOrEqual(0.2 - 1e-9);
+      expect(l.firstY + (l.lineCount - 0.5) * lh).toBeLessThanOrEqual(1 - 0.24 + 1e-9);
+    });
+
+    it('clipNameLines ends a cut name with an ellipsis', () => {
+      expect(clipNameLines(['Motor', 'Químico', 'Aprimorado'], 3)).toEqual([
+        'Motor',
+        'Químico',
+        'Aprimorado',
+      ]);
+      expect(clipNameLines(['Motor', 'Químico', 'Aprimorado'], 1)).toEqual(['Motor…']);
+      expect(clipNameLines(['Comparti…', 'de Carga'], 1)).toEqual(['Comparti…']);
+    });
+
+    it('draws every wrapped line of a 1x1 part', () => {
+      const { container } = art({ lines: ['Motor', 'Químico', 'Aprimorado'], labelFont: 0.16 });
+      expect(container.querySelectorAll('text.block-label tspan')).toHaveLength(3);
+      expect(container.querySelector('[data-testid="block-kind-icon"]')).toBeNull();
     });
 
     it('a 1x1 at a large label font keeps the icon and shrinks the name instead of overlapping it', () => {
@@ -258,15 +299,14 @@ describe('PartBlockArt (the one drawing of a part, in the ship and while carried
       ).toBeLessThanOrEqual(nameTop + 1e-9);
     });
 
-    it('a broken 1x1 with the type row still shows its Broken text and the icon', () => {
+    it('a broken 1x1 shows its name and its Broken text (the icon gives way)', () => {
       const { container } = art({
         look: { rarity: 'Rare', condition: 0, broken: true },
         lines: ['Cannon'],
       });
       const text = container.querySelector('text.block-label')?.textContent ?? '';
       expect(text).toContain('BROKEN');
-      expect(text).not.toContain('Cannon');
-      expect(container.querySelector('[data-testid="block-kind-icon"]')).not.toBeNull();
+      expect(text).toContain('Cannon');
     });
 
     it('with no row the name keeps its classic place', () => {
