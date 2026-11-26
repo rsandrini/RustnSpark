@@ -163,6 +163,15 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
   (`economy.scrap_*`), the idempotent API action and its report/ledger entry, the UI (a button on the part row/popup with a confirm
   that names the odds), the sim (scrap supply) and the guide text. Plan before building.
 
+## 11. A lost fight costs a fee for the lost cargo and the broken contract, scaled by zone (owner, 2026-11-26) - *not started*
+
+Today a lost combat encounter debits a flat `economy.combat_loss_penalty` (1200) per lost fight, whatever the zone or the reward. It comes from the 2026-10-23 rule ("a won fight pays nothing; a lost one costs a penalty"); the 1200 was in the first config and no balance round chose it. The owner feels it reads like the pirates are robbing money.
+
+- [ ] **Decided (owner, 2026-11-26): option 1, scale the penalty by zone**, like the wear already is (`combat.loss_wear_scale` is 0.1 / 0.3 / 0.4 / 0.5 by zone 0-3; a first guess for the money scale: 10% / 30% / 40% / 100% of the base, as admin knobs, DB wins). Needs the sim before any change (it changes income).
+- [ ] **Say what it is:** the amount taken is a FEE for the cargo lost and the contract broken, not a theft by the pirates. Name it so in the report and the result popup (en + pt-BR), and in the Admin knob description.
+- [ ] Owner's thinking to settle in the plan: when the mission carries cargo, a lost fight loses the cargo and the contract pays zero; when pirates only want a fight, the worst case damages parts of the ship (already so) and nothing else; the money fee is for not completing the mission. Decide whether the fee applies when there was no cargo, and whether it can exceed the mission's reward.
+- Do NOT build now; plan it with the next balance round.
+
 ## Bugs found testing v0.1.4 in prod
 
 - [ ] (the owner will add them here as they are found; each ships in v0.1.5, or as a `v0.1.4b` hotfix if it blocks play)
