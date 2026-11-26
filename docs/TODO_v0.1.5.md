@@ -70,10 +70,12 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
   The initial zone stays as it is (or with small adjustments).
 
 - Owner, 2026-11-25: the NEXT version expands the map about 5x, with missions of 8+ hours. Slice 2.1's 'long' threshold (an admin knob, 1 h today) is to be raised with it.
+- Owner, 2026-11-25: the far zones / hours-long crossings are NOT part of v0.1.5; they come with the next version's 5x map. Slice 2.2 (5d) builds the route planning and stops on today's map so they scale.
 
 ### 5d. Refuel between ports
 
 - [ ] The option to refuel between ports (today the pilot refuels docked at a port).
+- Owner, 2026-11-25: slice 2.2 is the LAST slice of v0.1.5 (change requests from testing come first). Rulings: only ports and stations sell fuel (one rule, an Admin list of place types; the map marks places with no fuel); a stop is MANUAL (the ship docks, the pilot refuels/repairs/shops by hand and presses "Continue the trip"; nothing is bought automatically); docked time is real time added to the mission; prices unchanged (today's quote per place); amber at 20% of the tank (Admin knob). Plan: `docs/superpowers/plans/2026-11-25-slice-2-2-route-fuel-planning.md`.
 
 ## 6. The ship's type names its main point, and a spider chart shows its profile (owner, 2026-11-24)
 
