@@ -1295,18 +1295,19 @@ details.collapsible > summary h2 {
   border: 1px solid var(--sun);
   border-radius: 999px;
   color: var(--sun);
+  font: inherit;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 700;
   vertical-align: middle;
   white-space: nowrap;
+  background: transparent;
+  cursor: pointer;
 }
-.tile-icon-warn {
-  color: var(--sun);
-}
-.tile-icon-bare {
-  font-size: var(--text-lg, 1.25rem);
-  line-height: 1;
+button.tile-push:hover,
+button.tile-push:focus-visible {
+  outline: 2px solid var(--sun);
+  outline-offset: 2px;
 }
 @media (max-width: 560px) {
   .tile-icon {
@@ -1659,4 +1660,11 @@ svg .yard-slot:focus-visible {
 .escort-line {
   margin: 4px 0 8px;
   font-size: 0.9em;
+}
+.sheet-status-warn {
+  color: var(--sun);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-decoration: underline;
 }

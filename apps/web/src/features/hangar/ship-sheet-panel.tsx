@@ -61,7 +61,6 @@ type Tone = 'ok' | 'warn' | 'bad';
 // The icon glyphs on the headline tiles; their meaning is in the buttons' aria-labels.
 const GEAR_GLYPH = '\u2699';
 const PENCIL_GLYPH = '\u270E';
-const WARN_GLYPH = '\u26A0';
 
 const GROUP_ORDER = ['combat', 'power', 'propulsion', 'cargo', 'hull'] as const;
 type Group = (typeof GROUP_ORDER)[number];
@@ -411,6 +410,11 @@ export function ShipSheetPanel({
 
   const rowsByGroup = (group: Group) => ROWS.filter((row) => row.group === group);
 
+  const enginesPushed =
+    engineLevels !== undefined && Math.max(engineLevels.chem, engineLevels.ion) > 1;
+  // The pushed badge (inside the headline) carries the warnings; the status line does
+  // when the badge is absent or its headline is not on screen.
+  const badgeVisible = enginesPushed && (profileView || !showAll);
   const headline = (
     <div
       className={profileView ? 'sheet-headline sheet-headline-slim' : 'sheet-headline'}
@@ -447,20 +451,41 @@ export function ShipSheetPanel({
         <span>{t('hangar.headline.mobility')}</span>
         <b className={`tone-${mobilityTone}`}>
           {mobilityNumber(sheetStat(sheet, 'mob', display))}
-          {engineLevels !== undefined && Math.max(engineLevels.chem, engineLevels.ion) > 1 && (
-            <span
-              className="tile-push"
-              data-testid="engines-pushed"
-              title={t('hangar.headline.pushed', {
+          {engineLevels !== undefined &&
+            Math.max(engineLevels.chem, engineLevels.ion) > 1 &&
+            (() => {
+              const pushedTitle = t('hangar.headline.pushed', {
                 chem: enginePercent(engineLevels.chem, i18n.language),
                 ion: enginePercent(engineLevels.ion, i18n.language),
-              })}
-            >
-              {t('hangar.headline.pushedBadge', {
+              });
+              const badgeText = t('hangar.headline.pushedBadge', {
                 value: enginePercent(Math.max(engineLevels.chem, engineLevels.ion), i18n.language),
-              })}
-            </span>
-          )}
+              });
+              const opensWarnings = warningCount > 0 && onShowWarnings !== undefined;
+              const action = opensWarnings ? onShowWarnings : onTuneEngines;
+              if (action === undefined) {
+                return (
+                  <span className="tile-push" data-testid="engines-pushed" title={pushedTitle}>
+                    {badgeText}
+                  </span>
+                );
+              }
+              const label = opensWarnings
+                ? t('hangar.warnings.open', { count: warningCount })
+                : t('hangar.headline.tuneEngines');
+              return (
+                <button
+                  type="button"
+                  className="tile-push"
+                  data-testid="engines-pushed"
+                  aria-label={label}
+                  title={pushedTitle}
+                  onClick={action}
+                >
+                  {badgeText}
+                </button>
+              );
+            })()}
           {onTuneEngines !== undefined && (
             <button
               type="button"
@@ -476,20 +501,7 @@ export function ShipSheetPanel({
       </div>
       <div className="sheet-headline-tile" title={t('hangar.statHelp.condition')}>
         <span>{t('hangar.headline.condition')}</span>
-        <b className={`tone-${conditionBand}`}>
-          {conditionText}
-          {warningCount > 0 && onShowWarnings !== undefined && (
-            <button
-              type="button"
-              className="tile-icon tile-icon-warn"
-              aria-label={t('hangar.warnings.open', { count: warningCount })}
-              title={t('hangar.warnings.open', { count: warningCount })}
-              onClick={onShowWarnings}
-            >
-              <span className="tile-icon-bare">{WARN_GLYPH}</span>
-            </button>
-          )}
-        </b>
+        <b className={`tone-${conditionBand}`}>{conditionText}</b>
       </div>
       {!profileView && (
         <div className="sheet-headline-tile" title={t('hangar.statHelp.energyCont')}>
@@ -510,6 +522,11 @@ export function ShipSheetPanel({
         {problemCount > 0
           ? t('hangar.summary.problemCount', { count: problemCount })
           : t('hangar.summary.ready')}
+        {warningCount > 0 && onShowWarnings !== undefined && !badgeVisible && (
+          <button type="button" className="link-btn sheet-status-warn" onClick={onShowWarnings}>
+            {t('hangar.warnings.open', { count: warningCount })}
+          </button>
+        )}
       </div>
       {viewToggle}
       {profileView && headline}

@@ -83,7 +83,26 @@ describe('ShipSheetPanel headline', () => {
     ]);
   });
 
-  it('shows the warnings as a (!) beside the condition that opens them', () => {
+  const pushed = { chem: 1.45, ion: 1 };
+
+  it('has no warning mark on the Condition tile', () => {
+    renderWithProviders(
+      <ShipSheetPanel
+        shipClass="BALANCED"
+        sheet={sheet}
+        problemCount={0}
+        warningCount={2}
+        onShowWarnings={vi.fn()}
+        installedCatalogs={[]}
+      />,
+    );
+    expect(screen.getByText('Ready to fly')).toBeInTheDocument();
+    const tile = headlineTile('Condition');
+    expect(within(tile).queryByRole('button')).toBeNull();
+    expect(tile.textContent).not.toContain('\u26A0');
+  });
+
+  it('the overdrive badge opens the warnings when there are any', () => {
     const onShowWarnings = vi.fn();
     renderWithProviders(
       <ShipSheetPanel
@@ -91,13 +110,57 @@ describe('ShipSheetPanel headline', () => {
         sheet={sheet}
         problemCount={0}
         warningCount={2}
+        engineLevels={pushed}
+        onShowWarnings={onShowWarnings}
+        onTuneEngines={vi.fn()}
+        installedCatalogs={[]}
+      />,
+    );
+    const badge = screen.getByTestId('engines-pushed');
+    expect(badge.tagName).toBe('BUTTON');
+    expect(badge).toHaveAccessibleName('Warnings (2)');
+    expect(badge).toHaveTextContent('▲ 145%');
+    fireEvent.click(badge);
+    expect(onShowWarnings).toHaveBeenCalledTimes(1);
+  });
+
+  it('the overdrive badge opens the engine tuning when there are no warnings', () => {
+    const onTuneEngines = vi.fn();
+    renderWithProviders(
+      <ShipSheetPanel
+        shipClass="BALANCED"
+        sheet={sheet}
+        problemCount={0}
+        warningCount={0}
+        engineLevels={pushed}
+        onShowWarnings={vi.fn()}
+        onTuneEngines={onTuneEngines}
+        installedCatalogs={[]}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('engines-pushed'));
+    expect(onTuneEngines).toHaveBeenCalledTimes(1);
+  });
+
+  it('warnings with engines not pushed are on the status line', () => {
+    const onShowWarnings = vi.fn();
+    const { container } = renderWithProviders(
+      <ShipSheetPanel
+        shipClass="BALANCED"
+        sheet={sheet}
+        problemCount={0}
+        warningCount={2}
+        engineLevels={{ chem: 1, ion: 1 }}
         onShowWarnings={onShowWarnings}
         installedCatalogs={[]}
       />,
     );
-    expect(screen.getByText('Ready to fly')).toBeInTheDocument();
-    const button = within(headlineTile('Condition')).getByRole('button', { name: 'Warnings (2)' });
-    fireEvent.click(button);
+    expect(screen.queryByTestId('engines-pushed')).toBeNull();
+    fireEvent.click(
+      within(container.querySelector('.sheet-status') as HTMLElement).getByRole('button', {
+        name: 'Warnings (2)',
+      }),
+    );
     expect(onShowWarnings).toHaveBeenCalledTimes(1);
   });
 
@@ -245,7 +308,8 @@ describe('ShipSheetPanel ship identity', () => {
     );
     expect(screen.getByTestId('profile-breakdown')).toBeInTheDocument();
     expect(headlineTile('Structure')).toHaveTextContent('10 / 40');
-    fireEvent.click(screen.getByRole('button', { name: /warning/i }));
+    const status = document.querySelector('.sheet-status') as HTMLElement;
+    fireEvent.click(within(status).getByRole('button', { name: /warning/i }));
     expect(onShowWarnings).toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /engine/i }));
     expect(onTuneEngines).toHaveBeenCalled();
