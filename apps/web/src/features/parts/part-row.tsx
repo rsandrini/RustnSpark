@@ -19,7 +19,7 @@ export interface PartRowProps {
   fit?: PortFit;
 }
 
-// One listing as one compact line: art, name and kind, the fit chip, price, condition, Buy and (i).
+// One listing as two lines: the name in full, then the facts (kind, size, condition, price); the actions sit on the right.
 export function PartRow({ part, price, used = false, actions, compare, fit }: PartRowProps) {
   const { t, i18n } = useTranslation();
   const name = pickLocalized(part.displayName, i18n.language);
@@ -39,7 +39,7 @@ export function PartRow({ part, price, used = false, actions, compare, fit }: Pa
       <PartArt catalog={part.catalog} rarity={part.rarity} size={40} />
       <div className="part-row-main">
         <h2 className="part-row-name">{name}</h2>
-        <div className="part-row-meta">
+        <div className="part-row-facts">
           {used && <span className="used-tag">{t('market.used')}</span>}
           <MetaLine
             pieces={[
@@ -47,25 +47,27 @@ export function PartRow({ part, price, used = false, actions, compare, fit }: Pa
               `${part.catalog.w}×${part.catalog.h}`,
             ]}
           />
+          {part.broken === true && <span className="used-tag">{t('parts.broken')}</span>}
+          {condition !== undefined && condition < 100 && (
+            <span className="part-row-condition">
+              {t('port.conditionNow', { value: condition })}
+            </span>
+          )}
+          {price !== undefined && <b className="part-row-price">{money(price)}</b>}
         </div>
-      </div>
-      {verdict !== undefined && (
-        <span
-          className={`part-row-fit pcard-fit ${verdict.tone}`}
-          data-testid="part-fit"
-          title={t(`connectors.fit.${verdict.key}`, verdict.counts)}
-        >
-          <span aria-hidden="true">{verdict.icon}</span>{' '}
-          <span className="part-row-fit-text">
-            {t(`connectors.fit.${verdict.key}`, verdict.counts)}
+        {verdict !== undefined && (
+          <span
+            className={`part-row-fit pcard-fit ${verdict.tone}`}
+            data-testid="part-fit"
+            title={t(`connectors.fit.${verdict.key}`, verdict.counts)}
+          >
+            <span aria-hidden="true">{verdict.icon}</span>{' '}
+            <span className="part-row-fit-text">
+              {t(`connectors.fit.${verdict.key}`, verdict.counts)}
+            </span>
           </span>
-        </span>
-      )}
-      {part.broken === true && <span className="used-tag">{t('parts.broken')}</span>}
-      {condition !== undefined && condition < 100 && (
-        <span className="part-row-condition">{t('port.conditionNow', { value: condition })}</span>
-      )}
-      {price !== undefined && <b className="part-row-price">{money(price)}</b>}
+        )}
+      </div>
       <div className="part-row-actions">
         <PartInfoButton part={part} compare={compare} />
         {actions}

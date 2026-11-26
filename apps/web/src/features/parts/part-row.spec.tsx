@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { screen } from '@testing-library/react';
 import { renderWithProviders } from '../../test/utils';
 import { PartRow } from './part-row';
@@ -77,5 +79,25 @@ describe('PartRow', () => {
     expect(screen.getByText('Used')).toBeInTheDocument();
     expect(screen.getByText('BROKEN')).toBeInTheDocument();
     expect(screen.getByText(/60/)).toBeInTheDocument();
+  });
+
+  it('puts the name on its own line, then the facts', () => {
+    const { container } = renderWithProviders(
+      <PartRow part={{ ...part, condition: 60 }} price={1200} />,
+    );
+    const row = screen.getByTestId('part-row');
+    const name = row.querySelector('.part-row-name');
+    const facts = row.querySelector('.part-row-facts');
+    expect(name).not.toBeNull();
+    expect(facts).not.toBeNull();
+    expect(facts).toHaveTextContent('1,200 ¢');
+    expect(facts).toHaveTextContent('60');
+    expect(container.querySelector('.part-row-main')).toContainElement(facts as HTMLElement);
+    const css = readFileSync(join(__dirname, '../../styles/parts.css'), 'utf8');
+    const rule = (selector: string) =>
+      new RegExp(`(?:^|\\n)${selector.replace('.', '\\.')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+    expect(rule('.part-row')).toMatch(/display:\s*grid/);
+    expect(rule('.part-row')).toMatch(/grid-template-areas/);
+    expect(rule('.part-row-name')).not.toMatch(/nowrap/);
   });
 });

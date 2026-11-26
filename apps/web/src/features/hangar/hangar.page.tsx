@@ -40,6 +40,9 @@ import {
   type PartCompareContext,
 } from '../parts/part-detail';
 import { TrayPartRow } from './tray-part-row';
+import { PartFilterBar } from '../parts/part-filter-bar';
+import { matchesPartSearch } from '../parts/part-search';
+import { classOfGroup, partGroupOf } from '../parts/part-group';
 import { EngineTuning } from './engine-tuning';
 import { YardCallouts } from './yard-callouts';
 import { ShipSheetPanel } from './ship-sheet-panel';
@@ -313,6 +316,25 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     [effectiveLayout],
   );
   const trayParts = parts.filter((part) => !placedIds.has(part.id));
+  // The tray's own filter: a type (the shop's groups) and a name search.
+  const [trayGroup, setTrayGroup] = useState<string | null>(null);
+  const [traySearch, setTraySearch] = useState('');
+  const groupOfPart = (part: InventoryItem) =>
+    partGroupOf(part.catalog.partType, part.catalog.partClass);
+  const trayGroups = Array.from(new Set(trayParts.map(groupOfPart))).sort(
+    (a, b) => classOfGroup(a).localeCompare(classOfGroup(b)) || a.localeCompare(b),
+  );
+  const groupLabel = (group: string) =>
+    t(`hangar.partGroups.${group}`, { defaultValue: t(`hangar.partClasses.${group}`) });
+  const shownTrayParts = trayParts.filter(
+    (part) =>
+      (trayGroup === null || groupOfPart(part) === trayGroup) &&
+      matchesPartSearch(traySearch, [
+        pickLocalized(part.displayName, i18n.language),
+        pickLocalized(part.description, i18n.language),
+        groupLabel(groupOfPart(part)),
+      ]),
+  );
   // A part that arrives in the list after the screen is up (an engine handed over, a purchase) grows into place.
   const seenTray = useRef<ReadonlySet<string> | null>(null);
   const [arrived, setArrived] = useState<ReadonlySet<string>>(new Set());
@@ -1012,7 +1034,19 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     </div>
                   )}
                   {trayParts.length === 0 && <p className="muted">{t('hangar.trayEmpty')}</p>}
-                  {trayParts.map((part) => (
+                  {trayParts.length > 1 && (
+                    <PartFilterBar
+                      groups={trayGroups}
+                      group={trayGroup}
+                      onGroup={setTrayGroup}
+                      search={traySearch}
+                      onSearch={setTraySearch}
+                    />
+                  )}
+                  {trayParts.length > 1 && shownTrayParts.length === 0 && (
+                    <p className="muted">{t('parts.filter.noMatch')}</p>
+                  )}
+                  {shownTrayParts.map((part) => (
                     <TrayPartRow
                       key={part.id}
                       part={part}

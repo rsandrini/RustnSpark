@@ -2753,6 +2753,10 @@
     "done": "Rebocada ao porto por {{cost}} ¢. Combustível a bordo: {{fuel}}."
   },
   "parts": {
+    "filter": {
+      "search": "Buscar por nome ou tipo",
+      "noMatch": "Nenhuma peça bate com o filtro."
+    },
     "info": "Detalhes",
     "close": "Fechar",
     "size": "Tamanho",

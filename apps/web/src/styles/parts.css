@@ -730,65 +730,89 @@
 }
 .part-row {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-areas: 'art main actions';
   align-items: center;
-  gap: 10px;
+  gap: 4px 10px;
   padding: 8px 10px;
   border: 1px solid var(--rule);
   border-radius: 10px;
   background: var(--paper-2);
   min-width: 0;
 }
+.part-row > :first-child {
+  grid-area: art;
+}
 .part-row.broken {
   border-color: var(--bad);
 }
 .part-row-main {
-  flex: 1 1 auto;
+  grid-area: main;
   min-width: 0;
 }
 .part-row-name {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
-.part-row-meta {
+.part-row-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
   font-size: 12px;
   color: var(--muted);
 }
 .part-row-fit {
-  flex: 0 1 auto;
+  display: inline-block;
+  margin-top: 4px;
   padding: 3px 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 220px;
+  max-width: 100%;
 }
 .part-row-condition {
-  font-size: 12px;
-  color: var(--muted);
   white-space: nowrap;
 }
 .part-row-price {
   font-family: var(--font-mono);
   white-space: nowrap;
+  color: var(--ink);
 }
 .part-row-actions {
+  grid-area: actions;
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 0 0 auto;
 }
-@media (max-width: 640px) {
+@media (max-width: 480px) {
   .part-row {
-    flex-wrap: wrap;
+    grid-template-areas:
+      'art main'
+      '. actions';
+    grid-template-columns: 40px minmax(0, 1fr);
   }
-  .part-row-fit {
-    order: 5;
-    max-width: 100%;
+  .part-row-actions {
+    justify-self: end;
   }
+}
+.part-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.part-filter-bar > .input {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.part-filter-types {
+  min-width: 0;
+  max-width: 100%;
+}
+.part-filter-types .kit-tabs {
+  max-width: 100%;
 }
 .store-view {
   margin-left: auto;

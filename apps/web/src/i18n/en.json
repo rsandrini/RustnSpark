@@ -2753,6 +2753,10 @@
     "done": "Towed to port for {{cost}} ¢. Fuel on board: {{fuel}}."
   },
   "parts": {
+    "filter": {
+      "search": "Search by name or type",
+      "noMatch": "No part matches this filter."
+    },
     "info": "Details",
     "close": "Close",
     "size": "Size",

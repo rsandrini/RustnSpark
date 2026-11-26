@@ -34,7 +34,31 @@ export function useStoreView(): [StoreView, (view: StoreView) => void] {
   ];
 }
 
-/** The "Cards | List" segmented control. */
+const svg = (...paths: string[]) => (
+  <svg
+    viewBox="0 0 20 20"
+    width="20"
+    height="20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
+  >
+    {paths.map((d) => (
+      <path key={d} d={d} />
+    ))}
+  </svg>
+);
+
+const VIEW_ICON: Record<StoreView, JSX.Element> = {
+  cards: svg('M3.5 3.5h5v5h-5z', 'M11.5 3.5h5v5h-5z', 'M3.5 11.5h5v5h-5z', 'M11.5 11.5h5v5h-5z'),
+  list: svg('M3.5 5h13', 'M3.5 10h13', 'M3.5 15h13'),
+};
+
+/** The cards / list switch: two icon buttons named by their labels. */
 export function StoreViewToggle({
   value,
   onChange,
@@ -51,9 +75,11 @@ export function StoreViewToggle({
           type="button"
           className={value === view ? 'seg on' : 'seg'}
           aria-pressed={value === view}
+          aria-label={t(`market.view.${view}`)}
+          title={t(`market.view.${view}`)}
           onClick={() => onChange(view)}
         >
-          {t(`market.view.${view}`)}
+          {VIEW_ICON[view]}
         </button>
       ))}
     </div>

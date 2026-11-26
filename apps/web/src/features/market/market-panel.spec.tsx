@@ -274,9 +274,39 @@ describe('market panel: descriptions and filters', () => {
     fireEvent.click(screen.getByRole('button', { name: /More filters/ }));
     fireEvent.change(screen.getByLabelText('Condition'), { target: { value: 'all' } });
     fireEvent.click(screen.getByRole('button', { name: 'Show parts' }));
-    fireEvent.change(screen.getByLabelText('Search parts'), { target: { value: 'zzz' } });
+    fireEvent.change(screen.getByLabelText('Search by name or type'), { target: { value: 'zzz' } });
     expect(list()).toHaveLength(0);
     expect(screen.getByText('No parts match these filters.')).toBeInTheDocument();
+  });
+
+  it('finds a listing by its type name, ignoring case', async () => {
+    const shelf = (await (await fetch('/v1/locations/ceres/market')).json()) as {
+      listings: Array<Record<string, unknown> & { catalog: Record<string, unknown> }>;
+    };
+    const hull = shelf.listings[0]!;
+    const zap = {
+      ...hull,
+      listingId: 'catalog:ceres:weapon_laser_1',
+      displayName: { en: 'Zap One', 'pt-BR': 'Zap Um' },
+      catalog: { ...hull.catalog, partType: 'weapon_laser_1', partClass: 'WEAPON' },
+    };
+    server.use(
+      http.get('/v1/locations/:id/market', ({ params }) =>
+        HttpResponse.json({
+          locationId: String(params.id),
+          listings: [...shelf.listings, zap],
+          sellMinCondition: 1,
+          sellOffers: [],
+        }),
+      ),
+    );
+    await renderPortMarket();
+    await screen.findByText('Zap One');
+    fireEvent.change(screen.getByLabelText('Search by name or type'), {
+      target: { value: 'LASER' },
+    });
+    expect(document.querySelectorAll('.market-panel .pcard-grid .pcard')).toHaveLength(1);
+    expect(within(panel()).getByText('Zap One')).toBeInTheDocument();
   });
 
   it('narrows the list by rarity and by size', async () => {

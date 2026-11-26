@@ -25,3 +25,16 @@ describe('StoreViewToggle', () => {
     expect(readStoreView()).toBe('cards');
   });
 });
+
+describe('StoreViewToggle icons', () => {
+  it('is two icon buttons named by their labels', () => {
+    renderWithProviders(<StoreViewToggle value="list" onChange={() => undefined} />);
+    for (const name of ['Cards', 'List']) {
+      const button = screen.getByRole('button', { name });
+      expect(button.querySelector('svg')).not.toBeNull();
+      expect(button.textContent).toBe('');
+    }
+    expect(screen.getByRole('button', { name: 'List' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Cards' })).toHaveAttribute('aria-pressed', 'false');
+  });
+});

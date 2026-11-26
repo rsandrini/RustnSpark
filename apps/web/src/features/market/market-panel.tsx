@@ -9,9 +9,9 @@ import { useIntentKey } from '../../api/intent-key';
 import type { BuyResponse, MarketListing, MarketResponse, ShipSheet } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
-import { IconTabs } from '../../ui/kit/IconTabs';
 import { PortsLegend } from '../parts/ports-legend';
-import { ALL_ICON, partClassIcon } from './part-class-icon';
+import { PartFilterBar } from '../parts/part-filter-bar';
+import { matchesPartSearch } from '../parts/part-search';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
 import { PartRow } from '../parts/part-row';
@@ -185,7 +185,6 @@ export function MarketPanel({
   );
 
   const visible = useMemo(() => {
-    const needle = search.trim().toLowerCase();
     const nameOf = (listing: MarketListing) => pickLocalized(listing.displayName, i18n.language);
     const filtered = listings.filter((listing) => {
       if (!matchesPartGroup(listing.catalog.partType, listing.catalog.partClass, partClass)) {
@@ -201,9 +200,12 @@ export function MarketPanel({
       if (size !== 'all' && sizeOf(listing) !== size) return false;
       if (condition === 'new' && listing.kind !== 'catalog') return false;
       if (condition === 'used' && listing.kind !== 'used') return false;
-      if (needle === '') return true;
-      const haystack = `${nameOf(listing)} ${pickLocalized(listing.description, i18n.language)}`;
-      return haystack.toLowerCase().includes(needle);
+      const group = partGroupOf(listing.catalog.partType, listing.catalog.partClass);
+      return matchesPartSearch(search, [
+        nameOf(listing),
+        pickLocalized(listing.description, i18n.language),
+        t(`hangar.partGroups.${group}`, { defaultValue: t(`hangar.partClasses.${group}`) }),
+      ]);
     });
     const compare: Record<SortKey, (a: MarketListing, b: MarketListing) => number> = {
       name: (a, b) => nameOf(a).localeCompare(nameOf(b), i18n.language),
@@ -226,6 +228,7 @@ export function MarketPanel({
     opening,
     wallet,
     i18n.language,
+    t,
   ]);
 
   // What the ship lacks, read off its sheet (no server call): each need names the class of part
@@ -291,14 +294,6 @@ export function MarketPanel({
 
       <div className="market-filters" role="search">
         <div className="market-controls">
-          <input
-            className="input"
-            type="search"
-            value={search}
-            placeholder={t('market.searchPlaceholder')}
-            aria-label={t('market.search')}
-            onChange={(event) => setSearch(event.target.value)}
-          />
           <select
             className="input"
             value={sort}
@@ -335,19 +330,13 @@ export function MarketPanel({
           </button>
         </div>
         {!opening && <PortsLegend />}
-        <div className="market-types" role="group" aria-label={t('market.filterByType')}>
-          <IconTabs
-            tabs={[
-              { id: 'all', icon: ALL_ICON, label: t('market.all') },
-              ...classes.map((cls) => {
-                const label = t(`hangar.partGroups.${cls}`, {
-                  defaultValue: t(`hangar.partClasses.${cls}`),
-                });
-                return { id: cls, icon: partClassIcon(cls, label), label };
-              }),
-            ]}
-            value={partClass ?? 'all'}
-            onChange={(id) => setPartClass(id === 'all' ? null : id)}
+        <div className="market-types">
+          <PartFilterBar
+            groups={classes}
+            group={partClass}
+            onGroup={setPartClass}
+            search={search}
+            onSearch={setSearch}
           />
           {partClass !== null && !classes.includes(partClass) && (
             <button

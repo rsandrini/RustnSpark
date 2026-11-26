@@ -10,7 +10,7 @@ import {
   setShipStatus,
 } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
-import type { Placement, ShipSheet } from '../../api/generated';
+import type { InventoryItem, Placement, ShipSheet } from '../../api/generated';
 import { BALANCED_PROFILE } from '../../test/ship-profile-fixture';
 
 const onboarded = () =>
@@ -781,6 +781,40 @@ describe('hangar (S10.4)', () => {
       window.localStorage.clear();
     },
   );
+
+  it('filters the tray by type and by name', async () => {
+    server.use(onboarded());
+    const base = (await (await fetch('/v1/inventory')).json()) as InventoryItem[];
+    const shipNow = (await (await fetch('/v1/ships')).json()) as Array<{ layout: unknown[] }>;
+    // every part is loose in the hold
+    server.use(
+      http.get('/v1/inventory', () =>
+        HttpResponse.json(base.map((item) => ({ ...item, location: 'INVENTORY', shipId: null }))),
+      ),
+      http.get('/v1/ships', () =>
+        HttpResponse.json(shipNow.map((entry) => ({ ...entry, layout: [] }))),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+    const search = await screen.findByLabelText('Search by name or type');
+    const rowCount = () =>
+      screen.queryAllByRole('button', { name: /^Small Chemical Engine/ }).length;
+    expect(rowCount()).toBe(1);
+    expect(screen.getAllByRole('tab').length).toBeGreaterThan(2);
+    // a type name finds the part ("chemical" is in its name; "engine" is its type)
+    fireEvent.change(search, { target: { value: 'chemical' } });
+    expect(rowCount()).toBe(1);
+    expect(screen.queryByRole('button', { name: /^Cargo Rack/ })).toBeNull();
+    expect(screen.queryByText('No part matches this filter.')).toBeNull();
+    fireEvent.change(search, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('tab', { name: 'Tank' }));
+    expect(rowCount()).toBe(0);
+    fireEvent.click(screen.getByRole('tab', { name: 'All' }));
+    fireEvent.change(search, { target: { value: 'zzzz' } });
+    expect(rowCount()).toBe(0);
+    expect(screen.getByText('No part matches this filter.')).toBeInTheDocument();
+  });
 
   it('hovering a tray part shows the comparison inline, without clicking (owner request)', async () => {
     server.use(
