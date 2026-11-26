@@ -34,6 +34,8 @@ The parts swap is already blocked while `ON_MISSION` (`parts.service.ts:231`, `s
 6. DELIVERY, RACE, RESCUE (mobility) and MINING (dig) are `built-in` rows: they are declared in the table and their behaviour does not change.
 7. Defaults are first guesses for the sim to judge: `specialty.transport = { min_ratio: 0.5 }`, `specialty.escort = { min_ratio: 0.5, exponent: 0.5, fastest: 0.85, reference: 0.05, per_danger: 0.02 }`.
 8. No retro-compat: the factor is computed per viewer and never stored on an offer, so there is nothing to migrate. A dispatched mission keeps its planned duration.
+10. Made here (owner's TODO wording: 'a load above the hold needs several trips'): in the code DELIVERY carries the cargo, so DELIVERY becomes a `trips` row too: stat = the ship's cargo space (hold), need = the load; a load above the hold is flown in trips (`factor = 2*ceil(load/hold) - 1`, time only); below `specialty.delivery.min_ratio` (default 0.25 of the load: a hold under a quarter of the load) the job is REFUSED with the existing cargo blocker. New admin key `specialty.delivery = { min_ratio: 0.25 }` next to the other two (Task 1 adds it, Tasks 2-5 treat DELIVERY like TRANSPORT with the hold as the stat). Any 'hold at least as big as the load' hard check for DELIVERY is replaced by this minimum. Fixed-load/fixed-cargo-mode details: keep `cargo.mode` semantics (min/fixed/open) as they are and apply trips only to the load the ship would carry.
+11. Made here: extra trips cost TIME only (not fuel, encounters or wear): simple first version; the owner can ask for more later.
 9. A failing sim gate is REPORTED with numbers in `docs/TODO_v0.1.5.md` item 1. No silent tuning; balance is the owner's call.
 
 ## Global Constraints
