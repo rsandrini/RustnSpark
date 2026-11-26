@@ -669,14 +669,7 @@ describe('missions accept/hold API (S6.4)', () => {
         legs: [{ distance: 40, danger: 10, zone: 0, env: { id: 'belt', level: 1, fuelMult: 1 } }],
       });
 
-      // TODO(Task 5): parse once specialty/combat are in the schema
-      const row = await boardRow(player.token, escort.id).catch(async () => {
-        // the checklist carries the unit 'combat' before the contract learns it (Task 5): read the raw row
-        const board = await request(httpServer(testApp.app))
-          .get('/v1/locations/ceres/missions')
-          .set(auth(player.token));
-        return (board.body as SpecialtyRow[]).find((entry) => entry.id === escort.id)!;
-      });
+      const row = await boardRow(player.token, escort.id);
       const eligibility = BoardEligibilitySchema.parse(row.eligibility);
       expect(eligibility.eligible).toBe(false);
       expect(eligibility.reasons.map((reason) => reason.code)).toContain('ESCORT_STRENGTH');

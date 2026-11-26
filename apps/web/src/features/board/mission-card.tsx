@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 import { useIsPhone } from '../../ui/use-phone';
 import { useTranslation } from 'react-i18next';
 import type {
-  DisplayResponse,
   MissionOffer,
   WorldLocation,
   WorldResponse,
@@ -15,6 +14,7 @@ import { FactionBadge } from '../../ui/FactionBadge';
 import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
+import { requirementNumber, specialtyLine } from './requirement-number';
 import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
 import { FuelBlock } from './fuel-block';
 import { reasonLabel } from './reason-label';
@@ -51,17 +51,6 @@ export interface MissionCardProps {
   engineLevels?: { chem: number; ion: number };
 }
 
-/** A requirement figure as the player reads it: mobility on the display scale (like the ship sheet),
-    everything else as it is. */
-function requirementNumber(
-  value: number,
-  unit: string | undefined,
-  display: DisplayResponse,
-): string {
-  const shown = unit === 'mobility' ? scaleSpeed(value, display) : value;
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(shown);
-}
-
 // One offer with everything needed to decide: what the job is, where it goes, what it pays, how
 // long and how much fuel it takes for THIS ship, what it demands, and whether the ship can take it.
 export function MissionCard({
@@ -82,6 +71,7 @@ export function MissionCard({
 }: MissionCardProps) {
   const { t, i18n } = useTranslation();
   const { info } = offer;
+  const line = specialtyLine(info.specialty);
   const factions = useFactions().byId;
   const display = useDisplay();
   const title = pickLocalized(info.title, i18n.language);
@@ -160,8 +150,8 @@ export function MissionCard({
                   {req.needed !== undefined && req.actual !== undefined && (
                     <span className="req-numbers" data-testid={`req-${req.code}`}>
                       {t('board.requirementNumbers', {
-                        actual: requirementNumber(req.actual, req.unit, display),
-                        needed: requirementNumber(req.needed, req.unit, display),
+                        actual: requirementNumber(req.actual, req.unit, display, 'actual'),
+                        needed: requirementNumber(req.needed, req.unit, display, 'needed'),
                       })}
                     </span>
                   )}
@@ -350,6 +340,15 @@ export function MissionCard({
             </dd>
           </div>
         </dl>
+        {line !== null && (
+          <p className="mcard-specialty" data-testid="mcard-specialty">
+            {line.kind === 'trips'
+              ? t('board.specialty.trips', { count: line.count })
+              : line.kind === 'slower'
+                ? t('board.specialty.slower', { pct: line.pct })
+                : t('board.specialty.faster', { pct: line.pct })}
+          </p>
+        )}
 
         {/* Fuel sits right under the facts the pilot weighs (reward, time): what is aboard, what the trip needs and
           what the tank holds, in a sentence and a bar, with the one action that fixes it. */}

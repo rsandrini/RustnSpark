@@ -1865,6 +1865,7 @@ const boardOffer = (
     peakDanger: 5,
     peakZone: 1,
     estimate: { durationSeconds: 300, fuelNeeded: 8 },
+    specialty: null,
     material: null,
     requirements: [],
     race: null,
@@ -1888,13 +1889,27 @@ export const boardState: MissionOffer[] = [
       },
     },
   ),
-  boardOffer({
-    id: 'b-2',
-    type: 'TRANSPORT',
-    destinationId: 'cair',
-    reward: 800,
-    rewardEstimate: 900,
-  }),
+  boardOffer(
+    {
+      id: 'b-2',
+      type: 'TRANSPORT',
+      destinationId: 'cair',
+      reward: 800,
+      rewardEstimate: 900,
+    },
+    // a group above the seats: two trips
+    {
+      specialty: {
+        stat: 'passengers',
+        need: 8,
+        have: 4,
+        minimum: 2,
+        factor: 3,
+        trips: 2,
+        met: true,
+      },
+    },
+  ),
   boardOffer(
     {
       id: 'b-3',

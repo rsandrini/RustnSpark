@@ -2464,6 +2464,13 @@
       "finish": "Finish"
     },
     "requirementNumbers": "Your ship: {{actual}} · needs {{needed}}",
+    "specialty": {
+      "slower": "{{pct}}% slower for your ship",
+      "faster": "{{pct}}% faster for your ship",
+      "trips": "{{count}} trips",
+      "trips_one": "{{count}} trip",
+      "trips_other": "{{count}} trips"
+    },
     "lowFuelCapacity": "This trip needs {{needed}} fuel but your tanks hold only {{cap}}, so refuelling will not be enough: install more tank capacity, or pick a shorter route.",
     "busyScavenging": "Scavenging…",
     "yourMission": "Your mission",

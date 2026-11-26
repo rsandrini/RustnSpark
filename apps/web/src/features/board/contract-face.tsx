@@ -6,7 +6,8 @@ import { Countdown } from '../../ui/Countdown';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
 import { formatDuration } from '../../ui/duration';
-import { scaleSpeed, useDisplay } from '../../ui/display';
+import { useDisplay } from '../../ui/display';
+import { requirementNumber, specialtyLine } from './requirement-number';
 import { BlockerChip } from '../../ui/kit/BlockerChip';
 import { RiskPips } from '../../ui/kit/RiskPips';
 import { usePrologueMode } from '../prologue/prologue-mode';
@@ -54,10 +55,7 @@ export function ContractFace({
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const place = (location: WorldLocation | undefined, fallback: string) =>
     location === undefined ? fallback : pickLocalized(location.displayName, i18n.language);
-  const number = (value: number, unit: string | undefined) =>
-    new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(
-      unit === 'mobility' ? scaleSpeed(value, display) : value,
-    );
+  const line = specialtyLine(info.specialty);
 
   // What the checklist names (unmet, with numbers) plus the reasons it does not: the same dedupe
   // the details card does.
@@ -74,8 +72,8 @@ export function ContractFace({
             const numbers =
               req.needed !== undefined && req.actual !== undefined
                 ? `: ${t('board.requirementNumbers', {
-                    actual: number(req.actual, req.unit),
-                    needed: number(req.needed, req.unit),
+                    actual: requirementNumber(req.actual, req.unit, display, 'actual'),
+                    needed: requirementNumber(req.needed, req.unit, display, 'needed'),
                   })}`
                 : '';
             return { key: req.code, label: `${name}${numbers}`, to: fixHref(fixOf(req.code)) };
@@ -147,6 +145,15 @@ export function ContractFace({
         <span className="mrow-fig">
           {info.estimate === null ? '—' : formatDuration(info.estimate.durationSeconds, t)}
         </span>
+        {line !== null && (
+          <span className="mrow-fig" data-testid="mrow-specialty">
+            {line.kind === 'trips'
+              ? t('board.specialty.trips', { count: line.count })
+              : line.kind === 'slower'
+                ? t('board.specialty.slower', { pct: line.pct })
+                : t('board.specialty.faster', { pct: line.pct })}
+          </span>
+        )}
         {info.estimate !== null && burnsFuel && (
           <span className={`mrow-fig${fuel !== null && fuel.state !== 'ok' ? ' warn' : ''}`}>
             {t('board.fuelUses', { needed: Math.round(info.estimate.fuelNeeded) })}

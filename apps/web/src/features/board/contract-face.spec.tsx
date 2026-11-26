@@ -195,4 +195,50 @@ describe('ContractFace', () => {
     const { container } = show(<ContractFace {...props()} />);
     expect(container.querySelector('.mrow-arrow')).toHaveAttribute('aria-hidden', 'true');
   });
+
+  it('shows the trips line for a transport above the seats', () => {
+    const o = offer({}, { specialty: { stat: 'passengers', factor: 3, trips: 2, met: true } });
+    show(<ContractFace {...props({ offer: o })} />);
+    expect(screen.getByText('2 trips')).toBeInTheDocument();
+  });
+
+  it('shows the trips line for a delivery above the hold', () => {
+    const o = offer({}, { specialty: { stat: 'cargo', factor: 2, trips: 3, met: true } });
+    show(<ContractFace {...props({ offer: o })} />);
+    expect(screen.getByText('3 trips')).toBeInTheDocument();
+  });
+
+  it('shows faster for a strong escort', () => {
+    const o = offer({}, { specialty: { stat: 'combat', factor: 0.85, trips: null, met: true } });
+    show(<ContractFace {...props({ offer: o })} />);
+    expect(screen.getByText('15% faster for your ship')).toBeInTheDocument();
+  });
+
+  it('shows nothing when the ship meets the need exactly', () => {
+    const o = offer({}, { specialty: { stat: 'combat', factor: 1, trips: null, met: true } });
+    show(<ContractFace {...props({ offer: o })} />);
+    expect(screen.queryByText(/for your ship|trips/)).toBeNull();
+  });
+
+  it('ESCORT_STRENGTH renders as a blocker chip with percent numbers', () => {
+    const blocked = offer(
+      { eligibility: { eligible: false, reasons: [] } },
+      { requirements: [unmet('ESCORT_STRENGTH', { needed: 0.125, actual: 0.06, unit: 'combat' })] },
+    );
+    show(<ContractFace {...props({ offer: blocked })} />);
+    const chip = within(screen.getByRole('group')).getByRole('link');
+    expect(chip).toHaveTextContent('6%');
+    expect(chip).toHaveTextContent('13%');
+  });
+
+  it('a fractional cargo minimum is shown rounded up, never 0.25', () => {
+    const blocked = offer(
+      { eligibility: { eligible: false, reasons: [] } },
+      { requirements: [unmet('CARGO_TYPE', { needed: 0.25, actual: 0, unit: 'cargo' })] },
+    );
+    show(<ContractFace {...props({ offer: blocked })} />);
+    const chip = within(screen.getByRole('group')).getByRole('link');
+    expect(chip).toHaveTextContent('needs 1');
+    expect(chip).not.toHaveTextContent('0.25');
+  });
 });

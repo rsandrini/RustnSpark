@@ -2464,6 +2464,13 @@
       "finish": "Chegada"
     },
     "requirementNumbers": "Sua nave: {{actual}} · precisa de {{needed}}",
+    "specialty": {
+      "slower": "{{pct}}% mais lenta para a sua nave",
+      "faster": "{{pct}}% mais rápida para a sua nave",
+      "trips": "{{count}} viagens",
+      "trips_one": "{{count}} viagem",
+      "trips_other": "{{count}} viagens"
+    },
     "lowFuelCapacity": "Esta viagem precisa de {{needed}} de combustível, mas seus tanques guardam só {{cap}}; reabastecer não basta: instale mais capacidade de tanque ou escolha uma rota mais curta.",
     "busyScavenging": "Garimpando…",
     "yourMission": "Sua missão",
