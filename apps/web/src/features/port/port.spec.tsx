@@ -4,7 +4,10 @@ import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import {
+  addLooseTank,
   addWreck,
+  scrapBlockedIds,
+  scrapCalls,
   classicSquareCells,
   destroyEngine,
   economyState,
@@ -1028,8 +1031,8 @@ describe('port (S10.9)', () => {
 
     fireEvent.click(within(note).getByRole('button', { name: /Discard 1/ }));
     const popup = await screen.findByRole('dialog', { name: 'Destroy 1 damaged part(s)?' });
-    // Selling the scrap is on by default, so the notice reports the credits it earned.
-    expect(within(popup).getByRole('checkbox', { name: /Sell the scrap/ })).toBeChecked();
+    // Selling the scrap is opt-in: the pilot ticks the box to get the credits in the same call.
+    fireEvent.click(within(popup).getByRole('checkbox', { name: /Turn into scrap and sell/ }));
     fireEvent.click(within(popup).getByRole('button', { name: 'Destroy them' }));
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Discarded 1 damaged part(s), turning them into 1 scrap and selling it for 4 ¢.',
@@ -1037,17 +1040,26 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.queryByTestId('discard-note')).toBeNull());
   });
 
-  it('unchecking "sell the scrap" destroys the parts and keeps the scrap in storage', async () => {
+  it('the discard dialog leaves Turn into scrap and sell unchecked', async () => {
     addWreck();
     await renderPort();
     openPortTab('Your goods');
     const note = await screen.findByTestId('discard-note');
     fireEvent.click(within(note).getByRole('button', { name: /Discard 1/ }));
     const popup = await screen.findByRole('dialog', { name: 'Destroy 1 damaged part(s)?' });
-    fireEvent.click(within(popup).getByRole('checkbox', { name: /Sell the scrap/ }));
+    expect(
+      within(popup).getByRole('checkbox', { name: /Turn into scrap and sell/ }),
+    ).not.toBeChecked();
+    let body: unknown = null;
+    server.use(
+      http.post('/v1/inventory/discard', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ discarded: 1, scrapSold: 0, credits: 0 });
+      }),
+    );
     fireEvent.click(within(popup).getByRole('button', { name: 'Destroy them' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Discarded 1 damaged part(s).');
-    await waitFor(() => expect(screen.queryByTestId('discard-note')).toBeNull());
+    expect(body).toEqual({ sellScrap: false });
   });
 
   it('upgrade tab lists only parts the catalog has a next tier for (round 5, item 4)', async () => {
@@ -1266,6 +1278,106 @@ describe('port (S10.9)', () => {
     await renderPort();
     openPortTab('Your goods');
     expect(await screen.findByText('Common iron ore.')).toBeInTheDocument();
+  });
+
+  describe('turn a loose part into scrap', () => {
+    it('offers Turn into scrap on every loose part but the bridge', async () => {
+      addWreck();
+      await renderPort();
+      openPortTab('Your goods');
+      await screen.findByTestId('discard-note');
+      // part-cargo-b (fine), part-wreck (too damaged); the bridge is never offered
+      expect(await screen.findAllByRole('button', { name: 'Turn into scrap' })).toHaveLength(2);
+    });
+
+    it('is disabled on a part in repair', async () => {
+      repairShop.holdsEverything = true;
+      await renderPort();
+      openPortTab('Your goods');
+      const buttons = await screen.findAllByRole('button', { name: 'Turn into scrap' });
+      for (const button of buttons) expect(button).toBeDisabled();
+    });
+
+    it('is disabled while the ship is on a mission', async () => {
+      setShipActivity({ kind: 'flying', until: null, missionId: 'm1', repairUntil: null });
+      await renderPort();
+      openPortTab('Your goods');
+      const buttons = await screen.findAllByRole('button', { name: 'Turn into scrap' });
+      for (const button of buttons) expect(button).toBeDisabled();
+    });
+
+    it('confirms with the odds and scraps the part', async () => {
+      let materialsLoads = 0;
+      server.use(
+        http.get('/v1/materials', () => {
+          materialsLoads += 1;
+          return HttpResponse.json({
+            locationId: 'ceres',
+            materials: [],
+            fuel: 25,
+            fuelCap: 100,
+            space: { used: 0, capacity: 10 },
+          });
+        }),
+      );
+      await renderPort();
+      openPortTab('Your goods');
+      const [button] = await screen.findAllByRole('button', { name: 'Turn into scrap' });
+      const loadsBefore = materialsLoads;
+      fireEvent.click(button as HTMLElement);
+      const popup = await screen.findByRole('dialog', { name: /into scrap\?/ });
+      expect(await within(popup).findByText(/You get 1 to 4 scrap/)).toBeInTheDocument();
+      expect(popup).toHaveTextContent('50%');
+      expect(scrapCalls).toHaveLength(0);
+      fireEvent.click(within(popup).getByRole('button', { name: 'Scrap it' }));
+      expect(await screen.findByRole('status')).toHaveTextContent(/became 3 scrap\./);
+      expect(scrapCalls).toHaveLength(1);
+      await waitFor(() => expect(materialsLoads).toBeGreaterThan(loadsBefore));
+    });
+
+    it('warns that a tank with stored fuel loses it', async () => {
+      addLooseTank();
+      await renderPort();
+      openPortTab('Your goods');
+      const buttons = await screen.findAllByRole('button', { name: 'Turn into scrap' });
+      expect(buttons.length).toBeGreaterThan(1);
+      const card = (await screen.findByText('Small Tank')).closest('.pcard') as HTMLElement;
+      fireEvent.click(within(card).getByRole('button', { name: 'Turn into scrap' }));
+      const popup = await screen.findByRole('dialog', { name: /into scrap\?/ });
+      expect(await within(popup).findByText(/12 fuel/)).toBeInTheDocument();
+    });
+
+    it('a part the quote refuses as not scrappable gets no dead action', async () => {
+      scrapBlockedIds.add('part-cargo-b');
+      await renderPort();
+      openPortTab('Your goods');
+      const [button] = await screen.findAllByRole('button', { name: 'Turn into scrap' });
+      fireEvent.click(button as HTMLElement);
+      const popup = await screen.findByRole('dialog', { name: /into scrap\?/ });
+      expect(
+        await within(popup).findByText('This part cannot be turned into scrap.'),
+      ).toBeVisible();
+      expect(within(popup).queryByRole('button', { name: 'Scrap it' })).toBeNull();
+    });
+
+    it('shows the server error when the scrap call is refused anyway', async () => {
+      server.use(
+        http.post('/v1/inventory/:id/scrap', () =>
+          HttpResponse.json(
+            { statusCode: 409, message: { error: 'SHIP_ON_MISSION' } },
+            { status: 409 },
+          ),
+        ),
+      );
+      await renderPort();
+      openPortTab('Your goods');
+      const [button] = await screen.findAllByRole('button', { name: 'Turn into scrap' });
+      fireEvent.click(button as HTMLElement);
+      const popup = await screen.findByRole('dialog', { name: /into scrap\?/ });
+      await within(popup).findByText(/You get 1 to 4 scrap/);
+      fireEvent.click(within(popup).getByRole('button', { name: 'Scrap it' }));
+      expect(await screen.findByText('The ship is on a mission.')).toBeInTheDocument();
+    });
   });
 
   describe('your goods in groups', () => {

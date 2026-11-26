@@ -14,6 +14,8 @@ import type {
   MarketResponse,
   MaterialsResponse,
   DiscardResponse,
+  ScrapPartResponse,
+  ScrapQuoteResponse,
   PartUpgradeQuoteResponse,
   PartUpgradeResponse,
   RefuelQuoteResponse,
@@ -176,6 +178,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const refuelKey = useIntentKey();
   const repairKey = useIntentKey();
   const upgradeKey = useIntentKey();
+  const scrapKey = useIntentKey();
   const [upgradeConfirm, setUpgradeConfirm] = useState<UpgradeConfirm | null>(null);
 
   const shipsQuery = useQuery({
@@ -522,7 +525,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const [discardOpen, setDiscardOpen] = useState(false);
   // Owner TODO ("rework discard damaged"): the confirm dialog offers to sell the scrap the
   // discard produces, right there in the same call, instead of leaving it in storage.
-  const [discardSellScrap, setDiscardSellScrap] = useState(true);
+  const [discardSellScrap, setDiscardSellScrap] = useState(false);
   const discard = useMutation({
     mutationFn: () =>
       client.post<DiscardResponse>('/v1/inventory/discard', { sellScrap: discardSellScrap }),
@@ -546,6 +549,50 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       setActionError(errorText(t, error, t('port.failed')));
     },
   });
+
+  // Turn one loose part into scrap: the dialog shows the range and the odds from the quote, never a rolled value.
+  const [scrapTarget, setScrapTarget] = useState<InventoryItem | null>(null);
+  const [scrapError, setScrapError] = useState<string | null>(null);
+  const scrapQuote = useQuery({
+    queryKey: ['scrapQuote', scrapTarget?.id],
+    enabled: scrapTarget !== null,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+    queryFn: () =>
+      client.post<ScrapQuoteResponse>(`/v1/inventory/${scrapTarget?.id ?? ''}/scrap/quote`, {}),
+  });
+  const scrapPart = useMutation({
+    mutationFn: (partInstanceId: string) =>
+      client.post<ScrapPartResponse>(
+        `/v1/inventory/${partInstanceId}/scrap`,
+        {},
+        { idempotencyKey: scrapKey.keyFor(partInstanceId) },
+      ),
+    onSuccess: (response) => {
+      scrapKey.clear();
+      const name = scrapTarget === null ? '' : partName(scrapTarget);
+      setScrapTarget(null);
+      setScrapError(null);
+      setActionError(null);
+      setNotice(t('port.scrap.done', { name, count: response.pieces }));
+      afterTrade();
+    },
+    onError: (error) => {
+      haptic('error');
+      scrapKey.clear();
+      setScrapError(errorText(t, error, t('port.failed')));
+    },
+  });
+  const closeScrap = () => {
+    setScrapTarget(null);
+    setScrapError(null);
+  };
+  // The ship out on a job cannot have its parts touched; the server refuses it too.
+  const shipOnMission =
+    ship?.activity.kind === 'flying' ||
+    ship?.activity.kind === 'scavenging' ||
+    ship?.activity.kind === 'mining';
 
   // Scavenging is a timed job (a mission of its own): starting it sends the ship out and the pilot
   // to the Transit screen, where the report arrives when it ends.
@@ -903,6 +950,20 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                       >
                         {t('port.sell')}
                       </button>
+                      {!bridgeResize.isBridge(item) && (
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={inRepair || shipOnMission}
+                          onClick={() => {
+                            setNotice(null);
+                            setScrapError(null);
+                            setScrapTarget(item);
+                          }}
+                        >
+                          {t('port.scrap.action')}
+                        </button>
+                      )}
                     </>
                   }
                 />
@@ -1903,6 +1964,56 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             >
               {t('port.upgradeConfirm')}
             </button>
+          </div>
+        )}
+      </Popup>
+
+      <Popup
+        open={scrapTarget !== null}
+        title={
+          scrapTarget === null ? '' : t('port.scrap.confirmTitle', { name: partName(scrapTarget) })
+        }
+        onClose={closeScrap}
+      >
+        {scrapTarget !== null && (
+          <div className="stack">
+            {scrapQuote.isPending && <p className="sub">{t('loading')}</p>}
+            {scrapQuote.isError && (
+              <p className="error-text" role="alert">
+                {errorText(t, scrapQuote.error, t('port.failed'))}
+              </p>
+            )}
+            {scrapQuote.data !== undefined && (
+              <>
+                <p>
+                  {t('port.scrap.confirmBody', {
+                    min: scrapQuote.data.min,
+                    max: scrapQuote.data.max,
+                  })}
+                </p>
+                <p className="sub">
+                  {t('port.scrap.chance', { chance: Math.round(scrapQuote.data.chance * 100) })}
+                </p>
+                {(scrapTarget.storedFuel ?? 0) > 0 && (
+                  <p className="error-text">
+                    {t('port.scrap.tankWarning', { fuel: scrapTarget.storedFuel })}
+                  </p>
+                )}
+                {scrapError !== null && (
+                  <p className="error-text" role="alert">
+                    {scrapError}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className="btn danger"
+                  disabled={scrapPart.isPending}
+                  onClick={() => scrapPart.mutate(scrapTarget.id)}
+                >
+                  {t('port.scrap.confirm')}
+                </button>
+              </>
+            )}
           </div>
         )}
       </Popup>

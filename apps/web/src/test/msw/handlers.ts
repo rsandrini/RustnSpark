@@ -26,6 +26,8 @@ import type {
   PreviewResponse,
   RefreshResponse,
   DiscardResponse,
+  ScrapQuoteResponse,
+  ScrapPartResponse,
   RefuelQuoteResponse,
   RefuelResponse,
   RegisterResponse,
@@ -453,6 +455,29 @@ export function addWreck(): void {
   });
 }
 
+/** A loose tank carrying fuel (scrapping it destroys that fuel). */
+export function addLooseTank(): void {
+  inventoryState.push({
+    id: 'part-tank',
+    partType: 'tank_small',
+    displayName: partNameOf('tank_small'),
+    description: partDescriptionOf('tank_small'),
+    rarity: 'COMMON',
+    condition: 80,
+    broken: false,
+    location: 'INVENTORY',
+    shipId: null,
+    catalog: catalog('tank', 'TANK', { mass: 2, w: 1, h: 1 }),
+    connectors: [],
+    storedFuel: 12,
+  });
+}
+
+/** Parts the scrap endpoints refuse as not scrappable (an admin-zeroed part). */
+export const scrapBlockedIds = new Set<string>();
+/** Part ids the scrap endpoint was called for (one entry per POST that carried a key). */
+export const scrapCalls: string[] = [];
+
 /** Puts the fixture ship into a status (e.g. ADRIFT) for rescue scenarios. */
 export function setShipStatus(status: ShipStatus): void {
   shipStatus = status;
@@ -506,6 +531,8 @@ export function resetEconomyState(): void {
   rescueDueAt = null;
   rescueWaitMs = 600_000;
   inventoryState = starterInventory();
+  scrapBlockedIds.clear();
+  scrapCalls.length = 0;
   repairShop.holdsEverything = false;
   ionShip.on = false;
   tutorialProgressState = {
@@ -1205,6 +1232,31 @@ export const handlers = [
     const scrapSold = body.sellScrap === true ? discarded : 0;
     const credits = scrapSold * SCRAP_UNIT_PRICE;
     return ok<DiscardResponse>({ discarded, scrapSold, credits });
+  }),
+
+  http.post('/v1/inventory/:id/scrap/quote', ({ params }) => {
+    const id = String(params.id);
+    if (scrapBlockedIds.has(id)) {
+      return HttpResponse.json(
+        { statusCode: 409, message: { error: 'PART_NOT_SCRAPPABLE' } },
+        { status: 409 },
+      );
+    }
+    return ok<ScrapQuoteResponse>({ partInstanceId: id, min: 1, max: 4, chance: 0.5 });
+  }),
+  http.post('/v1/inventory/:id/scrap', ({ params, request }) => {
+    const refused = missingKey(request);
+    if (refused !== null) return refused;
+    const id = String(params.id);
+    scrapCalls.push(id);
+    inventoryState = inventoryState.filter((entry) => entry.id !== id);
+    return ok<ScrapPartResponse>({
+      partInstanceId: id,
+      base: 2,
+      bonus: 1,
+      pieces: 3,
+      scrapHeld: 3,
+    });
   }),
 
   http.post('/v1/parts/:id/upgrade/quote', ({ params }) => {

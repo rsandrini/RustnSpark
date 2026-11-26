@@ -1831,7 +1831,16 @@
     "discardedSold": "Discarded {{count}} damaged part(s), turning them into {{scrap}} scrap and selling it for {{credits}}.",
     "discardConfirmTitle": "Destroy {{count}} damaged part(s)?",
     "discardConfirmBody": "Every loose part under {{min}}% condition is destroyed for good and becomes scrap. Parts installed on the ship are never touched. This cannot be undone.",
-    "discardSellScrap": "Sell the scrap right away",
+    "scrap": {
+      "action": "Turn into scrap",
+      "confirmTitle": "Turn {{name}} into scrap?",
+      "confirmBody": "You get {{min}} to {{max}} scrap. The part is destroyed; this cannot be undone.",
+      "chance": "Chance of the bonus piece: {{chance}}%.",
+      "confirm": "Scrap it",
+      "done": "{{name}} became {{count}} scrap.",
+      "tankWarning": "The {{fuel}} fuel stored in this tank is lost with it."
+    },
+    "discardSellScrap": "Turn into scrap and sell",
     "discardConfirm": "Destroy them",
     "upgradeHelp": "Upgrade a part in place to its next rarity tier: same slot, same condition, better stats.",
     "upgradeNone": "None of your parts have a next tier to upgrade to right now.",

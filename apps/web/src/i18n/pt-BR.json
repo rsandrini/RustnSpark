@@ -1831,7 +1831,16 @@
     "discardedSold": "{{count}} peça(s) danificada(s) descartada(s), virando {{scrap}} de sucata e vendida por {{credits}}.",
     "discardConfirmTitle": "Destruir {{count}} peça(s) danificada(s)?",
     "discardConfirmBody": "Toda peça solta com menos de {{min}}% de condição é destruída de vez e vira sucata. Peças instaladas na nave nunca são tocadas. Não dá para desfazer.",
-    "discardSellScrap": "Vender a sucata agora",
+    "scrap": {
+      "action": "Transformar em sucata",
+      "confirmTitle": "Transformar {{name}} em sucata?",
+      "confirmBody": "Você recebe de {{min}} a {{max}} de sucata. A peça é destruída; não dá para desfazer.",
+      "chance": "Chance da peça de bônus: {{chance}}%.",
+      "confirm": "Desmontar",
+      "done": "{{name}} virou {{count}} de sucata.",
+      "tankWarning": "Os {{fuel}} de combustível guardados neste tanque se perdem com ele."
+    },
+    "discardSellScrap": "Transformar em sucata e vender",
     "discardConfirm": "Destruir",
     "upgradeHelp": "Melhore uma peça no lugar para o próximo tier de raridade: mesmo slot, mesma condição, atributos melhores.",
     "upgradeNone": "Nenhuma das suas peças tem um próximo tier para melhorar agora.",
