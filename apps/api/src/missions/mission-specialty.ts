@@ -197,3 +197,11 @@ export function specialtyStretch(
   const verdict = specialtyOf(type, offer, sheet, rules);
   return verdict !== null && verdict.met ? verdict.factor : 1;
 }
+
+/** The highest per-leg danger (0..10) of a route: what an escort's need grows with. Reads stored or parsed legs. */
+export function peakDangerOf(rawLegs: unknown): number {
+  const legs = (Array.isArray(rawLegs) ? rawLegs : []) as ReadonlyArray<{
+    readonly danger?: number;
+  }>;
+  return legs.reduce((peak, leg) => Math.max(peak, leg.danger ?? 0), 0);
+}

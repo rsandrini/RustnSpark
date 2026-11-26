@@ -22,6 +22,8 @@ import { flightShip } from '../ships/penalties.js';
 import { deriveSheet, rawMobility } from '../ships/sheet.deriver.js';
 import { parseDispatchLegs } from './dispatch.service.js';
 import { missionDuration } from './duration.calculator.js';
+import { peakDangerOf, specialtyStretch } from './mission-specialty.js';
+import { offerRequirements } from './requirements.checker.js';
 import { ACTIVE_STATUSES } from './missions.service.js';
 import { contractOdds, digExtra, drillRarityOf } from './mining-odds.js';
 import { loadMiningOres } from './mining-context.js';
@@ -154,6 +156,15 @@ export class EnginePreviewService {
       if (!mission) throw new NotFoundException('mission not found');
       if (mission.type === 'SCAVENGE') throw new ConflictException({ error: 'NOT_A_FLIGHT' });
       const legs = parseDispatchLegs(mission.legs);
+      // The ship's stat for this job stretches the time (the dispatch plans the same way), per sheet.
+      const template = await this.prisma.missionTemplate.findUnique({
+        where: { id: mission.templateId },
+        select: { requirements: true },
+      });
+      const specialtyOffer = {
+        requirements: offerRequirements(template?.requirements, mission.cargo),
+        peakDanger: peakDangerOf(mission.legs),
+      };
       // A mining mission also digs: a free job burns fuel for every tick it was set for; a contract
       // for the time the ship's drill expects to need (the dispatch plans the same way).
       const cargo = (mission.cargo ?? {}) as {
@@ -204,6 +215,7 @@ export class EnginePreviewService {
             shortTripExemptBelow: rules.missions.short_trip_exempt_below,
             timeScale: rules.missions.time_scale,
             classCutoffs: rules.missions.duration_class_cutoffs,
+            stretch: specialtyStretch(mission.type, specialtyOffer, sheet, rules),
           }).durationSeconds,
         fuelNeeded:
           digFuelOf(sheet) +

@@ -30,6 +30,7 @@ import { connectedPartIds, incorrectPortPartIds, outsidePartIds } from '../ships
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { loadHold, withHoldProblem, withMiningCargoProblem } from '../ships/hold.js';
 import { cargoLoadFor, cargoTermsOf } from './cargo-mode.js';
+import { peakDangerOf, specialtyStretch } from './mission-specialty.js';
 import { checkMissionRequirements, offerRequirements } from './requirements.checker.js';
 import { checkViability } from '../ships/viability.js';
 import { flightShip, type AppliedPenalty } from '../ships/penalties.js';
@@ -422,6 +423,7 @@ export class DispatchService {
             requirements: offerRequirements(template?.requirements, mission.cargo),
             sheet,
             parts: installedConnected,
+            peakDanger: peakDangerOf(mission.legs),
           },
           rules,
         );
@@ -503,6 +505,13 @@ export class DispatchService {
         });
       }
       const totalDistance = legs.reduce((sum, leg) => sum + leg.distance, 0);
+      // The ship's stat for this job (seats, combat, hold) stretches the time: the planned time keeps that factor
+      // and the card's quote uses the same rule on the card sheet. A refused job never gets here (checked above).
+      const specialtyOffer = {
+        requirements: offerRequirements(template?.requirements, mission.cargo),
+        peakDanger: peakDangerOf(mission.legs),
+      };
+      const specialtyFactor = specialtyStretch(mission.type, specialtyOffer, flight.sheet, rules);
       const planned = missionDuration({
         totalDistance,
         mobility: flight.sheet.mob,
@@ -512,6 +521,7 @@ export class DispatchService {
         shortTripExemptBelow: rules.missions.short_trip_exempt_below,
         timeScale: rules.missions.time_scale,
         classCutoffs: rules.missions.duration_class_cutoffs,
+        stretch: specialtyFactor,
       });
       let { durationSeconds } = planned;
       const { durationClass } = planned;
@@ -647,6 +657,7 @@ export class DispatchService {
               shortTripExemptBelow: rules.missions.short_trip_exempt_below,
               timeScale: rules.missions.time_scale,
               classCutoffs: rules.missions.duration_class_cutoffs,
+              stretch: specialtyStretch(mission.type, specialtyOffer, cardSheet, rules),
             }).durationSeconds
           : null;
       const driftPct =
@@ -669,6 +680,7 @@ export class DispatchService {
             quotedMobility: cardSheet.mob,
             plannedSeconds: durationSeconds,
             plannedMobility: flight.sheet.mob,
+            specialtyFactor,
             durationK: rules.missions.duration_k,
             timeScale: rules.missions.time_scale,
             driftPct,

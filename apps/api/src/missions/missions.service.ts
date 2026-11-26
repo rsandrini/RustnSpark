@@ -42,6 +42,7 @@ import { fieldFor, resolveRace } from '../resolution/race/race.resolver.js';
 import { createRng } from '../common/rng/rng.js';
 import { parseCompetitors } from './resolution-input.js';
 import { missionDuration } from './duration.calculator.js';
+import { peakDangerOf, specialtyOf, specialtyStretch } from './mission-specialty.js';
 import { missionReward } from './mission.reward.js';
 import { missionStatusAfter } from './mission.state-machine.js';
 import {
@@ -97,6 +98,16 @@ export interface OfferInfo {
   readonly peakDanger: number;
   readonly peakZone: number;
   /** Time and fuel for the viewer's ship; null when they have no flyable ship. */
+  /** How the viewer's ship stands against the stat this mission type follows; null for built-in types or without a ship. */
+  readonly specialty: {
+    readonly stat: 'passengers' | 'combat' | 'mobility' | 'mining' | 'cargo';
+    readonly need: number;
+    readonly have: number;
+    readonly minimum: number;
+    readonly factor: number;
+    readonly trips: number | null;
+    readonly met: boolean;
+  } | null;
   readonly estimate: {
     readonly durationSeconds: number;
     readonly fuelNeeded: number;
@@ -343,6 +354,7 @@ export class MissionsService implements OnModuleInit {
             requirements: offerRequirements(requirementsById.get(draft.templateId), draft.cargo),
             sheet,
             parts: viewer.installed,
+            peakDanger: peakDangerOf(draft.legs),
           },
           rules,
         ).reasons.length === 0,
@@ -648,6 +660,7 @@ export class MissionsService implements OnModuleInit {
         requirements: offerRequirements(template?.requirements, mission.cargo),
         sheet,
         parts: installed,
+        peakDanger: peakDangerOf(mission.legs),
       },
       rules,
     );
@@ -870,6 +883,7 @@ export class MissionsService implements OnModuleInit {
               requirements: offerRequirements(requirementsById.get(row.templateId), row.cargo),
               sheet,
               parts: viewer.installed,
+              peakDanger: peakDangerOf(row.legs),
             },
             rules,
           );
@@ -935,8 +949,16 @@ function offerInfo(
 ): OfferInfo {
   const legs = (Array.isArray(row.legs) ? row.legs : []) as OfferLeg[];
   const totalDistance = legs.reduce((sum, leg) => sum + (leg.distance ?? 0), 0);
-  const peakDanger = legs.reduce((peak, leg) => Math.max(peak, leg.danger ?? 0), 0);
+  const peakDanger = peakDangerOf(legs);
   const peakZone = legs.reduce((peak, leg) => Math.max(peak, leg.zone ?? 0), 0);
+
+  // The specialty is read from the viewer's own sheet and never stored on the offer (it is per viewer).
+  const specialtyOffer = {
+    requirements: offerRequirements(requirementsJson, row.cargo),
+    peakDanger,
+  };
+  const verdict = sheet === null ? null : specialtyOf(row.type, specialtyOffer, sheet, rules);
+  const stretch = sheet === null ? 1 : specialtyStretch(row.type, specialtyOffer, sheet, rules);
 
   let estimate: OfferInfo['estimate'] = null;
   if (sheet !== null && tuned !== null && viability?.viable === true && tuned.sheet.mob > 0) {
@@ -950,6 +972,7 @@ function offerInfo(
         shortTripExemptBelow: rules.missions.short_trip_exempt_below,
         timeScale: rules.missions.time_scale,
         classCutoffs: rules.missions.duration_class_cutoffs,
+        stretch,
       }).durationSeconds,
       fuelNeeded: legs.reduce(
         (sum, leg) =>
@@ -1047,6 +1070,7 @@ function offerInfo(
               requirements: offerRequirements(requirementsJson, row.cargo),
               sheet,
               parts,
+              peakDanger,
             },
             rules,
           ),
@@ -1120,6 +1144,18 @@ function offerInfo(
     peakDanger,
     peakZone,
     estimate,
+    specialty:
+      verdict === null
+        ? null
+        : {
+            stat: verdict.stat,
+            need: verdict.need,
+            have: verdict.have,
+            minimum: verdict.minimum,
+            factor: verdict.factor,
+            trips: verdict.trips,
+            met: verdict.met,
+          },
     material:
       materialName === undefined
         ? null

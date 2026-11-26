@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/glob
 import type { INestApplication } from '@nestjs/common';
 import type { MissionInstance, MissionType } from '@prisma/client';
 import request from 'supertest';
+import { BoardEligibilitySchema, MissionOfferSchema } from '@rustandspark/contract';
 import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
@@ -584,6 +585,115 @@ describe('missions accept/hold API (S6.4)', () => {
     expect(reasons.map((reason) => reason.code)).toContain('PRESSURIZED_LIFE_SUPPORT');
     const stored = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
     expect(stored.status).toBe('AVAILABLE');
+  });
+
+  describe('the ship follows the mission type (specialty)', () => {
+    interface SpecialtyRow {
+      id: string;
+      eligibility: unknown;
+      info: {
+        estimate: { durationSeconds: number } | null;
+        specialty: {
+          stat: string;
+          have: number;
+          trips: number | null;
+          met: boolean;
+          factor: number;
+        } | null;
+      };
+    }
+
+    // The ship's first part gets a cabin and a life support of the given size (the dispatch spec does the same).
+    async function giveCabin(player: AuthPair, pax: number, lifeCap: number): Promise<void> {
+      const installed = await prisma.partInstance.findFirstOrThrow({
+        where: { shipId: player.shipId, ownerPlayerId: player.seeded.player.id },
+        include: { partCatalog: true },
+      });
+      await prisma.partCatalog.update({
+        where: { partType: installed.partCatalog.partType },
+        data: { specialProp: { pressurized: true, lifeSupport: true, pax, lifeCap } },
+      });
+    }
+
+    async function boardRow(token: string, id: string): Promise<SpecialtyRow> {
+      const board = await request(httpServer(testApp.app))
+        .get('/v1/locations/ceres/missions')
+        .set(auth(token));
+      expect(board.status).toBe(200);
+      const row = (board.body as SpecialtyRow[]).find((entry) => entry.id === id);
+      expect(row).toBeDefined();
+      MissionOfferSchema.parse(row);
+      return row!;
+    }
+
+    it('a transport above the seats shows trips and a longer estimate', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await makeVeteran(player.seeded.player.id);
+      await giveCabin(player, 2, 2);
+      await configService.refresh();
+      const one = await createMission({ type: 'TRANSPORT', cargo: { passengers: 2 } });
+      const four = await createMission({ type: 'TRANSPORT', cargo: { passengers: 4 } });
+
+      const single = await boardRow(player.token, one.id);
+      const group = await boardRow(player.token, four.id);
+
+      expect(single.info.specialty).toMatchObject({ have: 2, trips: 1, factor: 1, met: true });
+      expect(group.info.specialty).toMatchObject({ have: 2, trips: 2, factor: 3, met: true });
+      expect(group.eligibility).toEqual({ eligible: true, reasons: [] });
+      // the stretch rounds once: 3 x the single-trip time, give or take the rounding of the base
+      const { time_scale: timeScale } = configService.snapshot().rules.missions;
+      expect(
+        Math.abs(group.info.estimate!.durationSeconds - 3 * single.info.estimate!.durationSeconds),
+      ).toBeLessThanOrEqual(2 * timeScale);
+    });
+
+    it('a weak escort is refused with ESCORT_STRENGTH', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await makeVeteran(player.seeded.player.id);
+      // one weak weapon, no shield
+      // (the hold stands in for the weapon: it is not the bridge or an engine, so the ship keeps flying)
+      const installed = await prisma.partInstance.findFirstOrThrow({
+        where: {
+          shipId: player.shipId,
+          ownerPlayerId: player.seeded.player.id,
+          partCatalog: { crg: { gt: 0 } },
+        },
+        include: { partCatalog: true },
+      });
+      await prisma.partCatalog.update({
+        where: { partType: installed.partCatalog.partType },
+        data: { partClass: 'WEAPON', pdf: 5 },
+      });
+      await configService.refresh();
+      const escort = await createMission({
+        type: 'ESCORT',
+        legs: [{ distance: 40, danger: 10, zone: 0, env: { id: 'belt', level: 1, fuelMult: 1 } }],
+      });
+
+      const row = await boardRow(player.token, escort.id).catch(async () => {
+        // the checklist carries the unit 'combat' before the contract learns it (Task 5): read the raw row
+        const board = await request(httpServer(testApp.app))
+          .get('/v1/locations/ceres/missions')
+          .set(auth(player.token));
+        return (board.body as SpecialtyRow[]).find((entry) => entry.id === escort.id)!;
+      });
+      const eligibility = BoardEligibilitySchema.parse(row.eligibility);
+      expect(eligibility.eligible).toBe(false);
+      expect(eligibility.reasons.map((reason) => reason.code)).toContain('ESCORT_STRENGTH');
+
+      const accepted = await request(httpServer(testApp.app))
+        .post(`/v1/missions/${escort.id}/accept`)
+        .set(auth(player.token))
+        .send({ shipId: player.shipId });
+      // accept answers as it does for every unmet requirement: 400 MISSION_REQUIREMENTS_NOT_MET with the reasons
+      expect(accepted.status).toBe(400);
+      expect(accepted.body).toMatchObject({ message: { error: 'MISSION_REQUIREMENTS_NOT_MET' } });
+      const reasons = (accepted.body as { message: { reasons: Array<{ code: string }> } }).message
+        .reasons;
+      expect(reasons.map((reason) => reason.code)).toContain('ESCORT_STRENGTH');
+    });
   });
 
   it('rejects accepting with a non-viable ship before checking requirements', async () => {

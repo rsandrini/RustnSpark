@@ -288,6 +288,7 @@ export class TravelService {
       connectorsByInstance,
       rules,
     ).sheet;
+    // no specialty here: a trip has no stat to meet, so it is never stretched
     const durationSeconds =
       flightSheet.mob > 0
         ? missionDuration({

@@ -798,7 +798,7 @@ describe('ship dispatch API (S7.2)', () => {
     expect(stored.cargo).toMatchObject({ load: { mode: 'fixed', units: 5, need: 5 } });
   });
 
-  it('a fixed load bigger than the cargo space cannot depart', async () => {
+  it('a fixed load bigger than the cargo space is flown in trips, carrying what the hold takes', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const mission = await createMission(player, [40]);
@@ -806,11 +806,24 @@ describe('ship dispatch API (S7.2)', () => {
       where: { id: mission.templateId },
       data: { requirements: { cargo: 9, cargoMode: 'fixed' } },
     });
+    const ok = await dispatch(player.token, player.shipId, mission.id);
+    expect(ok.status).toBe(200);
+    const stored = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+    // starter hold 5 of 9: two trips, and the load aboard never exceeds the hold
+    expect(stored.cargo).toMatchObject({ load: { mode: 'fixed', units: 5, need: 9 } });
+  });
+
+  it('a load far above the cargo space (under the minimum share) cannot depart', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    await prisma.missionTemplate.update({
+      where: { id: mission.templateId },
+      data: { requirements: { cargo: 100, cargoMode: 'fixed' } },
+    });
     const refused = await dispatch(player.token, player.shipId, mission.id);
     expect(refused.status).toBe(400);
-    const problems = (refused.body as { message: { problems: Array<{ code: string }> } }).message
-      .problems;
-    expect(problems.map((problem) => problem.code)).toContain('HOLD_OVER_CAPACITY');
+    expect(refused.body).toMatchObject({ message: { error: 'MISSION_REQUIREMENTS_NOT_MET' } });
   });
 
   it('an open-cargo delivery loads the whole cargo space', async () => {
@@ -970,6 +983,120 @@ describe('ship dispatch API (S7.2)', () => {
       await app.close();
     }
   });
+  describe('dispatch follows the ship specialty', () => {
+    async function acceptedOfType(
+      player: AuthPair,
+      type: 'TRANSPORT' | 'ESCORT',
+      extra: { cargo?: unknown; danger?: number },
+    ): Promise<MissionInstance> {
+      const template = await prisma.missionTemplate.findFirstOrThrow({
+        where: { type },
+        orderBy: { id: 'asc' },
+      });
+      const route = await prisma.route.findFirstOrThrow({ orderBy: { id: 'asc' } });
+      return prisma.missionInstance.create({
+        data: {
+          templateId: template.id,
+          type,
+          factionId: template.factionId,
+          originId: 'ceres',
+          destinationId: 'hedus',
+          legs: [
+            {
+              routeId: route.id,
+              distance: 40,
+              danger: extra.danger ?? 1,
+              zone: 0,
+              env: { id: 'belt', level: 1, fuelMult: 1 },
+            },
+          ],
+          cargo: extra.cargo ?? {},
+          reward: 100,
+          expiresAt: new Date(Date.now() + 30 * 60_000),
+          seed: `spec-${randomUUID()}`,
+          status: 'ACCEPTED',
+          playerId: player.seeded.player.id,
+          shipId: player.shipId,
+          acceptedAt: new Date(),
+        },
+      });
+    }
+
+    it('dispatch plans the stretched time', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const installed = await prisma.partInstance.findFirstOrThrow({
+        where: { shipId: player.shipId, ownerPlayerId: player.seeded.player.id },
+        include: { partCatalog: true },
+      });
+      await prisma.partCatalog.update({
+        where: { partType: installed.partCatalog.partType },
+        data: { specialProp: { pressurized: true, lifeSupport: true, pax: 2, lifeCap: 2 } },
+      });
+      await configService.refresh();
+      const mission = await acceptedOfType(player, 'TRANSPORT', { cargo: { passengers: 4 } });
+
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(200);
+
+      const event = await prisma.playerEvent.findFirstOrThrow({
+        where: { playerId: player.seeded.player.id, type: 'mission.dispatch' },
+      });
+      const payload = event.payload as {
+        plannedSeconds: number;
+        quotedSeconds: number;
+        specialtyFactor: number;
+      };
+      expect(payload.specialtyFactor).toBe(3);
+      expect(payload.plannedSeconds).toBe(payload.quotedSeconds);
+    });
+
+    it('dispatch re-checks the specialty', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      // the starter weapon is made weak and the hold stands in for a strong shield (it is not the bridge or an engine)
+      const weapon = await prisma.partInstance.findFirstOrThrow({
+        where: {
+          shipId: player.shipId,
+          ownerPlayerId: player.seeded.player.id,
+          partCatalog: { partClass: 'WEAPON' },
+        },
+        include: { partCatalog: true },
+      });
+      const other = await prisma.partInstance.findFirstOrThrow({
+        where: {
+          shipId: player.shipId,
+          ownerPlayerId: player.seeded.player.id,
+          partCatalog: { crg: { gt: 0 } },
+        },
+        include: { partCatalog: true },
+      });
+      await prisma.partCatalog.update({
+        where: { partType: weapon.partCatalog.partType },
+        data: { pdf: 2 },
+      });
+      await prisma.partCatalog.update({
+        where: { partType: other.partCatalog.partType },
+        data: { esc: 1_000_000 },
+      });
+      await configService.refresh();
+      const mission = await acceptedOfType(player, 'ESCORT', {});
+
+      // the shield leaves the ship in port, after accept
+      await prisma.partInstance.update({
+        where: { id: other.id },
+        data: { location: 'INVENTORY', shipId: null },
+      });
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({ message: { error: 'MISSION_REQUIREMENTS_NOT_MET' } });
+      const codes = (
+        response.body as { message: { reasons: Array<{ code: string }> } }
+      ).message.reasons.map((reason) => reason.code);
+      expect(codes).toContain('ESCORT_STRENGTH');
+    });
+  });
+
   describe('dispatch re-checks the mission requirements (slice 0.1)', () => {
     type Reason = { code: string };
 
@@ -1097,7 +1224,7 @@ describe('ship dispatch API (S7.2)', () => {
       await freshSeededApp();
       const player = await onboardPlayer();
       const mission = await missionOfType(player, 'TRANSPORT');
-      // the ship carries a cabin (2 seats) and a life support (capacity 6), the group is 4
+      // the ship carries a cabin (2 seats) and a life support (capacity 6), the group is 6
       const installed = await prisma.partInstance.findFirstOrThrow({
         where: { shipId: player.shipId, ownerPlayerId: player.seeded.player.id },
         include: { partCatalog: true },
@@ -1110,7 +1237,7 @@ describe('ship dispatch API (S7.2)', () => {
       });
       await prisma.missionInstance.update({
         where: { id: mission.id },
-        data: { cargo: { passengers: 4 } },
+        data: { cargo: { passengers: 6 } },
       });
       const response = await dispatch(player.token, player.shipId, mission.id);
       expect(response.status).toBe(400);

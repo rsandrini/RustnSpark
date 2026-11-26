@@ -305,7 +305,10 @@ function eligibleTemplates(origin: FillerLocation, world: FillerWorld): FillerTe
   );
 }
 
-/** A trip's length at the board's reference ship, ignoring the game speed (`time_scale`). */
+/**
+ * A trip's length at the board's reference ship, ignoring the game speed (`time_scale`). No specialty stretch: the
+ * reference ship meets every need.
+ */
 export function referenceSeconds(totalDistance: number, rules: GameRules): number {
   return missionDuration({
     totalDistance,

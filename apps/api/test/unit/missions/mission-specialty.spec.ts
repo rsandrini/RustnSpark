@@ -3,6 +3,7 @@ import { MissionType } from '@prisma/client';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
+  peakDangerOf,
   SPECIALTY_TABLE,
   specialtyOf,
   specialtyStat,
@@ -233,5 +234,11 @@ describe('mission specialty', () => {
 
   it('every MissionType has a table entry', () => {
     expect(Object.keys(SPECIALTY_TABLE).sort()).toEqual(Object.values(MissionType).sort());
+  });
+
+  it('peakDangerOf is the highest leg danger, 0 without legs or danger', () => {
+    expect(peakDangerOf([{ danger: 2 }, { danger: 7 }, {}])).toBe(7);
+    expect(peakDangerOf([])).toBe(0);
+    expect(peakDangerOf(null)).toBe(0);
   });
 });
