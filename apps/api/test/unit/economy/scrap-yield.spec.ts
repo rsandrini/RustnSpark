@@ -73,4 +73,24 @@ describe('scrap yield', () => {
     const common = mean({ rarity: 'COMMON', cells: 1, condition: 20, basePrice: 100000 });
     expect(rare).toBeGreaterThan(common);
   });
+
+  it('caps between base and base + bonus when the sale would pay less', () => {
+    // bestSell = floor(500 * 1 * 0.6) = 300 -> 7 pieces at 40 each, against a legendary max of 8 + 3 + 1.
+    const input: ScrapYieldInput = {
+      rarity: 'LEGENDARY',
+      cells: 4,
+      condition: 100,
+      basePrice: 500,
+    };
+    const range = scrapYieldRange(input, R);
+    expect(range.min).toBe(7);
+    expect(range.max).toBe(7);
+    expect(rollScrapYield(input, R, createRng('scrap:cap')).pieces).toBe(7);
+    // The cap bites between base and base + bonus: EPIC 1 cell is 5..8, capped at 7.
+    const epic: ScrapYieldInput = { rarity: 'EPIC', cells: 1, condition: 100, basePrice: 500 };
+    expect(scrapYieldRange(epic, R)).toEqual({ min: 5, max: 7, chance: 0.45 });
+    for (let i = 0; i < 200; i += 1) {
+      expect(rollScrapYield(epic, R, createRng(`scrap:${i}`)).pieces).toBeLessThanOrEqual(7);
+    }
+  });
 });

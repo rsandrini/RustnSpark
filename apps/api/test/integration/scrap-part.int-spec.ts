@@ -4,6 +4,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/glob
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { ScrapPartResponseSchema, ScrapQuoteResponseSchema } from '@rustandspark/contract';
+import { createRng } from '../../src/common/rng/rng.js';
+import { rollScrapYield, scrapYieldRange } from '../../src/economy/scrap-yield.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -74,6 +76,42 @@ describe('scrap a loose part', () => {
     return row?.quantity ?? 0;
   }
 
+  async function expectedYield(id: string) {
+    const part = await prisma.partInstance.findUniqueOrThrow({
+      where: { id },
+      include: { partCatalog: true },
+    });
+    const scrapRow = await prisma.material.findUniqueOrThrow({ where: { id: 'scrap' } });
+    const e = configService.snapshot().rules.economy;
+    const pick = (t: Readonly<Record<string, number>>) => ({
+      COMMON: t['COMMON'] ?? 0,
+      UNCOMMON: t['UNCOMMON'] ?? 0,
+      RARE: t['RARE'] ?? 0,
+      EPIC: t['EPIC'] ?? 0,
+      LEGENDARY: t['LEGENDARY'] ?? 0,
+    });
+    const rules = {
+      base: pick(e.scrap_yield_base),
+      perExtraCell: e.scrap_yield_per_cell,
+      bonusRolls: e.scrap_bonus_rolls,
+      bonusChance: pick(e.scrap_bonus_chance),
+      sellRatio: e.sell_ratio,
+      sellMinCondition: e.sell_min_condition,
+      scrapUnitPrice: scrapRow.basePrice,
+    };
+    const input = {
+      rarity: part.partCatalog.rarity,
+      cells: part.partCatalog.w * part.partCatalog.h,
+      condition: part.condition,
+      basePrice: part.partCatalog.basePrice,
+    };
+    return {
+      input,
+      range: scrapYieldRange(input, rules),
+      roll: rollScrapYield(input, rules, createRng(`scrap:${id}`)),
+    };
+  }
+
   function quote(token: string, id: string) {
     return request(httpServer(testApp.app))
       .post(`/v1/inventory/${id}/scrap/quote`)
@@ -96,8 +134,9 @@ describe('scrap a loose part', () => {
     expect(response.status).toBe(200);
     const body = contract(ScrapQuoteResponseSchema, response.body, 'scrap quote');
     expect(body.partInstanceId).toBe(id);
-    expect(body.max).toBeGreaterThanOrEqual(body.min);
-    expect(body.min).toBeGreaterThanOrEqual(1);
+    const expected = await expectedYield(id);
+    expect({ min: body.min, max: body.max, chance: body.chance }).toEqual(expected.range);
+    expect(body.chance).toBeGreaterThan(0);
     expect(await prisma.partInstance.count({ where: { id } })).toBe(1);
   });
 
@@ -105,9 +144,12 @@ describe('scrap a loose part', () => {
     const { playerId, token } = await onboard();
     const id = await addLoose(playerId, 'hull', 60);
     const before = await scrapHeld(playerId);
+    const expected = await expectedYield(id);
     const key = randomUUID();
     const first = await scrap(token, id, key);
     expect(first.status).toBe(200);
+    // The yield is the seeded roll for this part id: nothing random or time-based.
+    expect(first.body).toMatchObject(expected.roll);
     const body = contract(ScrapPartResponseSchema, first.body, 'scrap');
     expect(body.pieces).toBe(body.base + body.bonus);
     expect(body.scrapHeld).toBe(before + body.pieces);
@@ -120,6 +162,7 @@ describe('scrap a loose part', () => {
     expect(events[0]?.payload).toMatchObject({
       partInstanceId: id,
       partType: 'hull',
+      rarity: expected.input.rarity,
       condition: 60,
       base: body.base,
       bonus: body.bonus,
@@ -144,14 +187,6 @@ describe('scrap a loose part', () => {
     expect(results.map((r) => r.status).sort()).toEqual([200, 404]);
     const ok = results.find((r) => r.status === 200)!.body as { pieces: number };
     expect(await scrapHeld(playerId)).toBe(before + ok.pieces);
-  });
-
-  it('gives a part the same result however many copies of the same state exist', async () => {
-    const { playerId, token } = await onboard();
-    const id = await addLoose(playerId, 'hull', 100);
-    const first = (await quote(token, id)).body as { min: number; max: number };
-    const second = (await quote(token, id)).body as { min: number; max: number };
-    expect(second).toEqual(first);
   });
 
   it('refuses an installed part, a bridge, a part in repair and a ship on a mission; hides another pilot part', async () => {
@@ -204,5 +239,28 @@ describe('scrap a loose part', () => {
     });
     expect((await scrap(otherToken, loose)).status).toBe(404);
     expect((await quote(otherToken, loose)).status).toBe(404);
+  });
+
+  it('refuses a part the catalog gives no scrap value, on quote and scrap', async () => {
+    const { playerId, token } = await onboard();
+    const id = await addLoose(playerId, 'hull', 60);
+    await prisma.partCatalog.update({ where: { partType: 'hull' }, data: { scrapValue: 0 } });
+    const q = await quote(token, id);
+    expect(q.status).toBe(409);
+    expect(q.body).toMatchObject({ message: { error: 'PART_NOT_SCRAPPABLE' } });
+    const r = await scrap(token, id);
+    expect(r.status).toBe(409);
+    expect(r.body).toMatchObject({ message: { error: 'PART_NOT_SCRAPPABLE' } });
+    expect(await prisma.partInstance.count({ where: { id } })).toBe(1);
+  });
+
+  it('answers 409 and keeps the part when the scrap material is missing', async () => {
+    const { playerId, token } = await onboard();
+    const id = await addLoose(playerId, 'hull', 60);
+    await prisma.playerMaterial.deleteMany({ where: { materialId: 'scrap' } });
+    await prisma.material.delete({ where: { id: 'scrap' } });
+    const r = await scrap(token, id);
+    expect(r.status).toBe(409);
+    expect(await prisma.partInstance.count({ where: { id } })).toBe(1);
   });
 });

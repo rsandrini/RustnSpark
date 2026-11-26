@@ -42,6 +42,7 @@ interface ScrapCandidate {
     w: number;
     h: number;
     basePrice: number;
+    scrapValue: number;
   };
 }
 
@@ -79,6 +80,12 @@ export class ScrapPartService {
         select: { status: true },
       });
       if (ship?.status === 'ON_MISSION') throw new ConflictException({ error: 'SHIP_ON_MISSION' });
+
+      const scrapMaterial = await tx.material.findUnique({
+        where: { id: SCRAP_MATERIAL_ID },
+        select: { id: true },
+      });
+      if (scrapMaterial === null) throw new ConflictException({ error: 'PART_NOT_SCRAPPABLE' });
 
       const input = this.input(part);
       const result = rollScrapYield(input, await this.rules(tx), createRng(`scrap:${part.id}`));
@@ -127,7 +134,14 @@ export class ScrapPartService {
         condition: true,
         partType: true,
         partCatalog: {
-          select: { partClass: true, rarity: true, w: true, h: true, basePrice: true },
+          select: {
+            partClass: true,
+            rarity: true,
+            w: true,
+            h: true,
+            basePrice: true,
+            scrapValue: true,
+          },
         },
       },
     });
@@ -136,7 +150,8 @@ export class ScrapPartService {
   }
 
   private assertScrappable(part: ScrapCandidate): void {
-    if (part.partCatalog.partClass === 'BRIDGE') {
+    // A bridge, and a part the catalog says has no scrap value (as in discardDamaged), leave nothing.
+    if (part.partCatalog.partClass === 'BRIDGE' || part.partCatalog.scrapValue <= 0) {
       throw new ConflictException({ error: 'PART_NOT_SCRAPPABLE' });
     }
     if (part.location !== 'INVENTORY') throw new ConflictException({ error: 'PART_INSTALLED' });

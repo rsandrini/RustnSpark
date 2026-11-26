@@ -144,12 +144,21 @@ const economySchema = z.object({
   // "Turn into scrap" yield (see economy/scrap-yield.ts). Older stored rule sets get the defaults.
   scrap_yield_base: z
     .record(z.string(), z.number().min(0).max(50))
-    .default({ COMMON: 1, UNCOMMON: 2, RARE: 3, EPIC: 5, LEGENDARY: 8 }),
-  scrap_yield_per_cell: z.number().min(0).max(5).default(0.5),
-  scrap_bonus_rolls: z.number().int().min(0).max(10).default(3),
+    .default({ ...GAME_CONFIG_DEFAULTS.economy.scrap_yield_base }),
+  scrap_yield_per_cell: z
+    .number()
+    .min(0)
+    .max(5)
+    .default(GAME_CONFIG_DEFAULTS.economy.scrap_yield_per_cell),
+  scrap_bonus_rolls: z
+    .number()
+    .int()
+    .min(0)
+    .max(10)
+    .default(GAME_CONFIG_DEFAULTS.economy.scrap_bonus_rolls),
   scrap_bonus_chance: z
     .record(z.string(), z.number().min(0).max(1))
-    .default({ COMMON: 0.15, UNCOMMON: 0.25, RARE: 0.35, EPIC: 0.45, LEGENDARY: 0.55 }),
+    .default({ ...GAME_CONFIG_DEFAULTS.economy.scrap_bonus_chance }),
   repair_points_per_scrap: z.number().int().min(1).max(100).default(50),
   repair_scrap_max: z.number().int().min(0).max(20).default(0),
   sell_ratio: z.number().min(0).max(1),
