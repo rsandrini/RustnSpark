@@ -1298,12 +1298,16 @@ describe('port (S10.9)', () => {
       for (const button of buttons) expect(button).toBeDisabled();
     });
 
-    it('is disabled while the ship is on a mission', async () => {
-      setShipActivity({ kind: 'flying', until: null, missionId: 'm1', repairUntil: null });
-      await renderPort();
-      openPortTab('Your goods');
-      const buttons = await screen.findAllByRole('button', { name: 'Turn into scrap' });
-      for (const button of buttons) expect(button).toBeDisabled();
+    it('offers no enabled scrap action while the ship is on a mission', async () => {
+      // The server checks the ship's status; the page follows the same field.
+      server.use(
+        http.get('/v1/ships', () => HttpResponse.json([{ ...ship(), status: 'ON_MISSION' }])),
+      );
+      renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
+      await screen.findByText('The ship is on a mission.');
+      for (const button of screen.queryAllByRole('button', { name: 'Turn into scrap' })) {
+        expect(button).toBeDisabled();
+      }
     });
 
     it('confirms with the odds and scraps the part', async () => {
@@ -1327,12 +1331,83 @@ describe('port (S10.9)', () => {
       fireEvent.click(button as HTMLElement);
       const popup = await screen.findByRole('dialog', { name: /into scrap\?/ });
       expect(await within(popup).findByText(/You get 1 to 4 scrap/)).toBeInTheDocument();
-      expect(popup).toHaveTextContent('50%');
+      expect(popup).toHaveTextContent('Each bonus roll: 50%');
       expect(scrapCalls).toHaveLength(0);
       fireEvent.click(within(popup).getByRole('button', { name: 'Scrap it' }));
       expect(await screen.findByRole('status')).toHaveTextContent(/became 3 scrap\./);
       expect(scrapCalls).toHaveLength(1);
       await waitFor(() => expect(materialsLoads).toBeGreaterThan(loadsBefore));
+    });
+
+    it('the notice keeps the part name when the popup is closed before the answer', async () => {
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      server.use(
+        http.post('/v1/inventory/:id/scrap', async () => {
+          await gate;
+          return HttpResponse.json({
+            partInstanceId: 'x',
+            base: 2,
+            bonus: 1,
+            pieces: 3,
+            scrapHeld: 3,
+          });
+        }),
+      );
+      await renderPort();
+      openPortTab('Your goods');
+      const [button] = await screen.findAllByRole('button', { name: 'Turn into scrap' });
+      fireEvent.click(button as HTMLElement);
+      const popup = await screen.findByRole('dialog', { name: /into scrap\?/ });
+      await within(popup).findByText(/You get 1 to 4 scrap/);
+      fireEvent.click(within(popup).getByRole('button', { name: 'Scrap it' }));
+      fireEvent.keyDown(document, { key: 'Escape' });
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog', { name: /into scrap\?/ })).toBeNull(),
+      );
+      release();
+      const notice = await screen.findByRole('status');
+      await waitFor(() => expect(notice).toHaveTextContent(/became 3 scrap\./));
+      expect(notice.textContent).not.toMatch(/^\s*became/);
+    });
+
+    it('hides the chance line when the range is a single number', async () => {
+      server.use(
+        http.post('/v1/inventory/:id/scrap/quote', ({ params }) =>
+          HttpResponse.json({ partInstanceId: params.id, min: 2, max: 2, chance: 0.5 }),
+        ),
+      );
+      await renderPort();
+      openPortTab('Your goods');
+      const [button] = await screen.findAllByRole('button', { name: 'Turn into scrap' });
+      fireEvent.click(button as HTMLElement);
+      const popup = await screen.findByRole('dialog', { name: /into scrap\?/ });
+      expect(await within(popup).findByText(/You get 2 scrap\./)).toBeInTheDocument();
+      expect(popup).not.toHaveTextContent(/bonus roll/);
+    });
+
+    it('a scrap refused by the server also reloads the part list', async () => {
+      let loads = 0;
+      server.use(
+        http.get('/v1/inventory', () => {
+          loads += 1;
+          return undefined; // falls through to the default inventory handler
+        }),
+        http.post('/v1/inventory/:id/scrap', () =>
+          HttpResponse.json({ statusCode: 404, message: { error: 'NOT_FOUND' } }, { status: 404 }),
+        ),
+      );
+      await renderPort();
+      openPortTab('Your goods');
+      const [button] = await screen.findAllByRole('button', { name: 'Turn into scrap' });
+      const before = loads;
+      fireEvent.click(button as HTMLElement);
+      const popup = await screen.findByRole('dialog', { name: /into scrap\?/ });
+      await within(popup).findByText(/You get 1 to 4 scrap/);
+      fireEvent.click(within(popup).getByRole('button', { name: 'Scrap it' }));
+      await waitFor(() => expect(loads).toBeGreaterThan(before));
     });
 
     it('warns that a tank with stored fuel loses it', async () => {
@@ -1428,5 +1503,14 @@ describe('port (S10.9)', () => {
       expect(rule).not.toBeNull();
       expect(rule?.[0]).not.toMatch(/line-clamp/);
     });
+  });
+});
+
+describe('touch targets on a coarse pointer', () => {
+  it('give the status warning and the push badge a real 40px box', () => {
+    const css = readFileSync(join(__dirname, '../../styles/ship.css'), 'utf8');
+    const coarse = /@media \(pointer: coarse\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+    expect(coarse).toMatch(/button\.sheet-status-warn\s*\{[^}]*min-height:\s*40px/);
+    expect(coarse).toMatch(/button\.tile-push\s*\{[^}]*min-height:\s*40px/);
   });
 });

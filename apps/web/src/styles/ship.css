@@ -1656,10 +1656,21 @@ svg .yard-slot:focus-visible {
   text-transform: inherit;
   text-decoration: underline;
 }
-/* A 44px touch target for the badge without growing the headline row. */
+/* A 40px touch target for the badge and the warning link: a real box (the e2e width check
+   measures the bounding box), not only a hit area. */
 @media (pointer: coarse) {
+  button.sheet-status-warn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    min-width: 40px;
+    padding: 0 6px;
+  }
   button.tile-push {
     position: relative;
+    min-height: 40px;
+    min-width: 40px;
+    padding: 1px 10px;
   }
   button.tile-push::after {
     content: '';

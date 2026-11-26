@@ -1835,7 +1835,8 @@
       "action": "Turn into scrap",
       "confirmTitle": "Turn {{name}} into scrap?",
       "confirmBody": "You get {{min}} to {{max}} scrap. The part is destroyed; this cannot be undone.",
-      "chance": "Chance of the bonus piece: {{chance}}%.",
+      "confirmBodyExact": "You get {{count}} scrap. The part is destroyed; this cannot be undone.",
+      "chance": "Each bonus roll: {{chance}}%.",
       "confirm": "Scrap it",
       "done": "{{name}} became {{count}} scrap.",
       "tankWarning": "The {{fuel}} fuel stored in this tank is lost with it."

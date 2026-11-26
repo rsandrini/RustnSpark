@@ -1835,7 +1835,8 @@
       "action": "Transformar em sucata",
       "confirmTitle": "Transformar {{name}} em sucata?",
       "confirmBody": "Você recebe de {{min}} a {{max}} de sucata. A peça é destruída; não dá para desfazer.",
-      "chance": "Chance da peça de bônus: {{chance}}%.",
+      "confirmBodyExact": "Você recebe {{count}} de sucata. A peça é destruída; não dá para desfazer.",
+      "chance": "Cada rolagem de bônus: {{chance}}%.",
       "confirm": "Desmontar",
       "done": "{{name}} virou {{count}} de sucata.",
       "tankWarning": "Os {{fuel}} de combustível guardados neste tanque se perdem com ele."

@@ -1,6 +1,6 @@
 export type GoodsGroup = 'ore' | 'scrap' | 'cores';
 
-const CORE_IDS: ReadonlySet<string> = new Set(['core_fragment', 'prototype_core', 'ancient_core']);
+const CORE_IDS: ReadonlySet<string> = new Set(['core_fragment']);
 
 /** The goods screen section a held material belongs to: scrap, the cores and fragments, or ore. */
 export function goodsGroupOf(materialId: string): GoodsGroup {

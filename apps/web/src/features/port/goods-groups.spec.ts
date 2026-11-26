@@ -6,10 +6,8 @@ describe('goodsGroupOf', () => {
     expect(goodsGroupOf('scrap')).toBe('scrap');
   });
 
-  it('puts the core fragment and the cores together', () => {
+  it('puts the core fragment in the cores group', () => {
     expect(goodsGroupOf('core_fragment')).toBe('cores');
-    expect(goodsGroupOf('prototype_core')).toBe('cores');
-    expect(goodsGroupOf('ancient_core')).toBe('cores');
   });
 
   it('treats everything else as ore and minerals', () => {
@@ -22,7 +20,7 @@ describe('goodsGroupOf', () => {
 describe('groupGoods', () => {
   it('orders ore, scrap, cores and leaves the empty groups out', () => {
     const grouped = groupGoods([
-      { materialId: 'prototype_core' },
+      { materialId: 'core_fragment' },
       { materialId: 'scrap' },
       { materialId: 'iron' },
       { materialId: 'rare_crystals' },

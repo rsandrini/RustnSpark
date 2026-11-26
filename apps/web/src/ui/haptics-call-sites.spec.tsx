@@ -84,8 +84,8 @@ describe('haptic call sites', () => {
     renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
     await screen.findByRole('tab', { name: 'Market' });
     fireEvent.click(screen.getByRole('tab', { name: 'Your goods' }));
-    const row = (await screen.findByText(/Iron/)).closest('.pcard')!;
-    fireEvent.click(row.querySelector('button:not(.info-btn):not(.link)') as Element);
+    const ore = await screen.findByTestId('goods-ore');
+    fireEvent.click(within(ore).getAllByRole('button', { name: /Sell/ })[0] as Element);
     const popup = await screen.findByRole('dialog');
     fireEvent.click(within(popup).getByRole('button', { name: 'Sell' }));
     await waitFor(() => expect(haptics.haptic).toHaveBeenCalledWith('error'));

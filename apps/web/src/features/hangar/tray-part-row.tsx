@@ -36,9 +36,10 @@ export interface TrayPartRowProps {
   fit?: PortFit;
 }
 
+const NO_FIT_MARK = '✕';
+
 // One tray row: its own button, the (i) popup, and (owner request, round 5/6) a hover card
 // showing the same comparison, positioned beside the cursor and clamped to stay fully visible.
-const NO_FIT_MARK = '✕';
 
 export function TrayPartRow({
   part,

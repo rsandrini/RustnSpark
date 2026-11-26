@@ -563,15 +563,15 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       client.post<ScrapQuoteResponse>(`/v1/inventory/${scrapTarget?.id ?? ''}/scrap/quote`, {}),
   });
   const scrapPart = useMutation({
-    mutationFn: (partInstanceId: string) =>
+    mutationFn: ({ id }: { id: string; name: string }) =>
       client.post<ScrapPartResponse>(
-        `/v1/inventory/${partInstanceId}/scrap`,
+        `/v1/inventory/${id}/scrap`,
         {},
-        { idempotencyKey: scrapKey.keyFor(partInstanceId) },
+        { idempotencyKey: scrapKey.keyFor(id) },
       ),
-    onSuccess: (response) => {
+    // The name rides along in the variables: the popup may be closed before the answer arrives.
+    onSuccess: (response, { name }) => {
       scrapKey.clear();
-      const name = scrapTarget === null ? '' : partName(scrapTarget);
       setScrapTarget(null);
       setScrapError(null);
       setActionError(null);
@@ -582,6 +582,8 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       haptic('error');
       scrapKey.clear();
       setScrapError(errorText(t, error, t('port.failed')));
+      // A 404 means the part is gone: the list must not keep offering it.
+      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
   });
   const closeScrap = () => {
@@ -589,10 +591,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     setScrapError(null);
   };
   // The ship out on a job cannot have its parts touched; the server refuses it too.
-  const shipOnMission =
-    ship?.activity.kind === 'flying' ||
-    ship?.activity.kind === 'scavenging' ||
-    ship?.activity.kind === 'mining';
+  const shipOnMission = ship?.status === 'ON_MISSION';
 
   // Scavenging is a timed job (a mission of its own): starting it sends the ship out and the pilot
   // to the Transit screen, where the report arrives when it ends.
@@ -736,6 +735,12 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const sellOfferOf = (partInstanceId: string): number | null =>
     marketQuery.data?.sellOffers.find((offer) => offer.partInstanceId === partInstanceId)?.price ??
     null;
+
+  // What the port would pay for the loose parts it buys, shown like the material groups' worth.
+  const partsWorth = partsOnSale.reduce(
+    (sum, item) => (item.inRepair === true ? sum : sum + (sellOfferOf(item.id) ?? 0)),
+    0,
+  );
 
   const confirmTrade = () => {
     if (confirm === null) return;
@@ -898,7 +903,6 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       {tab === 'goods' && (
         <section className="stack">
           <h2>{t('port.yourGoods')}</h2>
-          {partsOnSale.length === 0 && <p className="sub">{t('port.noLooseParts')}</p>}
           {damagedCount > 0 && (
             <div className="panel discard-note" role="note" data-testid="discard-note">
               <p>{t('port.discardNote', { count: damagedCount, min: sellMin })}</p>
@@ -907,7 +911,15 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               </button>
             </div>
           )}
-          <h3 className="port-subhead">{t('port.goods.parts')}</h3>
+          <header className="goods-group-head">
+            <h3 className="port-subhead">{t('port.goods.parts')}</h3>
+            {partsWorth > 0 && (
+              <span className="goods-group-worth">
+                {t('port.goods.worth', { value: money(partsWorth) })}
+              </span>
+            )}
+          </header>
+          {partsOnSale.length === 0 && <p className="sub">{t('port.noLooseParts')}</p>}
           <div className="pcard-grid">
             {partsOnSale.map((item) => {
               const offer = sellOfferOf(item.id);
@@ -1986,14 +1998,18 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             {scrapQuote.data !== undefined && (
               <>
                 <p>
-                  {t('port.scrap.confirmBody', {
-                    min: scrapQuote.data.min,
-                    max: scrapQuote.data.max,
-                  })}
+                  {scrapQuote.data.min === scrapQuote.data.max
+                    ? t('port.scrap.confirmBodyExact', { count: scrapQuote.data.min })
+                    : t('port.scrap.confirmBody', {
+                        min: scrapQuote.data.min,
+                        max: scrapQuote.data.max,
+                      })}
                 </p>
-                <p className="sub">
-                  {t('port.scrap.chance', { chance: Math.round(scrapQuote.data.chance * 100) })}
-                </p>
+                {scrapQuote.data.min !== scrapQuote.data.max && (
+                  <p className="sub">
+                    {t('port.scrap.chance', { chance: Math.round(scrapQuote.data.chance * 100) })}
+                  </p>
+                )}
                 {(scrapTarget.storedFuel ?? 0) > 0 && (
                   <p className="error-text">
                     {t('port.scrap.tankWarning', { fuel: scrapTarget.storedFuel })}
@@ -2008,7 +2024,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                   type="button"
                   className="btn danger"
                   disabled={scrapPart.isPending}
-                  onClick={() => scrapPart.mutate(scrapTarget.id)}
+                  onClick={() =>
+                    scrapPart.mutate({ id: scrapTarget.id, name: partName(scrapTarget) })
+                  }
                 >
                   {t('port.scrap.confirm')}
                 </button>
