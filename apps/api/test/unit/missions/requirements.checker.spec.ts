@@ -524,3 +524,37 @@ describe('item 1 - the checklist follows the specialty minimum', () => {
     expect(codes(check('MINING', buildInstalled(rig), { cargo: 40 }))).toEqual(['CARGO_TYPE']);
   });
 });
+
+describe('EXPLORE follows the ship radar', () => {
+  const radar = (sen: number, condition = 100): ReturnType<typeof buildInstalled> => {
+    const parts = buildInstalled(STARTER);
+    const base = buildInstalled(['hull'])[0]!;
+    parts.push({
+      instance: { ...base.instance, id: 'radar-1', condition },
+      catalog: { ...base.catalog, partType: 'radar', partClass: 'SENSOR', sen },
+    });
+    return parts;
+  };
+  const rowOf = (parts: ReturnType<typeof buildInstalled>, area: number) =>
+    check('EXPLORE', parts, offerRequirements({}, { area })).checklist.find(
+      (entry) => entry.code === 'SENSOR_STRENGTH',
+    );
+
+  it('no radar / dead radar refused', () => {
+    expect(rowOf(buildInstalled(STARTER), 80)).toMatchObject({
+      met: false,
+      needed: 4,
+      actual: 0,
+      unit: 'sensor',
+    });
+    expect(rowOf(radar(8, 1), 80)).toMatchObject({ met: false, actual: 0 });
+  });
+
+  it('a wide radar meets area 120', () => {
+    expect(rowOf(radar(6), 120)).toMatchObject({ met: true, needed: 6, actual: 6 });
+  });
+
+  it('offerRequirements carries the offer area', () => {
+    expect(offerRequirements({}, { area: 80 })).toMatchObject({ area: 80 });
+  });
+});

@@ -2,6 +2,7 @@ import type { MissionType } from '@prisma/client';
 import type { GameRules } from '../config/game-config.types.js';
 import { headCountOf } from '../economy/reward.calculator.js';
 import { deriveShipProfile, deriveShipProfileDetail } from '../ships/ship-profile.js';
+import { areaOf } from '../resolution/explore/explore-scan.js';
 import type { ShipSheet } from '../ships/sheet.types.js';
 import type { RequirementReasonCode } from './requirements.checker.js';
 
@@ -14,11 +15,12 @@ import type { RequirementReasonCode } from './requirements.checker.js';
  * Curves:
  * - `power`: time follows stat/need, `factor = max(fastest, (need / max(have, minimum)) ^ exponent)`;
  * - `trips`: a need above the stat is flown in several trips, `factor = 2 * trips - 1` (time only);
+ * - `work`: the type's own rules time the work; the row sets the minimum and the blocker (`factor` is 1);
  * - `built-in`: the type's own rules handle it; no verdict here.
  * Below `minimum = need * min_ratio` the job is refused with the row's blocker. Pure functions, no I/O.
  */
-export type SpecialtyStat = 'passengers' | 'combat' | 'mobility' | 'mining' | 'cargo';
-export type SpecialtyCurve = 'power' | 'trips' | 'built-in';
+export type SpecialtyStat = 'passengers' | 'combat' | 'mobility' | 'mining' | 'cargo' | 'sensor';
+export type SpecialtyCurve = 'power' | 'trips' | 'work' | 'built-in';
 
 export interface SpecialtyKnobs {
   readonly min_ratio: number;
@@ -119,8 +121,18 @@ export const SPECIALTY_TABLE: Readonly<Record<MissionType, SpecialtyRow | null>>
   },
   TRAVEL: null,
   SCAVENGE: null,
-  // Placeholder: the row (sensor stat, work curve) arrives with the scan module.
-  EXPLORE: null,
+  // EXPLORE scans an area with the radar: the area is the need (default 1), the scan module times the work.
+  EXPLORE: {
+    stat: 'sensor',
+    curve: 'work',
+    blocker: 'SENSOR_STRENGTH',
+    wholeUnits: false,
+    knobs: (rules) => rules.specialty.explore,
+    needOf: (offer) => {
+      const area = areaOf(requirementRecord(offer));
+      return area > 0 ? area : 1;
+    },
+  },
 };
 
 /** Each extra trip goes there and back. */
@@ -155,6 +167,8 @@ export function specialtyStat(stat: SpecialtyStat, sheet: ShipSheet, rules: Game
       return deriveShipProfile(sheet, rules).mobility;
     case 'mining':
       return deriveShipProfile(sheet, rules).mining;
+    case 'sensor':
+      return sheet.sen;
   }
 }
 
@@ -181,6 +195,19 @@ export function specialtyOf(
     const ratio = divisor > 0 ? need / divisor : 1;
     const factor = Math.max(knobs.fastest ?? 0, ratio ** (knobs.exponent ?? 1));
     return { stat: row.stat, need, have, minimum, factor, trips: null, met, blocker: row.blocker };
+  }
+  if (row.curve === 'work') {
+    // The type times its own work: no stretch, only the minimum and the blocker.
+    return {
+      stat: row.stat,
+      need,
+      have,
+      minimum,
+      factor: 1,
+      trips: null,
+      met,
+      blocker: row.blocker,
+    };
   }
   const trips = divisor > 0 ? Math.max(1, Math.ceil(need / divisor)) : 1;
   return {

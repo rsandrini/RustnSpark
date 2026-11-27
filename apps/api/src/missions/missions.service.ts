@@ -99,7 +99,7 @@ export interface OfferInfo {
   readonly peakZone: number;
   /** How the viewer's ship stands against the stat this mission type follows; null for built-in types or without a ship. */
   readonly specialty: {
-    readonly stat: 'passengers' | 'combat' | 'mobility' | 'mining' | 'cargo';
+    readonly stat: 'passengers' | 'combat' | 'mobility' | 'mining' | 'cargo' | 'sensor';
     readonly need: number;
     readonly have: number;
     readonly minimum: number;

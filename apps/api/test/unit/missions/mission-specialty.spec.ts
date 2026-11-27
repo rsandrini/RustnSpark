@@ -21,6 +21,7 @@ function sheetWith(
     pax: number;
     lifeCap: number;
     crg: number;
+    sen: number;
   }>,
 ): ShipSheet {
   return {
@@ -265,5 +266,57 @@ describe('mission specialty', () => {
     expect(verdictAt(0)?.met).toBe(true);
     expect(verdictAt(2)?.met).toBe(true);
     expect(verdictAt(5)?.met).toBe(false);
+  });
+
+  describe('EXPLORE (the work curve)', () => {
+    const area = (n: number): { requirements: unknown; peakDanger: number } => ({
+      requirements: { area: n },
+      peakDanger: 0,
+    });
+
+    it('follows the radar: sen 4 meets area 80 (minimum 4), sen 3 does not', () => {
+      expect(specialtyOf('EXPLORE', area(80), sheetWith({ sen: 4 }), DEFAULT_RULES)).toEqual({
+        stat: 'sensor',
+        need: 80,
+        have: 4,
+        minimum: 4,
+        factor: 1,
+        trips: null,
+        met: true,
+        blocker: 'SENSOR_STRENGTH',
+      });
+      const weak = specialtyOf('EXPLORE', area(80), sheetWith({ sen: 3 }), DEFAULT_RULES);
+      expect(weak).toMatchObject({ met: false, blocker: 'SENSOR_STRENGTH' });
+    });
+
+    it('never stretches the time: the type times its own work', () => {
+      expect(specialtyStretch('EXPLORE', area(80), sheetWith({ sen: 3 }), DEFAULT_RULES)).toBe(1);
+      expect(specialtyStretch('EXPLORE', area(80), sheetWith({ sen: 0 }), DEFAULT_RULES)).toBe(1);
+    });
+
+    it('a 0.1 ratio is safe against float error (30 x 0.1) and a dead radar is refused, finite', () => {
+      const rules = {
+        ...DEFAULT_RULES,
+        specialty: { ...DEFAULT_RULES.specialty, explore: { min_ratio: 0.1 } },
+      };
+      expect(specialtyOf('EXPLORE', area(30), sheetWith({ sen: 3 }), rules)?.met).toBe(true);
+      const dead = specialtyOf('EXPLORE', area(30), sheetWith({ sen: 0 }), rules);
+      expect(dead?.met).toBe(false);
+      expect(Number.isFinite(dead?.factor)).toBe(true);
+    });
+
+    it('an offer without a valid area needs 1 and a NaN radar counts as 0', () => {
+      expect(
+        specialtyOf(
+          'EXPLORE',
+          { requirements: {}, peakDanger: 0 },
+          sheetWith({ sen: 1 }),
+          DEFAULT_RULES,
+        )?.need,
+      ).toBe(1);
+      expect(
+        specialtyOf('EXPLORE', area(80), sheetWith({ sen: Number.NaN }), DEFAULT_RULES)?.have,
+      ).toBe(0);
+    });
   });
 });

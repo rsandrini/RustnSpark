@@ -874,7 +874,9 @@ export const RequirementCheckSchema = z.object({
   /** Numeric requirements: what the ship needs and what it has (mobility in game units, shown on the display scale). */
   needed: z.number().optional(),
   actual: z.number().optional(),
-  unit: z.enum(['mobility', 'cargo', 'mining', 'fuel', 'passengers', 'combat']).optional(),
+  unit: z
+    .enum(['mobility', 'cargo', 'mining', 'fuel', 'passengers', 'combat', 'sensor'])
+    .optional(),
 });
 export type RequirementCheck = z.infer<typeof RequirementCheckSchema>;
 
@@ -942,7 +944,7 @@ export const OfferInfoSchema = z.object({
       trips, whether it meets the minimum); null for built-in types or without a ship. */
   specialty: z
     .object({
-      stat: z.enum(['passengers', 'combat', 'cargo', 'mobility', 'mining']),
+      stat: z.enum(['passengers', 'combat', 'cargo', 'mobility', 'mining', 'sensor']),
       need: z.number(),
       have: z.number(),
       minimum: z.number(),

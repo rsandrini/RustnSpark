@@ -4,6 +4,7 @@ import { headCountOf } from '../economy/reward.calculator.js';
 import type { InstalledPart } from '../parts/part.types.js';
 import { rawMobility } from '../ships/sheet.deriver.js';
 import type { ShipSheet } from '../ships/sheet.types.js';
+import { scanStrength, type ScanSensor } from '../resolution/explore/explore-scan.js';
 import { specialtyOf } from './mission-specialty.js';
 
 export type RequirementReasonCode =
@@ -17,7 +18,8 @@ export type RequirementReasonCode =
   | 'SPEED'
   | 'RACE_SPEED'
   | 'FUEL_CAPACITY'
-  | 'ESCORT_STRENGTH';
+  | 'ESCORT_STRENGTH'
+  | 'SENSOR_STRENGTH';
 
 export interface RequirementReason {
   code: RequirementReasonCode;
@@ -70,6 +72,11 @@ const ESCORT_STRENGTH: RequirementReason = {
   message: 'The ship is too weak to protect this client.',
 };
 
+const SENSOR_STRENGTH: RequirementReason = {
+  code: 'SENSOR_STRENGTH',
+  message: "The ship's radar is too weak for this area.",
+};
+
 const ESCORT_MOBILITY_MIN = 2;
 
 /**
@@ -120,7 +127,7 @@ export function offerRequirements(templateRequirements: unknown, offerCargo: unk
       ? (offerCargo as Record<string, unknown>)
       : {};
   // the head count lives per offer in its cargo and overrides a `passengers` key of the template
-  return { ...base, passengers: cargo.passengers };
+  return { ...base, passengers: cargo.passengers, area: cargo.area };
 }
 
 function parseHints(requirements: unknown): RequirementHints {
@@ -138,7 +145,8 @@ function parseHints(requirements: unknown): RequirementHints {
 
 /** What a numeric requirement compares: the ship has `actual` of `needed` (mobility in game units,
     unrounded — the web shows it on the display scale, like the ship sheet). */
-export type RequirementUnit = 'mobility' | 'cargo' | 'mining' | 'fuel' | 'passengers' | 'combat';
+export type RequirementUnit =
+  'mobility' | 'cargo' | 'mining' | 'fuel' | 'passengers' | 'combat' | 'sensor';
 
 export interface RequirementCheck extends RequirementReason {
   met: boolean;
@@ -224,9 +232,11 @@ export function missionRequirementChecklist(
         numeric(MINER, 'mining', 1, sheet.min),
         numeric(CARGO_TYPE, 'cargo', cargoNeeded, sheet.crg),
       ];
+    case 'EXPLORE':
+      // The radar's live strength (worn parts count for less, dead ones for nothing) against the area's minimum.
+      return [numeric(SENSOR_STRENGTH, 'sensor', minimum, scanStrength(sensorsOf(parts), rules))];
     case 'TRAVEL':
     case 'SCAVENGE':
-    case 'EXPLORE': // Task 2 adds the radar requirement.
       // Nothing to check: any ship that can fly can make a trip (viability is checked separately).
       return [];
     case 'RACE':
@@ -249,6 +259,14 @@ export function missionRequirementChecklist(
         ),
       ];
   }
+}
+
+function sensorsOf(parts: readonly InstalledPart[]): ScanSensor[] {
+  return parts.map((part) => ({
+    partClass: part.catalog.partClass,
+    sen: part.catalog.sen,
+    condition: part.instance.condition,
+  }));
 }
 
 export function checkMissionRequirements(
