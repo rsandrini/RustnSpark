@@ -1679,7 +1679,7 @@ svg .yard-slot:focus-visible {
   }
 }
 
-/* The hold: a chip in the flight summary that opens it, and the read-only list on the Ship screen. */
+/* The hold: a chip in the flight summary that opens its tab, and the read-only cards on the Ship screen. */
 .hold-chip {
   display: inline-flex;
   align-items: center;
@@ -1693,31 +1693,138 @@ svg .yard-slot:focus-visible {
   cursor: pointer;
 }
 
-.hold-panel {
-  margin: var(--space-3, 12px) 0;
-  min-width: 0;
-}
-
-.hold-panel-summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-
 .hold-body {
+  display: grid;
+  gap: var(--space-2, 8px);
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
+.hold-usage,
+.hold-carrying {
+  margin: 0;
+}
+
+.hold-section {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hold-head {
+  margin: 0;
+  font-size: var(--text-xs, 12px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Small cards: 2 columns on a 390px phone, 3-6 as the screen widens; minmax(0, 1fr) lets them shrink. */
+.hold-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.hold-grid-parts {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+}
+
+@media (min-width: 560px) {
+  .hold-grid:not(.hold-grid-parts) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .hold-grid:not(.hold-grid-parts) {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+.hold-cell,
+.hold-cell > .kit-tip {
+  display: block;
+  min-width: 0;
+}
+
+.hold-card,
+.hold-tile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--hairline, var(--border));
+  border-radius: 6px;
+}
+
+.hold-card {
+  min-width: 0;
+  cursor: help;
+}
+
+.hold-thumb {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  border-radius: 6px;
+  border-width: 1px;
+}
+
+.hold-card-text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.hold-card-name,
+.hold-tile-name {
+  min-width: 0;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hold-tile-name {
+  flex: 1 1 auto;
+}
+
+.hold-card-unit {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.hold-chip-cond {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+.hold-chip-cond.tone-ok {
+  color: var(--ok);
+}
+.hold-chip-cond.tone-warn {
+  color: var(--warn);
+}
+.hold-chip-cond.tone-bad {
+  color: var(--bad);
+}
+
+.hold-tabs {
+  margin: var(--space-2, 8px) 0;
+}
+
 @media (pointer: coarse) {
-  .hold-chip,
-  .hold-panel-summary {
-    min-height: 44px;
-  }
   .hold-chip {
+    min-height: 44px;
     min-width: 44px;
-  }
-  .hold-panel-summary {
-    display: flex;
-    align-items: center;
   }
 }

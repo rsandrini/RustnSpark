@@ -316,16 +316,20 @@ describe('transit (S10.7)', () => {
     const chip = await screen.findByTestId('hold-chip');
     expect(chip).toHaveTextContent(/Cargo/);
     expect(chip).toHaveTextContent(/8 \/ 10/);
-    expect(chip).toHaveAttribute('aria-expanded', 'false');
     expect(chip).toHaveAttribute('aria-controls', 'ship-hold');
-    // the panel is a sibling of the yard layout that a phone hides while the ship flies
-    expect(screen.getByTestId('hold-panel').closest('.hangar-layout')).toBeNull();
+    expect(screen.getByTestId('ship-tab-ship')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByTestId('hold-panel')).toBeNull();
     fireEvent.click(chip);
-    await waitFor(() => expect(screen.getByTestId('hold-panel')).toHaveAttribute('open'));
-    expect(chip).toHaveAttribute('aria-expanded', 'true');
-    await waitFor(() =>
-      expect(document.activeElement).toBe(screen.getByText('Hold', { selector: 'summary' })),
-    );
+    const panel = await screen.findByTestId('hold-panel');
+    expect(panel).toHaveAttribute('role', 'tabpanel');
+    // the panel is a sibling of the yard layout that a phone hides while the ship flies
+    expect(panel.closest('.hangar-layout')).toBeNull();
+    expect(screen.getByTestId('ship-tab-hold')).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(document.activeElement).toBe(panel));
+    // the tabs alternate: back to the ship details hides the hold
+    fireEvent.click(screen.getByTestId('ship-tab-ship'));
+    expect(screen.queryByTestId('hold-panel')).toBeNull();
+    fireEvent.click(chip);
     expect(await screen.findByTestId('goods-ore')).toBeInTheDocument();
   });
 

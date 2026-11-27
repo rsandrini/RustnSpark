@@ -784,11 +784,13 @@
       "hint": "Peças sobressalentes viajam de graça nos espaços da ponte (um por peça, qualquer tamanho ou raridade). Só a carga que uma missão embarca ocupa espaço de carga."
     },
     "holdView": {
+      "tabShip": "Nave",
+      "tabsLabel": "Visão da nave",
       "title": "Porão",
       "chipCargo": "Carga",
       "chipOre": "Espaço de minério",
-      "chipAriaCargo": "Carga: {{used}} de {{capacity}} unidades levadas. Mostrar o porão.",
-      "chipAriaOre": "Espaço de minério: {{space}} unidades. Mostrar o porão.",
+      "chipAriaCargo": "Carga: {{used}} de {{capacity}} unidades levadas. Abrir a aba Porão.",
+      "chipAriaOre": "Espaço de minério: {{space}} unidades. Abrir a aba Porão.",
       "usageCargo": "Peças sobressalentes {{parts}} de {{slots}} · Espaço de carga {{used}} de {{capacity}}",
       "usageOre": "Peças sobressalentes {{parts}} de {{slots}} · Espaço de minério {{space}}",
       "carrying": "Levando {{units}} unidades para {{mission}}",

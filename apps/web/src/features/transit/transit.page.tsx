@@ -47,10 +47,8 @@ export interface TransitPageProps {
   /** Embedded only: switches the host to its own "Board" tab (a route Link there would just
       reload the current page, since /board now redirects back to /hangar). */
   onGoToBoard?: () => void;
-  /** Embedded only: opens the host's read-only Hold view (the chip shown while the ship flies). */
+  /** Embedded only: selects the host's read-only Hold tab (the chip shown while the ship flies). */
   onGoToHold?: () => void;
-  /** Embedded only: whether that Hold view is open (the chip is its disclosure button). */
-  holdOpen?: boolean;
 }
 
 export function TransitPage({
@@ -58,7 +56,6 @@ export function TransitPage({
   embedded = false,
   onGoToBoard,
   onGoToHold,
-  holdOpen = false,
 }: TransitPageProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -391,7 +388,6 @@ export function TransitPage({
             type="button"
             className="hold-chip"
             data-testid="hold-chip"
-            aria-expanded={holdOpen}
             aria-controls="ship-hold"
             aria-label={
               holdFigure.kind === 'ore'

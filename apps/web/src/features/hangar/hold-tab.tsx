@@ -1,4 +1,4 @@
-import type { ReactNode, Ref } from 'react';
+import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
@@ -10,41 +10,16 @@ import type {
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { groupGoods } from '../port/goods-groups';
-import { MaterialGroup } from '../port/material-group';
-import { PartCard } from '../parts/part-card';
+import { HoldCard, HoldPartTile } from './hold-card';
 import { holdFigureOf } from './hold-load';
 
-export interface HoldPanelProps {
-  open: boolean;
-  onToggle: (open: boolean) => void;
-  /** The summary line, so the host can move focus to it when it opens the panel. */
-  summaryRef?: Ref<HTMLElement>;
-}
-
 /**
- * The hold as a read-only list, reachable on the Ship screen at all times (in flight too): the loose parts
- * and the materials with their quantities, the spare-part slots and cargo space in use, and the load a
- * mission carries. Selling stays at the port. Nothing is fetched while it is closed.
+ * The hold as a read-only tab of the Ship screen, reachable at all times (in flight too): the materials as
+ * small cards, the loose parts as compact tiles, the spare-part slots and cargo space in use on a slim line,
+ * and the load a mission carries. Selling stays at the port. Mounted only while the tab is selected, so
+ * nothing is fetched otherwise.
  */
-export function HoldPanel({ open, onToggle, summaryRef }: HoldPanelProps): ReactNode {
-  const { t } = useTranslation();
-  return (
-    <details
-      id="ship-hold"
-      className="panel hold-panel"
-      data-testid="hold-panel"
-      open={open}
-      onToggle={(event) => onToggle(event.currentTarget.open)}
-    >
-      <summary className="hold-panel-summary" ref={summaryRef}>
-        {t('hangar.holdView.title')}
-      </summary>
-      {open && <HoldBody />}
-    </details>
-  );
-}
-
-function HoldBody(): ReactNode {
+export function HoldTab(): ReactNode {
   const { t, i18n } = useTranslation();
   // The same queries (and keys) as the port's goods tab and the transit panel: no ship-status gate, the
   // API answers these reads while the ship is away.
@@ -81,9 +56,9 @@ function HoldBody(): ReactNode {
   // Docked, the port is one tab away: the hint is for the ship that is away.
   const sellable = (parts.length > 0 || materials.length > 0) && ship?.status !== 'IN_PORT';
   return (
-    <div className="stack hold-body">
+    <div className="hold-body">
       {hold !== undefined && figure !== null && (
-        <p className="sub" data-testid="hold-usage">
+        <p className="sub hold-usage" data-testid="hold-usage">
           {figure.kind === 'ore'
             ? t('hangar.holdView.usageOre', {
                 parts: hold.parts,
@@ -99,30 +74,36 @@ function HoldBody(): ReactNode {
         </p>
       )}
       {mission !== undefined && carried > 0 && (
-        <p data-testid="hold-carrying">
+        <p className="hold-carrying" data-testid="hold-carrying">
           {t('hangar.holdView.carrying', {
             units: carried,
             mission: pickLocalized(mission.brief.title, i18n.language),
           })}
         </p>
       )}
-      <header className="goods-group-head">
-        <h3 className="port-subhead">{t('port.goods.parts')}</h3>
-      </header>
-      {parts.length === 0 && <p className="sub">{t('hangar.holdView.noParts')}</p>}
-      <div className="pcard-grid">
-        {parts.map((item) => (
-          <PartCard key={item.id} part={item} />
-        ))}
-      </div>
+      <section className="hold-section" data-testid="hold-parts">
+        <h3 className="hold-head">{t('port.goods.parts')}</h3>
+        {parts.length === 0 && <p className="sub">{t('hangar.holdView.noParts')}</p>}
+        <ul className="hold-grid hold-grid-parts">
+          {parts.map((item) => (
+            <li key={item.id} className="hold-cell">
+              <HoldPartTile part={item} />
+            </li>
+          ))}
+        </ul>
+      </section>
       {materials.length === 0 && <p className="sub">{t('inventory.noMaterials')}</p>}
       {groupGoods(materials).map(({ group, items }) => (
-        <MaterialGroup
-          key={group}
-          group={group}
-          holdings={items}
-          money={(value) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`}
-        />
+        <section key={group} className="hold-section" data-testid={`goods-${group}`}>
+          <h3 className="hold-head">{t(`port.goods.${group}`)}</h3>
+          <ul className="hold-grid">
+            {items.map((holding) => (
+              <li key={holding.materialId} className="hold-cell">
+                <HoldCard holding={holding} />
+              </li>
+            ))}
+          </ul>
+        </section>
       ))}
       {sellable && <p className="sub">{t('hangar.holdView.sellHint')}</p>}
     </div>
