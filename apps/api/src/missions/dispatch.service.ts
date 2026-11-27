@@ -708,11 +708,13 @@ export class DispatchService {
               stretch: specialtyFactor,
             }).durationSeconds
           : null;
+      // The quote is the flight alone: the dig and the scan that follow it are left out of the comparison.
+      const flightSeconds = durationSeconds - digSecondsPlanned - scanSecondsPlanned;
       const driftPct =
-        quotedSeconds === null || durationSeconds <= 0
+        quotedSeconds === null || flightSeconds <= 0
           ? null
           : Math.round(
-              ((durationSeconds - quotedSeconds) / quotedSeconds) * PERCENT * DRIFT_DECIMALS,
+              ((flightSeconds - quotedSeconds) / quotedSeconds) * PERCENT * DRIFT_DECIMALS,
             ) / DRIFT_DECIMALS;
       await this.events.record(
         {
@@ -729,6 +731,7 @@ export class DispatchService {
             plannedSeconds: durationSeconds,
             plannedMobility: flight.sheet.mob,
             specialtyFactor,
+            ...(scanSecondsPlanned > 0 ? { scanSeconds: scanSecondsPlanned } : {}),
             durationK: rules.missions.duration_k,
             timeScale: rules.missions.time_scale,
             driftPct,
@@ -744,7 +747,7 @@ export class DispatchService {
       );
       if (driftPct !== null && Math.abs(driftPct) > DRIFT_WARN_PCT) {
         this.logger.warn(
-          `mission ${mission.id}: the card quoted ${quotedSeconds}s, the dispatch planned ${durationSeconds}s (${driftPct}%)`,
+          `mission ${mission.id}: the card quoted a ${quotedSeconds}s flight, the dispatch planned ${flightSeconds}s (${driftPct}%)`,
         );
       }
 

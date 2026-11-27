@@ -1343,14 +1343,28 @@ describe('ship dispatch API (S7.2)', () => {
       await giveRadar(player, 4);
       await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5000 } });
       const mission = await exploreMission(player, 60);
-      const card = await cardOf(player, mission.id);
+      const unscaled = await cardOf(player, mission.id);
+      // a game speed other than 1 stretches the flight only: the scan must not go through it
+      const setTimeScale = async (value: number): Promise<void> => {
+        await prisma.gameConfig.update({ where: { key: 'missions.time_scale' }, data: { value } });
+        await configService.refresh();
+      };
+      await setTimeScale(2);
+      let card: Awaited<ReturnType<typeof cardOf>>;
+      let response: request.Response;
+      try {
+        card = await cardOf(player, mission.id);
+        response = await dispatch(player.token, player.shipId, mission.id);
+      } finally {
+        await setTimeScale(GAME_CONFIG_DEFAULTS.missions.time_scale);
+      }
 
-      const response = await dispatch(player.token, player.shipId, mission.id);
       expect(response.status).toBe(200);
       const planned = (response.body as { durationSeconds: number }).durationSeconds;
+      expect(card.flightSeconds).toBe(2 * unscaled.flightSeconds);
       // the scan (10 ticks of 300 s) comes after the time scale: exactly 3000 s on top of the flight
-      expect(Math.abs(planned - (card.flightSeconds + 3000))).toBeLessThanOrEqual(1);
-      expect(Math.abs(card.durationSeconds - planned)).toBeLessThanOrEqual(1);
+      expect(planned).toBe(card.flightSeconds + 3000);
+      expect(card.durationSeconds).toBe(planned);
 
       const row = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
       const legs = row.legs as Array<{ scanTicks?: number }>;
@@ -1367,13 +1381,57 @@ describe('ship dispatch API (S7.2)', () => {
       const mission = await exploreMission(player, 60);
       const card = await cardOf(player, mission.id);
       // the scan burns 10 ticks x 25: leave the trip and a little, not the scan
-      await prisma.ship.update({
-        where: { id: player.shipId },
-        data: { fuel: card.fuelNeeded - 250 + 100 },
-      });
+      const tripFuel = card.fuelNeeded - 250;
+      const aboard = tripFuel + 100;
+      await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: aboard } });
       const response = await dispatch(player.token, player.shipId, mission.id);
       expect(response.status).toBe(409);
-      expect(response.body).toMatchObject({ message: { error: 'FUEL_INSUFFICIENT' } });
+      // `needed` counts the scan: the trip-only check (which this ship passes) would not report it
+      expect(response.body).toMatchObject({
+        message: {
+          error: 'FUEL_INSUFFICIENT',
+          needed: Math.ceil(tripFuel + 250),
+          have: Math.floor(aboard),
+        },
+      });
+    });
+
+    it('the engine preview quotes the same time and fuel as the card, scan included', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await giveRadar(player, 4);
+      const levels = { chem: 1.4, ion: 1.6 };
+      await prisma.ship.update({
+        where: { id: player.shipId },
+        data: { fuel: 5000, chemLevel: levels.chem, ionLevel: levels.ion },
+      });
+      const mission = await exploreMission(player, 60);
+      const card = await cardOf(player, mission.id);
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${player.shipId}/engine-preview`)
+        .set(auth(player.token))
+        .send({ ...levels, missionId: mission.id });
+      expect(response.status).toBe(200);
+      const { trip } = response.body as {
+        trip: { durationSeconds: number; fuelNeeded: number };
+      };
+      expect(trip.durationSeconds).toBe(card.durationSeconds);
+      expect(trip.fuelNeeded).toBeCloseTo(card.fuelNeeded, 6);
+    });
+
+    it('the dispatch audit measures drift on the flight alone and logs the scan', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await giveRadar(player, 4);
+      await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5000 } });
+      const mission = await exploreMission(player, 60);
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(200);
+      const audit = await prisma.playerEvent.findFirstOrThrow({
+        where: { playerId: player.seeded.player.id, type: 'mission.dispatch' },
+      });
+      expect(audit.payload).toMatchObject({ driftPct: 0, scanSeconds: 3000 });
     });
 
     it('dispatch re-checks the radar', async () => {
