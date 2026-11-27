@@ -4,6 +4,7 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
   boardTarget,
+  extraTypes,
   lengthBounds,
   nextSlot,
   requiredTypes,
@@ -222,5 +223,95 @@ describe('board composition', () => {
     const reach: BoardReach = new Map();
     expect(lengthBounds(reach, rules)).toBeNull();
     expect(nextSlot({ reach, live: [], capped: set(), rules })).toEqual({});
+  });
+
+  describe('extras slot', () => {
+    const exploreReach = reachOf({ ...MAIN, EXPLORE: [3, 600, 1800] });
+    const core = offers(
+      ['DELIVERY', 8400],
+      ['TRANSPORT', 300],
+      ['ESCORT', 300],
+      ['MINING', 300],
+      ['RACE', 300],
+      ['RACE', 300],
+      ['RESCUE', 600],
+    );
+
+    it('a full core board that can post EXPLORE asks for it before any length need', () => {
+      const live = offers(
+        ['DELIVERY', 300],
+        ['TRANSPORT', 300],
+        ['ESCORT', 300],
+        ['MINING', 300],
+        ['RACE', 300],
+        ['RACE', 300],
+      );
+      expect(nextSlot({ reach: exploreReach, live, capped: set(), rules })).toEqual({
+        types: set('EXPLORE'),
+      });
+      expect(
+        nextSlot({
+          reach: exploreReach,
+          live: [...core, ...offers(['EXPLORE', 900])],
+          capped: set(),
+          rules,
+        }),
+      ).toEqual({});
+    });
+
+    it('extras are not core: requiredTypes never lists EXPLORE', () => {
+      expect(requiredTypes(exploreReach, rules)).not.toContain('EXPLORE');
+      expect(extraTypes(exploreReach, rules)).toEqual(['EXPLORE']);
+    });
+
+    it('boardTarget grows by board_min_extras only where an extra type is reachable', () => {
+      expect(boardTarget(4, exploreReach, rules)).toBe(7);
+      expect(boardTarget(4, mainReach, rules)).toBe(6);
+      expect(boardTarget(10, exploreReach, rules)).toBe(10);
+      expect(boardTarget(7, exploreReach, rules)).toBe(7);
+    });
+
+    it("board_min_extras 0 restores today's slots exactly", () => {
+      const off = withRules({ board_min_extras: 0 });
+      expect(boardTarget(4, exploreReach, off)).toBe(6);
+      const withExplore = [...core, ...offers(['EXPLORE', 900])];
+      expect(
+        nextSlot({ reach: exploreReach, live: withExplore, capped: set(), rules: off }),
+      ).toEqual(nextSlot({ reach: mainReach, live: core, capped: set(), rules }));
+      expect(nextSlot({ reach: exploreReach, live: [], capped: set(), rules: off })).toEqual({
+        types: set('DELIVERY'),
+        length: 'long',
+      });
+    });
+
+    it('a capped extra is not asked for', () => {
+      const live = offers(
+        ['DELIVERY', 300],
+        ['TRANSPORT', 300],
+        ['ESCORT', 300],
+        ['MINING', 300],
+        ['RACE', 300],
+        ['RACE', 300],
+      );
+      expect(nextSlot({ reach: exploreReach, live, capped: set('EXPLORE'), rules })).toEqual({
+        types: set('DELIVERY', 'TRANSPORT', 'RESCUE'),
+        length: 'long',
+      });
+    });
+
+    it('unknown, core and NOT_BOARD names in board_extra_types are ignored; NaN extras disable', () => {
+      const odd = withRules({
+        board_extra_types: ['NOPE', 'DELIVERY', 'TRAVEL', 'EXPLORE', 'EXPLORE'],
+      });
+      expect(extraTypes(exploreReach, odd)).toEqual(['EXPLORE']);
+      expect(boardTarget(4, exploreReach, withRules({ board_min_extras: NaN }))).toBe(6);
+    });
+
+    it('the missing core step still comes first', () => {
+      expect(
+        nextSlot({ reach: exploreReach, live: offers(['DELIVERY', 8400]), capped: set(), rules })
+          .types,
+      ).toEqual(set('TRANSPORT'));
+    });
   });
 });

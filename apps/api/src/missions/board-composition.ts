@@ -58,8 +58,30 @@ export function requiredTypes(reach: BoardReach, rules: GameRules): MissionType[
   return required;
 }
 
+/** `board_extra_types` the place can post, in config order: never a core or NOT_BOARD type, never a duplicate. */
+export function extraTypes(reach: BoardReach, rules: GameRules): MissionType[] {
+  const core = new Set(rules.missions.board_core_types);
+  const seen = new Set<string>();
+  const out: MissionType[] = [];
+  for (const t of rules.missions.board_extra_types) {
+    if (seen.has(t) || core.has(t) || NOT_BOARD_TYPES.has(t) || !reach.has(t as MissionType)) {
+      continue;
+    }
+    seen.add(t);
+    out.push(t as MissionType);
+  }
+  return out;
+}
+
+/** How many extra offers a board keeps: `board_min_extras`, 0 when the place can post no extra type. */
+function wantedExtras(reach: BoardReach, rules: GameRules): number {
+  const n = rules.missions.board_min_extras;
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return extraTypes(reach, rules).length > 0 ? Math.floor(n) : 0;
+}
+
 export function boardTarget(baseSize: number, reach: BoardReach, rules: GameRules): number {
-  return Math.max(baseSize, requiredTypes(reach, rules).length);
+  return Math.max(baseSize, requiredTypes(reach, rules).length + wantedExtras(reach, rules));
 }
 
 function canServe(r: TypeReach, need: LengthNeed, bounds: LengthBounds): boolean {
@@ -97,6 +119,16 @@ export function nextSlot(input: {
       if (type) return { types: new Set([type]), length: need };
     }
     return { types: new Set(missing.slice(0, 1)) };
+  }
+
+  // The extras slot: a board with room keeps `board_min_extras` offers of the extra types (EXPLORE) before length needs.
+  const extras = extraTypes(reach, rules);
+  const wanted = wantedExtras(reach, rules);
+  if (wanted > 0) {
+    const extraSet = new Set<MissionType>(extras);
+    const liveExtras = live.filter((o) => extraSet.has(o.type)).length;
+    const open = extras.filter((t) => !capped.has(t));
+    if (liveExtras < wanted && open.length > 0) return { types: new Set(open) };
   }
 
   // A need no uncapped type can serve is skipped: asking the filler for a length it cannot meet only burns reseeds.
