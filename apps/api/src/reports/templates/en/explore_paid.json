@@ -1,0 +1,9 @@
+{
+  "variants": [
+    "The whole area was charted and the client paid in full: {credits}.",
+    "Survey delivered, every unit covered. {credits} landed in the account.",
+    "The client checked the chart against the request and wired {credits}.",
+    "A clean, complete survey: {credits} for the job.",
+    "Nothing left blank on the map. Payment received: {credits}."
+  ]
+}

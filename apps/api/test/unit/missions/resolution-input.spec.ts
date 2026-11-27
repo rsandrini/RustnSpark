@@ -182,3 +182,60 @@ describe('buildResolveInput', () => {
     expect(input.mission.passengers).toBe(5);
   });
 });
+
+describe('the explore context and scanner', () => {
+  it('reads the area from the cargo and the pay from a positive reward', () => {
+    const source = {
+      type: 'EXPLORE',
+      cargo: { area: 60 },
+      encounterPolicy: {},
+      employerRelations: {},
+      playerFactionId: null,
+      destinationIsolation: 1,
+    };
+    expect(contextFromLive({ ...source, reward: 900 }).explore).toEqual({ area: 60, pay: 900 });
+    expect(contextFromLive({ ...source, reward: 0 }).explore).toEqual({ area: 60 });
+    expect(contextFromLive({ ...source, cargo: {} }).explore).toBeUndefined();
+    expect(contextFromLive({ ...source, type: 'DELIVERY' }).explore).toBeUndefined();
+  });
+
+  it('scanner strength is the live radar: a dead sensor adds nothing', () => {
+    const sensor = (id: string, condition: number) => ({
+      id,
+      partType: 'radar',
+      condition,
+      catalog: catalog({ partClass: 'SENSOR', sen: 4 }),
+      connected: true,
+    });
+    const build = (parts: DispatchSnapshot['parts']) =>
+      buildResolveInput({
+        missionId: 'm-1',
+        missionType: 'EXPLORE',
+        seed: 's',
+        snapshot: {
+          shipId: 'ship-1',
+          fuel: 100,
+          currentLocationId: 'ceres',
+          stance: 'NEUTRAL',
+          energyMode: 'FULL',
+          parts,
+          legs: [],
+        },
+        context: {
+          isolation: 1,
+          factionRelation: 'neutral',
+          preset: 'CRUISE',
+          missionOwner: null,
+          missionForcesFlee: false,
+          client: null,
+          explore: { area: 60, pay: 900 },
+        },
+        rules: GAME_CONFIG_DEFAULTS,
+      });
+    const live = build([sensor('a', 100)]).mission.explore;
+    expect(live).toEqual({ area: 60, pay: 900, scanner: { strength: 4 } });
+    const mixed = build([sensor('a', 100), sensor('b', 0)]).mission.explore;
+    expect(mixed?.scanner.strength).toBe(4);
+    expect(build([sensor('b', 0)]).mission.explore?.scanner.strength).toBe(0);
+  });
+});

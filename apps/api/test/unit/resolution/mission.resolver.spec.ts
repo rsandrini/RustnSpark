@@ -1165,3 +1165,102 @@ describe('P2 review — a lost fight costs by zone', () => {
     }
   });
 });
+
+describe('the explore scan (last leg), paid by the share covered', () => {
+  const PAY = 1000;
+  const sureCore: GameRules = {
+    ...rules,
+    economy: {
+      ...rules.economy,
+      core_drops: {
+        ...rules.economy.core_drops,
+        mission: { '3': [{ material: 'core_fragment', chance: 1, quantity: 1 }] },
+      },
+    },
+  };
+  const legs = (lastTicks: number | undefined, zone = 1) =>
+    [0, 1, 2].map((n) => ({
+      distance: 100,
+      danger: 0,
+      zone,
+      env: { id: 'open', level: 1, fuelMult: 1 },
+      ...(n === 2 && lastTicks !== undefined ? { scanTicks: lastTicks } : {}),
+    }));
+  interface ScanOptions {
+    readonly area?: number;
+    readonly strength?: number;
+    readonly ticks?: number;
+    readonly zone?: number;
+    readonly fuelUse?: number;
+    readonly withExplore?: boolean;
+    readonly seed?: string;
+  }
+  const scan = (options: ScanOptions = {}) => {
+    const { area = 60, strength = 4, ticks = 10, zone = 1, fuelUse, withExplore = true } = options;
+    return resolveMission({
+      seed: options.seed ?? 'scan',
+      snapshot: snapshot({
+        sheet: { ...snapshot().sheet, ...(fuelUse === undefined ? {} : { fuelUse }) },
+      }),
+      mission: mission({
+        type: 'EXPLORE',
+        legs: legs(ticks, zone),
+        ...(withExplore ? { explore: { area, pay: PAY, scanner: { strength } } } : {}),
+      }),
+      rules: sureCore,
+    });
+  };
+  const of = (out: ReturnType<typeof scan>, type: string) =>
+    out.events.filter((event) => event.type === type);
+
+  it('scans on the last leg only', () => {
+    const scanned = of(scan(), 'explore_scanned');
+    expect(scanned).toHaveLength(1);
+    expect(scanned[0]?.leg).toBe(2);
+    expect(scanned[0]?.magnitude).toBe(60);
+    expect(scanned[0]?.category).toBe('loot');
+  });
+
+  it('full scan pays the stored reward and rolls the mission core drops', () => {
+    const out = scan({ zone: 3 });
+    expect(of(out, 'explore_paid')[0]?.effects.credits).toBe(PAY);
+    expect(out.creditsDelta).toBe(PAY);
+    expect(out.status).toBe('success');
+    expect(of(out, 'core_drop')).toHaveLength(1);
+  });
+
+  it('short scan pays the share, is a partial failure and drops nothing', () => {
+    const out = scan({ area: 80, ticks: 12, zone: 3 });
+    expect(of(out, 'explore_scanned')[0]?.magnitude).toBe(72);
+    expect(of(out, 'explore_partial_failure')[0]?.effects.credits).toBe(Math.round(PAY * 0.9));
+    expect(of(out, 'explore_paid')).toHaveLength(0);
+    expect(out.status).toBe('partial_failure');
+    expect(of(out, 'core_drop')).toHaveLength(0);
+  });
+
+  it('a dead radar or an empty area scans nothing and pays nothing, without NaN', () => {
+    for (const out of [scan({ strength: 0 }), scan({ area: 0 })]) {
+      expect(of(out, 'explore_scanned')[0]?.magnitude).toBe(0);
+      expect(out.creditsDelta).toBe(0);
+      expect(Number.isNaN(out.creditsDelta)).toBe(false);
+    }
+  });
+
+  it('scan fuel is burned for ticks run, ion ships burn none', () => {
+    const burned = (fuelUse: number) =>
+      scan({ withExplore: false, fuelUse }).fuel - scan({ fuelUse }).fuel;
+    expect(burned(0.7)).toBe(10 * rules.explore.fuel_per_tick);
+    expect(burned(0)).toBe(0);
+  });
+
+  it('the same seed with and without explore leaves the other events identical', () => {
+    const other = (out: ReturnType<typeof scan>) =>
+      out.events.filter((event) => !/^explore_|^mission_payout$|^core_drop$/.test(event.type));
+    const withScan = scan({ seed: 'same' });
+    const without = scan({ seed: 'same', withExplore: false });
+    expect(other(withScan)).toEqual(other(without));
+    expect(withScan.legs.map((leg) => leg.encounter)).toEqual(
+      without.legs.map((leg) => leg.encounter),
+    );
+  });
+});

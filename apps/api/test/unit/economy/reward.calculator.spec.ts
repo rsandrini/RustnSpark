@@ -9,6 +9,7 @@ import {
   integrityPayout,
   passengerPayFactor,
   rewardBase,
+  sharePayout,
 } from '../../../src/economy/reward.calculator.js';
 
 const rules: GameRules = GAME_CONFIG_DEFAULTS;
@@ -184,5 +185,16 @@ describe('the passenger head count pays more', () => {
         rewardBase({ ...trip, missionType }, rules),
       );
     }
+  });
+});
+
+describe('sharePayout', () => {
+  it('pays the base in proportion to what was done, capped at the whole', () => {
+    expect(sharePayout(500, 10, 10)).toBe(500);
+    expect(sharePayout(500, 12, 10)).toBe(500);
+    expect(sharePayout(500, 4, 10)).toBe(200);
+    expect(sharePayout(500, 0, 10)).toBe(0);
+    expect(sharePayout(500, 3, 0)).toBe(0);
+    expect(sharePayout(500, Number.NaN, 10)).toBe(0);
   });
 });

@@ -1,0 +1,9 @@
+{
+  "variants": [
+    "A área inteira foi mapeada e o cliente pagou o combinado: {credits}.",
+    "Levantamento entregue, cada unidade coberta. {credits} entraram na conta.",
+    "O cliente conferiu o mapa com o pedido e transferiu {credits}.",
+    "Um levantamento limpo e completo: {credits} pelo serviço.",
+    "Nenhum espaço em branco no mapa. Pagamento recebido: {credits}."
+  ]
+}

@@ -6,6 +6,7 @@ import type { EscortClient, LegRoute, PartSnapshot } from '../resolution/leg/leg
 import type { ScavengeContext } from '../resolution/scavenge/scavenge.resolver.js';
 import type { RaceCompetitor } from '../resolution/race/race.resolver.js';
 import type { MineableOre } from '../resolution/mining/mining-yield.js';
+import { areaOf, scanStrength, type ScanSensor } from '../resolution/explore/explore-scan.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
 import type { MissionInput, MissionSnapshot } from '../resolution/mission/mission.resolver.js';
 import type { InstalledPart } from '../parts/part.types.js';
@@ -57,6 +58,8 @@ export interface ResolutionContext {
     readonly requiredQuantity: number;
     readonly pay?: number;
   };
+  /** EXPLORE only: the area asked (`cargo.area`) and what the offer pays (its stored reward), frozen with the run. */
+  readonly explore?: { readonly area: number; readonly pay?: number };
   /** The pilot's own free mining job (no contract, no reward): it pays no credits, only the ore. */
   readonly unpaid?: boolean;
   /** SCAVENGE only: what the place can give, frozen with the run (D19). */
@@ -159,6 +162,14 @@ export function contextFromLive(source: LiveContextSource): ResolutionContext {
       : {}),
     ...(source.type === 'MINING' && cargo['contracted'] !== true && (source.reward ?? 0) <= 0
       ? { unpaid: true }
+      : {}),
+    ...(source.type === 'EXPLORE' && areaOf(cargo) > 0
+      ? {
+          explore: {
+            area: areaOf(cargo),
+            ...((source.reward ?? 0) > 0 ? { pay: source.reward } : {}),
+          },
+        }
       : {}),
     ...(source.type === 'RACE' ? { race: { competitors: parseCompetitors(cargo) } } : {}),
     ...(source.type === 'TRANSPORT' && typeof cargo['passengers'] === 'number'
@@ -380,6 +391,14 @@ export function buildResolveInput(args: {
             Math.max(0, snapshot.cargo.units - snapshot.cargo.need) * snapshot.cargo.unitPay,
         }
       : {}),
+    ...(context.explore
+      ? {
+          explore: {
+            ...context.explore,
+            scanner: { strength: scanStrength(scanSensorsOfSnapshot(snapshot), rules) },
+          },
+        }
+      : {}),
     ...(context.unpaid ? { unpaid: true } : {}),
     ...(context.contractedMining ? { contractedMining: context.contractedMining } : {}),
     ...(context.scavenge ? { scavenge: context.scavenge } : {}),
@@ -387,6 +406,16 @@ export function buildResolveInput(args: {
     ...(context.passengers === undefined ? {} : { passengers: context.passengers }),
   };
   return { seed: args.seed, snapshot: missionSnapshot, mission: missionInput, rules };
+}
+
+/** The radar-relevant view of the dispatch snapshot's parts (a part cut off from the grid does not count). */
+function scanSensorsOfSnapshot(snapshot: DispatchSnapshot): ScanSensor[] {
+  return snapshot.parts.map((part) => ({
+    partClass: part.catalog.partClass,
+    sen: part.catalog.sen,
+    condition: part.condition,
+    connected: part.connected,
+  }));
 }
 
 const RARITY_ORDER = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];

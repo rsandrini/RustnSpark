@@ -1,0 +1,9 @@
+{
+  "variants": [
+    "The radar could not cover the whole area; the client paid for what was charted: {credits}.",
+    "Part of the area stayed dark. The client settled for the covered share: {credits}.",
+    "A short survey: the gaps in the chart cost you, and {credits} was paid.",
+    "Not every unit was scanned, so the pay was cut to {credits}.",
+    "The map came back with holes in it. The client paid {credits} for the part that was done."
+  ]
+}

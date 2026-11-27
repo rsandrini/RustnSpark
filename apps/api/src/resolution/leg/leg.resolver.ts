@@ -29,6 +29,7 @@ import {
   escortIntegrity,
 } from '../object/integrity.js';
 import type { MiningStop, MinerRig } from '../mining/mining.resolver.js';
+import { scanCovered, scanFuel, scanPerTick } from '../explore/explore-scan.js';
 import { dig, keepBest, oreSpace, rarityRankOf, type MineableOre } from '../mining/mining-yield.js';
 import { missionEvent } from '../events/mission-event.js';
 import type {
@@ -84,6 +85,8 @@ export interface LegRoute {
   readonly miningTicks?: number;
   /** A board mining contract: the most ticks it may dig (it stops early once the amount is reached). */
   readonly digTicks?: number;
+  /** EXPLORE, last leg: the ticks the scan was planned for at dispatch (the most it may run). */
+  readonly scanTicks?: number;
 }
 
 export interface EscortClient {
@@ -113,6 +116,8 @@ export interface LegMissionContext {
     /** A board contract: the ore it asks for and how much (the dig stops once it is reached). */
     readonly contract?: { readonly materialId: string; readonly required: number };
   } | null;
+  /** EXPLORE, last leg only: the area to scan and the radar's full strength (the runtime power can only lower it). */
+  readonly scan?: { readonly area: number; readonly strength: number } | null;
   /** Parts kept in storage when the ship left port: what a pirate may take (never installed ones). */
   readonly storage: readonly StoredPart[];
   /** The levels the engines were run at (engine tuning); absent = as listed. */
@@ -187,6 +192,8 @@ export interface LegOutcome {
   readonly combatCredits: number;
   /** An independent mining job: the ticks it really dug before the time ran out or the hold filled. */
   readonly miningTicksRun?: number;
+  /** EXPLORE, last leg: the area the radar covered. */
+  readonly scanned?: number;
 }
 
 const NO_FLAGS: LegChokeFlags = {
@@ -1089,6 +1096,32 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     }
   }
 
+  // 6. Scan (EXPLORE, last leg). No luck roll and no rng: the planned ticks and the radar power
+  // decide. The runtime power (a power shortage, worn parts) can only LOWER the area covered; the
+  // time was planned once, at dispatch, with the full radar.
+  let scanned: number | undefined;
+  if (input.context.scan != null) {
+    const power = cruisePower === null ? 1 : successChance(cruisePower.byKind.sensor, rules);
+    const perTick = scanPerTick(input.context.scan.strength, power, rules);
+    const { covered, ticksRun } = scanCovered(
+      input.context.scan.area,
+      perTick,
+      Math.max(1, input.route.scanTicks ?? 1),
+    );
+    scanned = covered;
+    const fuelBurned = scanFuel(ticksRun, ship.sheet.fuelUse, rules);
+    if (fuelBurned > 0) ship = { ...ship, fuel: Math.max(0, ship.fuel - fuelBurned) };
+    events.push(
+      missionEvent({
+        leg: input.index,
+        category: 'loot',
+        type: 'explore_scanned',
+        actors,
+        magnitude: covered,
+      }),
+    );
+  }
+
   return {
     index: input.index,
     status: 'completed',
@@ -1101,6 +1134,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     encounter,
     combatResult,
     combatCredits,
+    ...(scanned === undefined ? {} : { scanned }),
     ...(input.route.miningTicks !== undefined || input.route.digTicks !== undefined
       ? { miningTicksRun }
       : {}),

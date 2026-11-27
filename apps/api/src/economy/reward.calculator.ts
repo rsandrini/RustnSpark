@@ -104,6 +104,11 @@ export function integrityPayout(base: number, integrity: number, rules: GameRule
  * sells the ore.
  */
 export function contractedMiningPayout(base: number, delivered: number, required: number): number {
-  if (required <= 0 || delivered <= 0) return 0;
-  return base * Math.min(1, delivered / required);
+  return sharePayout(base, delivered, required);
+}
+
+/** A job paid by the share done: all of `base` for the whole ask or more, a share for less, nothing for none. */
+export function sharePayout(base: number, done: number, asked: number): number {
+  if (!(asked > 0) || !(done > 0) || !Number.isFinite(base)) return 0;
+  return base * Math.min(1, done / asked);
 }

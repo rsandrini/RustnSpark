@@ -1,0 +1,9 @@
+{
+  "variants": [
+    "O radar não deu conta da área toda; o cliente pagou pelo que foi mapeado: {credits}.",
+    "Parte da área ficou no escuro. O cliente aceitou pagar só o trecho coberto: {credits}.",
+    "Um levantamento curto: as lacunas no mapa custaram caro, e foram pagos {credits}.",
+    "Nem toda a área foi varrida, então o pagamento caiu para {credits}.",
+    "O mapa voltou cheio de buracos. O cliente pagou {credits} pela parte feita."
+  ]
+}

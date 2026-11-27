@@ -1,0 +1,9 @@
+{
+  "variants": [
+    "Your radar swept {magnitude} units of the area.",
+    "The sensors swept across {magnitude} units of open space and logged every return.",
+    "A slow, steady sweep: {magnitude} units of the area mapped.",
+    "The radar dish turned and turned, covering {magnitude} units.",
+    "Scan complete on the last stretch: {magnitude} units charted."
+  ]
+}

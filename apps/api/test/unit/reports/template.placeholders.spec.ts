@@ -34,6 +34,25 @@ describe('the seeded report wording', () => {
   });
 });
 
+describe('the explore report lines', () => {
+  const EXPLORE = [
+    ['explore_scanned', ['magnitude']],
+    ['explore_paid', ['credits']],
+    ['explore_partial_failure', ['credits']],
+  ] as const;
+
+  it.each(EXPLORE)(
+    '%s has 3+ lines in both languages, with only its placeholders',
+    (id, tokens) => {
+      expect(TEMPLATE_PLACEHOLDERS[id]).toEqual(tokens);
+      const row = reportTemplateSeed().find((entry) => entry.id === id)!;
+      expect(row.variants.en.length).toBeGreaterThanOrEqual(3);
+      expect(row.variants['pt-BR'].length).toBeGreaterThanOrEqual(3);
+      expect(templateProblems(id, row.variants, row.legacy)).toEqual([]);
+    },
+  );
+});
+
 describe('templateProblems', () => {
   const good = { en: ['Ran {distance}.'], 'pt-BR': ['Percorreu {distance}.'] };
 

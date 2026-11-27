@@ -4,6 +4,7 @@ import { createRng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
 import {
   contractedMiningPayout,
+  sharePayout,
   integrityPayout,
   rewardBase,
   shortTripFactor,
@@ -89,6 +90,12 @@ export interface MissionInput {
   };
   /** SCAVENGE jobs: what the place can give (frozen with the run, D19). */
   readonly scavenge?: ScavengeContext;
+  /** EXPLORE: the area asked, what the offer pays (its stored reward) and the radar at dispatch. */
+  readonly explore?: {
+    readonly area: number;
+    readonly pay?: number;
+    readonly scanner: { readonly strength: number };
+  };
   /** RACE missions: the rival ships generated with the offer (frozen in its cargo). */
   readonly race?: { readonly competitors: readonly RaceCompetitor[] };
 }
@@ -205,6 +212,10 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
                     }),
               }
             : null,
+        scan:
+          isLast && input.mission.explore !== undefined
+            ? { area: input.mission.explore.area, strength: input.mission.explore.scanner.strength }
+            : null,
       },
       objectIntegrity: integrity,
     };
@@ -260,9 +271,19 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
     }
   }
 
+  // An explore run that scanned less than it was asked is a short job: it pays the share and drops nothing.
+  const explore = input.mission.explore;
+  const scannedArea = legs.reduce((sum, leg) => sum + (leg.scanned ?? 0), 0);
+  const scanShort = explore !== undefined && !(explore.area > 0 && scannedArea >= explore.area);
+
   // Cores and fragments turn up in the farther zones: on a scavenging job that came back, and on a
   // mission that was carried through (their own stream, so they never move any other roll).
-  if (status === 'success' && input.mission.type !== 'TRAVEL' && input.mission.unpaid !== true) {
+  if (
+    status === 'success' &&
+    !scanShort &&
+    input.mission.type !== 'TRAVEL' &&
+    input.mission.unpaid !== true
+  ) {
     const peakZone = input.mission.legs.reduce((peak, leg) => Math.max(peak, leg.zone), 0);
     const source = input.mission.scavenge !== undefined ? 'scavenge' : 'mission';
     for (const drop of rollCoreDrops(source, peakZone, input.rules, root.child('core-drops'))) {
@@ -378,6 +399,23 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
         }),
       );
       if (!full) {
+        status = 'partial_failure';
+      }
+    } else if (explore !== undefined) {
+      // Paid by the share of the area covered (no integrity factor), like a contracted dig.
+      const payout = Math.round(sharePayout(explore.pay ?? base, scannedArea, explore.area));
+      creditsDelta += payout;
+      events.push(
+        missionEvent({
+          leg: lastLeg,
+          category: 'payment',
+          type: scanShort ? 'explore_partial_failure' : 'explore_paid',
+          actors,
+          magnitude: payout,
+          credits: payout,
+        }),
+      );
+      if (scanShort) {
         status = 'partial_failure';
       }
     } else {

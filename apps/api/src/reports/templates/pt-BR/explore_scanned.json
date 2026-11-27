@@ -1,0 +1,9 @@
+{
+  "variants": [
+    "Seu radar varreu {magnitude} unidades da área.",
+    "Os sensores percorreram {magnitude} unidades de espaço aberto e registraram cada retorno.",
+    "Uma varredura lenta e constante: {magnitude} unidades da área mapeadas.",
+    "A antena do radar girou sem parar, cobrindo {magnitude} unidades.",
+    "Varredura concluída no último trecho: {magnitude} unidades mapeadas."
+  ]
+}
