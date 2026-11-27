@@ -5,8 +5,7 @@ import type { GameRules } from '../../config/game-config.types.js';
 import type { BoardReach, TypeReach } from '../board-composition.js';
 import { missionDuration } from '../duration.calculator.js';
 import { rewardBase } from '../../economy/reward.calculator.js';
-import { exploreAreaPay } from '../mission.reward.js';
-import { areaOf } from '../../resolution/explore/explore-scan.js';
+import { missionReward } from '../mission.reward.js';
 import { droppableOres, placeKeyOf } from '../../resolution/mining/mining-yield.js';
 import type { LegRoute } from '../../resolution/leg/leg.resolver.js';
 import { generateCompetitors } from '../../resolution/race/race.resolver.js';
@@ -787,9 +786,13 @@ export function fillMission(input: FillMissionInput): MissionDraft {
     const quantity = miningCargo.quantity ?? 0;
     reward = Math.round(quantity * (rules.mining.contract_unit_pay[rarity] ?? 0));
   }
-  // An explore offer pays the base plus what its area is worth.
+  // An explore offer is priced by the one formula the accept path uses, so the board figure never drifts from it.
   if (template.type === 'EXPLORE') {
-    reward = Math.round(reward + exploreAreaPay(areaOf(cargo), rules));
+    reward = missionReward(
+      { legs: legs as never, type: 'EXPLORE', cargo: cargo as never },
+      PROVISIONAL_TIER,
+      rules,
+    );
   }
 
   return {

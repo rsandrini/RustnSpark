@@ -41,3 +41,20 @@ describe('EXPLORE pay follows the area asked for', () => {
     expect(got).toBe(Math.round(base));
   });
 });
+
+describe('EXPLORE type bonus', () => {
+  it('applies to the base only, not to the area pay', () => {
+    const bonus = {
+      ...rules,
+      economy: {
+        ...rules.economy,
+        reward_type_bonus: { ...rules.economy.reward_type_bonus, explore: 2 },
+      },
+    };
+    const got = missionReward({ legs, type: 'EXPLORE', cargo: { area: 80 } }, 2, bonus);
+    const base = rewardBase({ tier: 2, danger: 1, distance: 600, missionType: 'EXPLORE' }, bonus);
+    const plain = rewardBase({ tier: 2, danger: 1, distance: 600, missionType: 'EXPLORE' }, rules);
+    expect(base).toBeCloseTo((plain * 2) / rules.economy.reward_type_bonus.explore!, 5);
+    expect(got).toBe(Math.round(base + 80 * rules.explore.unit_pay));
+  });
+});

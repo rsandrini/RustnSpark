@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { MissionType } from '@prisma/client';
+import { missionReward } from '../../../src/missions/mission.reward.js';
 import { rewardBase } from '../../../src/economy/reward.calculator.js';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
@@ -11,6 +12,7 @@ import {
   referenceSeconds,
   isMiningEligible,
   MissionGenerationError,
+  PROVISIONAL_TIER,
   type FillMissionInput,
   type FillerEnvironment,
   type FillerLocation,
@@ -1237,9 +1239,10 @@ describe('EXPLORE offers (open-space scans)', () => {
   });
 
   it('an explore offer scans an open-space place and asks for an area in the template range', () => {
-    for (const seed of ['e1', 'e2', 'e3', 'e4', 'e5', 'e6']) {
+    const areas: number[] = [];
+    for (let i = 0; i < 30; i += 1) {
       const draft = fillMission({
-        seed,
+        seed: `e${i}`,
         origin: at('spur'),
         world: exploreWorld(),
         rules,
@@ -1248,11 +1251,29 @@ describe('EXPLORE offers (open-space scans)', () => {
       });
       const dest = LOCS.find((l) => l.id === draft.destinationId);
       expect(DEST_TYPES).toContain(dest?.type);
-      const area = (draft.cargo as { area: number }).area;
-      expect(area).toBeGreaterThanOrEqual(60);
-      expect(area).toBeLessThanOrEqual(120);
-      expect(Number.isInteger(area)).toBe(true);
+      areas.push((draft.cargo as { area: number }).area);
       expect(draft.deadlineAt ?? null).toBeNull();
+    }
+    expect(areas.every((a) => Number.isInteger(a) && a >= 60 && a <= 120)).toBe(true);
+    // both halves of the 60-120 range are reached
+    expect(areas.some((a) => a < 90)).toBe(true);
+    expect(areas.some((a) => a > 90)).toBe(true);
+  });
+
+  it('the board figure equals missionReward for a fractional unit_pay', () => {
+    for (const unitPay of [0.37, 12.61]) {
+      const frac = { ...rules, explore: { ...rules.explore, unit_pay: unitPay } };
+      for (let i = 0; i < 12; i += 1) {
+        const draft = fillMission({
+          seed: `f${i}`,
+          origin: at('spur'),
+          world: exploreWorld(),
+          rules: frac,
+          now: NOW,
+          preferTypes: new Set(['EXPLORE']),
+        });
+        expect(draft.reward).toBe(missionReward(draft as never, PROVISIONAL_TIER, frac));
+      }
     }
   });
 

@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { PrismaClient } from '@prisma/client';
+import { CONFIG_REGISTRY } from '../../src/config/config-registry.js';
 import { seed } from '../../prisma/seed.js';
 import { ISOLATION_OVERRIDES } from '../../prisma/seed-data/world-builder.js';
 import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../support/test-db.js';
@@ -133,8 +134,8 @@ describe('database seed (S3.4)', () => {
     await seed(prisma);
 
     const counts = await countRows(prisma);
-    // One row per CONFIG_REGISTRY entry; bumps whenever a new tunable is registered.
-    expect(counts.gameConfig).toBe(229);
+    // One row per CONFIG_REGISTRY entry.
+    expect(counts.gameConfig).toBe(CONFIG_REGISTRY.length);
     expect(counts.locations).toBe(29);
     expect(counts.routes).toBe(35);
     expect(counts.environments).toBe(4);
