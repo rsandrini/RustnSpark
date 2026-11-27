@@ -59,6 +59,7 @@ const mission = (over: Partial<ActiveMission> = {}): ActiveMission => ({
 
 describe('transit (S10.7)', () => {
   beforeEach(() => {
+    window.localStorage.removeItem('rs.shipTab');
     resetActiveState();
     resetEconomyState();
     server.use(onboarded());

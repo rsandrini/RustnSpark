@@ -931,6 +931,28 @@ describe('hangar (S10.4)', () => {
     expect(screen.getAllByRole('button', { name: /^cargo/i })).toHaveLength(2);
   });
 
+  const flyingShip = () =>
+    http.get('/v1/ships', () =>
+      HttpResponse.json([
+        {
+          id: 'ship-1',
+          ownerPlayerId: 'player-1',
+          name: 'luna starter',
+          fuel: 40,
+          status: 'ON_MISSION',
+          currentLocationId: 'ceres',
+          stance: 'NEUTRAL',
+          layout: [{ partInstanceId: 'part-cargo-a', gx: 2, gy: 2, rot: 0 }],
+          sheet: testSheet,
+          shipClass: 'BALANCED',
+          profile: BALANCED_PROFILE,
+          profileModifier: null,
+          yard: { cells: classicSquareCells() },
+          activity: { kind: 'idle', until: null, missionId: null, repairUntil: null },
+        },
+      ]),
+    );
+
   describe('on a phone', () => {
     beforeEach(() => {
       vi.stubGlobal('matchMedia', (query: string) => ({
@@ -964,6 +986,43 @@ describe('hangar (S10.4)', () => {
       expect(await screen.findByRole('button', { name: 'Rotate' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument();
     });
+
+    it('in flight shows the Hold alone: no empty Ship tab', async () => {
+      server.use(onboarded(), flyingShip());
+      renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      expect(await screen.findByTestId('hold-panel')).toBeInTheDocument();
+      expect(screen.queryByTestId('ship-tab-ship')).toBeNull();
+    });
+  });
+
+  it('remembers the chosen tab, and still works when storage throws', async () => {
+    server.use(onboarded());
+    const first = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    fireEvent.click(await screen.findByTestId('ship-tab-hold'));
+    expect(window.localStorage.getItem('rs.shipTab')).toBe('hold');
+    first.unmount();
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    expect(await screen.findByTestId('hold-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('ship-tab-hold')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('renders the Ship tab and switches when localStorage throws', async () => {
+    server.use(onboarded());
+    const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    onTestFinished(() => {
+      get.mockRestore();
+      set.mockRestore();
+    });
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const hold = await screen.findByTestId('ship-tab-hold');
+    expect(screen.getByTestId('ship-tab-ship')).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(hold);
+    expect(await screen.findByTestId('hold-panel')).toBeInTheDocument();
   });
 
   it('lets a part go anywhere, even behind the engine, and outlines the engine as a problem', async () => {

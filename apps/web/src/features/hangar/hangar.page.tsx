@@ -119,6 +119,7 @@ const AUTO_SAVE_MS = 900;
 const FALLBACK_CELL_PX = 40;
 const STAGE_COLLAPSE_KEY = 'rs.hangar.stageCollapsed';
 const SIDE_HIDDEN_KEY = 'rs.hangar.sideHidden';
+const SHIP_TAB_KEY = 'rs.shipTab';
 const CHEVRON_LEFT = '\u2039';
 const CHEVRON_RIGHT = '\u203A';
 
@@ -231,17 +232,25 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // Phones: Parts and Store are a sheet opened from the action bar, not a list under the yard.
   const phone = useIsPhone();
   const [partsOpen, setPartsOpen] = useState(false);
-  // The Ship screen alternates between the ship details and the read-only Hold; the transit chip picks the Hold
-  // and moves focus to its panel once it has rendered.
-  const [shipView, setShipView] = useState<'ship' | 'hold'>('ship');
+  // The Ship screen alternates between the ship details and the read-only Hold (the choice is remembered); the
+  // transit chip picks the Hold and moves focus to its panel once it has rendered.
+  const [shipViewChoice, setShipViewChoice] = useState<'ship' | 'hold'>(() => {
+    try {
+      return window.localStorage.getItem(SHIP_TAB_KEY) === 'hold' ? 'hold' : 'ship';
+    } catch {
+      return 'ship';
+    }
+  });
+  const chooseShipView = (view: 'ship' | 'hold') => {
+    setShipViewChoice(view);
+    try {
+      window.localStorage.setItem(SHIP_TAB_KEY, view);
+    } catch {
+      // the choice still applies for this session
+    }
+  };
   const [holdFocusRequest, setHoldFocusRequest] = useState(false);
   const holdPanelRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!holdFocusRequest || shipView !== 'hold') return;
-    holdPanelRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-    holdPanelRef.current?.focus();
-    setHoldFocusRequest(false);
-  }, [holdFocusRequest, shipView]);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   // `/ship?store=CLASS` (a mission blocker's fix link) opens the Store on that class. It is read when
@@ -561,6 +570,15 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // Out on a mission, or floating in space: the ship cannot be changed (a floating one waits for its rescue).
   const onMission = ship?.status === 'ON_MISSION';
   const modifyBlocked = onMission || ship?.status === 'ADRIFT';
+  // A phone in flight has no yard to show: the Hold is the only view then (no tabs, the choice is kept for later).
+  const yardHidden = phone && onMission;
+  const shipView = yardHidden ? 'hold' : shipViewChoice;
+  useEffect(() => {
+    if (!holdFocusRequest || shipView !== 'hold') return;
+    holdPanelRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    holdPanelRef.current?.focus();
+    setHoldFocusRequest(false);
+  }, [holdFocusRequest, shipView]);
   // Parts with a cell off the ship's format: parked beside the hull, doing nothing, grounding the ship.
   const outsideCount = effectiveLayout.filter((placement) => {
     const catalog = catalogById.get(placement.partInstanceId);
@@ -953,7 +971,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           onGoToHold={() => {
             // selects the Hold tab and moves focus to its panel (effect above)
             setHoldFocusRequest(true);
-            setShipView('hold');
+            chooseShipView('hold');
           }}
         />
       )}
@@ -995,29 +1013,31 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           )}
 
           {/* Ship details and Hold alternate in the same area; the yard stays mounted (hidden) under Hold. */}
-          <div
-            className="segment hold-tabs"
-            role="tablist"
-            aria-label={t('hangar.holdView.tabsLabel')}
-            onKeyDown={tablistKeys}
-          >
-            {(['ship', 'hold'] as const).map((id) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                id={`ship-tab-${id}`}
-                data-testid={`ship-tab-${id}`}
-                aria-selected={shipView === id}
-                aria-controls={id === 'hold' ? 'ship-hold' : 'ship-details'}
-                tabIndex={shipView === id ? 0 : -1}
-                className={`seg${shipView === id ? ' on' : ''}`}
-                onClick={() => setShipView(id)}
-              >
-                {id === 'ship' ? t('hangar.holdView.tabShip') : t('hangar.holdView.title')}
-              </button>
-            ))}
-          </div>
+          {!yardHidden && (
+            <div
+              className="segment hold-tabs"
+              role="tablist"
+              aria-label={t('hangar.holdView.tabsLabel')}
+              onKeyDown={tablistKeys}
+            >
+              {(['ship', 'hold'] as const).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  id={`ship-tab-${id}`}
+                  data-testid={`ship-tab-${id}`}
+                  aria-selected={shipView === id}
+                  aria-controls={id === 'hold' ? 'ship-hold' : 'ship-details'}
+                  tabIndex={shipView === id ? 0 : -1}
+                  className={`seg${shipView === id ? ' on' : ''}`}
+                  onClick={() => chooseShipView(id)}
+                >
+                  {id === 'ship' ? t('hangar.holdView.tabShip') : t('hangar.holdView.title')}
+                </button>
+              ))}
+            </div>
+          )}
           {shipView === 'hold' && (
             <div
               id="ship-hold"
@@ -1036,7 +1056,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             role="tabpanel"
             aria-labelledby="ship-tab-ship"
             className={`hangar-layout${sideHidden && !phone && !opening ? ' side-hidden' : ''}`}
-            hidden={(phone && onMission) || shipView !== 'ship'}
+            hidden={yardHidden || shipView !== 'ship'}
           >
             {phone && partsOpen && (
               <div
