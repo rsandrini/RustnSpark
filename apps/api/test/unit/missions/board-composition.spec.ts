@@ -271,15 +271,70 @@ describe('board composition', () => {
       expect(boardTarget(7, exploreReach, rules)).toBe(7);
     });
 
-    it("board_min_extras 0 restores today's slots exactly", () => {
+    it('board_min_extras 0 reproduces the slice-2.1 planner on the existing fixtures', () => {
       const off = withRules({ board_min_extras: 0 });
+      const none = set();
+      const seq = (r: GameRules) => [
+        boardTarget(4, mainReach, r),
+        boardTarget(10, mainReach, r),
+        nextSlot({ reach: mainReach, live: [], capped: none, rules: r }),
+        nextSlot({ reach: mainReach, live: offers(['DELIVERY', 8400]), capped: none, rules: r }),
+        nextSlot({ reach: mainReach, live: core, capped: none, rules: r }),
+        nextSlot({ reach: mainReach, live: core, capped: set('DELIVERY'), rules: r }),
+      ];
+      expect(seq(off)).toEqual([
+        6,
+        10,
+        { types: set('DELIVERY'), length: 'long' },
+        { types: set('TRANSPORT'), length: 'short' },
+        {},
+        {},
+      ]);
+      // and a place that cannot post an extra plans the same with the floor on
+      expect(seq(rules)).toEqual(seq(off));
       expect(boardTarget(4, exploreReach, off)).toBe(6);
-      const withExplore = [...core, ...offers(['EXPLORE', 900])];
+    });
+
+    it('board_min_extras 2 with one extra type asks EXPLORE twice, then stops', () => {
+      const two = withRules({ board_min_extras: 2 });
+      expect(boardTarget(4, exploreReach, two)).toBe(8);
+      const ask = (n: number) =>
+        nextSlot({
+          reach: exploreReach,
+          live: [
+            ...core,
+            ...offers(...Array.from({ length: n }, (): [string, number] => ['EXPLORE', 900])),
+          ],
+          capped: set(),
+          rules: two,
+        });
+      expect(ask(0).types).toEqual(set('EXPLORE'));
+      expect(ask(1).types).toEqual(set('EXPLORE'));
+      expect(ask(2)).toEqual({});
       expect(
-        nextSlot({ reach: exploreReach, live: withExplore, capped: set(), rules: off }),
-      ).toEqual(nextSlot({ reach: mainReach, live: core, capped: set(), rules }));
-      expect(nextSlot({ reach: exploreReach, live: [], capped: set(), rules: off })).toEqual({
-        types: set('DELIVERY'),
+        nextSlot({ reach: exploreReach, live: core, capped: set('EXPLORE'), rules: two }),
+      ).toEqual({});
+    });
+
+    it('listing a required type such as RACE in board_extra_types is ignored and does not grow the target', () => {
+      const r = withRules({ board_extra_types: ['RACE'] });
+      expect(extraTypes(exploreReach, r)).toEqual([]);
+      expect(boardTarget(4, exploreReach, r)).toBe(6);
+    });
+
+    it('the extra carries a pending length need when it can serve it', () => {
+      const regional = reachOf({ ...MAIN, EXPLORE: [3, 600, 5000] });
+      const live = offers(
+        ['DELIVERY', 300],
+        ['TRANSPORT', 300],
+        ['ESCORT', 300],
+        ['MINING', 300],
+        ['RACE', 300],
+        ['RACE', 300],
+        ['RESCUE', 600],
+      );
+      expect(nextSlot({ reach: regional, live, capped: set(), rules })).toEqual({
+        types: set('EXPLORE'),
         length: 'long',
       });
     });

@@ -2869,7 +2869,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 0,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_extra_types),
     description: {
-      en: 'Extra mission types (outside the core ones) a board keeps at least board_min_extras offers of, when the place can post them. Unknown names are ignored.',
+      en: 'Extra mission types (outside the core ones) a board keeps at least board_min_extras offers of, when the place can post them. Unknown, core and race names are ignored.',
       'pt-BR':
         'Tipos de missão extras (fora dos principais) dos quais um quadro mantém ao menos board_min_extras ofertas, quando o local pode publicá-los. Nomes desconhecidos são ignorados.',
     },
@@ -2882,9 +2882,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 4,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_min_extras),
     description: {
-      en: 'How many offers of the extra types a board keeps; the board size grows by this number.',
+      en: 'Minimum number of offers of the extra types a board holds when the place can post them. The board only grows where core types + races + extras exceed its base size (local boards). 0 removes the floor, not the type: an extra type still appears like any other reachable type (turn off its templates to stop it).',
       'pt-BR':
-        'Quantas ofertas dos tipos extras um quadro mantém; o tamanho do quadro cresce em tanto.',
+        'Número mínimo de ofertas dos tipos extras que um quadro mantém quando o local pode publicá-los. O quadro só cresce onde tipos principais + corridas + extras passam do tamanho base (quadros locais). 0 remove o piso, não o tipo: um tipo extra ainda aparece como qualquer tipo alcançável (desligue seus modelos para impedir).',
     },
   },
   {

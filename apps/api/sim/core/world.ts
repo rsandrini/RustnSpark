@@ -430,6 +430,9 @@ export function boardAt(input: BoardAtInput): Offer[] {
     place === undefined
       ? rules.missions.board_min_per_location
       : boardSize({ type: place.type, detail: place.detail ?? null }, rules);
+  // `baseSize` is checked first; `boardMin` only exceeds it when the required types plus the extras floor outnumber
+  // it. The floor holds at refill time: a board at base size that lost its extra offer shows none until it next
+  // drops below its base size.
   if (live.length >= baseSize) return withStarter(boardState, live);
   // What this place can post, measured once per top-up (a test pad keeps today's path).
   const planned = origin.type !== 'test_pad';

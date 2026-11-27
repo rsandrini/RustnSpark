@@ -58,9 +58,12 @@ export function requiredTypes(reach: BoardReach, rules: GameRules): MissionType[
   return required;
 }
 
-/** `board_extra_types` the place can post, in config order: never a core or NOT_BOARD type, never a duplicate. */
+/** `board_extra_types` the place can post, in config order: never a core, required (e.g. RACE) or NOT_BOARD type, never a duplicate. */
 export function extraTypes(reach: BoardReach, rules: GameRules): MissionType[] {
-  const core = new Set(rules.missions.board_core_types);
+  const core = new Set<string>([
+    ...rules.missions.board_core_types,
+    ...requiredTypes(reach, rules),
+  ]);
   const seen = new Set<string>();
   const out: MissionType[] = [];
   for (const t of rules.missions.board_extra_types) {
@@ -128,7 +131,14 @@ export function nextSlot(input: {
     const extraSet = new Set<MissionType>(extras);
     const liveExtras = live.filter((o) => extraSet.has(o.type)).length;
     const open = extras.filter((t) => !capped.has(t));
-    if (liveExtras < wanted && open.length > 0) return { types: new Set(open) };
+    if (liveExtras < wanted && open.length > 0) {
+      // Like the missing-core step: an extra that can meet a pending length need carries it, so it does not eat that slot.
+      for (const need of needs) {
+        const serving = open.find((t) => canServe(reach.get(t)!, need, bounds));
+        if (serving) return { types: new Set([serving]), length: need };
+      }
+      return { types: new Set(open) };
+    }
   }
 
   // A need no uncapped type can serve is skipped: asking the filler for a length it cannot meet only burns reseeds.

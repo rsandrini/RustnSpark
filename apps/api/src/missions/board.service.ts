@@ -345,8 +345,8 @@ export class BoardService {
     const boardMin = planned ? boardTarget(baseSize, reach, rules) : baseSize;
     const bounds = planned ? lengthBounds(reach, rules) : null;
     // `baseSize` is checked first (cheap, before the world loads); `boardMin` only exceeds it when the required
-    // types outnumber the base size. Between refills a board of base size may then lack a core type; the default
-    // sizes never reach that, and the next refill past baseSize tops it up.
+    // types plus the extras floor outnumber the base size. The floor holds at refill time: a board at base size
+    // that lost its extra offer shows none until it next drops below its base size.
     if (available >= boardMin) return available;
     let epoch = await tx.missionInstance.count({ where: { originId: locationId } });
     // A board of four identical offers is not a board: a new offer must differ from the live ones
