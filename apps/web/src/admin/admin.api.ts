@@ -104,6 +104,30 @@ export const adminApi = {
       { amount, reason },
       { idempotencyKey: key },
     ),
+  grantMaterial: (
+    playerId: string,
+    materialId: string,
+    quantity: number,
+    reason: string,
+    key: string,
+  ) =>
+    client.post<SupportResult>(
+      `/v1/admin/players/${playerId}/materials/grant`,
+      { materialId, quantity, reason },
+      { idempotencyKey: key },
+    ),
+  removeMaterial: (
+    playerId: string,
+    materialId: string,
+    quantity: number,
+    reason: string,
+    key: string,
+  ) =>
+    client.post<SupportResult>(
+      `/v1/admin/players/${playerId}/materials/remove`,
+      { materialId, quantity, reason },
+      { idempotencyKey: key },
+    ),
   setPassword: (playerId: string, password: string, reason: string, key: string) =>
     client.post<SupportResult>(
       `/v1/admin/players/${playerId}/password`,

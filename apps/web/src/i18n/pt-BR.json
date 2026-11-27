@@ -972,6 +972,8 @@
     "actions": {
       "grant": "Conceder créditos",
       "remove": "Remover créditos",
+      "grantMaterial": "Adicionar material",
+      "removeMaterial": "Remover material",
       "clear": "Zerar saldo negativo",
       "password": "Alterar senha",
       "unstick": "Destravar nave",
@@ -983,6 +985,8 @@
     "warnings": {
       "grant": "Adiciona créditos à carteira do jogador. Registrado no log de auditoria.",
       "remove": "Remove créditos da carteira (não pode ficar abaixo de zero).",
+      "grantMaterial": "Adiciona minérios, sucata ou núcleos ao que o jogador tem. Registrado no log de auditoria.",
+      "removeMaterial": "Remove do que o jogador tem (não pode ficar abaixo de zero).",
       "clear": "Leva um saldo negativo de volta a zero.",
       "password": "Define uma nova senha para esta conta e encerra a sessão em todos os lugares. A senha em si nunca é registrada no log de auditoria.",
       "unstick": "Expira a missão ativa da nave e a estaciona no porto. A presença futura na rota é removida.",

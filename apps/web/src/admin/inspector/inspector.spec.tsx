@@ -262,6 +262,44 @@ describe('support actions (S11.5, S11.4 acceptance)', () => {
     expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
   });
 
+  it('adds a material to a player: picked from the list, with quantity and reason', async () => {
+    mockReads();
+    let body: unknown = null;
+    server.use(
+      http.get('/v1/admin/tuning/materials', () =>
+        HttpResponse.json([
+          { id: 'iron', displayName: { en: 'Iron', 'pt-BR': 'Ferro' } },
+          { id: 'scrap', displayName: { en: 'Scrap', 'pt-BR': 'Sucata' } },
+        ]),
+      ),
+      http.post(`/v1/admin/players/${playerId}/materials/grant`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({
+          action: 'SUPPORT_GRANT_MATERIAL',
+          target: playerId,
+          before: { materialId: 'scrap', quantity: 0 },
+          after: { materialId: 'scrap', quantity: 25 },
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(await screen.findByRole('button', { name: 'Add material' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Add material' });
+    await within(dialog).findByRole('option', { name: 'Scrap' });
+    await user.selectOptions(within(dialog).getByLabelText('Material'), 'scrap');
+    const quantity = within(dialog).getByLabelText('Quantity');
+    await user.clear(quantity);
+    await user.type(quantity, '25');
+    await user.type(within(dialog).getByLabelText('Reason'), 'playtest');
+    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() =>
+      expect(body).toEqual({ materialId: 'scrap', quantity: 25, reason: 'playtest' }),
+    );
+  });
+
   it('requires a 10-128 char password and a reason before it can be sent', async () => {
     mockReads();
     let passwordBody: unknown = null;

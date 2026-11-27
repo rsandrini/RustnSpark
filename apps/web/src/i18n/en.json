@@ -972,6 +972,8 @@
     "actions": {
       "grant": "Grant credits",
       "remove": "Remove credits",
+      "grantMaterial": "Add material",
+      "removeMaterial": "Remove material",
       "clear": "Clear negative balance",
       "password": "Change password",
       "unstick": "Unstick ship",
@@ -983,6 +985,8 @@
     "warnings": {
       "grant": "Adds credits to the player's wallet. Recorded in the audit log.",
       "remove": "Removes credits from the wallet (cannot go below zero).",
+      "grantMaterial": "Adds minerals, scrap or cores to what the player holds. Recorded in the audit log.",
+      "removeMaterial": "Removes from what the player holds (cannot go below zero).",
       "clear": "Sets a negative balance back to zero.",
       "password": "Sets a new password for this account and signs it out everywhere. The password itself is never recorded in the audit log.",
       "unstick": "Expires the ship's active mission and parks the ship in port. Its future route presence is deleted.",

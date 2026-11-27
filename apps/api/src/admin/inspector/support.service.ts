@@ -37,6 +37,9 @@ export interface SupportActionResult {
   readonly after: Record<string, unknown>;
 }
 
+// Far above any legitimate holding, below the Int4 ceiling of the quantity column.
+const MAX_MATERIAL_HELD = 1_000_000_000;
+
 const ACTIVE_MISSION_STATUSES = ['ACCEPTED', 'IN_TRANSIT', 'RESOLVING'] as const;
 
 const SUPPORT_WALLET_REASONS = {
@@ -91,6 +94,52 @@ export class SupportService {
       // clear-balance action for the debt itself).
       await this.wallet.debit(playerId, amount, SUPPORT_WALLET_REASONS.remove, tx);
       return { before, after: { credits: await this.creditsOf(tx, playerId) } };
+    });
+  }
+
+  // Minerals, scrap and cores a player holds. Held goods take no cargo space, so there is no
+  // capacity to check; the audit row keeps the quantity before and after.
+  async grantMaterial(
+    playerId: string,
+    materialId: string,
+    quantity: number,
+    context: SupportContext,
+  ): Promise<SupportActionResult> {
+    return this.run(playerId, context, 'SUPPORT_GRANT_MATERIAL', async (tx) => {
+      const held = await this.heldOf(tx, playerId, materialId);
+      if (held + quantity > MAX_MATERIAL_HELD) {
+        throw new ConflictException({ error: 'VALIDATION_ERROR' });
+      }
+      const row = await tx.playerMaterial.upsert({
+        where: { playerId_materialId: { playerId, materialId } },
+        create: { playerId, materialId, quantity },
+        update: { quantity: { increment: quantity } },
+      });
+      return {
+        before: { materialId, quantity: held },
+        after: { materialId, quantity: row.quantity },
+      };
+    });
+  }
+
+  async removeMaterial(
+    playerId: string,
+    materialId: string,
+    quantity: number,
+    context: SupportContext,
+  ): Promise<SupportActionResult> {
+    return this.run(playerId, context, 'SUPPORT_REMOVE_MATERIAL', async (tx) => {
+      const held = await this.heldOf(tx, playerId, materialId);
+      // Conditional decrement: a concurrent sale cannot push the holding below zero.
+      const changed = await tx.playerMaterial.updateMany({
+        where: { playerId, materialId, quantity: { gte: quantity } },
+        data: { quantity: { decrement: quantity } },
+      });
+      if (changed.count === 0) throw new ConflictException({ error: 'INSUFFICIENT_MATERIALS' });
+      return {
+        before: { materialId, quantity: held },
+        after: { materialId, quantity: await this.heldOf(tx, playerId, materialId) },
+      };
     });
   }
 
@@ -357,6 +406,23 @@ export class SupportService {
       DELETE FROM "RoutePresence"
       WHERE "missionId" = ANY(${missionIds as string[]}) AND upper("window") > now()
     `;
+  }
+
+  private async heldOf(
+    tx: Prisma.TransactionClient,
+    playerId: string,
+    materialId: string,
+  ): Promise<number> {
+    const material = await tx.material.findUnique({
+      where: { id: materialId },
+      select: { id: true },
+    });
+    if (material === null) throw new NotFoundException('material not found');
+    const row = await tx.playerMaterial.findUnique({
+      where: { playerId_materialId: { playerId, materialId } },
+      select: { quantity: true },
+    });
+    return row?.quantity ?? 0;
   }
 
   private async creditsOf(tx: Prisma.TransactionClient, playerId: string): Promise<number> {

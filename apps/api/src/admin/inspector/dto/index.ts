@@ -56,3 +56,22 @@ export class CreditsActionDto {
   @MaxLength(REASON_MAX_LENGTH)
   reason!: string;
 }
+
+export const MAX_MATERIAL_ACTION = 1_000_000;
+
+export class MaterialActionDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(64)
+  materialId!: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(MAX_MATERIAL_ACTION)
+  quantity!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(REASON_MAX_LENGTH)
+  reason!: string;
+}

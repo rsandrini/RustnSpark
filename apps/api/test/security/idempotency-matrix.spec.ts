@@ -141,6 +141,8 @@ describe('idempotency matrix (S12.2)', () => {
       'POST /v1/ships/:id/rescue',
       'POST /v1/admin/players/:playerId/credits/grant',
       'POST /v1/admin/players/:playerId/credits/remove',
+      'POST /v1/admin/players/:playerId/materials/grant',
+      'POST /v1/admin/players/:playerId/materials/remove',
     ];
     const keyed = new Set(mutating.filter(isIdempotent).map(key));
     expect(moneyRoutes.filter((route) => !keyed.has(route))).toEqual([]);

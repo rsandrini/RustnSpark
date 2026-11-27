@@ -1,18 +1,30 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { describeError } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
+import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
 import { adminApi, type SupportResult } from '../admin.api';
+import { tuningApi } from '../tuning/tuning.api';
 
 const MAX_AMOUNT = 1_000_000_000;
+const MAX_QUANTITY = 1_000_000;
 const MAX_REASON = 500;
 const MIN_PASSWORD = 10;
 const MAX_PASSWORD = 128;
 
 export type SupportActionKey =
-  'grant' | 'remove' | 'clear' | 'password' | 'unstick' | 'ban' | 'reset' | 'fastOps';
+  | 'grant'
+  | 'remove'
+  | 'grantMaterial'
+  | 'removeMaterial'
+  | 'clear'
+  | 'password'
+  | 'unstick'
+  | 'ban'
+  | 'reset'
+  | 'fastOps';
 
 interface PendingAction {
   readonly key: SupportActionKey;
@@ -28,6 +40,7 @@ interface ActionContext {
   readonly amount: number;
   readonly shipId: string;
   readonly password: string;
+  readonly materialId: string;
 }
 
 // Screen D's support half (GDD §17). Every action opens a dialog that collects the
@@ -46,23 +59,48 @@ export function SupportActions({
   fastOpsOn: boolean;
   onChanged: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const intent = useIntentKey();
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('1');
   const [shipId, setShipId] = useState(ships[0]?.id ?? '');
   const [password, setPassword] = useState('');
+  const [materialId, setMaterialId] = useState('');
+  const needsMaterial = pending?.key === 'grantMaterial' || pending?.key === 'removeMaterial';
+  const materialsQuery = useQuery({
+    queryKey: ['admin', 'materials'],
+    enabled: needsMaterial,
+    queryFn: () =>
+      tuningApi.listEntities<{ id: string; displayName: { en: string; 'pt-BR': string } }>(
+        'materials',
+      ),
+  });
+  const materials = materialsQuery.data ?? [];
+  // nothing picked yet means the first of the list
+  const chosenMaterial = materialId !== '' ? materialId : (materials[0]?.id ?? '');
 
   const mutation = useMutation<SupportResult, Error, ActionContext>({
-    mutationFn: async ({ reason: why, amount: value, shipId: hull, password: pass }) => {
+    mutationFn: async ({
+      reason: why,
+      amount: value,
+      shipId: hull,
+      password: pass,
+      materialId: material,
+    }) => {
       // Same intent (action + target + inputs) keeps the same key across retries.
-      const key = intent.keyFor(`${pending?.key}:${playerId}:${hull}:${value}:${pass}:${why}`);
+      const key = intent.keyFor(
+        `${pending?.key}:${playerId}:${hull}:${material}:${value}:${pass}:${why}`,
+      );
       switch (pending?.key) {
         case 'grant':
           return adminApi.grantCredits(playerId, value, why, key);
         case 'remove':
           return adminApi.removeCredits(playerId, value, why, key);
+        case 'grantMaterial':
+          return adminApi.grantMaterial(playerId, material, value, why, key);
+        case 'removeMaterial':
+          return adminApi.removeMaterial(playerId, material, value, why, key);
         case 'clear':
           return adminApi.clearBalance(playerId, why, key);
         case 'password':
@@ -92,6 +130,7 @@ export function SupportActions({
     setAmount('1');
     setShipId(ships[0]?.id ?? '');
     setPassword('');
+    setMaterialId('');
     mutation.reset();
     setPending({ key });
   };
@@ -101,21 +140,32 @@ export function SupportActions({
     mutation.reset();
   };
 
-  const needsAmount = pending?.key === 'grant' || pending?.key === 'remove';
+  const needsAmount = pending?.key === 'grant' || pending?.key === 'remove' || needsMaterial;
+  const maxAmount = needsMaterial ? MAX_QUANTITY : MAX_AMOUNT;
   const needsShip = pending?.key === 'unstick';
   const needsPassword = pending?.key === 'password';
   const parsedAmount = Number(amount);
   const amountValid =
     !needsAmount ||
-    (Number.isInteger(parsedAmount) && parsedAmount >= 1 && parsedAmount <= MAX_AMOUNT);
+    (Number.isInteger(parsedAmount) && parsedAmount >= 1 && parsedAmount <= maxAmount);
   const passwordValid =
     !needsPassword || (password.length >= MIN_PASSWORD && password.length <= MAX_PASSWORD);
   const canConfirm =
-    reason.trim() !== '' && amountValid && passwordValid && (!needsShip || shipId !== '');
+    reason.trim() !== '' &&
+    amountValid &&
+    passwordValid &&
+    (!needsShip || shipId !== '') &&
+    (!needsMaterial || chosenMaterial !== '');
 
   const submit = () => {
     if (pending === null || !canConfirm) return;
-    mutation.mutate({ reason: reason.trim(), amount: parsedAmount, shipId, password });
+    mutation.mutate({
+      reason: reason.trim(),
+      amount: parsedAmount,
+      shipId,
+      password,
+      materialId: chosenMaterial,
+    });
   };
 
   const destructive = pending?.key === 'ban' || pending?.key === 'reset';
@@ -131,6 +181,12 @@ export function SupportActions({
         </button>
         <button type="button" onClick={() => open('remove')}>
           {label('remove')}
+        </button>
+        <button type="button" onClick={() => open('grantMaterial')}>
+          {label('grantMaterial')}
+        </button>
+        <button type="button" onClick={() => open('removeMaterial')}>
+          {label('removeMaterial')}
         </button>
         <button type="button" onClick={() => open('clear')}>
           {label('clear')}
@@ -177,13 +233,28 @@ export function SupportActions({
             <p className={destructive ? 'error-text' : undefined}>
               {t(`admin.warnings.${pending.key}`)}
             </p>
+            {needsMaterial && (
+              <label>
+                {t('admin.material')}
+                <select
+                  value={chosenMaterial}
+                  onChange={(event) => setMaterialId(event.target.value)}
+                >
+                  {materials.map((material) => (
+                    <option key={material.id} value={material.id}>
+                      {pickLocalized(material.displayName, i18n.language)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {needsAmount && (
               <label>
-                {t('admin.amount')}
+                {needsMaterial ? t('admin.quantity') : t('admin.amount')}
                 <input
                   type="number"
                   min={1}
-                  max={MAX_AMOUNT}
+                  max={maxAmount}
                   step={1}
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}

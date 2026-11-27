@@ -289,7 +289,10 @@ export function EntityScreen() {
                   )}
                   {entityName === 'quest-givers' && (
                     <td>
-                      <GiverThumb url={portraits[id]} name={typeof row.name === 'string' ? row.name : id} />
+                      <GiverThumb
+                        url={portraits[id]}
+                        name={typeof row.name === 'string' ? row.name : id}
+                      />
                     </td>
                   )}
                   {listFields.map((field) => (

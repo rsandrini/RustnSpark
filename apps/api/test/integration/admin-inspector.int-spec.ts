@@ -475,6 +475,67 @@ describe('admin player inspector (S11.4)', () => {
     expect(missing.status).toBe(400);
   });
 
+  it('grants and removes materials once per intent, with audit rows and no overdraw', async () => {
+    const admin = await makeAdmin(prisma, testApp.app.get(PasswordService), server);
+    const player = await makePlayer();
+    const path = `/v1/admin/players/${player.playerId}/materials`;
+    const held = async () =>
+      (
+        await prisma.playerMaterial.findUnique({
+          where: { playerId_materialId: { playerId: player.playerId, materialId: 'scrap' } },
+        })
+      )?.quantity ?? 0;
+
+    const key = randomUUID();
+    const grant = () =>
+      request(server)
+        .post(`${path}/grant`)
+        .set(auth(admin.token, key))
+        .send({ materialId: 'scrap', quantity: 7, reason: 'playtest' });
+    const first = await grant();
+    const second = await grant();
+    expect(first.status).toBe(200);
+    contract(SupportResultSchema, first.body, 'POST /admin/players/:id/materials/grant');
+    expect(first.body).toMatchObject({
+      action: 'SUPPORT_GRANT_MATERIAL',
+      before: { materialId: 'scrap', quantity: 0 },
+      after: { materialId: 'scrap', quantity: 7 },
+    });
+    expect(second.body).toEqual(first.body);
+    expect(await held()).toBe(7);
+
+    await request(server)
+      .post(`${path}/remove`)
+      .set(auth(admin.token))
+      .send({ materialId: 'scrap', quantity: 3, reason: 'fix' })
+      .expect(200);
+    expect(await held()).toBe(4);
+
+    const over = await request(server)
+      .post(`${path}/remove`)
+      .set(auth(admin.token))
+      .send({ materialId: 'scrap', quantity: 5, reason: 'too much' });
+    expect(over.status).toBe(409);
+    expect(over.body).toMatchObject({ message: { error: 'INSUFFICIENT_MATERIALS' } });
+    expect(await held()).toBe(4);
+
+    await request(server)
+      .post(`${path}/grant`)
+      .set(auth(admin.token))
+      .send({ materialId: 'unobtainium', quantity: 1, reason: 'x' })
+      .expect(404);
+    await request(server)
+      .post(`${path}/grant`)
+      .set(auth(admin.token))
+      .send({ materialId: 'scrap', quantity: 0, reason: 'x' })
+      .expect(400);
+    await request(server)
+      .post(`${path}/grant`)
+      .set(auth(player.token))
+      .send({ materialId: 'scrap', quantity: 1, reason: 'x' })
+      .expect(403);
+  });
+
   it('a ban cuts the player off even while their access token is still valid', async () => {
     const admin = await makeAdmin(prisma, testApp.app.get(PasswordService), server);
     const player = await makePlayer();

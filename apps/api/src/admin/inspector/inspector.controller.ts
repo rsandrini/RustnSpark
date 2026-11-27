@@ -18,7 +18,13 @@ import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
 import { ReportsService } from '../../reports/reports.service.js';
 import { AdminAuditService } from '../audit/admin-audit.service.js';
 import { AdminGuard } from '../guards/admin.guard.js';
-import { CreditsActionDto, ReasonDto, SetDebugFastOpsDto, SetPasswordDto } from './dto/index.js';
+import {
+  CreditsActionDto,
+  MaterialActionDto,
+  ReasonDto,
+  SetDebugFastOpsDto,
+  SetPasswordDto,
+} from './dto/index.js';
 import { InspectorService } from './inspector.service.js';
 import { SupportService, type SupportContext } from './support.service.js';
 
@@ -110,6 +116,40 @@ export class InspectorController {
     return this.support.removeCredits(
       playerId,
       dto.amount,
+      this.context(user, request, dto.reason),
+    );
+  }
+
+  @Post(':playerId/materials/grant')
+  @HttpCode(200)
+  @Idempotent()
+  grantMaterial(
+    @Param('playerId') playerId: string,
+    @Body() dto: MaterialActionDto,
+    @CurrentUser() user: CurrentUserPayload,
+    @Req() request: Request,
+  ): ReturnType<SupportService['grantMaterial']> {
+    return this.support.grantMaterial(
+      playerId,
+      dto.materialId,
+      dto.quantity,
+      this.context(user, request, dto.reason),
+    );
+  }
+
+  @Post(':playerId/materials/remove')
+  @HttpCode(200)
+  @Idempotent()
+  removeMaterial(
+    @Param('playerId') playerId: string,
+    @Body() dto: MaterialActionDto,
+    @CurrentUser() user: CurrentUserPayload,
+    @Req() request: Request,
+  ): ReturnType<SupportService['removeMaterial']> {
+    return this.support.removeMaterial(
+      playerId,
+      dto.materialId,
+      dto.quantity,
       this.context(user, request, dto.reason),
     );
   }
