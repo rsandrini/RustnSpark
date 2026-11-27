@@ -9,6 +9,7 @@ export type ConfigGroup =
   | 'engine'
   | 'escape'
   | 'escort'
+  | 'explore'
   | 'failure'
   | 'integrity'
   | 'mining'
@@ -132,6 +133,13 @@ export type ConfigKey =
   | 'escape.preset_bonus'
   | 'escort.client_target_share'
   | 'escort.encounter_multiplier'
+  | 'explore.area_max'
+  | 'explore.area_min'
+  | 'explore.fuel_per_tick'
+  | 'explore.max_ticks'
+  | 'explore.scan_k'
+  | 'explore.tick_seconds'
+  | 'explore.unit_pay'
   | 'failure.tank_leak_max'
   | 'failure.tank_leak_min'
   | 'failure.weapon_skip_ratio'
@@ -158,6 +166,8 @@ export type ConfigKey =
   | 'missions.board_min_per_location'
   | 'missions.board_min_by_detail'
   | 'missions.board_core_types'
+  | 'missions.board_extra_types'
+  | 'missions.board_min_extras'
   | 'missions.board_min_races'
   | 'missions.board_short_max_seconds'
   | 'missions.board_long_min_seconds'
@@ -250,6 +260,7 @@ export type ConfigKey =
   | 'ship.stat_display_scale'
   | 'specialty.delivery'
   | 'specialty.escort'
+  | 'specialty.explore'
   | 'specialty.transport'
   | 'stance.neutral_attack_ratio'
   | 'stance.rating_armor_weight'
@@ -640,7 +651,24 @@ export type GameRules = Readonly<{
     encounter_multiplier: number;
     client_target_share: number;
   }>;
+  /** EXPLORE missions: a radar scan of an open-space place; the pay follows the share of the area scanned. */
+  explore: Readonly<{
+    /** Area scanned per tick = radar strength x scan_k x power share. */
+    scan_k: number;
+    /** Game seconds one scan tick takes. */
+    tick_seconds: number;
+    /** The most ticks one scan runs. */
+    max_ticks: number;
+    /** Fuel a chemical ship burns per scan tick. */
+    fuel_per_tick: number;
+    /** Credits paid per unit of area. */
+    unit_pay: number;
+    /** The smallest and largest area an offer can ask for. */
+    area_min: number;
+    area_max: number;
+  }>;
   specialty: Readonly<{
+    explore: Readonly<{ min_ratio: number }>;
     transport: Readonly<{ min_ratio: number }>;
     delivery: Readonly<{ min_ratio: number }>;
     escort: Readonly<{
@@ -683,6 +711,10 @@ export type GameRules = Readonly<{
     board_min_by_detail: Readonly<Record<string, number>>;
     /** Mission types every board posts at least once when its place can. */
     board_core_types: readonly string[];
+    /** Extra mission types (outside the core ones) a board keeps at least `board_min_extras` offers of, when it can post them. */
+    board_extra_types: readonly string[];
+    /** How many offers of the extra types a board keeps; the board target grows by it. */
+    board_min_extras: number;
     /** Races every board posts, when the place has that many race destinations. */
     board_min_races: number;
     /** A trip this short (seconds at the reference ship) counts as the board's short offer. */

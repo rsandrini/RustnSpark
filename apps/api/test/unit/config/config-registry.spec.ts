@@ -115,6 +115,13 @@ const EXPECTED_KEYS: readonly string[] = [
   'escape.preset_bonus',
   'escort.client_target_share',
   'escort.encounter_multiplier',
+  'explore.area_max',
+  'explore.area_min',
+  'explore.fuel_per_tick',
+  'explore.max_ticks',
+  'explore.scan_k',
+  'explore.tick_seconds',
+  'explore.unit_pay',
   'failure.tank_leak_max',
   'failure.tank_leak_min',
   'failure.weapon_skip_ratio',
@@ -138,9 +145,11 @@ const EXPECTED_KEYS: readonly string[] = [
   'mining.tier_bias',
   'mining.yield_k',
   'missions.board_core_types',
+  'missions.board_extra_types',
   'missions.board_long_min_seconds',
   'missions.board_max_same_type',
   'missions.board_min_by_detail',
+  'missions.board_min_extras',
   'missions.board_min_per_location',
   'missions.board_min_races',
   'missions.board_reference_mob',
@@ -233,6 +242,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'ship_profile.second_share',
   'specialty.delivery',
   'specialty.escort',
+  'specialty.explore',
   'specialty.transport',
   'stance.neutral_attack_ratio',
   'stance.rating_armor_weight',
@@ -275,6 +285,7 @@ const EXPECTED_GROUPS: readonly string[] = [
   'engine',
   'escape',
   'escort',
+  'explore',
   'failure',
   'integrity',
   'mining',
@@ -342,6 +353,41 @@ describe('config registry', () => {
       expect(entry?.description.en).toMatch(/\S/);
       expect(entry?.description['pt-BR']).toMatch(/\S/);
     }
+  });
+
+  it('registers explore.* and specialty.explore with en and pt-BR', () => {
+    const keys = getConfigKeys().filter(
+      (k) => k.startsWith('explore.') || k === 'specialty.explore',
+    );
+    expect(keys).toHaveLength(8);
+    for (const key of keys) {
+      const entry = getRegistryEntry(key);
+      expect(entry?.description.en).toMatch(/\S/);
+      expect(entry?.description['pt-BR']).toMatch(/\S/);
+      // The admin must be able to save the default (no min:0,max:0 trap).
+      expect(validateConfigValue(key, entry?.factoryDefault)).toEqual(entry?.factoryDefault);
+    }
+    expect(GAME_CONFIG_DEFAULTS.explore).toEqual({
+      scan_k: 1.5,
+      tick_seconds: 300,
+      max_ticks: 12,
+      fuel_per_tick: 25,
+      unit_pay: 50,
+      area_min: 40,
+      area_max: 120,
+    });
+    expect(getRegistryEntry('specialty.explore')?.factoryDefault).toEqual({ min_ratio: 0.05 });
+    expect(GAME_CONFIG_DEFAULTS.economy.reward_type_bonus['explore']).toBe(1);
+    expect(GAME_CONFIG_DEFAULTS.missions.board_extra_types).toEqual(['EXPLORE']);
+    expect(GAME_CONFIG_DEFAULTS.missions.board_min_extras).toBe(1);
+    expect(validateConfigValue('missions.board_extra_types', ['EXPLORE'])).toEqual(['EXPLORE']);
+    expect(validateConfigValue('missions.board_min_extras', 4)).toBe(4);
+    expect(() => validateConfigValue('missions.board_min_extras', 5)).toThrow();
+    expect(() => validateConfigValue('specialty.explore', { min_ratio: 0.01 })).toThrow();
+    expect(() => validateConfigValue('explore.max_ticks', 0)).toThrow();
+    expect(() => validateConfigValue('explore.max_ticks', 101)).toThrow();
+    expect(() => validateConfigValue('explore.scan_k', 20.1)).toThrow();
+    expect(() => validateConfigValue('explore.area_min', 0)).toThrow();
   });
 
   describe('specialty knobs: admin writes', () => {

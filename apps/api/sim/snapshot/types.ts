@@ -29,7 +29,8 @@ export type MissionTypeName =
   | 'RESCUE'
   | 'TRAVEL'
   | 'SCAVENGE'
-  | 'RACE';
+  | 'RACE'
+  | 'EXPLORE';
 
 /** Any JSON value the database stores in a `Json` column (same shape Prisma reports). */
 export type Json = string | number | boolean | null | JsonObject | JsonArray;

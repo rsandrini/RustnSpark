@@ -94,7 +94,15 @@ export function pickGiver(input: PickGiverInput): GiverShape | undefined {
   return weightedPick(finalPool, (giver) => giver.weight, rng);
 }
 
-const MISSION_TYPES = new Set(['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING', 'RESCUE', 'RACE']);
+const MISSION_TYPES = new Set([
+  'DELIVERY',
+  'TRANSPORT',
+  'ESCORT',
+  'MINING',
+  'RESCUE',
+  'RACE',
+  'EXPLORE',
+]);
 
 /** A `QuestGiver` row as the generator sees it. Admin edits the JSON, so anything odd is dropped, never thrown. */
 export function giverShapeOf(row: {

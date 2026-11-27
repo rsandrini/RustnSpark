@@ -2309,6 +2309,106 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'explore.scan_k',
+    group: 'explore',
+    type: 'number',
+    min: 0.1,
+    max: 20,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.explore.scan_k),
+    description: {
+      en: 'Area a radar scans per tick for each point of radar strength (area per tick = strength x this x power share).',
+      'pt-BR':
+        'Área que um radar varre por tick para cada ponto de força do radar (área por tick = força x isto x parcela de energia).',
+    },
+  },
+  {
+    key: 'explore.tick_seconds',
+    group: 'explore',
+    type: 'number',
+    min: 30,
+    max: 3600,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.explore.tick_seconds),
+    description: {
+      en: 'Game seconds one scan tick takes.',
+      'pt-BR': 'Segundos de jogo que um tick de varredura leva.',
+    },
+  },
+  {
+    key: 'explore.max_ticks',
+    group: 'explore',
+    type: 'integer',
+    min: 1,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.explore.max_ticks),
+    description: {
+      en: 'The most ticks one scan runs; an area the radar cannot cover in that many ticks pays only the share covered.',
+      'pt-BR':
+        'O máximo de ticks de uma varredura; uma área que o radar não cobre nesses ticks paga só a parte coberta.',
+    },
+  },
+  {
+    key: 'explore.fuel_per_tick',
+    group: 'explore',
+    type: 'number',
+    min: 0,
+    max: 500,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.explore.fuel_per_tick),
+    description: {
+      en: 'Fuel a chemical ship burns per scan tick (ion ships burn none).',
+      'pt-BR':
+        'Combustível que uma nave química queima por tick de varredura (naves a íons não queimam).',
+    },
+  },
+  {
+    key: 'explore.unit_pay',
+    group: 'explore',
+    type: 'number',
+    min: 0,
+    max: 10000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.explore.unit_pay),
+    description: {
+      en: 'Credits an offer pays per unit of area to scan.',
+      'pt-BR': 'Créditos que uma oferta paga por unidade de área a varrer.',
+    },
+  },
+  {
+    key: 'explore.area_min',
+    group: 'explore',
+    type: 'integer',
+    min: 1,
+    max: 10000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.explore.area_min),
+    description: {
+      en: 'The smallest area an explore offer can ask for.',
+      'pt-BR': 'A menor área que uma oferta de exploração pode pedir.',
+    },
+  },
+  {
+    key: 'explore.area_max',
+    group: 'explore',
+    type: 'integer',
+    min: 1,
+    max: 10000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.explore.area_max),
+    description: {
+      en: 'The largest area an explore offer can ask for.',
+      'pt-BR': 'A maior área que uma oferta de exploração pode pedir.',
+    },
+  },
+  {
+    key: 'specialty.explore',
+    group: 'specialty',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.specialty.explore),
+    description: {
+      en: 'Explore jobs. min_ratio (0.05 to 1): below this share of the area the ship radar can cover in one scan, the ship cannot take the job.',
+      'pt-BR':
+        'Trabalhos de exploração. min_ratio (0,05 a 1): abaixo desta fração da área que o radar da nave consegue cobrir em uma varredura, a nave não pode aceitar o trabalho.',
+    },
+  },
+  {
     key: 'specialty.transport',
     group: 'specialty',
     type: 'json',
@@ -2759,6 +2859,32 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
       en: 'Mission types every board posts at least once when its place can (cargo DELIVERY, people TRANSPORT, ESCORT, MINING).',
       'pt-BR':
         'Tipos de missão que todo quadro publica ao menos uma vez quando o local permite (carga DELIVERY, pessoas TRANSPORT, ESCORT, MINING).',
+    },
+  },
+  {
+    key: 'missions.board_extra_types',
+    group: 'missions',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_extra_types),
+    description: {
+      en: 'Extra mission types (outside the core ones) a board keeps at least board_min_extras offers of, when the place can post them. Unknown names are ignored.',
+      'pt-BR':
+        'Tipos de missão extras (fora dos principais) dos quais um quadro mantém ao menos board_min_extras ofertas, quando o local pode publicá-los. Nomes desconhecidos são ignorados.',
+    },
+  },
+  {
+    key: 'missions.board_min_extras',
+    group: 'missions',
+    type: 'integer',
+    min: 0,
+    max: 4,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_min_extras),
+    description: {
+      en: 'How many offers of the extra types a board keeps; the board size grows by this number.',
+      'pt-BR':
+        'Quantas ofertas dos tipos extras um quadro mantém; o tamanho do quadro cresce em tanto.',
     },
   },
   {

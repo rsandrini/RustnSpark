@@ -140,6 +140,7 @@ const MISSION_TYPE_VALUES = [
   'TRAVEL',
   'RACE',
   'SCAVENGE',
+  'EXPLORE',
 ];
 
 const PART_FIELDS: EntitySchemaField[] = [

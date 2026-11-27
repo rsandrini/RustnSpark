@@ -138,7 +138,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // v0.1.3 balance (sim screening round, pay per hour by tier): distance counts for less, so a long
     // trip no longer out-pays everything else. Was 1500.
     reward_distance_divisor: 4000,
-    reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1 },
+    reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1, explore: 1 },
     // Mission pay follows the part-price ladder: the better the bridge, the more a contract pays.
     // Round 6b (2026-10-27): Epic and Legendary pay ~30% more (2.5 / 3.25), so a rich ship can pay its repairs.
     // Milder bonus for the better bridges (was RARE 1.4, EPIC 2.5, LEGENDARY 3.25).
@@ -456,7 +456,18 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   },
   // How much a ship's specialty shapes a job: below min_ratio of the need the ship cannot take it; escort time
   // also follows the ship's combat strength. First guesses for the sim to judge.
+  // EXPLORE: a radar scan of an open-space place. First guesses for the sim to judge.
+  explore: {
+    scan_k: 1.5,
+    tick_seconds: 300,
+    max_ticks: 12,
+    fuel_per_tick: 25,
+    unit_pay: 50,
+    area_min: 40,
+    area_max: 120,
+  },
   specialty: {
+    explore: { min_ratio: 0.05 },
     transport: { min_ratio: 0.5 },
     delivery: { min_ratio: 0.25 },
     escort: { min_ratio: 0.1, exponent: 0.5, fastest: 0.85, reference: 0.03, per_danger: 0.015 },
@@ -501,6 +512,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     board_min_by_detail: { main: 10, regional: 8, local: 6 },
     // Mission types every board posts at least once when its place can (cargo, people, escort, mining).
     board_core_types: ['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING'],
+    // After the core types a board keeps at least this many offers of these types (the extras slot).
+    board_extra_types: ['EXPLORE'],
+    board_min_extras: 1,
     // Races every board posts, when the place has that many race destinations.
     board_min_races: 2,
     // A trip up to this long (seconds at the reference ship) is the board's short offer; from `board_long_min_seconds`

@@ -13,6 +13,7 @@ export type MissionType =
   | 'TRAVEL'
   | 'SCAVENGE'
   | 'RACE'
+  | 'EXPLORE'
   | 'HUNT'
   | null;
 

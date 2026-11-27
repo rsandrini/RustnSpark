@@ -56,6 +56,19 @@ describe('game rules schema', () => {
     expect(() => validateGameRules(invalid)).toThrow(GameConfigValidationError);
   });
 
+  it('rejects explore.max_ticks 0 and specialty.explore.min_ratio 0.01', () => {
+    const rules = structuredClone(GAME_CONFIG_DEFAULTS);
+    expect(() =>
+      validateGameRules({ ...rules, explore: { ...rules.explore, max_ticks: 0 } }),
+    ).toThrow(GameConfigValidationError);
+    expect(() =>
+      validateGameRules({
+        ...rules,
+        specialty: { ...rules.specialty, explore: { min_ratio: 0.01 } },
+      }),
+    ).toThrow(GameConfigValidationError);
+  });
+
   describe('validateConfigValue', () => {
     it('validates a scalar within bounds', () => {
       expect(validateConfigValue('combat.dodge_factor', 2.5)).toBe(2.5);

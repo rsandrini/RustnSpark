@@ -208,6 +208,8 @@ enum MissionType {
   SCAVENGE
   // A race against generated rival ships (3-5): needs a fast ship, pays by finishing place.
   RACE
+  // A scan of an open-space place with a radar; pays by the share of the area scanned
+  EXPLORE
 }
 
 // Board/instance lifecycle (plan S6.1). Distinct from the resolution outcome union

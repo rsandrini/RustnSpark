@@ -119,6 +119,8 @@ export const SPECIALTY_TABLE: Readonly<Record<MissionType, SpecialtyRow | null>>
   },
   TRAVEL: null,
   SCAVENGE: null,
+  // Placeholder: the row (sensor stat, work curve) arrives with the scan module.
+  EXPLORE: null,
 };
 
 /** Each extra trip goes there and back. */

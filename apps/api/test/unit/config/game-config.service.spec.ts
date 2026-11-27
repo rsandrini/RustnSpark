@@ -80,6 +80,7 @@ describe('hashGameRules', () => {
       race: GAME_CONFIG_DEFAULTS.race,
       rescue: GAME_CONFIG_DEFAULTS.rescue,
       escort: GAME_CONFIG_DEFAULTS.escort,
+      explore: GAME_CONFIG_DEFAULTS.explore,
       specialty: GAME_CONFIG_DEFAULTS.specialty,
       ship_profile: GAME_CONFIG_DEFAULTS.ship_profile,
       missions: GAME_CONFIG_DEFAULTS.missions,

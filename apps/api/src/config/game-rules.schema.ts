@@ -315,6 +315,17 @@ const escortSchema = z.object({
   client_target_share: z.number().min(0).max(1),
 });
 
+const exploreSchema = z.object({
+  scan_k: z.number().min(0.1).max(20),
+  tick_seconds: z.number().min(30).max(3600),
+  max_ticks: z.number().int().min(1).max(100),
+  fuel_per_tick: z.number().min(0).max(500),
+  unit_pay: z.number().min(0).max(10000),
+  area_min: z.number().int().min(1).max(10000),
+  area_max: z.number().int().min(1).max(10000),
+});
+
+const specialtyExploreSchema = z.object({ min_ratio: z.number().min(0.05).max(1) });
 const specialtyTransportSchema = z.object({ min_ratio: z.number().min(0.05).max(1) });
 const specialtyDeliverySchema = z.object({ min_ratio: z.number().min(0.05).max(1) });
 const specialtyEscortSchema = z.object({
@@ -328,6 +339,7 @@ const specialtySchema = z.object({
   transport: specialtyTransportSchema,
   delivery: specialtyDeliverySchema,
   escort: specialtyEscortSchema,
+  explore: specialtyExploreSchema,
 });
 
 // Json keys whose sub-fields each carry their own bounds: a write is checked against the same schema as the rules.
@@ -335,6 +347,7 @@ const JSON_KEY_SCHEMAS: Readonly<Record<string, z.ZodType<unknown>>> = {
   'specialty.transport': specialtyTransportSchema,
   'specialty.delivery': specialtyDeliverySchema,
   'specialty.escort': specialtyEscortSchema,
+  'specialty.explore': specialtyExploreSchema,
 };
 
 const shipProfileSchema = z.object({
@@ -368,6 +381,8 @@ const missionsSchema = z.object({
     .record(z.string(), z.number().int().min(0).max(20))
     .default({ main: 10, regional: 8, local: 6 }),
   board_core_types: z.array(z.string()).default(['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING']),
+  board_extra_types: z.array(z.string()).default(['EXPLORE']),
+  board_min_extras: z.number().int().min(0).max(4).default(1),
   board_min_races: z.number().int().min(0).max(10).default(2),
   board_short_max_seconds: z.number().min(60).max(86400).default(600),
   board_long_min_seconds: z.number().min(60).max(86400).default(3600),
@@ -464,6 +479,7 @@ const gameRulesSchema = z.object({
   race: raceSchema,
   rescue: rescueSchema,
   escort: escortSchema,
+  explore: exploreSchema,
   specialty: specialtySchema,
   ship_profile: shipProfileSchema,
   missions: missionsSchema,

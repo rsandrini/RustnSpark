@@ -23,6 +23,7 @@ const VALID_MISSION_TYPES = [
   'MINING',
   'RESCUE',
   'RACE',
+  'EXPLORE',
 ] as const;
 const ENTITY_CHANGE_CHANNEL = 'entity:changed';
 

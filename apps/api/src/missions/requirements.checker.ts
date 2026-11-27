@@ -226,6 +226,7 @@ export function missionRequirementChecklist(
       ];
     case 'TRAVEL':
     case 'SCAVENGE':
+    case 'EXPLORE': // Task 2 adds the radar requirement.
       // Nothing to check: any ship that can fly can make a trip (viability is checked separately).
       return [];
     case 'RACE':
