@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { MissionType } from '@prisma/client';
+import { rewardBase } from '../../../src/economy/reward.calculator.js';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
@@ -1151,5 +1152,170 @@ describe('filler reach and length target', () => {
       ['beta', 'p2', 'alpha', 9620, 'DELIVERY'],
       ['beta', 'p3', 'alpha', 9620, 'DELIVERY'],
     ]);
+  });
+});
+
+describe('EXPLORE offers (open-space scans)', () => {
+  const place = (id: string, type: string, zone: number, factionId: string): FillerLocation => ({
+    id,
+    type,
+    zone,
+    factionId,
+  });
+  const LOCS: FillerLocation[] = [
+    place('ceres', 'port', 0, 'luna'),
+    place('hedus', 'garrison', 2, 'sun'),
+    place('cair', 'outpost', 0, 'explorers'),
+    place('vesta', 'outpost', 1, 'luna'),
+    place('spur', 'frontier', 2, 'explorers'),
+    place('rennick', 'outpost', 2, 'explorers'),
+    place('gate', 'junction', 2, 'sun'),
+    place('echo', 'relay', 3, 'sun'),
+    place('marsa', 'port', 2, 'sun'),
+    place('drift', 'scrap_field', 3, 'pirates'),
+    place('veil', 'dead_zone', 3, 'pirates'),
+    place('ziggy', 'empty', 1, 'luna'),
+  ];
+  // a star around a hub keeps every place reachable
+  const hub = place('hub', 'junction', 1, 'luna');
+  const ROUTES: FillerRoute[] = LOCS.map((l) => ({
+    id: `hub-${l.id}`,
+    nodeAId: 'hub',
+    nodeBId: l.id,
+    distance: 400,
+    danger: 2,
+  }));
+  const DEST_TYPES = ['frontier', 'relay', 'dead_zone', 'scrap_field', 'empty'];
+  const explore = (
+    id: string,
+    factionId: string,
+    requirements: Record<string, unknown>,
+  ): FillerTemplate => ({
+    id,
+    type: 'EXPLORE',
+    factionId,
+    active: true,
+    requirements: { ...requirements, destinationTypes: DEST_TYPES },
+  });
+  const TEMPLATES: FillerTemplate[] = [
+    explore('explore_explorers', 'explorers', {
+      originFactions: ['explorers'],
+      originTypes: ['outpost', 'frontier'],
+      originMinZone: 1,
+      scanArea: [60, 120],
+    }),
+    explore('explore_sun', 'sun', {
+      originFactions: ['sun'],
+      originTypes: ['junction', 'relay', 'port'],
+      scanArea: [40, 90],
+    }),
+    explore('explore_luna', 'luna', {
+      originFactions: ['luna'],
+      originTypes: ['outpost', 'empty'],
+      originMinZone: 1,
+      scanArea: [40, 80],
+    }),
+    { ...DELIVERY_LUNA, requirements: {} },
+  ];
+  const exploreWorld = (): FixtureWorld => ({
+    locations: [...LOCS, hub],
+    routes: ROUTES,
+    routeEnvironments: ROUTES.map((r) => ({ routeId: r.id, environmentId: 'open', order: 0 })),
+    environments: ENVELOPES,
+    templates: TEMPLATES,
+    materials: MATERIALS,
+  });
+  const at = (id: string): FillerLocation => LOCS.find((l) => l.id === id) as FillerLocation;
+
+  it('home ports post no explore', () => {
+    for (const id of ['ceres', 'hedus', 'cair']) {
+      expect(eligibleTypesAt(at(id), exploreWorld()).has('EXPLORE')).toBe(false);
+    }
+    for (const id of ['vesta', 'spur', 'rennick', 'gate', 'echo', 'marsa']) {
+      expect(eligibleTypesAt(at(id), exploreWorld()).has('EXPLORE')).toBe(true);
+    }
+  });
+
+  it('an explore offer scans an open-space place and asks for an area in the template range', () => {
+    for (const seed of ['e1', 'e2', 'e3', 'e4', 'e5', 'e6']) {
+      const draft = fillMission({
+        seed,
+        origin: at('spur'),
+        world: exploreWorld(),
+        rules,
+        now: NOW,
+        preferTypes: new Set(['EXPLORE']),
+      });
+      const dest = LOCS.find((l) => l.id === draft.destinationId);
+      expect(DEST_TYPES).toContain(dest?.type);
+      const area = (draft.cargo as { area: number }).area;
+      expect(area).toBeGreaterThanOrEqual(60);
+      expect(area).toBeLessThanOrEqual(120);
+      expect(Number.isInteger(area)).toBe(true);
+      expect(draft.deadlineAt ?? null).toBeNull();
+    }
+  });
+
+  it('follows the template range of the faction (sun 40-90) and falls back to the rules range', () => {
+    const sun = fillMission({
+      seed: 'x',
+      origin: at('gate'),
+      world: exploreWorld(),
+      rules,
+      now: NOW,
+      preferTypes: new Set(['EXPLORE']),
+    });
+    const area = (sun.cargo as { area: number }).area;
+    expect(area).toBeGreaterThanOrEqual(40);
+    expect(area).toBeLessThanOrEqual(90);
+    const bad: FillerTemplate = {
+      ...TEMPLATES[1]!,
+      requirements: { ...(TEMPLATES[1]!.requirements as object), scanArea: [90, 40] },
+    };
+    const fallback = fillMission({
+      seed: 'x',
+      origin: at('gate'),
+      world: { ...exploreWorld(), templates: [bad] },
+      rules,
+      now: NOW,
+    });
+    const fb = (fallback.cargo as { area: number }).area;
+    expect(fb).toBeGreaterThanOrEqual(rules.explore.area_min);
+    expect(fb).toBeLessThanOrEqual(rules.explore.area_max);
+  });
+
+  it('explore reward = base + area x unit_pay', () => {
+    const draft = fillMission({
+      seed: 'r1',
+      origin: at('spur'),
+      world: exploreWorld(),
+      rules,
+      now: NOW,
+      preferTypes: new Set(['EXPLORE']),
+    });
+    const area = (draft.cargo as { area: number }).area;
+    const legs = draft.legs as unknown as { distance: number; danger: number }[];
+    const base = rewardBase(
+      {
+        tier: 1,
+        danger: Math.max(...legs.map((l) => l.danger)),
+        distance: legs.reduce((s, l) => s + l.distance, 0),
+        missionType: 'EXPLORE',
+      },
+      rules,
+    );
+    expect(draft.reward).toBe(Math.round(base + area * rules.explore.unit_pay));
+  });
+
+  it('a starter draft is never EXPLORE', () => {
+    const draft = fillMission({
+      seed: 's1',
+      origin: at('spur'),
+      world: exploreWorld(),
+      rules,
+      now: NOW,
+      starter: { types: ['DELIVERY'], maxZone: 3, maxDistance: 0 },
+    });
+    expect(draft.type).not.toBe('EXPLORE');
   });
 });

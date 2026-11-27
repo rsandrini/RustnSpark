@@ -1,10 +1,16 @@
 import type { MissionInstance } from '@prisma/client';
 import type { GameRules } from '../config/game-config.types.js';
 import { rewardBase } from '../economy/reward.calculator.js';
+import { areaOf } from '../resolution/explore/explore-scan.js';
 
 interface RewardLeg {
   readonly distance: number;
   readonly danger: number;
+}
+
+/** What the area an explore offer asks for pays on top of the base: `area x explore.unit_pay`. */
+export function exploreAreaPay(area: number, rules: GameRules): number {
+  return area * rules.explore.unit_pay;
 }
 
 // The board's estimate (viewer's tier, D29 preview) and accept-time finalization
@@ -28,6 +34,7 @@ export function missionReward(
   );
   // A race's board figure is the winner's prize (place 1); the real payout follows the place.
   const topPrize = row.type === 'RACE' ? rules.race.prize_share_1 : 1;
+  const areaPay = row.type === 'EXPLORE' ? exploreAreaPay(areaOf(row.cargo), rules) : 0;
   return Math.round(
     rewardBase(
       {
@@ -39,6 +46,8 @@ export function missionReward(
         ...(bridgeRarity === undefined ? {} : { bridgeRarity }),
       },
       rules,
-    ) * topPrize,
+    ) *
+      topPrize +
+      areaPay,
   );
 }

@@ -113,6 +113,22 @@ describe('database seed (S3.4)', () => {
     process.env.NODE_ENV = originalNodeEnv;
   });
 
+  it('seeds the three explore templates, active, and adds them by id on a re-seed', async () => {
+    await seed(prisma);
+    const ids = ['explore_explorers', 'explore_sun', 'explore_luna'];
+    const rows = await prisma.missionTemplate.findMany({ where: { id: { in: ids } } });
+    expect(rows.map((row) => row.id).sort()).toEqual([...ids].sort());
+    for (const row of rows) {
+      expect(row.type).toBe('EXPLORE');
+      expect(row.active).toBe(true);
+    }
+    await prisma.missionTemplate.delete({ where: { id: 'explore_sun' } });
+    await seed(prisma);
+    expect(
+      await prisma.missionTemplate.findUnique({ where: { id: 'explore_sun' } }),
+    ).not.toBeNull();
+  });
+
   it('seeds the expected catalog and world row counts', async () => {
     await seed(prisma);
 

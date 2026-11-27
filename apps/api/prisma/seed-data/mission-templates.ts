@@ -10,6 +10,59 @@ export const TEMPLATES: {
   active?: boolean;
 }[] = [
   {
+    id: 'explore_explorers',
+    displayName: { en: 'Survey the Frontier', 'pt-BR': 'Levantamento da Fronteira' },
+    description: {
+      en: 'Fly out to open space and sweep it with your radar. Pay follows the area you scan.',
+      'pt-BR':
+        'Voe até o espaço aberto e varra a área com seu radar. O pagamento acompanha a área escaneada.',
+    },
+    type: 'EXPLORE',
+    factionId: 'explorers',
+    requirements: {
+      originFactions: ['explorers'],
+      originTypes: ['outpost', 'frontier'],
+      originMinZone: 1,
+      destinationTypes: ['frontier', 'relay', 'dead_zone', 'scrap_field', 'empty'],
+      scanArea: [60, 120],
+    },
+  },
+  {
+    id: 'explore_sun',
+    displayName: { en: 'Alliance Patrol Scan', 'pt-BR': 'Varredura de Patrulha da Aliança' },
+    description: {
+      en: 'Fly out to open space and sweep it with your radar. Pay follows the area you scan.',
+      'pt-BR':
+        'Voe até o espaço aberto e varra a área com seu radar. O pagamento acompanha a área escaneada.',
+    },
+    type: 'EXPLORE',
+    factionId: 'sun',
+    requirements: {
+      originFactions: ['sun'],
+      originTypes: ['junction', 'relay', 'port'],
+      destinationTypes: ['frontier', 'relay', 'dead_zone', 'scrap_field', 'empty'],
+      scanArea: [40, 90],
+    },
+  },
+  {
+    id: 'explore_luna',
+    displayName: { en: 'Corporate Survey', 'pt-BR': 'Levantamento Corporativo' },
+    description: {
+      en: 'Fly out to open space and sweep it with your radar. Pay follows the area you scan.',
+      'pt-BR':
+        'Voe até o espaço aberto e varra a área com seu radar. O pagamento acompanha a área escaneada.',
+    },
+    type: 'EXPLORE',
+    factionId: 'luna',
+    requirements: {
+      originFactions: ['luna'],
+      originTypes: ['outpost', 'empty'],
+      originMinZone: 1,
+      destinationTypes: ['frontier', 'relay', 'dead_zone', 'scrap_field', 'empty'],
+      scanArea: [40, 80],
+    },
+  },
+  {
     id: 'delivery_luna',
     displayName: { en: 'Luna Delivery', 'pt-BR': 'Entrega da Luna' },
     description: {

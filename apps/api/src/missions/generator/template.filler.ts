@@ -5,6 +5,8 @@ import type { GameRules } from '../../config/game-config.types.js';
 import type { BoardReach, TypeReach } from '../board-composition.js';
 import { missionDuration } from '../duration.calculator.js';
 import { rewardBase } from '../../economy/reward.calculator.js';
+import { exploreAreaPay } from '../mission.reward.js';
+import { areaOf } from '../../resolution/explore/explore-scan.js';
 import { droppableOres, placeKeyOf } from '../../resolution/mining/mining-yield.js';
 import type { LegRoute } from '../../resolution/leg/leg.resolver.js';
 import { generateCompetitors } from '../../resolution/race/race.resolver.js';
@@ -133,6 +135,9 @@ export interface FillMissionInput {
 
 export type MissionDraft = Prisma.MissionInstanceUncheckedCreateInput;
 
+/** A `scanArea` is a `[min, max]` pair. */
+const SCAN_AREA_BOUNDS = 2;
+
 interface TemplateRequirements {
   readonly originFactions?: readonly string[];
   readonly originTypes?: readonly string[];
@@ -142,6 +147,10 @@ interface TemplateRequirements {
   readonly destinationIds?: readonly string[];
   /** A mining offer may only name these materials (a far field that only holds rare crystals). */
   readonly materialIds?: readonly string[];
+  /** The place must lie in this zone or beyond (a frontier post, not a home port). */
+  readonly originMinZone?: number;
+  /** An explore offer asks for a whole area in this range, `[min, max]`. */
+  readonly scanArea?: readonly [number, number];
 }
 
 interface Adjacent {
@@ -162,8 +171,25 @@ function requirementsOf(template: FillerTemplate): TemplateRequirements {
     destinationTypes?: unknown;
     destinationIds?: unknown;
     materialIds?: unknown;
+    originMinZone?: unknown;
+    scanArea?: unknown;
   };
+  const area = raw.scanArea;
+  const scanArea =
+    Array.isArray(area) &&
+    area.length === SCAN_AREA_BOUNDS &&
+    Number.isInteger(area[0]) &&
+    Number.isInteger(area[1]) &&
+    (area[0] as number) >= 1 &&
+    (area[0] as number) <= (area[1] as number)
+      ? ([area[0], area[1]] as [number, number])
+      : undefined;
   return {
+    originMinZone:
+      typeof raw.originMinZone === 'number' && Number.isFinite(raw.originMinZone)
+        ? raw.originMinZone
+        : undefined,
+    scanArea,
     originFactions: Array.isArray(raw.originFactions)
       ? (raw.originFactions as string[])
       : undefined,
@@ -263,7 +289,8 @@ function matchesOrigin(origin: FillerLocation, template: FillerTemplate): boolea
     requirements.originFactions.includes(origin.factionId);
   const typeMatch =
     requirements.originTypes === undefined || requirements.originTypes.includes(origin.type);
-  return factionMatch && typeMatch;
+  const zoneMatch = origin.zone >= (requirements.originMinZone ?? 0);
+  return factionMatch && typeMatch && zoneMatch;
 }
 
 /**
@@ -532,6 +559,15 @@ function transportPassengers(rng: Rng, rules: GameRules): number {
   return rng.int(min, max);
 }
 
+/** The area an explore offer asks for: drawn from the template's `scanArea`, else from `explore.area_min..area_max`. */
+export function exploreArea(rng: Rng, template: FillerTemplate, rules: GameRules): number {
+  const range = requirementsOf(template).scanArea ?? [
+    rules.explore.area_min,
+    rules.explore.area_max,
+  ];
+  return rng.child('area').int(range[0], Math.max(range[0], range[1]));
+}
+
 /**
  * Pure template filler (design missoes §7): one seed in, one ready-to-insert
  * MissionInstance draft out. Deterministic for a fixed seed + world + rules + now.
@@ -707,7 +743,9 @@ export function fillMission(input: FillMissionInput): MissionDraft {
         ? { race: { competitors: generateCompetitors(rng.child('race'), rules) } }
         : template.type === 'TRANSPORT'
           ? { passengers: transportPassengers(rng.child('passengers'), rules) }
-          : {};
+          : template.type === 'EXPLORE'
+            ? { area: exploreArea(rng, template, rules) }
+            : {};
 
   let deadlineAt: Date | null = null;
   if (template.type === 'RESCUE') {
@@ -748,6 +786,10 @@ export function fillMission(input: FillMissionInput): MissionDraft {
     const rarity = (miningCargo.rarity ?? 'common').toLowerCase();
     const quantity = miningCargo.quantity ?? 0;
     reward = Math.round(quantity * (rules.mining.contract_unit_pay[rarity] ?? 0));
+  }
+  // An explore offer pays the base plus what its area is worth.
+  if (template.type === 'EXPLORE') {
+    reward = Math.round(reward + exploreAreaPay(areaOf(cargo), rules));
   }
 
   return {
