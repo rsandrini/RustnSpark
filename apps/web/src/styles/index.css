@@ -251,8 +251,6 @@ a {
   --rar-common: var(--muted);
   --rar-uncommon: var(--ok);
   --rar-rare: var(--info);
-  --rar-epic: var(--rar-epic);
-  --rar-legendary: var(--brass);
 }
 
 /* mission cards ------------------------------------------------------------------ */
