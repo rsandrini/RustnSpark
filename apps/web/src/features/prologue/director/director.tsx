@@ -197,6 +197,8 @@ export function Director() {
 
   const finishRef = useRef(finish);
   finishRef.current = finish;
+  const reloadProfileRef = useRef(reloadProfile);
+  reloadProfileRef.current = reloadProfile;
 
   const speak = useCallback(
     (moment: Moment) =>
@@ -350,6 +352,9 @@ export function Director() {
         raceLegs.current = null;
         // the screens must know the ship is back in port before the pilot walks to the next one
         void queryClientRef.current.invalidateQueries();
+        // ...and the wallet is the profile's, not a query: without this the pay of a flight whose report the story
+        // does not stop on never showed
+        void reloadProfileRef.current();
         // the final run is not read as a report: the ship is lost, and the story goes straight to the loss
         const lastResult = sandbox.state.history.at(-1);
         if (lastResult?.job.kind !== 'final') {
