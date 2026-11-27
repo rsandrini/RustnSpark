@@ -289,11 +289,15 @@
       "missions": {
         "title": "Missions",
         "summary": "The kinds of mission, how to know if you can take one, and how holding and expiry work.",
-        "keywords": "delivery transport escort mining rescue race eligible requirement hold expire reward pay cargo board",
+        "keywords": "delivery transport escort mining explore scan radar rescue race eligible requirement hold expire reward pay cargo board",
         "sections": {
           "types": {
             "title": "Kinds of mission",
-            "text": "Delivery and Transport move goods or passengers. Escort protects another ship. Mining digs a material for a contract. Rescue helps a ship in trouble. Race pits you against rival ships over a route: the faster ship wins the larger share of the prize."
+            "text": "Delivery and Transport move goods or passengers. Escort protects another ship. Mining digs a material for a contract. Explore scans an area with your radar. Rescue helps a ship in trouble. Race pits you against rival ships over a route: the faster ship wins the larger share of the prize."
+          },
+          "explore": {
+            "title": "Explore",
+            "text": "An explore mission flies to a far place and scans an area with your radar. The offer says how many units to scan, what your radar covers and how long that takes. A stronger radar in good condition covers more, faster; a missing, broken or very weak one cannot take the job. The scan has a time limit: if your radar cannot cover the whole area in it, you are paid for the share it covers. Scanning burns extra fuel on ships that use fuel."
           },
           "eligible": {
             "title": "Can I take it?",
@@ -2353,6 +2357,7 @@
       "TRANSPORT": "Transport",
       "ESCORT": "Escort",
       "MINING": "Mining",
+      "EXPLORE": "Explore",
       "RESCUE": "Rescue",
       "TRAVEL": "Travel",
       "SCAVENGE": "Scavenging",
@@ -2379,6 +2384,7 @@
       "PASSENGER_SEATS": "Needs passenger seats for at least half of the group (the rest travels in extra trips)",
       "LIFE_SUPPORT_CAPACITY": "Needs life support for at least half of the group (the rest travels in extra trips)",
       "ESCORT_STRENGTH": "Needs combat strength (weapons and shields) for this escort",
+      "SENSOR_STRENGTH": "Radar strength for this area",
       "WEAPONS": "Needs weapons",
       "MIN_MOBILITY": "Mobility below the mission minimum",
       "MINER": "Needs a mining system",
@@ -2404,6 +2410,7 @@
       "PASSENGER_SEATS": "Passenger seats for at least half of the group (the rest travels in extra trips)",
       "LIFE_SUPPORT_CAPACITY": "Life support for at least half of the group (the rest travels in extra trips)",
       "ESCORT_STRENGTH": "Combat strength (weapons and shields) for this escort",
+      "SENSOR_STRENGTH": "Radar strength for this area",
       "WEAPONS": "At least one installed weapon",
       "MIN_MOBILITY": "Mobility above the escort minimum",
       "MINER": "A mining rig installed",
@@ -2444,6 +2451,7 @@
       "TRANSPORT": "a Passenger Cabin plus a Life Support module, with seats and air for the group.",
       "ESCORT": "at least one weapon and good mobility to keep up.",
       "MINING": "a Mining Rig and cargo space for the ore.",
+      "EXPLORE": "a Radar strong enough for the area (Sensors in the store).",
       "RESCUE": "a fast ship (mobility) and room for the survivors.",
       "TRAVEL": "nothing special: fuel for the trip.",
       "SCAVENGE": "nothing special: any ship can search a place, a flight-ready one finds more.",
@@ -2459,6 +2467,9 @@
       "orderHint": "Dig it and deliver it to the client: full pay at 100%, partial below, nothing at zero.",
       "phases": "Flight {{flight}}, then mining about {{dig}} · {{chance}}% to reach the amount",
       "phasesFixed": "Flight {{flight}}, then digging {{dig}} on arrival"
+    },
+    "explore": {
+      "line": "Scan {{area}} units · your radar covers {{pct}}% in {{time}}"
     },
     "race": {
       "title": "The field",
@@ -2704,6 +2715,7 @@
     "PASSENGER_SEATS": "Not enough passenger seats for this group.",
     "LIFE_SUPPORT_CAPACITY": "The life support cannot keep this many passengers alive.",
     "ESCORT_STRENGTH": "The ship is too weak to protect this client.",
+    "SENSOR_STRENGTH": "Your radar is too weak for this area.",
     "PRICE_CHANGED": "The price changed to {{price}} ¢.",
     "BUG_REPORT_LIMIT": "You have sent enough reports for today. Thank you! Try again tomorrow.",
     "BUG_REPORT_UNAVAILABLE": "Bug reports are not available right now.",
@@ -3045,13 +3057,15 @@
       "flying": "In flight",
       "scavenging": "Scavenging the wreckage",
       "mining": "Mining the rock",
+      "scanning": "Scanning the area",
       "repairing": "Repairs under way"
     },
     "docked": "Docked at {{place}}",
     "pilotsDocked": "{{count}} pilots docked",
     "repairingAt": "in the workshop at {{place}}",
     "floating": "Floating in space",
-    "thenMining": "then mining {{time}}"
+    "thenMining": "then mining {{time}}",
+    "thenScanning": "then scanning {{time}}"
   },
   "routeMap": {
     "label": "Route from {{from}} to {{to}}",

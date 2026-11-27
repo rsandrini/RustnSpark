@@ -41,6 +41,23 @@ describe('the ship stage on a mining contract', () => {
     expect((await screen.findAllByText(/then mining 40m/))[0]).toBeInTheDocument();
   });
 
+  it('a flight followed by mining (`flightThen`) says mining and then digs', async () => {
+    server.use(onboarded());
+    setShipActivity({
+      kind: 'flying',
+      until: inMinutes(30),
+      missionId: 'm-1',
+      repairUntil: null,
+      flightUntil: inMinutes(-1),
+      flightThen: 'mining',
+    });
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const scene = (await screen.findAllByTestId('transit-scene'))[0]!;
+    expect(scene).toHaveClass('mode-mining');
+    expect(scene.querySelector('.scan-radar')).toBeNull();
+    expect(screen.queryByText('Scanning the area')).toBeNull();
+  });
+
   it('switches to the mining scene once the flight is over', async () => {
     server.use(onboarded());
     setShipActivity({
@@ -53,5 +70,40 @@ describe('the ship stage on a mining contract', () => {
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     const scene = (await screen.findAllByTestId('transit-scene'))[0]!;
     expect(scene).toHaveClass('mode-mining');
+  });
+});
+
+describe('the ship stage on an explore mission', () => {
+  afterEach(() => setShipActivity(null));
+
+  const exploring = (flightEndsInMinutes: number, arrivalInMinutes: number) =>
+    setShipActivity({
+      kind: 'flying',
+      until: inMinutes(arrivalInMinutes),
+      missionId: 'm-1',
+      repairUntil: null,
+      flightUntil: inMinutes(flightEndsInMinutes),
+      flightThen: 'scanning',
+    });
+
+  it('flies first and says how long the scan after it takes', async () => {
+    server.use(onboarded());
+    exploring(10, 50);
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const scene = (await screen.findAllByTestId('transit-scene'))[0]!;
+    expect(scene).toHaveClass('mode-flying');
+    expect((await screen.findAllByText(/then scanning 40m/))[0]).toBeInTheDocument();
+    expect(screen.queryByText(/then mining/)).toBeNull();
+  });
+
+  it('switches to the scanning scene once the flight is over', async () => {
+    server.use(onboarded());
+    exploring(-1, 30);
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const scene = (await screen.findAllByTestId('transit-scene'))[0]!;
+    expect(scene).toHaveClass('mode-scanning');
+    expect(scene.querySelector('.scan-radar')).not.toBeNull();
+    expect(scene.querySelector('.mine-rock')).toBeNull();
+    expect((await screen.findAllByText('Scanning the area'))[0]).toBeInTheDocument();
   });
 });

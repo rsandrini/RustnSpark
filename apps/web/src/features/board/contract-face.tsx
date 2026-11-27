@@ -7,7 +7,12 @@ import { FactionBadge } from '../../ui/FactionBadge';
 import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
 import { formatDuration } from '../../ui/duration';
 import { useDisplay } from '../../ui/display';
-import { requirementNumber, specialtyLine } from './requirement-number';
+import {
+  coveredPercent,
+  explorePlan,
+  requirementNumber,
+  specialtyLine,
+} from './requirement-number';
 import { BlockerChip } from '../../ui/kit/BlockerChip';
 import { RiskPips } from '../../ui/kit/RiskPips';
 import { usePrologueMode } from '../prologue/prologue-mode';
@@ -56,6 +61,7 @@ export function ContractFace({
   const place = (location: WorldLocation | undefined, fallback: string) =>
     location === undefined ? fallback : pickLocalized(location.displayName, i18n.language);
   const line = specialtyLine(info.specialty);
+  const scan = explorePlan(offer, taken);
 
   // What the checklist names (unmet, with numbers) plus the reasons it does not: the same dedupe
   // the details card does.
@@ -152,6 +158,15 @@ export function ContractFace({
               : line.kind === 'slower'
                 ? t('board.specialty.slower', { pct: line.pct })
                 : t('board.specialty.faster', { pct: line.pct })}
+          </span>
+        )}
+        {scan != null && (
+          <span className="mrow-fig" data-testid="mrow-explore">
+            {t('board.explore.line', {
+              area: scan.area,
+              pct: coveredPercent(scan.share),
+              time: formatDuration(scan.scanSeconds, t),
+            })}
           </span>
         )}
         {info.estimate !== null && burnsFuel && (

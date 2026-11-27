@@ -159,6 +159,10 @@
   --accent: var(--explorers);
 }
 
+.mcard.type-explore {
+  --accent: var(--brass-hi);
+}
+
 .mcard.type-rescue {
   --accent: var(--risk-md);
 }

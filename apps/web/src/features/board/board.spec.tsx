@@ -259,6 +259,104 @@ describe('board (S10.6)', () => {
     );
   });
 
+  const exploreOffers = async (share: number, { refused = false, perTick = 6 } = {}) => {
+    const offers = (await (await fetch('/v1/locations/ceres/missions')).json()) as Array<{
+      id: string;
+      info: Record<string, unknown>;
+    }>;
+    server.use(
+      http.get('/v1/locations/:id/missions', () =>
+        HttpResponse.json(
+          offers.map((offer) =>
+            offer.id === 'b-3'
+              ? {
+                  ...offer,
+                  type: 'EXPLORE',
+                  cargo: { area: 80 },
+                  eligibility: { eligible: !refused, reasons: [] },
+                  info: {
+                    ...offer.info,
+                    mining: null,
+                    estimate: {
+                      durationSeconds: 4200,
+                      fuelNeeded: 10,
+                      flightSeconds: 600,
+                      scanSeconds: 3600,
+                    },
+                    explore: {
+                      area: 80,
+                      perTick,
+                      ticks: 12,
+                      capTicks: 12,
+                      share,
+                      scanSeconds: 3600,
+                    },
+                    specialty: {
+                      stat: 'sensor',
+                      need: 80,
+                      have: 3.98,
+                      minimum: 4,
+                      factor: 1,
+                      trips: null,
+                      met: !refused,
+                    },
+                    requirements: [
+                      {
+                        code: 'SENSOR_STRENGTH',
+                        message: 'Radar too weak',
+                        met: !refused,
+                        needed: 4,
+                        actual: 3.98,
+                        unit: 'sensor',
+                      },
+                    ],
+                  },
+                }
+              : offer,
+          ),
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
+    const chip = (await screen.findAllByText(/Radar strength for this area/))[0]!;
+    return within(chip.closest<HTMLElement>('li.mrow')!);
+  };
+
+  it('an explore offer says what the radar covers and in how long', async () => {
+    const card = await exploreOffers(0.9);
+    expect(card.getByTestId('mcard-explore')).toHaveTextContent(
+      'Scan 80 units · your radar covers 90% in 1h 0m',
+    );
+    expect(card.getByTestId('mrow-explore')).toHaveTextContent('covers 90%');
+    // the scan has no time multiplier: no specialty line
+    expect(card.queryByTestId('mcard-specialty')).toBeNull();
+    expect(card.queryByTestId('mrow-specialty')).toBeNull();
+    expect(card.queryByTestId('mcard-mining')).toBeNull();
+  });
+
+  it('an explore offer short of the full area never reads 100%', async () => {
+    const card = await exploreOffers(0.996);
+    expect(card.getByTestId('mcard-explore')).toHaveTextContent('covers 99%');
+  });
+
+  it('a refused explore offer shows no scan line, and the radar chip leads to the store', async () => {
+    const card = await exploreOffers(0.9, { refused: true });
+    const link = card.getByRole('link', { name: /Radar strength for this area/ });
+    expect(link).toHaveAttribute('href', '/ship?store=SENSOR');
+    // the refused figure never reads equal to the needed one
+    expect(link).toHaveTextContent('Your ship: 3.9 · needs 4');
+    expect(card.queryByTestId('mcard-explore')).toBeNull();
+    expect(card.queryByTestId('mrow-explore')).toBeNull();
+  });
+
+  it('a radar that covers nothing shows no scan line', async () => {
+    const card = await exploreOffers(0, { perTick: 0 });
+    expect(card.queryByTestId('mcard-explore')).toBeNull();
+    expect(card.queryByTestId('mrow-explore')).toBeNull();
+  });
+
   it('an open-cargo delivery says what the extra units pay', async () => {
     await renderBoard();
     const line = await screen.findByTestId('mcard-cargo');

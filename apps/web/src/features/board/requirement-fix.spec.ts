@@ -14,6 +14,7 @@ describe('fixOf', () => {
     ['RACE_SPEED', 'ENGINE'],
     ['MINER', 'UTILITY'],
     ['FUEL_CAPACITY', 'TANK'],
+    ['SENSOR_STRENGTH', 'SENSOR'],
   ])('%s leads to the %s store tab', (code, partClass) => {
     expect(fixOf(code)).toEqual({ kind: 'store', partClass });
   });
@@ -48,6 +49,7 @@ describe('fixHref', () => {
     expect(fixHref({ kind: 'store', partClass: 'CARGO' })).toBe('/ship?store=CARGO');
     expect(fixHref({ kind: 'refuel' })).toBe('/port?tab=refuel');
     expect(fixHref({ kind: 'ship' })).toBe('/ship');
+    expect(fixHref(fixOf('SENSOR_STRENGTH'))).toBe('/ship?store=SENSOR');
   });
 });
 

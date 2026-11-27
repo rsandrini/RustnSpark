@@ -33,7 +33,8 @@ export function ActiveShipStage({
   });
   const world = useWorld();
   const ship = shipsQuery.data?.[0];
-  // A mining contract flies out and then digs: the scene is flying until `flightUntil`, then mining until the arrival.
+  // A mining contract flies out and then digs, an explore one then scans (`flightThen`): the scene is flying until
+  // `flightUntil`, then at work until the arrival.
   const flightUntil = ship?.activity.flightUntil ?? null;
   const now = useNow(flightUntil !== null);
   if (ship === undefined) return null;
@@ -42,32 +43,35 @@ export function ActiveShipStage({
   const placeName =
     place === undefined ? ship.currentLocationId : pickLocalized(place.displayName, i18n.language);
   const { kind: activityKind, until: activityUntil } = ship.activity;
-  const digging =
+  const scans = ship.activity.flightThen === 'scanning';
+  const working =
     activityKind === 'flying' && flightUntil !== null && now >= Date.parse(flightUntil);
-  const kind = digging ? 'mining' : activityKind;
-  const flightLeg = activityKind === 'flying' && flightUntil !== null && !digging;
+  const kind = working ? (ship.activity.flightThen ?? 'mining') : activityKind;
+  const flightLeg = activityKind === 'flying' && flightUntil !== null && !working;
   const until = flightLeg ? flightUntil : activityUntil;
+  const thenWork = (time: string) =>
+    scans ? t('stage.thenScanning', { time }) : t('stage.thenMining', { time });
   const detail =
     kind === 'idle'
       ? t('stage.docked', { place: placeName })
       : kind === 'repairing'
         ? t('stage.repairingAt', { place: placeName })
         : flightLeg && activityUntil !== null
-          ? t('stage.thenMining', {
-              time: formatDuration(
+          ? thenWork(
+              formatDuration(
                 Math.max(
                   0,
                   Math.round((Date.parse(activityUntil) - Date.parse(flightUntil)) / 1000),
                 ),
                 t,
               ),
-            })
+            )
           : undefined;
 
   return (
     <ShipStage
       mode={kind}
-      placeId={digging ? undefined : ship.currentLocationId}
+      placeId={working ? undefined : ship.currentLocationId}
       until={until}
       size={size}
       detail={detail}

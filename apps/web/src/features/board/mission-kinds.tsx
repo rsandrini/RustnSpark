@@ -58,6 +58,11 @@ const KINDS: Record<MissionType, MissionKind> = {
       'M9 4c-.5 1.500-.5 3 .5 4.500',
     ),
   ),
+  // placeholder radar glyph (art deferred)
+  EXPLORE: kind(
+    'EXPLORE',
+    glyph('M10 3a7 7 0 1 0 7 7', 'M10 6.500a3.500 3.500 0 1 0 3.500 3.500', 'M10 10l5.500-5.500'),
+  ),
   RESCUE: kind('RESCUE', glyph('M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14z', 'M10 6v8', 'M6 10h8')),
   TRAVEL: kind('TRAVEL', glyph('M3 10h14', 'M12 5l5 5-5 5')),
   SCAVENGE: kind(
@@ -75,6 +80,7 @@ export const MISSION_KIND_ORDER: readonly MissionType[] = [
   'TRANSPORT',
   'ESCORT',
   'MINING',
+  'EXPLORE',
   'RESCUE',
   'RACE',
 ];

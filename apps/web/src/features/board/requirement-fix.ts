@@ -19,6 +19,7 @@ const STORE_CLASS: Record<string, string> = {
   RACE_SPEED: 'ENGINE',
   MINER: 'UTILITY',
   FUEL_CAPACITY: 'TANK',
+  SENSOR_STRENGTH: 'SENSOR',
 };
 
 // Layout and viability faults (apps/api/src/ships/viability.ts) that are fixed on the ship screen.

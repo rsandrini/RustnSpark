@@ -33,7 +33,7 @@ export const SECTIONS: Record<TopicId, readonly string[]> = {
   ],
   ports: ['colors', 'kinds', 'fix'],
   rarity: ['rarity', 'size', 'bridge'],
-  missions: ['types', 'eligible', 'hold', 'cargo'],
+  missions: ['types', 'explore', 'eligible', 'hold', 'cargo'],
   fuel: ['fuel', 'wear', 'repair', 'sell'],
   upgrading: ['rules', 'materials', 'fragments'],
   work: ['scavenging', 'mining'],

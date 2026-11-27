@@ -1107,6 +1107,43 @@ body:has(.modal-backdrop) .part-hover-card {
   animation: mine-chunk-fly ease-in infinite;
 }
 
+/* ship stage: scanning (a radar beside the parked ship, its sweep turning) */
+.transit-scene .scan-radar {
+  position: absolute;
+  top: 50%;
+  right: 5%;
+  width: min(26%, 180px);
+  aspect-ratio: 1;
+  /* short scenes (slim, compact): the drawing shrinks inside the box instead of being clipped */
+  max-height: 80%;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: var(--brass);
+  stroke-width: 1.5;
+}
+.transit-scene .scan-sweep {
+  fill: color-mix(in oklab, var(--brass-hi) 35%, transparent);
+  stroke: var(--brass-hi);
+  transform-origin: 50px 50px;
+  animation: scan-sweep-turn 3s linear infinite;
+}
+.transit-scene .scan-blip {
+  fill: var(--brass-hi);
+  stroke: none;
+  animation: spark-blink 1.5s ease-in-out infinite;
+}
+@keyframes scan-sweep-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .transit-scene .scan-sweep,
+  .transit-scene .scan-blip {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .transit-scene .mine-vein,
   .transit-scene .mine-beam,

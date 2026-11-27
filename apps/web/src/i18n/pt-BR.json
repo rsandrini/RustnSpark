@@ -289,11 +289,15 @@
       "missions": {
         "title": "Missões",
         "summary": "Os tipos de missão, como saber se você pode pegar uma e como funcionam a reserva e a validade.",
-        "keywords": "entrega transporte escolta mineração resgate corrida elegível requisito reservar expira recompensa pagamento carga quadro",
+        "keywords": "entrega transporte escolta mineração exploração varredura radar resgate corrida elegível requisito reservar expira recompensa pagamento carga quadro",
         "sections": {
           "types": {
             "title": "Tipos de missão",
-            "text": "Entrega e Transporte levam mercadorias ou passageiros. Escolta protege outra nave. Mineração extrai um material para um contrato. Resgate ajuda uma nave em apuros. Corrida coloca você contra naves rivais numa rota: a nave mais rápida leva a maior parte do prêmio."
+            "text": "Entrega e Transporte levam mercadorias ou passageiros. Escolta protege outra nave. Mineração extrai um material para um contrato. Exploração varre uma área com o seu radar. Resgate ajuda uma nave em apuros. Corrida coloca você contra naves rivais numa rota: a nave mais rápida leva a maior parte do prêmio."
+          },
+          "explore": {
+            "title": "Exploração",
+            "text": "Uma missão de exploração voa até um lugar distante e varre uma área com o radar da nave. A oferta diz quantas unidades varrer, quanto o seu radar cobre e quanto tempo isso leva. Um radar mais forte e em bom estado cobre mais, e mais rápido; sem radar, ou com um quebrado ou fraco demais, não dá para pegar o serviço. A varredura tem um tempo limite: se o seu radar não cobrir a área toda dentro dele, você recebe pela parte coberta. Nas naves que usam combustível, a varredura gasta combustível extra."
           },
           "eligible": {
             "title": "Posso pegar?",
@@ -2353,6 +2357,7 @@
       "TRANSPORT": "Transporte",
       "ESCORT": "Escolta",
       "MINING": "Mineração",
+      "EXPLORE": "Exploração",
       "RESCUE": "Resgate",
       "TRAVEL": "Viagem",
       "SCAVENGE": "Saque",
@@ -2379,6 +2384,7 @@
       "PASSENGER_SEATS": "Requer assentos de passageiros para pelo menos metade do grupo (o resto viaja em viagens extras)",
       "LIFE_SUPPORT_CAPACITY": "Requer suporte de vida para pelo menos metade do grupo (o resto viaja em viagens extras)",
       "ESCORT_STRENGTH": "Requer força de combate (armas e escudos) para esta escolta",
+      "SENSOR_STRENGTH": "Força do radar para esta área",
       "WEAPONS": "Requer armamentos",
       "MIN_MOBILITY": "Mobilidade abaixo do mínimo da missão",
       "MINER": "Requer sistema de mineração",
@@ -2404,6 +2410,7 @@
       "PASSENGER_SEATS": "Assentos de passageiros para pelo menos metade do grupo (o resto viaja em viagens extras)",
       "LIFE_SUPPORT_CAPACITY": "Suporte de vida para pelo menos metade do grupo (o resto viaja em viagens extras)",
       "ESCORT_STRENGTH": "Força de combate (armas e escudos) para esta escolta",
+      "SENSOR_STRENGTH": "Força do radar para esta área",
       "WEAPONS": "Pelo menos uma arma instalada",
       "MIN_MOBILITY": "Mobilidade acima do mínimo de escolta",
       "MINER": "Uma plataforma de mineração instalada",
@@ -2444,6 +2451,7 @@
       "TRANSPORT": "uma Cabine de Passageiros e um módulo de Suporte de Vida, com assentos e ar para o grupo.",
       "ESCORT": "pelo menos uma arma e boa mobilidade para acompanhar.",
       "MINING": "uma Plataforma de Mineração e espaço de carga para o minério.",
+      "EXPLORE": "um Radar forte o bastante para a área (Sensores na loja).",
       "RESCUE": "uma nave rápida (mobilidade) e espaço para os sobreviventes.",
       "TRAVEL": "nada especial: combustível para a viagem.",
       "SCAVENGE": "nada especial: qualquer nave pode vasculhar um lugar, uma pronta para voar encontra mais.",
@@ -2459,6 +2467,9 @@
       "orderHint": "Cave e entregue ao cliente: pagamento integral com 100%, proporcional abaixo, nada com zero.",
       "phases": "Voo de {{flight}}, depois mineração de cerca de {{dig}} · {{chance}}% de chance de chegar à quantidade",
       "phasesFixed": "Voo de {{flight}}, depois {{dig}} de mineração na chegada"
+    },
+    "explore": {
+      "line": "Varredura de {{area}} unidades · seu radar cobre {{pct}}% em {{time}}"
     },
     "race": {
       "title": "O grid",
@@ -2704,6 +2715,7 @@
     "PASSENGER_SEATS": "Assentos de passageiros insuficientes para este grupo.",
     "LIFE_SUPPORT_CAPACITY": "O suporte de vida não aguenta tantos passageiros.",
     "ESCORT_STRENGTH": "A nave é fraca demais para proteger este cliente.",
+    "SENSOR_STRENGTH": "Seu radar é fraco demais para esta área.",
     "PRICE_CHANGED": "O preço mudou para {{price}} ¢.",
     "BUG_REPORT_LIMIT": "Você já enviou relatórios suficientes por hoje. Obrigado! Tente de novo amanhã.",
     "BUG_REPORT_UNAVAILABLE": "O envio de relatos de problema não está disponível agora.",
@@ -3045,13 +3057,15 @@
       "flying": "Em voo",
       "scavenging": "Vasculhando os destroços",
       "mining": "Minerando a rocha",
+      "scanning": "Varrendo a área",
       "repairing": "Reparos em andamento"
     },
     "docked": "Atracada em {{place}}",
     "pilotsDocked": "{{count}} pilotos atracados",
     "repairingAt": "na oficina de {{place}}",
     "floating": "Flutuando no espaço",
-    "thenMining": "depois mineração de {{time}}"
+    "thenMining": "depois mineração de {{time}}",
+    "thenScanning": "depois varredura de {{time}}"
   },
   "routeMap": {
     "label": "Rota de {{from}} para {{to}}",

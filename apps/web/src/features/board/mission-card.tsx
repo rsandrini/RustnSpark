@@ -2,11 +2,7 @@ import { enginePercent } from '../../ui/engine-level';
 import type { ReactNode } from 'react';
 import { useIsPhone } from '../../ui/use-phone';
 import { useTranslation } from 'react-i18next';
-import type {
-  MissionOffer,
-  WorldLocation,
-  WorldResponse,
-} from '../../api/generated';
+import type { MissionOffer, WorldLocation, WorldResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
@@ -14,7 +10,12 @@ import { FactionBadge } from '../../ui/FactionBadge';
 import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
-import { requirementNumber, specialtyLine } from './requirement-number';
+import {
+  coveredPercent,
+  explorePlan,
+  requirementNumber,
+  specialtyLine,
+} from './requirement-number';
 import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
 import { FuelBlock } from './fuel-block';
 import { reasonLabel } from './reason-label';
@@ -72,6 +73,7 @@ export function MissionCard({
   const { t, i18n } = useTranslation();
   const { info } = offer;
   const line = specialtyLine(info.specialty);
+  const scan = explorePlan(offer, taken);
   const factions = useFactions().byId;
   const display = useDisplay();
   const title = pickLocalized(info.title, i18n.language);
@@ -318,6 +320,16 @@ export function MissionCard({
                 </p>
               )}
           </section>
+        )}
+
+        {scan != null && (
+          <p className="mcard-explore sub" data-testid="mcard-explore">
+            {t('board.explore.line', {
+              area: scan.area,
+              pct: coveredPercent(scan.share),
+              time: formatDuration(scan.scanSeconds, t),
+            })}
+          </p>
         )}
 
         {!opening && info.race !== null && (

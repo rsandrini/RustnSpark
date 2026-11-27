@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Countdown } from './Countdown';
 import { placeArtUrl, usePlaceArt } from './PlaceArt';
 
-export type StageMode = 'idle' | 'flying' | 'scavenging' | 'mining' | 'repairing';
+export type StageMode = 'idle' | 'flying' | 'scavenging' | 'mining' | 'scanning' | 'repairing';
 
 export interface ShipStageProps {
   mode: StageMode;
@@ -78,6 +78,7 @@ function placeTitle(name: string): { rest: string; last: string } {
 // wide picture of the place it is docked at; while repairing, drones circle the hull and sparks fly.
 // Mining: the same parked scene with a rock face beside the ship, a drill beam pulsing onto it,
 // sparks at the contact point and ore chunks flying back to the hold.
+// Scanning: the same parked scene with a radar sweeping beside the ship (placeholder art).
 // Pure decoration: hidden from assistive technology, still under `prefers-reduced-motion`; the
 // caption beside it says the same thing in words.
 export function ShipStage({
@@ -181,6 +182,15 @@ export function ShipStage({
             ))}
           </>
         )}
+        {mode === 'scanning' && (
+          <svg className="scan-radar" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="46" />
+            <circle cx="50" cy="50" r="30" />
+            <circle cx="50" cy="50" r="14" />
+            <path className="scan-sweep" d="M50 50 L50 4 A46 46 0 0 1 89.8 27 Z" />
+            <circle className="scan-blip" cx="68" cy="66" r="3" />
+          </svg>
+        )}
         {still && (
           <div className="scene-dig" data-testid="scene-dig">
             <svg viewBox="0 0 160 90" width="320" height="180">
@@ -204,7 +214,7 @@ export function ShipStage({
             ))}
           </div>
         )}
-        <div className="scene-ship"{...(still ? { hidden: true } : {})}>
+        <div className="scene-ship" {...(still ? { hidden: true } : {})}>
           <svg viewBox="0 0 120 60" width="160" height="80">
             <path className="ship-flame" d="M14,30 L-6,22 L2,30 L-6,38 Z" />
             <path className="ship-hull" d="M118,30 L84,10 L30,14 L14,24 L14,36 L30,46 L84,50 Z" />

@@ -16,6 +16,7 @@ const EVERY_TYPE: Record<MissionType, true> = {
   TRAVEL: true,
   SCAVENGE: true,
   RACE: true,
+  EXPLORE: true,
 };
 const TYPES = Object.keys(EVERY_TYPE) as MissionType[];
 
@@ -43,6 +44,11 @@ describe('mission kind registry', () => {
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('explore is a board kind with its own label', () => {
+    expect(missionKind('EXPLORE').labelKey).toBe('board.type.EXPLORE');
+    expect(MISSION_KIND_ORDER).toContain('EXPLORE');
+  });
+
   it('an unknown type gets the generic flag and the unknown label', () => {
     const kind = missionKind('SOMETHING_NEW');
     expect(kind.labelKey).toBe('board.type.unknown');
@@ -50,12 +56,13 @@ describe('mission kind registry', () => {
     expect(has(ptBR, 'board.type.unknown')).toBe(true);
   });
 
-  it('filter order is the six board kinds', () => {
+  it('filter order is the seven board kinds, explore after mining', () => {
     expect(MISSION_KIND_ORDER).toEqual([
       'DELIVERY',
       'TRANSPORT',
       'ESCORT',
       'MINING',
+      'EXPLORE',
       'RESCUE',
       'RACE',
     ]);

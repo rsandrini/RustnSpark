@@ -48,6 +48,13 @@ describe('guide', () => {
     expect(within(live).getByText('800 ¢')).toBeInTheDocument();
   });
 
+  it('the Missions topic explains explore missions', async () => {
+    renderWithRouter(routes, { initialEntries: ['/guide/missions'] });
+    const topic = await screen.findByTestId('guide-topic');
+    expect(within(topic).getByRole('heading', { level: 3, name: 'Explore' })).toBeInTheDocument();
+    expect(within(topic).getByText(/paid for the share it covers/)).toBeInTheDocument();
+  });
+
   it('search finds a mechanic by its name or a word in its text', async () => {
     renderWithRouter(routes, { initialEntries: ['/guide'] });
     const box = await screen.findByRole('searchbox', { name: 'Search the guide' });
