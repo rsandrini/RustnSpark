@@ -37,6 +37,13 @@ import { flightShip, type AppliedPenalty } from '../ships/penalties.js';
 import { jobDelayMs } from '../config/debug-timing.js';
 import { missionDuration, type DurationClass } from './duration.calculator.js';
 import { missionStatusAfter } from './mission.state-machine.js';
+import {
+  areaOf,
+  planScan,
+  scanFuel,
+  scanSensorsOf,
+  scanStrength,
+} from '../resolution/explore/explore-scan.js';
 import { shipFormatChangePending } from '../ships/bridge-format.js';
 import { IN_PROGRESS_STATUSES } from './waiting-mission.js';
 
@@ -50,6 +57,8 @@ export interface DispatchLeg {
   readonly miningTicks?: number;
   /** A board mining contract (on its last leg): the most ticks it may dig; it stops once the amount is reached. */
   readonly digTicks?: number;
+  /** An EXPLORE offer (on its last leg): the ticks the radar scans, planned at dispatch. */
+  readonly scanTicks?: number;
 }
 
 // D19: the snapshot frozen at dispatch time is what resolution (S7.3) and replay (S7.6)
@@ -133,6 +142,7 @@ export function parseDispatchLegs(legs: unknown): DispatchLeg[] {
       env: candidate.env ?? { id: 'none', level: 1, fuelMult: 1 },
       ...(typeof candidate.miningTicks === 'number' ? { miningTicks: candidate.miningTicks } : {}),
       ...(typeof candidate.digTicks === 'number' ? { digTicks: candidate.digTicks } : {}),
+      ...(typeof candidate.scanTicks === 'number' ? { scanTicks: candidate.scanTicks } : {}),
     };
   });
 }
@@ -476,13 +486,27 @@ export class DispatchService {
         legs0Ticks(mission.legs) === undefined &&
         ((mission.cargo ?? {}) as { contracted?: unknown }).contracted !== true;
       const parsedLegs = parseDispatchLegs(mission.legs);
+      // An EXPLORE offer scans on its last leg: the plan comes from the live connected radar the requirement check
+      // read (the same parts, never the tuned flight sheet), and the ticks go on the last leg like a dig's cap.
+      const scanPlan =
+        mission.type === 'EXPLORE'
+          ? planScan(
+              areaOf(mission.cargo),
+              scanStrength(scanSensorsOf(installedConnected), rules),
+              rules,
+            )
+          : null;
       const legs = contractedDig
         ? parsedLegs.map((leg, index) =>
             index === parsedLegs.length - 1
               ? { ...leg, digTicks: rules.mining.contract_max_ticks }
               : leg,
           )
-        : parsedLegs;
+        : scanPlan !== null && scanPlan.ticks > 0
+          ? parsedLegs.map((leg, index) =>
+              index === parsedLegs.length - 1 ? { ...leg, scanTicks: scanPlan.ticks } : leg,
+            )
+          : parsedLegs;
       // The burn per leg is fixed by distance, terrain and the engines, and nothing refuels the
       // ship on the way: a route that needs more fuel than is aboard ends adrift every time, so
       // it never leaves port (a pump failing on the way can only make the burn worse).
@@ -603,6 +627,21 @@ export class DispatchService {
         digSecondsPlanned = ran * rules.mining.job_duration_seconds;
         durationSeconds += digSecondsPlanned;
       }
+      // The scan comes after the flight and after the time scale (like the dig): its seconds are added as planned, and
+      // a chemical ship pays its fuel on top of the trip.
+      let scanSecondsPlanned = 0;
+      if (scanPlan !== null && scanPlan.ticks > 0) {
+        const scanBurn = scanFuel(scanPlan.ticks, sheet.fuelUse, rules);
+        if (fuelNeeded + scanBurn > ship.fuel) {
+          throw new ConflictException({
+            error: 'FUEL_INSUFFICIENT',
+            needed: Math.ceil(fuelNeeded + scanBurn),
+            have: Math.floor(ship.fuel),
+          });
+        }
+        scanSecondsPlanned = scanPlan.seconds;
+        durationSeconds += scanSecondsPlanned;
+      }
       if (fixedPayDig) {
         digSecondsPlanned = rules.mining.job_duration_seconds;
         durationSeconds += digSecondsPlanned;
@@ -614,15 +653,19 @@ export class DispatchService {
         data: {
           status: 'IN_TRANSIT',
           arrivalAt,
-          ...(contractedDig ? { legs: legs as unknown as Prisma.InputJsonValue } : {}),
+          ...(contractedDig || scanSecondsPlanned > 0
+            ? { legs: legs as unknown as Prisma.InputJsonValue }
+            : {}),
           // what the delivery loaded, kept on the row so a rebuilt job pays the same
-          ...(snapshot.cargo !== undefined || digSecondsPlanned > 0
+          ...(snapshot.cargo !== undefined || digSecondsPlanned > 0 || scanSecondsPlanned > 0
             ? {
                 cargo: {
                   ...((mission.cargo as object) ?? {}),
                   ...(snapshot.cargo !== undefined ? { load: snapshot.cargo } : {}),
                   // the dig that follows the flight: the stage switches from flying to mining when it starts
                   ...(digSecondsPlanned > 0 ? { digSeconds: digSecondsPlanned } : {}),
+                  // the scan that follows the flight (kept so a rebuilt job and the ship's stage agree)
+                  ...(scanSecondsPlanned > 0 ? { scanSeconds: scanSecondsPlanned } : {}),
                 },
               }
             : {}),

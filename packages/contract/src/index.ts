@@ -662,6 +662,8 @@ export const ShipResponseSchema = z.object({
     repairUntil: IsoDate.nullable(),
     /** A mining contract flies out and then digs: when the flight ends (the dig follows until `until`). */
     flightUntil: IsoDate.nullable().optional(),
+    /** What follows the flight: a dig or a scan (set with `flightUntil`). */
+    flightThen: z.enum(['mining', 'scanning']).optional(),
   }),
   routeCoverage: RouteCoverageSchema.nullable(),
 });
@@ -781,6 +783,7 @@ export const MissionTypeSchema = z.enum([
   'TRAVEL',
   'SCAVENGE',
   'RACE',
+  'EXPLORE',
 ]);
 export type MissionType = z.infer<typeof MissionTypeSchema>;
 
@@ -923,8 +926,22 @@ export const OfferInfoSchema = z.object({
       /** A mining contract: how much of the total is the flight and how much the dig. */
       flightSeconds: z.number().optional(),
       digSeconds: z.number().optional(),
+      /** An explore offer: the scan time that makes up the rest of `durationSeconds`. */
+      scanSeconds: z.number().optional(),
     })
     .nullable(),
+  /** Explore offers: what the viewing ship's radar covers of the area; null on other types or without a viable ship. */
+  explore: z
+    .object({
+      area: z.number(),
+      perTick: z.number(),
+      ticks: z.number(),
+      capTicks: z.number(),
+      share: z.number(),
+      scanSeconds: z.number(),
+    })
+    .nullable()
+    .optional(),
   /** Mining offers: what to dig for. */
   material: z
     .object({ name: LocalizedTextSchema, contracted: z.boolean(), quantity: z.number().nullable() })

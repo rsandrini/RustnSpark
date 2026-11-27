@@ -25,6 +25,13 @@ import { missionDuration } from './duration.calculator.js';
 import { peakDangerOf, specialtyStretch } from './mission-specialty.js';
 import { offerRequirements } from './requirements.checker.js';
 import { ACTIVE_STATUSES } from './missions.service.js';
+import {
+  areaOf,
+  planScan,
+  scanFuel,
+  scanSensorsOf,
+  scanStrength,
+} from '../resolution/explore/explore-scan.js';
 import { contractOdds, digExtra, drillRarityOf } from './mining-odds.js';
 import { loadMiningOres } from './mining-context.js';
 
@@ -202,14 +209,23 @@ export class EnginePreviewService {
           rules,
         ).expectedSeconds;
       }
+      // An explore mission also scans: planned from the same live connected radar the dispatch reads, its seconds
+      // come after the time scale (like the dig) and a chemical ship pays fuel for the ticks.
+      const scanPlan =
+        mission.type === 'EXPLORE'
+          ? planScan(areaOf(mission.cargo), scanStrength(scanSensorsOf(connected), rules), rules)
+          : null;
+      if (scanPlan !== null) contractSeconds += scanPlan.seconds;
       const digFuelOf = (sheet: ReturnType<typeof deriveSheet>): number =>
-        mission.type !== 'MINING'
-          ? 0
-          : jobTicks !== undefined
-            ? sheet.fuelUse > 0
-              ? jobTicks * rules.mining.job_fuel_per_tick
-              : 0
-            : digExtra(contractSeconds, sheet.fuelUse, rules).fuel;
+        scanPlan !== null
+          ? scanFuel(scanPlan.ticks, sheet.fuelUse, rules)
+          : mission.type !== 'MINING'
+            ? 0
+            : jobTicks !== undefined
+              ? sheet.fuelUse > 0
+                ? jobTicks * rules.mining.job_fuel_per_tick
+                : 0
+              : digExtra(contractSeconds, sheet.fuelUse, rules).fuel;
       const tripOf = (sheet: ReturnType<typeof deriveSheet>) => ({
         durationSeconds:
           contractSeconds +

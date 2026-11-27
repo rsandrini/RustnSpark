@@ -1260,6 +1260,162 @@ describe('ship dispatch API (S7.2)', () => {
     }, 90_000);
   });
 
+  describe('an explore dispatch plans the scan (the card, the plan and the stage agree)', () => {
+    // The starter kit gets a radar of `sen` (the catalog row is made to read that), assembled into the ship.
+    async function giveRadar(player: AuthPair, sen: number): Promise<{ id: string }> {
+      await prisma.partCatalog.update({ where: { partType: 'sensor_radar' }, data: { sen } });
+      await configService.refresh();
+      const radar = await prisma.partInstance.create({
+        data: {
+          partType: 'sensor_radar',
+          ownerPlayerId: player.seeded.player.id,
+          condition: 100,
+          location: 'INVENTORY',
+        },
+      });
+      const placed = await prisma.partInstance.findMany({
+        where: { shipId: player.shipId, location: 'INSTALLED' },
+        select: { id: true },
+      });
+      const assembled = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${player.shipId}/auto-assemble`)
+        .set(auth(player.token))
+        .send({ partInstanceIds: [...placed.map((part) => part.id), radar.id] });
+      expect(assembled.status).toBe(200);
+      return radar;
+    }
+
+    async function exploreMission(player: AuthPair, area: number): Promise<MissionInstance> {
+      const template = await prisma.missionTemplate.findFirstOrThrow({
+        where: { type: 'EXPLORE' },
+        orderBy: { id: 'asc' },
+      });
+      const route = await prisma.route.findFirstOrThrow({ orderBy: { id: 'asc' } });
+      return prisma.missionInstance.create({
+        data: {
+          templateId: template.id,
+          type: 'EXPLORE',
+          factionId: template.factionId,
+          originId: 'ceres',
+          destinationId: 'hedus',
+          legs: [
+            {
+              routeId: route.id,
+              distance: 40,
+              danger: 1,
+              zone: 0,
+              env: { id: 'belt', level: 1, fuelMult: 1 },
+            },
+          ],
+          cargo: { area },
+          reward: 100,
+          expiresAt: new Date(Date.now() + 30 * 60_000),
+          seed: `explore-${randomUUID()}`,
+          status: 'ACCEPTED',
+          playerId: player.seeded.player.id,
+          shipId: player.shipId,
+          acceptedAt: new Date(),
+        },
+      });
+    }
+
+    async function cardOf(
+      player: AuthPair,
+      missionId: string,
+    ): Promise<{ durationSeconds: number; fuelNeeded: number; flightSeconds: number }> {
+      const active = await request(httpServer(testApp.app))
+        .get('/v1/missions/active')
+        .set(auth(player.token));
+      const row = (
+        active.body as Array<{
+          id: string;
+          info: {
+            estimate: { durationSeconds: number; fuelNeeded: number; flightSeconds: number };
+          };
+        }>
+      ).find((entry) => entry.id === missionId)!;
+      return row.info.estimate;
+    }
+
+    it('dispatch adds scan time and fuel', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await giveRadar(player, 4);
+      await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5000 } });
+      const mission = await exploreMission(player, 60);
+      const card = await cardOf(player, mission.id);
+
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(200);
+      const planned = (response.body as { durationSeconds: number }).durationSeconds;
+      // the scan (10 ticks of 300 s) comes after the time scale: exactly 3000 s on top of the flight
+      expect(Math.abs(planned - (card.flightSeconds + 3000))).toBeLessThanOrEqual(1);
+      expect(Math.abs(card.durationSeconds - planned)).toBeLessThanOrEqual(1);
+
+      const row = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+      const legs = row.legs as Array<{ scanTicks?: number }>;
+      expect(legs[legs.length - 1]!.scanTicks).toBe(10);
+      expect((row.cargo as { scanSeconds?: number }).scanSeconds).toBe(3000);
+      expect(row.arrivalAt!.getTime() - Date.now()).toBeLessThanOrEqual(planned * 1000 + 2000);
+    });
+
+    it('a ship with too little fuel for the trip plus the scan is refused', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await giveRadar(player, 4);
+      await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5000 } });
+      const mission = await exploreMission(player, 60);
+      const card = await cardOf(player, mission.id);
+      // the scan burns 10 ticks x 25: leave the trip and a little, not the scan
+      await prisma.ship.update({
+        where: { id: player.shipId },
+        data: { fuel: card.fuelNeeded - 250 + 100 },
+      });
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(409);
+      expect(response.body).toMatchObject({ message: { error: 'FUEL_INSUFFICIENT' } });
+    });
+
+    it('dispatch re-checks the radar', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const radar = await giveRadar(player, 4);
+      await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5000 } });
+      const mission = await exploreMission(player, 60);
+      await prisma.partInstance.update({
+        where: { id: radar.id },
+        data: { location: 'INVENTORY', shipId: null },
+      });
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({ message: { error: 'MISSION_REQUIREMENTS_NOT_MET' } });
+      const codes = (
+        response.body as { message: { reasons: Array<{ code: string }> } }
+      ).message.reasons.map((reason) => reason.code);
+      expect(codes).toContain('SENSOR_STRENGTH');
+    });
+
+    it('ship activity: flying then scanning', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await giveRadar(player, 4);
+      await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5000 } });
+      const mission = await exploreMission(player, 60);
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(200);
+      const row = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+      const ships = await request(httpServer(testApp.app)).get('/v1/ships').set(auth(player.token));
+      const activity = (
+        ships.body as Array<{
+          activity: { kind: string; flightUntil: string | null; flightThen?: string };
+        }>
+      )[0]!.activity;
+      expect(activity.kind).toBe('flying');
+      expect(activity.flightThen).toBe('scanning');
+      expect(new Date(activity.flightUntil!).getTime()).toBe(row.arrivalAt!.getTime() - 3000_000);
+    });
+  });
+
   describe('dispatch re-checks the mission requirements (slice 0.1)', () => {
     type Reason = { code: string };
 

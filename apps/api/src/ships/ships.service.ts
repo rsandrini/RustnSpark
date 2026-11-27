@@ -77,6 +77,7 @@ export interface ShipActivity {
   readonly repairUntil: string | null;
   /** A mining contract flies out and then digs: when the flight ends (the dig follows until `until`); null otherwise. */
   readonly flightUntil?: string | null;
+  readonly flightThen?: 'mining' | 'scanning';
 }
 
 export interface ShipResponse {
@@ -170,6 +171,7 @@ export interface ShipActivity {
   readonly repairUntil: string | null;
   /** A mining contract flies out and then digs: when the flight ends (the dig follows until `until`); null otherwise. */
   readonly flightUntil?: string | null;
+  readonly flightThen?: 'mining' | 'scanning';
 }
 
 export interface PreviewResponse {
@@ -1037,7 +1039,11 @@ export class ShipsService implements OnModuleInit {
     if (mission !== null) {
       // A free mining job (cargo.contracted === false) digs where the ship already is, like
       // scavenging; a contracted mining mission flies out to the field and stays 'flying'.
-      const cargo = mission.cargo as { contracted?: unknown; digSeconds?: unknown } | null;
+      const cargo = mission.cargo as {
+        contracted?: unknown;
+        digSeconds?: unknown;
+        scanSeconds?: unknown;
+      } | null;
       // (a board offer of a fixed pay is also "not contracted" but it flies out to the field: only a job set up at the
       // ship's own place, whose first leg carries its ticks, digs in place)
       const firstLeg = (Array.isArray(mission.legs) ? mission.legs[0] : undefined) as
@@ -1054,6 +1060,15 @@ export class ShipsService implements OnModuleInit {
         mission.arrivalAt !== null
           ? cargo.digSeconds
           : null;
+      // an explore offer flies out, then scans: the flight ends `scanSeconds` before the arrival
+      const scanSeconds =
+        (mission.type as string) === 'EXPLORE' &&
+        typeof cargo?.scanSeconds === 'number' &&
+        cargo.scanSeconds > 0 &&
+        mission.arrivalAt !== null
+          ? cargo.scanSeconds
+          : null;
+      const followSeconds = digSeconds ?? scanSeconds;
       return {
         kind:
           (mission.type as string) === 'SCAVENGE' ? 'scavenging' : freeMining ? 'mining' : 'flying',
@@ -1061,9 +1076,14 @@ export class ShipsService implements OnModuleInit {
         missionId: mission.id,
         repairUntil: repair?.completesAt.toISOString() ?? null,
         flightUntil:
-          digSeconds === null || mission.arrivalAt === null
+          followSeconds === null || mission.arrivalAt === null
             ? null
-            : new Date(mission.arrivalAt.getTime() - digSeconds * MS_PER_SECOND).toISOString(),
+            : new Date(mission.arrivalAt.getTime() - followSeconds * MS_PER_SECOND).toISOString(),
+        ...(digSeconds !== null
+          ? { flightThen: 'mining' as const }
+          : scanSeconds !== null
+            ? { flightThen: 'scanning' as const }
+            : {}),
       };
     }
     if (repair !== null) {

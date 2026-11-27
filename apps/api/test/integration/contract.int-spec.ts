@@ -389,6 +389,79 @@ describe('HTTP contract: real responses match packages/contract', () => {
     expect(active[0]!.legWindows.length).toBeGreaterThan(0);
   });
 
+  it('an explore offer and the scanning ship parse: explore, estimate.scanSeconds, flightThen', async () => {
+    // free the ship from the earlier steps and give it a radar
+    await prisma.missionInstance.updateMany({
+      where: { playerId, status: { in: ['IN_TRANSIT', 'ACCEPTED'] } },
+      data: { status: 'DONE' },
+    });
+    await prisma.ship.update({ where: { id: shipId }, data: { status: 'IN_PORT', fuel: 5000 } });
+    await prisma.partCatalog.update({ where: { partType: 'sensor_radar' }, data: { sen: 4 } });
+    await testApp.app.get(GameConfigService).refresh();
+    const radar = await prisma.partInstance.create({
+      data: {
+        partType: 'sensor_radar',
+        ownerPlayerId: playerId,
+        condition: 100,
+        location: 'INVENTORY',
+      },
+    });
+    const placed = await prisma.partInstance.findMany({
+      where: { shipId, location: 'INSTALLED' },
+      select: { id: true },
+    });
+    const assembled = await post(`/v1/ships/${shipId}/auto-assemble`, {
+      partInstanceIds: [...placed.map((part) => part.id), radar.id],
+    });
+    expect(assembled.status).toBe(200);
+    const template = await prisma.missionTemplate.findFirstOrThrow({
+      where: { type: 'EXPLORE' },
+      orderBy: { id: 'asc' },
+    });
+    const route = await prisma.route.findFirstOrThrow({ orderBy: { id: 'asc' } });
+    const mission = await prisma.missionInstance.create({
+      data: {
+        templateId: template.id,
+        type: 'EXPLORE',
+        factionId: template.factionId,
+        originId: 'ceres',
+        destinationId: 'hedus',
+        legs: [
+          {
+            routeId: route.id,
+            distance: 40,
+            danger: 1,
+            zone: 0,
+            env: { id: 'belt', level: 1, fuelMult: 1 },
+          },
+        ],
+        cargo: { area: 60 },
+        reward: 100,
+        expiresAt: new Date(Date.now() + 30 * 60_000),
+        seed: `contract-explore-${randomUUID()}`,
+        status: 'AVAILABLE',
+      },
+    });
+    const board = await get('/v1/locations/ceres/missions');
+    expect(board.status).toBe(200);
+    const offers = contract(z.array(MissionOfferSchema), board.body, 'GET /locations/:id/missions');
+    const offer = offers.find((entry) => entry.id === mission.id)!;
+    expect(offer.info.explore).toMatchObject({ area: 60, ticks: 10, scanSeconds: 3000 });
+    expect(offer.info.estimate?.scanSeconds).toBe(3000);
+
+    const accepted = await post(`/v1/missions/${mission.id}/accept`, { shipId });
+    expect(accepted.status).toBe(200);
+    const dispatched = await post(`/v1/ships/${shipId}/dispatch`, { missionId: mission.id });
+    expect(dispatched.status).toBe(200);
+    const ship = contract(
+      ShipResponseSchema,
+      (await get(`/v1/ships/${shipId}`)).body,
+      'GET /ships/:id',
+    );
+    expect(ship.activity.flightThen).toBe('scanning');
+    await prisma.missionInstance.update({ where: { id: mission.id }, data: { status: 'DONE' } });
+  });
+
   it('rescue of an adrift ship', async () => {
     // The dispatched mission above left the ship ON_MISSION; free it and strand it.
     await prisma.ship.update({ where: { id: shipId }, data: { status: 'ADRIFT', fuel: 0 } });

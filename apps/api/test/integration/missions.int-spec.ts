@@ -645,6 +645,49 @@ describe('missions accept/hold API (S6.4)', () => {
       expect(group.info.estimate!.durationSeconds).toBe(3 * single.info.estimate!.durationSeconds);
     });
 
+    it('the board card shows the share the radar covers', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await makeVeteran(player.seeded.player.id);
+      await prisma.partCatalog.update({ where: { partType: 'sensor_radar' }, data: { sen: 4 } });
+      await configService.refresh();
+      const radar = await prisma.partInstance.create({
+        data: {
+          partType: 'sensor_radar',
+          ownerPlayerId: player.seeded.player.id,
+          condition: 100,
+          location: 'INVENTORY',
+        },
+      });
+      const placed = await prisma.partInstance.findMany({
+        where: { shipId: player.shipId, location: 'INSTALLED' },
+        select: { id: true },
+      });
+      const assembled = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${player.shipId}/auto-assemble`)
+        .set(auth(player.token))
+        .send({ partInstanceIds: [...placed.map((part) => part.id), radar.id] });
+      expect(assembled.status).toBe(200);
+      const wide = await createMission({ type: 'EXPLORE', cargo: { area: 80 } });
+      const fits = await createMission({ type: 'EXPLORE', cargo: { area: 60 } });
+
+      const row = (await boardRow(player.token, wide.id)) as SpecialtyRow & {
+        info: {
+          explore: { share: number; ticks: number; capTicks: number; scanSeconds: number } | null;
+          estimate: { scanSeconds?: number; durationSeconds: number; flightSeconds?: number };
+        };
+      };
+      // 4 x 1.5 = 6 per tick, at most 12 ticks: 72 of 80 units
+      expect(row.info.explore).toMatchObject({ share: 0.9, ticks: 12, capTicks: 12 });
+      expect(row.info.estimate.scanSeconds).toBe(3600);
+      expect(row.info.estimate.durationSeconds).toBe(
+        row.info.estimate.flightSeconds! + row.info.estimate.scanSeconds!,
+      );
+      const full = (await boardRow(player.token, fits.id)) as typeof row;
+      expect(full.info.explore).toMatchObject({ share: 1, ticks: 10 });
+      expect(full.info.estimate.scanSeconds).toBe(3000);
+    });
+
     it('a weak escort is refused with ESCORT_STRENGTH', async () => {
       await freshSeededApp();
       const player = await onboardPlayer();

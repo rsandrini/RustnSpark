@@ -1,5 +1,12 @@
 import { applyEngineLevels, clampLevels } from '../resolution/engine/engine.js';
 import { placeKeyOf, type MineableOre } from '../resolution/mining/mining-yield.js';
+import {
+  areaOf,
+  planScan,
+  scanFuel,
+  scanSensorsOf,
+  scanStrength,
+} from '../resolution/explore/explore-scan.js';
 import { contractOdds, digExtra, drillRarityOf } from './mining-odds.js';
 import {
   BadRequestException,
@@ -114,6 +121,17 @@ export interface OfferInfo {
     /** A mining contract: the flight and the dig that make up `durationSeconds`. */
     readonly flightSeconds?: number;
     readonly digSeconds?: number;
+    /** An explore offer: the scan time that makes up the rest of `durationSeconds`. */
+    readonly scanSeconds?: number;
+  } | null;
+  /** Explore offers: what the viewing ship's radar covers of the area; null on other types or without a viable ship. */
+  readonly explore: {
+    readonly area: number;
+    readonly perTick: number;
+    readonly ticks: number;
+    readonly capTicks: number;
+    readonly share: number;
+    readonly scanSeconds: number;
   } | null;
   readonly material: {
     readonly name: { readonly en: string; readonly 'pt-BR': string };
@@ -1063,6 +1081,32 @@ function offerInfo(
     };
   }
 
+  // An explore offer adds the scan to the trip: planned from the SAME live connected radar the check read, so the
+  // card says what the dispatch will plan (the time and fuel come after the time scale, like the dig).
+  const exploreArea = row.type === 'EXPLORE' ? areaOf(row.cargo) : 0;
+  const explore: OfferInfo['explore'] =
+    row.type === 'EXPLORE' && sheet !== null && parts !== null && viability?.viable === true
+      ? ((): OfferInfo['explore'] => {
+          const plan = planScan(exploreArea, scanStrength(scanSensorsOf(parts), rules), rules);
+          return {
+            area: exploreArea,
+            perTick: plan.perTick,
+            ticks: plan.ticks,
+            capTicks: rules.explore.max_ticks,
+            share: plan.share,
+            scanSeconds: plan.seconds,
+          };
+        })()
+      : null;
+  if (estimate !== null && explore !== null && tuned !== null && explore.ticks > 0) {
+    estimate = {
+      durationSeconds: estimate.durationSeconds + explore.scanSeconds,
+      fuelNeeded: estimate.fuelNeeded + scanFuel(explore.ticks, tuned.sheet.fuelUse, rules),
+      flightSeconds: estimate.durationSeconds,
+      scanSeconds: explore.scanSeconds,
+    };
+  }
+
   const requirements =
     sheet === null || parts === null
       ? []
@@ -1147,6 +1191,7 @@ function offerInfo(
     peakDanger,
     peakZone,
     estimate,
+    explore,
     specialty:
       verdict === null
         ? null
