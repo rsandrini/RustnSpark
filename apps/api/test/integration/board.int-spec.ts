@@ -163,6 +163,23 @@ describe('mission board (S6.2)', () => {
     );
   }, 60000);
 
+  it('the extras slot: every place that can post EXPLORE holds exactly one, home ports and pirate places never do, and a second top-up adds none', async () => {
+    const rules = config!.snapshot().rules;
+    expect(rules.missions.board_min_extras).toBe(1);
+    const explored = ['echo', 'gate', 'marsa', 'rennick', 'spur', 'vesta', 'ziggy'];
+    const never = ['ceres', 'tycho', 'cair', 'hedus', 'veil', 'drift', 'nadir'];
+    for (const id of [...explored, ...never]) {
+      const rows = await board!.getBoard(id, 1);
+      const explores = rows.filter((row) => row.type === 'EXPLORE').length;
+      expect([id, explores]).toEqual([id, explored.includes(id) ? 1 : 0]);
+      // the board is full: a second top-up inserts nothing (no second EXPLORE, no growth)
+      const stored = await prisma.missionInstance.count({ where: { originId: id } });
+      const again = await board!.getBoard(id, 1);
+      expect(again.length).toBe(rows.length);
+      expect(await prisma.missionInstance.count({ where: { originId: id } })).toBe(stored);
+    }
+  }, 120000);
+
   it('is idempotent: a second read adds nothing and returns the same offers', async () => {
     const first = await board!.getBoard('ceres', 1);
     const second = await board!.getBoard('ceres', 1);
