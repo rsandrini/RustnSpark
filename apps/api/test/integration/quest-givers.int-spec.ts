@@ -13,6 +13,7 @@ import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
+import { MAX_BOARD_SHARE } from '../../src/missions/generator/giver.picker.js';
 import { MISSION_QUEUE_NAME } from '../../src/jobs/queues.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
@@ -174,24 +175,44 @@ describe('quest givers (the people behind the missions)', () => {
         where: { id: { in: offers.map((offer) => offer.id) } },
         include: { giver: true },
       });
-      for (const row of stored) {
-        if (row.privatePlayerId !== null) continue;
-        expect(row.giver).not.toBeNull();
+      const publicRows = stored.filter((row) => row.privatePlayerId === null);
+      const perGiver = new Map<string, number>();
+      for (const row of publicRows) {
+        if (row.giverId !== null) perGiver.set(row.giverId, (perGiver.get(row.giverId) ?? 0) + 1);
+      }
+      // The mix comes before the giver (slice 2.1, ruling 4): when everyone who could voice the type
+      // the board still needs is already at the half-share cap, the offer is posted without a giver
+      // (explorations plan, ruling 12). Every voiceless slot on this board must say why.
+      const shareCap = Math.max(1, Math.floor(publicRows.length * MAX_BOARD_SHARE));
+      const active = await prisma.questGiver.findMany({
+        where: { role: 'GIVER', active: true, factionId: faction },
+      });
+      for (const row of publicRows) {
+        if (row.giver === null) {
+          const couldVoice = active.filter((giver) => {
+            const types = (giver.personality as { types: Record<string, number> }).types;
+            const worksHere =
+              giver.locationIds.length === 0 || giver.locationIds.includes(player.home);
+            return worksHere && (types[row.type] ?? 0) > 0;
+          });
+          expect(
+            couldVoice.length === 0 ||
+              couldVoice.every((giver) => (perGiver.get(giver.id) ?? 0) >= shareCap),
+          ).toBe(true);
+          continue;
+        }
         expect(row.giver?.role).toBe('GIVER');
         expect(row.giver?.factionId).toBe(faction);
         const personality = row.giver?.personality as { types: Record<string, number> };
         expect(personality.types[row.type] ?? 0).toBeGreaterThan(0);
       }
-      const publicRows = stored.filter((row) => row.privatePlayerId === null);
-      const perGiver = new Map<string, number>();
-      for (const row of publicRows)
-        perGiver.set(row.giverId!, (perGiver.get(row.giverId!) ?? 0) + 1);
       for (const count of perGiver.values()) {
         expect(count).toBeLessThanOrEqual(Math.max(1, Math.floor(publicRows.length / 2) + 1));
       }
-      // the offers carry who gave them, and a voiced brief where the giver has a line for the type
+      // the offers carry who gave them (or nobody, for a voiceless slot), and a brief that reads
       for (const offer of offers.filter((entry) => entry.privatePlayerId === null)) {
-        expect(offer.info.giver).toBeTruthy();
+        const row = stored.find((entry) => entry.id === offer.id)!;
+        expect(offer.info.giver?.id ?? null).toBe(row.giverId);
         expect(offer.info.description.en.length).toBeGreaterThan(0);
       }
     },
@@ -264,12 +285,11 @@ describe('quest givers (the people behind the missions)', () => {
     await makeVeteran(player.playerId);
     const offers = await boardOf(player.token, player.home);
     for (const offer of offers.filter((entry) => entry.privatePlayerId === null)) {
-      expect(offer.info.giver).toBeTruthy();
+      const stored = await prisma.missionInstance.findUniqueOrThrow({ where: { id: offer.id } });
+      // the card names the giver when the offer has one, and never invents one when it has none
+      expect(offer.info.giver?.id ?? null).toBe(stored.giverId);
       const template = await prisma.missionTemplate.findFirstOrThrow({
-        where: {
-          id: (await prisma.missionInstance.findUniqueOrThrow({ where: { id: offer.id } }))
-            .templateId,
-        },
+        where: { id: stored.templateId },
       });
       expect(offer.info.description.en).toBe((template.description as { en: string }).en);
     }
@@ -443,7 +463,7 @@ describe('quest givers (the people behind the missions)', () => {
     it('a giver added in Admin starts offering on boards', async () => {
       await freshWorld();
       const token = await adminToken();
-      // make the new giver the only one who can post RACE offers at ceres, and heavy
+      // the only active giver left serves DELIVERY and RESCUE, heavily weighted
       await prisma.questGiver.updateMany({
         where: { role: 'GIVER', factionId: 'luna' },
         data: { active: false },
@@ -470,7 +490,18 @@ describe('quest givers (the people behind the missions)', () => {
       const offers = await boardOf(player.token, player.home);
       const publicOffers = offers.filter((offer) => offer.privatePlayerId === null);
       expect(publicOffers.length).toBeGreaterThan(0);
-      for (const offer of publicOffers) expect(offer.info.giver?.id).toBe('only_giver');
+      // The new giver is the only voice on the board; the slots its personality cannot serve are
+      // posted without a giver (slice 2.1, ruling 4) rather than with somebody else's words.
+      const onlyGiver = await prisma.questGiver.findUniqueOrThrow({ where: { id: 'only_giver' } });
+      const types = (onlyGiver.personality as { types: Record<string, number> }).types;
+      expect(publicOffers.some((offer) => offer.info.giver?.id === 'only_giver')).toBe(true);
+      for (const offer of publicOffers) {
+        if (offer.info.giver == null) {
+          expect(types[offer.type] ?? 0).toBe(0);
+        } else {
+          expect(offer.info.giver.id).toBe('only_giver');
+        }
+      }
     });
   });
 });

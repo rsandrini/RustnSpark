@@ -69,6 +69,9 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
   'POST /v1/parts/:id/shrink': 'service checks the part instance belongs to the caller',
   'POST /v1/parts/:id/shrink/quote':
     'service checks the part instance belongs to the caller (read-shaped)',
+  'POST /v1/inventory/:id/scrap': 'service checks the part instance belongs to the caller',
+  'POST /v1/inventory/:id/scrap/quote':
+    'service checks the part instance belongs to the caller (read-shaped)',
   'POST /v1/missions/:id/accept': 'service checks holder/private owner against the caller',
   'POST /v1/missions/:id/abandon':
     'service only lets the accepting player back out (404 otherwise)',
@@ -87,6 +90,8 @@ const BODYLESS_MUTATIONS = new Set([
   'POST /v1/parts/:id/expand/quote',
   'POST /v1/parts/:id/shrink',
   'POST /v1/parts/:id/shrink/quote',
+  'POST /v1/inventory/:id/scrap',
+  'POST /v1/inventory/:id/scrap/quote',
   'POST /v1/missions/:id/abandon',
   'POST /v1/missions/:id/hold',
   'DELETE /v1/missions/:id/hold',
