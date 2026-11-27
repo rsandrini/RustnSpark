@@ -22,6 +22,16 @@ describe('planScan', () => {
     });
   });
 
+  it('a part of a tick still takes a whole tick (ceil): 61 at 6 per tick is 11 ticks', () => {
+    expect(planScan(61, 4, rules)).toEqual({
+      ticks: 11,
+      perTick: 6,
+      covered: 61,
+      share: 1,
+      seconds: 3300,
+    });
+  });
+
   it('capped plan: 80 needs 13.3 ticks, the cap is 12', () => {
     expect(planScan(80, 4, rules)).toMatchObject({
       ticks: 12,
@@ -54,8 +64,8 @@ describe('planScan', () => {
     }
   });
 
-  it('an empty area has share 0', () => {
-    expect(planScan(0, 4, rules).share).toBe(0);
+  it('an empty area plans no scan at all: no ticks, no time', () => {
+    expect(planScan(0, 4, rules)).toMatchObject({ ticks: 0, covered: 0, share: 0, seconds: 0 });
   });
 });
 
@@ -77,6 +87,10 @@ describe('scanStrength', () => {
   it('only SENSOR parts count', () => {
     expect(scanStrength([{ partClass: 'HULL', sen: 5, condition: 100 }], rules)).toBe(0);
     expect(scanStrength([{ partClass: 'SENSOR', sen: 0, condition: 100 }], rules)).toBe(0);
+  });
+
+  it('a NaN condition cannot leak NaN', () => {
+    expect(scanStrength([{ ...radar, condition: Number.NaN }], rules)).toBe(0);
   });
 
   it('a NaN sen counts as 0', () => {
@@ -102,6 +116,10 @@ describe('scanPerTick', () => {
 describe('scanCovered', () => {
   it('stops at the tick that reaches the area', () => {
     expect(scanCovered(60, 6, 12)).toEqual({ covered: 60, ticksRun: 10 });
+  });
+
+  it('a part of a tick still takes a whole tick (ceil): 61 at 6 per tick is tick 11', () => {
+    expect(scanCovered(61, 6, 12)).toEqual({ covered: 61, ticksRun: 11 });
   });
 
   it('runs every tick when the area is not reached', () => {

@@ -4,7 +4,6 @@ import { headCountOf } from '../economy/reward.calculator.js';
 import type { InstalledPart } from '../parts/part.types.js';
 import { rawMobility } from '../ships/sheet.deriver.js';
 import type { ShipSheet } from '../ships/sheet.types.js';
-import { scanStrength, type ScanSensor } from '../resolution/explore/explore-scan.js';
 import { specialtyOf } from './mission-specialty.js';
 
 export type RequirementReasonCode =
@@ -126,6 +125,7 @@ export function offerRequirements(templateRequirements: unknown, offerCargo: unk
     typeof offerCargo === 'object' && offerCargo !== null
       ? (offerCargo as Record<string, unknown>)
       : {};
+  // `area` (like `passengers`) overwrites any template `requirements.area` for every type.
   // the head count lives per offer in its cargo and overrides a `passengers` key of the template
   return { ...base, passengers: cargo.passengers, area: cargo.area };
 }
@@ -206,7 +206,7 @@ export function missionRequirementChecklist(
   const verdict = specialtyOf(
     missionType,
     { requirements: input.requirements, peakDanger: input.peakDanger },
-    sheet,
+    { sheet, parts },
     rules,
   );
   const minimum = verdict?.minimum ?? 0;
@@ -233,8 +233,8 @@ export function missionRequirementChecklist(
         numeric(CARGO_TYPE, 'cargo', cargoNeeded, sheet.crg),
       ];
     case 'EXPLORE':
-      // The radar's live strength (worn parts count for less, dead ones for nothing) against the area's minimum.
-      return [numeric(SENSOR_STRENGTH, 'sensor', minimum, scanStrength(sensorsOf(parts), rules))];
+      // The radar's live strength (worn parts count for less, dead ones for nothing), from the verdict.
+      return [numeric(SENSOR_STRENGTH, 'sensor', minimum, verdict?.have ?? 0)];
     case 'TRAVEL':
     case 'SCAVENGE':
       // Nothing to check: any ship that can fly can make a trip (viability is checked separately).
@@ -259,14 +259,6 @@ export function missionRequirementChecklist(
         ),
       ];
   }
-}
-
-function sensorsOf(parts: readonly InstalledPart[]): ScanSensor[] {
-  return parts.map((part) => ({
-    partClass: part.catalog.partClass,
-    sen: part.catalog.sen,
-    condition: part.instance.condition,
-  }));
 }
 
 export function checkMissionRequirements(

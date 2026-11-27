@@ -1,4 +1,5 @@
 import type { GameRules } from '../../config/game-config.types.js';
+import type { InstalledPart } from '../../parts/part.types.js';
 import { isDead, performance } from '../../parts/condition.js';
 
 /**
@@ -44,7 +45,19 @@ export function scanStrength(sensors: readonly ScanSensor[], rules: GameRules): 
       (part) =>
         part.partClass === 'SENSOR' && part.connected !== false && !isDead(part.condition, rules),
     )
-    .reduce((sum, part) => sum + finite(part.sen) * performance(part.condition, rules), 0);
+    .reduce((sum, part) => sum + finite(finite(part.sen) * performance(part.condition, rules)), 0);
+}
+
+/** The radar-relevant view of a ship's installed parts (a part's `connected` flag, when known, goes with it). */
+export function scanSensorsOf(
+  parts: readonly (InstalledPart & { connected?: boolean })[],
+): ScanSensor[] {
+  return parts.map((part) => ({
+    partClass: part.catalog.partClass,
+    sen: part.catalog.sen,
+    condition: part.instance.condition,
+    ...(part.connected === undefined ? {} : { connected: part.connected }),
+  }));
 }
 
 /** Area scanned per tick at the given share of the power the radar asks for (0..1). */
@@ -70,6 +83,8 @@ export function planScan(area: number, strength: number, rules: GameRules): Scan
   const { max_ticks: maxTicks, tick_seconds: tickSeconds } = rules.explore;
   const wanted = Math.max(0, finite(area));
   const perTick = scanPerTick(strength, 1, rules);
+  // Nothing to scan: no ticks, no time, no fuel.
+  if (wanted <= 0) return { ticks: 0, perTick, covered: 0, share: 0, seconds: 0 };
   const ticks =
     perTick > 0 ? Math.min(maxTicks, Math.max(1, Math.ceil(trim(wanted / perTick)))) : maxTicks;
   const { covered } = scanCovered(wanted, perTick, ticks);

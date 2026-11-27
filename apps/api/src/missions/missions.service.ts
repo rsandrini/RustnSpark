@@ -957,7 +957,10 @@ function offerInfo(
     requirements: offerRequirements(requirementsJson, row.cargo),
     peakDanger,
   };
-  const verdict = sheet === null ? null : specialtyOf(row.type, specialtyOffer, sheet, rules);
+  const verdict =
+    sheet === null || parts === null
+      ? null
+      : specialtyOf(row.type, specialtyOffer, { sheet, parts }, rules);
   const stretch = verdict?.factor ?? 1;
 
   let estimate: OfferInfo['estimate'] = null;

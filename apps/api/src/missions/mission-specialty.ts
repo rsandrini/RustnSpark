@@ -2,14 +2,15 @@ import type { MissionType } from '@prisma/client';
 import type { GameRules } from '../config/game-config.types.js';
 import { headCountOf } from '../economy/reward.calculator.js';
 import { deriveShipProfile, deriveShipProfileDetail } from '../ships/ship-profile.js';
-import { areaOf } from '../resolution/explore/explore-scan.js';
+import type { InstalledPart } from '../parts/part.types.js';
+import { areaOf, scanSensorsOf, scanStrength } from '../resolution/explore/explore-scan.js';
 import type { ShipSheet } from '../ships/sheet.types.js';
 import type { RequirementReasonCode } from './requirements.checker.js';
 
 /**
  * The specialty table: which ship stat drives each mission type, and how a weak ship is treated.
  *
- * To add a type: add one row to SPECIALTY_TABLE. A row that uses a curve (`power` or `trips`) also needs a knob
+ * To add a type: add one row to SPECIALTY_TABLE. A row that uses a curve (`power`, `trips` or `work`) also needs a knob
  * key `rules.specialty.<type>` (schema, types, defaults, registry en + pt-BR) that its `knobs` reads.
  *
  * Curves:
@@ -36,6 +37,12 @@ export interface SpecialtyOffer {
   readonly peakDanger: number;
 }
 
+/** The ship a verdict is read from: its sheet and the installed parts (the radar needs each part's condition). */
+export interface SpecialtyShip {
+  readonly sheet: ShipSheet;
+  readonly parts: readonly InstalledPart[];
+}
+
 export interface SpecialtyRow {
   readonly stat: SpecialtyStat;
   readonly curve: SpecialtyCurve;
@@ -53,7 +60,7 @@ export interface SpecialtyVerdict {
   readonly minimum: number;
   /** Time multiplier: 1 = as today, above 1 slower (trips), below 1 faster (power). */
   readonly factor: number;
-  /** Trips flown (`trips` curve); null for `power`. */
+  /** Trips flown (`trips` curve); null for `power` and `work`. */
   readonly trips: number | null;
   readonly met: boolean;
   readonly blocker: RequirementReasonCode;
@@ -153,7 +160,8 @@ export function specialtyMinimum(need: number, ratio: number, wholeUnits: boolea
  * What the ship has of a stat: seats the life support can keep alive (people), the hold (units), or a 0..1
  * profile axis (combat is the mean of firepower and defense).
  */
-export function specialtyStat(stat: SpecialtyStat, sheet: ShipSheet, rules: GameRules): number {
+export function specialtyStat(stat: SpecialtyStat, ship: SpecialtyShip, rules: GameRules): number {
+  const { sheet } = ship;
   switch (stat) {
     case 'passengers':
       return deriveShipProfileDetail(sheet, rules).passengers.value;
@@ -168,14 +176,15 @@ export function specialtyStat(stat: SpecialtyStat, sheet: ShipSheet, rules: Game
     case 'mining':
       return deriveShipProfile(sheet, rules).mining;
     case 'sensor':
-      return sheet.sen;
+      // The live radar (worn parts weigh less, dead ones nothing): the sheet's `sen` is a raw sum of the catalog.
+      return scanStrength(scanSensorsOf(ship.parts), rules);
   }
 }
 
 export function specialtyOf(
   type: MissionType,
   offer: SpecialtyOffer,
-  sheet: ShipSheet,
+  ship: SpecialtyShip,
   rules: GameRules,
 ): SpecialtyVerdict | null {
   const row = SPECIALTY_TABLE[type];
@@ -186,7 +195,7 @@ export function specialtyOf(
   // always met, a zero stat is refused (when the minimum is above 0), and every number below stays finite.
   const finite = (value: number): number => (Number.isFinite(value) ? value : 0);
   const need = finite(row.needOf(offer, knobs));
-  const have = finite(specialtyStat(row.stat, sheet, rules));
+  const have = finite(specialtyStat(row.stat, ship, rules));
   const minimum = specialtyMinimum(need, knobs.min_ratio, row.wholeUnits);
   const met = have >= minimum;
   // The divisor is never below the minimum, so a zero stat gives a finite factor (the job is refused anyway).
@@ -230,10 +239,10 @@ export function specialtyOf(
 export function specialtyStretch(
   type: MissionType,
   offer: SpecialtyOffer,
-  sheet: ShipSheet,
+  ship: SpecialtyShip,
   rules: GameRules,
 ): number {
-  const verdict = specialtyOf(type, offer, sheet, rules);
+  const verdict = specialtyOf(type, offer, ship, rules);
   return verdict?.factor ?? 1;
 }
 

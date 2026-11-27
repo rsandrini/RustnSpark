@@ -511,7 +511,12 @@ export class DispatchService {
         requirements: offerRequirements(template?.requirements, mission.cargo),
         peakDanger: peakDangerOf(mission.legs),
       };
-      const specialtyFactor = specialtyStretch(mission.type, specialtyOffer, sheet, rules);
+      const specialtyFactor = specialtyStretch(
+        mission.type,
+        specialtyOffer,
+        { sheet, parts: installedConnected },
+        rules,
+      );
       const planned = missionDuration({
         totalDistance,
         mobility: flight.sheet.mob,

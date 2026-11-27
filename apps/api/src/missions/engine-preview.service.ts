@@ -169,7 +169,7 @@ export class EnginePreviewService {
       const specialtyFactor = specialtyStretch(
         mission.type,
         specialtyOffer,
-        deriveSheet(connected, rules),
+        { sheet: deriveSheet(connected, rules), parts: connected },
         rules,
       );
       // A mining mission also digs: a free job burns fuel for every tick it was set for; a contract

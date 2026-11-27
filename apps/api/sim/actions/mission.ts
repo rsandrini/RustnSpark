@@ -18,6 +18,7 @@ import { miningMaterialsFor } from '../../src/missions/generator/template.filler
 import { placeKeyOf, type MineableOre } from '../../src/resolution/mining/mining-yield.js';
 import { checkMissionRequirements } from '../../src/missions/requirements.checker.js';
 import { isDead } from '../../src/parts/condition.js';
+import type { InstalledPart } from '../../src/parts/part.types.js';
 import { allocatePower, powerPartOf } from '../../src/resolution/power/power.js';
 import { resolveMission } from '../../src/resolution/mission/mission.resolver.js';
 import { deriveSheet } from '../../src/ships/sheet.deriver.js';
@@ -65,13 +66,13 @@ export function missionContext(snapshot: Snapshot, bridgeScaling?: BridgeScaling
  */
 export function offerStretch(
   offer: Offer,
-  sheet: ReturnType<typeof deriveSheet>,
+  ship: { sheet: ReturnType<typeof deriveSheet>; parts: readonly InstalledPart[] },
   rules: GameRules,
 ): number {
   return specialtyStretch(
     offer.type,
     { requirements: offer.requirements, peakDanger: peakDangerOf(offer.legs) },
-    sheet,
+    ship,
     rules,
   );
 }
@@ -270,7 +271,7 @@ export function takeMission(
     shortTripExemptBelow: rules.missions.short_trip_exempt_below,
     timeScale: rules.missions.time_scale,
     classCutoffs: rules.missions.duration_class_cutoffs,
-    stretch: offerStretch(offer, deriveSheet(installed, rules), rules),
+    stretch: offerStretch(offer, { sheet: deriveSheet(installed, rules), parts: installed }, rules),
   });
 
   const cargo = offer.cargo as Record<string, unknown>;

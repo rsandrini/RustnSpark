@@ -42,7 +42,8 @@ function totalDistanceOf(offer: Offer): number {
 
 /** What one offer would earn per hour of trip, after the fuel the trip is expected to burn. */
 function netPerHour(state: PlayerState, ctx: MissionContext, offer: Offer): number {
-  const sheet = deriveSheet(installedParts(state.ship, ctx.catalogByType), ctx.rules);
+  const parts = installedParts(state.ship, ctx.catalogByType);
+  const sheet = deriveSheet(parts, ctx.rules);
   const { durationSeconds } = missionDuration({
     totalDistance: totalDistanceOf(offer),
     mobility: sheet.mob,
@@ -52,7 +53,7 @@ function netPerHour(state: PlayerState, ctx: MissionContext, offer: Offer): numb
     shortTripExemptBelow: ctx.rules.missions.short_trip_exempt_below,
     timeScale: ctx.rules.missions.time_scale,
     classCutoffs: ctx.rules.missions.duration_class_cutoffs,
-    stretch: offerStretch(offer, sheet, ctx.rules),
+    stretch: offerStretch(offer, { sheet, parts }, ctx.rules),
   });
   const units = missionFuelNeed(state, offer, ctx);
   const facts = portFactsOf(ctx.snapshot, state.locationId, state.factionId);

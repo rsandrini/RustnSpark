@@ -2403,9 +2403,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 0,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.specialty.explore),
     description: {
-      en: 'Explore jobs. min_ratio (0.05 to 1): below this share of the area the ship radar can cover in one scan, the ship cannot take the job.',
+      en: 'Explore jobs. min_ratio (0.05 to 1): below this share of the area the ship radar can cover in one scan, the ship cannot take the job. The largest area a ship can take is about 1 / min_ratio times its radar strength, as long as scan_k and max_ticks stay as they are (the 90% floor moves if they change).',
       'pt-BR':
-        'Trabalhos de exploração. min_ratio (0,05 a 1): abaixo desta fração da área que o radar da nave consegue cobrir em uma varredura, a nave não pode aceitar o trabalho.',
+        'Trabalhos de exploração. min_ratio (0,05 a 1): abaixo desta fração da área que o radar da nave consegue cobrir em uma varredura, a nave não pode aceitar o trabalho. A maior área que uma nave aceita é cerca de 1 / min_ratio vezes a força do radar, desde que scan_k e max_ticks continuem como estão (o piso de 90% muda se eles mudarem).',
     },
   },
   {
