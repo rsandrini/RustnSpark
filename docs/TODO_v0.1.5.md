@@ -1,5 +1,8 @@
 # To do - v0.1.5
 
+**RELEASED 2026-11-27 (tag `v0.1.5`). Closed: every unfinished item moved to `TODO_v0.1.6.md` (items 9, 11, 12, 13 and the bug list
+were moved there whole; unticked boxes left below are history, the open work is listed there).**
+
 Owner's list for v0.1.5 (planned 2026-11-09 as v0.1.4; v0.1.4 shipped without it, renamed 2026-11-23). Delete an item when it ships.
 The order of work and the gates: `docs/superpowers/plans/2026-11-23-v0.1.5-roadmap.md` (card fix, then ALL the UI, then the mission world, then ship damage; the tutorial dropped by the owner on 2026-11-26).
 
@@ -136,25 +139,6 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 - Plan: with item 6's task A0 (the `pax` stat); see `docs/superpowers/plans/2026-11-24-ship-identity-and-spider-chart.md`.
 - Built on develop (2026-11-25) and unit-tested, NOT checked in a browser yet (the owner reviews later): `pax` and `lifeCap` on the parts (seed, migration, admin editor), a head count on TRANSPORT missions (`missions.transport_passengers_min/max`, default when none is stored), the checker needing `pax >= people` and `lifeCap >= people` with blocker chips in en and pt-BR, pay +10% per extra passenger. Deploy notes: see item 6.
 
-## 9. Hard mode: start with no flag, no money, no ship (owner, 2026-11-24) - _needs a plan_
-
-- [ ] A pilot can start WITHOUT a faction to fight for. This is the hard mode. It starts with no money and no kit: everything is
-      collected from scrap (scavenging), and the pilot picks the start point among "safe" places. Once enough is collected to mount a
-      ship, it was built without any help, and the pilot pays the price as a neutral, not as a friend of a faction.
-- Written as "0.1.4" in the request; v0.1.4 already shipped, so it is filed on the open list (v0.1.5) and flagged _needs plan_. Consider
-  v0.2: it touches onboarding, the economy and the factions at once.
-- What exists today (checked 2026-11-24): onboarding picks a faction and creates the pilot with `start_credits` and the starter kit
-  (`onboarding.service.ts`: `starter_parts`, start fuel); a `free` faction already exists (the mentor NPCs belong to it); prices
-  apply the player's faction relation to the place's faction (`pricing.service.ts`, `relationOf(...)`), so "neutral" can be a
-  relation of its own; scavenging exists (scrap, drops) and scrap sells at a fixed price everywhere.
-- To plan: how a pilot with no ship and no money moves and earns (scavenge on foot? from a start station?); the list of "safe"
-  start places and how the pilot picks one; how much scrap buys the first ship (a minimum viable ship by the part catalog) and
-  whether a cheap used hull is sold; the neutral price relation (worse prices and what else); whether the pilot can join a faction
-  later and how; the guide and the opening for this mode; ranking (a separate board or the same); the sim to tune the scrap economy.
-- Open question for the owner: is "start with nothing" a choice on the faction screen (a fourth card) or a separate "hard mode" switch?
-- **Decisions (owner, 2026-11-26): use the defaults, except the prices.** Entry = a fourth card on the faction screen ("Independent"); start place = the ports of the safe core zones 0 and 1, the pilot picks one; earns by scavenging at the start place and selling scrap at the fixed price; first ship = buy parts and assemble (the sim sets the minimal ship price); all missions at normal pay; can join a faction later (one-way, no penalty); ~~a separate "Independent" ranking board~~ **(owner, 2026-11-27) independents appear on the rankings as normal pilots, no distinction** (same boards, no filter, no label). **Prices: no penalty and no discount for an independent** (the neutral relation, factor 1.0). Prices already depend on the player's relation to the place's faction (`economy.faction_mult`: ally 0.8, neutral 1.0, hostile 2.5; the seed has no ally and nobody lists itself, so buying in your own faction's port gets no discount today): see item 13 for the own-faction discount.
-
-
 ## 10. Turn old parts into scrap, with a chance of more scrap by health and quality (owner, 2026-11-25)
 
 - [ ] An option to transform old parts into scrap (a "scrap it" action next to sell). The scrap yield has a CHANCE of extra pieces that
@@ -170,32 +154,3 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
   price (it should not: selling must stay the better deal for a healthy part, scrapping for a worn one); config knobs in the admin
   (`economy.scrap_*`), the idempotent API action and its report/ledger entry, the UI (a button on the part row/popup with a confirm
   that names the odds), the sim (scrap supply) and the guide text. Plan before building.
-
-## 11. A lost fight costs a fee for the lost cargo and the broken contract, scaled by zone (owner, 2026-11-26) - *not started*
-
-Today a lost combat encounter debits a flat `economy.combat_loss_penalty` (1200) per lost fight, whatever the zone or the reward. It comes from the 2026-10-23 rule ("a won fight pays nothing; a lost one costs a penalty"); the 1200 was in the first config and no balance round chose it. The owner feels it reads like the pirates are robbing money.
-
-- [ ] **Decided (owner, 2026-11-26): option 1, scale the penalty by zone**, like the wear already is (`combat.loss_wear_scale` is 0.1 / 0.3 / 0.4 / 0.5 by zone 0-3; a first guess for the money scale: 10% / 30% / 40% / 100% of the base, as admin knobs, DB wins). Needs the sim before any change (it changes income).
-- [ ] **Say what it is:** the amount taken is a FEE for the cargo lost and the contract broken, not a theft by the pirates. Name it so in the report and the result popup (en + pt-BR), and in the Admin knob description.
-- [ ] Owner's thinking to settle in the plan: when the mission carries cargo, a lost fight loses the cargo and the contract pays zero; when pirates only want a fight, the worst case damages parts of the ship (already so) and nothing else; the money fee is for not completing the mission. Decide whether the fee applies when there was no cargo, and whether it can exceed the mission's reward.
-- Do NOT build now; plan it with the next balance round.
-
-## 12. Pirate places have fewer offers and favour mining (owner, 2026-11-26) - *not started*
-
-Owner, about adding escort/mining templates at places that lack them, and the pirate places `veil` and `drift`: "IDK to be honest, maybe? I think those pirate places should have less jobs available. Or at least less jobs. The place will be good for mining tho."
-
-- [ ] Pirate places (`veil`, `drift`) get FEWER offers on their boards than other places of their size and favour MINING offers (they are good mining places). No new escort templates there.
-- [ ] Likely shape: an Admin knob for a board-size factor per faction/place tag. First guess: board size = 50% of the normal for the place detail, mining preferred in the board composition. Extend `apps/api/src/missions/board-composition.ts` and `board-size.ts`.
-- [ ] Needs a small plan. Sim check: income per hour must not regress.
-
-## 13. A 10% discount for buying in a port of your own faction (owner, 2026-11-26) - *not started*
-
-Prices already depend on the relation of the player's faction to the place's faction (`economy.faction_mult` in `pricing.service.ts` / `price.calculator.ts`: ally 0.8, neutral 1.0, hostile 2.5, same for buy, sell and repair). Nobody is `ally` in the seed and a faction does not list itself, so your own faction's ports charge the neutral price today.
-
-- [ ] Add an `own` relation: when the place's faction is the player's own faction, apply `economy.faction_mult.own` = 0.9 (an Admin knob, DB wins; check that selling stays below the cheapest purchase so the haul and repair loops stay closed: sell uses `min(1, isolation x faction)`, so a discount does not raise sell prices). Independent pilots (item 9) are never "own": no discount. Needs the sim (it changes costs).
-- [ ] Decide with it whether the discount applies to fuel and repair too (`repair-cost.calculator.ts` and refuel use the same factor).
-
-## Bugs found testing v0.1.4 in prod
-
-- [ ] `ships.service.ts` ~962 never passes `missionCargo` to `computeHold` (only dispatch does), so the ship response's `hold.used`/`missionCargo` are always 0; the web re-derives the load in `hold-load.ts` and may drift: make the server fill them.
-- [ ] (the owner will add them here as they are found; each ships in v0.1.5, or as a `v0.1.4b` hotfix if it blocks play)
