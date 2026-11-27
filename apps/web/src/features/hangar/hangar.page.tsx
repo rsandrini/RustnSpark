@@ -567,12 +567,16 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     onError: (error) => setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) }),
   });
 
+  // In the opening there is no Save button: a part dropped on the ship is saved a moment later (when the ship is sound).
+  const opening = usePrologueMode().active;
   // Out on a mission, or floating in space: the ship cannot be changed (a floating one waits for its rescue).
   const onMission = ship?.status === 'ON_MISSION';
   const modifyBlocked = onMission || ship?.status === 'ADRIFT';
   // A phone in flight has no yard to show: the Hold is the only view then (no tabs, the choice is kept for later).
   const yardHidden = phone && onMission;
-  const shipView = yardHidden ? 'hold' : shipViewChoice;
+  // The opening teaches the ship only: no Ship/Hold menu there, whatever was chosen before.
+  const tabsHidden = yardHidden || opening;
+  const shipView = yardHidden ? 'hold' : opening ? 'ship' : shipViewChoice;
   useEffect(() => {
     if (!holdFocusRequest || shipView !== 'hold') return;
     holdPanelRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
@@ -784,8 +788,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const shipClass = preview?.shipClass ?? ship?.shipClass;
   const viabilityProblems = preview?.viability.problems ?? [];
 
-  // In the opening there is no Save button: a part dropped on the ship is saved a moment later (when the ship is sound).
-  const opening = usePrologueMode().active;
   // Dashed slots on the ship where a needed part could go: only in port, never in the opening.
   const [dismissedNeeds] = useDismissedNeeds();
   const slotHints = useMemo(() => {
@@ -968,11 +970,15 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           onGoToBoard={() => {
             void goToTab('board');
           }}
-          onGoToHold={() => {
-            // selects the Hold tab and moves focus to its panel (effect above)
-            setHoldFocusRequest(true);
-            chooseShipView('hold');
-          }}
+          onGoToHold={
+            opening
+              ? undefined
+              : () => {
+                  // selects the Hold tab and moves focus to its panel (effect above)
+                  setHoldFocusRequest(true);
+                  chooseShipView('hold');
+                }
+          }
         />
       )}
       {/* (the Port tabs carry their own rescue banner) */}
@@ -1013,7 +1019,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           )}
 
           {/* Ship details and Hold alternate in the same area; the yard stays mounted (hidden) under Hold. */}
-          {!yardHidden && (
+          {!tabsHidden && (
             <div
               className="segment hold-tabs"
               role="tablist"
@@ -1053,8 +1059,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           {/* On a phone a ship that is out on a mission shows only its flight: the yard cannot be edited then. */}
           <div
             id="ship-details"
-            role="tabpanel"
-            aria-labelledby="ship-tab-ship"
+            role={tabsHidden ? undefined : 'tabpanel'}
+            aria-labelledby={tabsHidden ? undefined : 'ship-tab-ship'}
             className={`hangar-layout${sideHidden && !phone && !opening ? ' side-hidden' : ''}`}
             hidden={yardHidden || shipView !== 'ship'}
           >
