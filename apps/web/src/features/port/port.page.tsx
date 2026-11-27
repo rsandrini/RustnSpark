@@ -5,7 +5,8 @@ import { invalidateShip } from '../ship/invalidate-ship';
 import { Trans, useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
 import { haptic } from '../../ui/haptics';
-import { errorText, priceChangedActualOf } from '../../api/errors';
+import { errorText, priceChangedActualOf, problemsOf } from '../../api/errors';
+import { useProblemText } from '../hangar/problem-text';
 import { useIntentKey } from '../../api/intent-key';
 import { useAnswer, useFeedback, useNotice } from '../../ui/feedback';
 import type {
@@ -135,6 +136,7 @@ const RARITY_ORDER = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'] as cons
 
 export function PortPage({ guided = false, embedded = false, onGoToShip }: PortPageProps) {
   const { t, i18n } = useTranslation();
+  const problemText = useProblemText();
   const { user, reloadProfile } = useAuthContext();
   const opening = usePrologueMode().active;
   const queryClient = useQueryClient();
@@ -639,7 +641,16 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   // job at the ship's own location, no board offer, dispatched the same way. The server is the
   // only authority on whether this location is minable and the ship carries a mining rig;
   // NOT_MINABLE/NO_MINING_RIG surface through the same error text as any other action here.
+  // Why the last mining run was refused: the server's own reasons, kept next to the button.
+  const [mineBlocked, setMineBlocked] = useState<{
+    text: string;
+    problems: ReturnType<typeof problemsOf>;
+  } | null>(null);
   const mine = useMutation({
+    onMutate: () => {
+      setMineBlocked(null);
+      setActionError(null);
+    },
     mutationFn: () =>
       client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/mine`, {
         ticks: Math.min(mineTicks, mineMaxTicks),
@@ -658,7 +669,10 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     },
     onError: (error) => {
       haptic('error');
-      setActionError(errorText(t, error, t('port.failed')));
+      setMineBlocked({
+        text: errorText(t, error, t('port.failed')),
+        problems: problemsOf(error),
+      });
     },
   });
 
@@ -1853,6 +1867,35 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               <p className="warn-text" role="status" data-testid="mine-no-hold">
                 {t('hangar.problems.NO_CARGO_HOLD')}
               </p>
+            )}
+            {mineBlocked !== null && (
+              <div
+                className="action-blocked"
+                role="alert"
+                ref={(node) => node?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })}
+              >
+                {mineBlocked.problems.length === 0 ? (
+                  <strong>{mineBlocked.text}</strong>
+                ) : (
+                  <>
+                    <strong>{t('port.mine.blocked')}</strong>
+                    <ul>
+                      {mineBlocked.problems.map((problem) => (
+                        <li key={problem.code}>{problemText(problem)}</li>
+                      ))}
+                    </ul>
+                    {embedded && onGoToShip !== undefined ? (
+                      <button type="button" className="btn" onClick={onGoToShip}>
+                        {t('port.mine.openShip')}
+                      </button>
+                    ) : (
+                      <Link className="btn" to="/ship">
+                        {t('port.mine.openShip')}
+                      </Link>
+                    )}
+                  </>
+                )}
+              </div>
             )}
             <button
               type="button"

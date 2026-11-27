@@ -1818,6 +1818,8 @@
       "what": "Mande a nave cavar onde ela está. Ela cava em ticks de 5 minutos durante todo o tempo escolhido. O espaço de minério depende da carga para toda a viagem, seja qual for o tempo.",
       "noPay": "Sem pagamento adiantado: você vê o que foi extraído quando o trabalho termina.",
       "action": "Enviar a nave para minerar",
+      "blocked": "A nave ainda não pode garimpar",
+      "openShip": "Abrir a nave",
       "length": "Por quanto tempo cavar",
       "option": "até {{fuel}} de combustível",
       "fuel": "Cada tick cavado queima {{perTick}} de combustível: {{total}} nesta duração.",

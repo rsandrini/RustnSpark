@@ -708,6 +708,41 @@ describe('port (S10.9)', () => {
     expect(screen.queryByRole('tab', { name: 'Scavenging' })).toBeNull();
   });
 
+  it('a refused mining run says exactly why, next to the button, and offers the ship screen', async () => {
+    server.use(
+      http.post('/v1/locations/:id/mine', () =>
+        HttpResponse.json(
+          {
+            statusCode: 400,
+            message: {
+              error: 'SHIP_NOT_VIABLE',
+              problems: [
+                { code: 'HOLD_PARTS_OVER', message: 'Too many spare parts: 9 held, 8 carried.' },
+                { code: 'NO_CARGO_HOLD', message: 'Mining needs cargo space.' },
+              ],
+            },
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+    await renderPort();
+    openPortTab('Mining');
+    const mining = await screen.findByTestId('mining-job');
+    fireEvent.click(within(mining).getByRole('button', { name: 'Send the ship mining' }));
+
+    const blocked = await within(mining).findByRole('alert');
+    expect(blocked).toHaveClass('action-blocked');
+    expect(blocked).toHaveTextContent('The ship cannot go mining yet');
+    // the server's reasons, in the pilot's words
+    expect(within(blocked).getAllByRole('listitem')).toHaveLength(2);
+    expect(blocked).toHaveTextContent('Too many spare parts');
+    expect(blocked).toHaveTextContent(/cargo/i);
+    // the old catch-all that blamed the assembly is gone
+    expect(screen.queryByText(/fix the assembly first/i)).toBeNull();
+    expect(within(blocked).getByRole('button', { name: 'Open the ship' })).toBeInTheDocument();
+  });
+
   it('surfaces NOT_MINABLE from the server as a plain action error', async () => {
     server.use(
       http.post('/v1/locations/:id/mine', () =>

@@ -1818,6 +1818,8 @@
       "what": "Send the ship to dig where it sits. It digs in 5-minute ticks for the whole time you pick. Ore space is set by your cargo for the whole trip, whatever the time.",
       "noPay": "No pay up front: you see the haul when the job ends.",
       "action": "Send the ship mining",
+      "blocked": "The ship cannot go mining yet",
+      "openShip": "Open the ship",
       "length": "How long to dig",
       "option": "up to {{fuel}} fuel",
       "fuel": "Each tick it digs burns {{perTick}} fuel: {{total}} for this length.",

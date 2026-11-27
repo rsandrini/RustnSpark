@@ -815,3 +815,26 @@
     justify-content: flex-start;
   }
 }
+
+/* a refused action: the reasons, impossible to miss, right where the pilot pressed */
+.action-blocked {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 2px solid var(--bad);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--bad) 16%, var(--paper-2));
+  color: var(--ink);
+  font-size: var(--text-md, 16px);
+  overflow-wrap: anywhere;
+}
+.action-blocked strong {
+  color: var(--bad);
+}
+.action-blocked ul {
+  margin: 0;
+  padding-left: 20px;
+}
