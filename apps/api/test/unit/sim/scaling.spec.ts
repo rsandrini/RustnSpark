@@ -49,7 +49,12 @@ describe('parseScaling', () => {
   });
 
   it('accepts five-number axes', () => {
-    const scaling = parseScaling({ reward: [1, 1, 2, 2, 3], cargo: [1, 1, 1, 1, 1], firepower: [1, 1, 1, 1, 1], mobility: [1, 1, 1, 1, 1] });
+    const scaling = parseScaling({
+      reward: [1, 1, 2, 2, 3],
+      cargo: [1, 1, 1, 1, 1],
+      firepower: [1, 1, 1, 1, 1],
+      mobility: [1, 1, 1, 1, 1],
+    });
     expect(scaling.reward).toEqual([1, 1, 2, 2, 3]);
   });
 
@@ -88,7 +93,7 @@ describe('scaleOffer', () => {
     };
     const offer = offerWith({ cargo: 5, firepower: 2, mobility: 3, crew: 'nobody' });
     const scaled = scaleOffer(offer, scaling, 0);
-    expect(scaled.requirements).toEqual({ cargo: 10, firepower: 6, mobility: 12, crew: 'nobody' });    // The original is untouched — the hook never mutates the board's offer.
+    expect(scaled.requirements).toEqual({ cargo: 10, firepower: 6, mobility: 12, crew: 'nobody' }); // The original is untouched — the hook never mutates the board's offer.
     expect(offer.requirements).toEqual({ cargo: 5, firepower: 2, mobility: 3, crew: 'nobody' });
   });
 
@@ -106,7 +111,12 @@ describe('scaleOffer', () => {
 
 describe('rewardMultiplier', () => {
   it('is the entry for the bridge rarity, defaulting to the common entry', () => {
-    const scaling = parseScaling({ reward: [1, 1.5, 2, 2.5, 4], cargo: [1, 1, 1, 1, 1], firepower: [1, 1, 1, 1, 1], mobility: [1, 1, 1, 1, 1] });
+    const scaling = parseScaling({
+      reward: [1, 1.5, 2, 2.5, 4],
+      cargo: [1, 1, 1, 1, 1],
+      firepower: [1, 1, 1, 1, 1],
+      mobility: [1, 1, 1, 1, 1],
+    });
     expect(rewardMultiplier(scaling, 0)).toBe(1);
     expect(rewardMultiplier(scaling, 4)).toBe(4);
     expect(rewardMultiplier(scaling, 99)).toBe(1); // out of range -> common entry
@@ -115,8 +125,9 @@ describe('rewardMultiplier', () => {
 
 describe('missionContext + canTakeMission with scaling', () => {
   it('a doubled cargo requirement can refuse what the unscaled board allows', () => {
-    // Starter hold is 5 cargo: a requirement of 4 fits today and fails when doubled.
-    const offer = offerWith({ cargo: 4 });
+    // Starter hold is 5 cargo. A delivery flies a load above the hold in trips and is refused only when the hold is
+    // under a quarter of it: 12 is takeable today (minimum 3), 24 is not (minimum 6).
+    const offer = offerWith({ cargo: 12 });
     const state = starterPlayer(snapshot, 'luna');
     state.locationId = offer.originId;
     const doubling = {
@@ -127,7 +138,7 @@ describe('missionContext + canTakeMission with scaling', () => {
     };
     const base = missionContext(snapshot, NO_SCALING);
     const scaled = missionContext(snapshot, doubling);
-    // The starter at its origin with fuel in the tank takes the 4-cargo job today...
+    // The starter at its origin with fuel in the tank takes the 12-cargo job today...
     expect(canTakeMission(state, offer, base).ok).toBe(true);
     // ...and the same job is refused once the bridge table doubles the cargo ask.
     const check = canTakeMission(state, offer, scaled);
