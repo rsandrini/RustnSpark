@@ -163,7 +163,7 @@ export function contextFromLive(source: LiveContextSource): ResolutionContext {
     ...(source.type === 'MINING' && cargo['contracted'] !== true && (source.reward ?? 0) <= 0
       ? { unpaid: true }
       : {}),
-    ...(source.type === 'EXPLORE' && areaOf(cargo) > 0
+    ...(source.type === 'EXPLORE'
       ? {
           explore: {
             area: areaOf(cargo),
@@ -408,7 +408,7 @@ export function buildResolveInput(args: {
   return { seed: args.seed, snapshot: missionSnapshot, mission: missionInput, rules };
 }
 
-/** The radar-relevant view of the dispatch snapshot's parts (a part cut off from the grid does not count). */
+/** The radar-relevant view of the dispatch snapshot's parts (a part cut off from the grid does not count); keep in step with `scanSensorsOf`. */
 function scanSensorsOfSnapshot(snapshot: DispatchSnapshot): ScanSensor[] {
   return snapshot.parts.map((part) => ({
     partClass: part.catalog.partClass,

@@ -33,6 +33,7 @@ export const TEMPLATE_PLACEHOLDERS: Readonly<Record<string, readonly string[]>> 
   mining_paid: ['credits'],
   mining_partial_failure: ['credits'],
   explore_scanned: ['magnitude'],
+  explore_empty: [],
   explore_paid: ['credits'],
   explore_partial_failure: ['credits'],
   motor: PART_FAILURE,

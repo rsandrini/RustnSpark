@@ -37,6 +37,7 @@ describe('the seeded report wording', () => {
 describe('the explore report lines', () => {
   const EXPLORE = [
     ['explore_scanned', ['magnitude']],
+    ['explore_empty', []],
     ['explore_paid', ['credits']],
     ['explore_partial_failure', ['credits']],
   ] as const;

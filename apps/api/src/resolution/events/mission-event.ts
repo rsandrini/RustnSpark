@@ -41,6 +41,7 @@ export const MISSION_EVENT_TYPES = [
   'mining_paid',
   'mining_partial_failure',
   'explore_scanned',
+  'explore_empty',
   'explore_paid',
   'explore_partial_failure',
   'motor',

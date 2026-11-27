@@ -1099,6 +1099,8 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   // 6. Scan (EXPLORE, last leg). No luck roll and no rng: the planned ticks and the radar power
   // decide. The runtime power (a power shortage, worn parts) can only LOWER the area covered; the
   // time was planned once, at dispatch, with the full radar.
+  // The radar strength is frozen at dispatch condition (mining precedent): wear between legs does not lower
+  // the coverage, only the power share does.
   let scanned: number | undefined;
   if (input.context.scan != null) {
     const power = cruisePower === null ? 1 : successChance(cruisePower.byKind.sensor, rules);
@@ -1111,11 +1113,12 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     scanned = covered;
     const fuelBurned = scanFuel(ticksRun, ship.sheet.fuelUse, rules);
     if (fuelBurned > 0) ship = { ...ship, fuel: Math.max(0, ship.fuel - fuelBurned) };
+    // Nothing covered (a dark radar, no area): its own line, never "scan complete".
     events.push(
       missionEvent({
         leg: input.index,
         category: 'loot',
-        type: 'explore_scanned',
+        type: covered > 0 ? 'explore_scanned' : 'explore_empty',
         actors,
         magnitude: covered,
       }),

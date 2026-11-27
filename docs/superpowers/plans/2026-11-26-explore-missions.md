@@ -37,6 +37,7 @@
 12. No giver offers EXPLORE yet: no seeded weights and no `offer.EXPLORE` lines. The slot posts it without a giver and shows the template's description. `giver.picker` accepts the type, so the Admin can add weights later.
 13. Defaults are first guesses: `explore = { scan_k: 1.5, tick_seconds: 300, max_ticks: 12, fuel_per_tick: 25, unit_pay: 50, area_min: 40, area_max: 120 }`, `specialty.explore = { min_ratio: 0.05 }`, `economy.reward_type_bonus.explore = 1`.
 14. Owner: no retro-compat. Old offers are untouched, and nothing is migrated except the enum value.
+15. Tasks 5, 6 and 7 deploy together: until dispatch wires scanTicks (Task 6) and the contract/web know EXPLORE (Task 7), an explore offer would resolve with 1 tick and pay about a tenth; do not deploy or seed the EXPLORE templates to the dev/prod DB before Task 7 lands.
 
 ## Global Constraints
 

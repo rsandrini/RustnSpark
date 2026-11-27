@@ -77,6 +77,7 @@ Related to item 1 (missions follow the ship's specialty); plan them together. Ne
 - [ ] Others of the same kind (each subtype asks for the part that fits it, like mining asks for a drill).
 
 - **Decisions (owner, 2026-11-26) for explore, repair and fight: take the recommendations of `docs/superpowers/plans/2026-11-26-new-mission-types-options.md`** (explore with the radar the store sells, paid by the area; repair with a new Repair Rig part; fight as waves on site, a share of the pay below the target; build order explore, repair, fight). The owner wrote "okay?": confirm if any of the six questions needs another answer (the fee of item 11 on a fight contract is still open).
+- **Explore build status:** built across Tasks 1-8 of `docs/superpowers/plans/2026-11-26-explore-missions.md`; deploy together (Tasks 5, 6 and 7), not piecemeal.
 - **Tank cargo:** the owner asked for proposals; the plan is `docs/superpowers/plans/2026-11-26-tank-cargo-missions.md` (in progress).
 
 ### 5c. Review the map distances

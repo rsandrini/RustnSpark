@@ -49,6 +49,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   mining_paid: 'payment',
   mining_partial_failure: 'payment',
   explore_scanned: 'loot',
+  explore_empty: 'loot',
   explore_paid: 'payment',
   explore_partial_failure: 'payment',
   motor: 'failure',

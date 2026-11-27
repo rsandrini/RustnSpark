@@ -195,7 +195,11 @@ describe('the explore context and scanner', () => {
     };
     expect(contextFromLive({ ...source, reward: 900 }).explore).toEqual({ area: 60, pay: 900 });
     expect(contextFromLive({ ...source, reward: 0 }).explore).toEqual({ area: 60 });
-    expect(contextFromLive({ ...source, cargo: {} }).explore).toBeUndefined();
+    // bad cargo still marks the run as an explore (area 0 pays 0), never the generic payout
+    expect(contextFromLive({ ...source, cargo: {}, reward: 900 }).explore).toEqual({
+      area: 0,
+      pay: 900,
+    });
     expect(contextFromLive({ ...source, type: 'DELIVERY' }).explore).toBeUndefined();
   });
 

@@ -1194,13 +1194,36 @@ describe('the explore scan (last leg), paid by the share covered', () => {
     readonly fuelUse?: number;
     readonly withExplore?: boolean;
     readonly seed?: string;
+    /** Layered power: the ship's generation, against a radar that asks for 10. */
+    readonly supply?: number;
   }
+  const layered = (supply: number): Partial<MissionSnapshot> => ({
+    armor: 10,
+    parts: [
+      ...PARTS,
+      {
+        id: 'radar-p',
+        partClass: 'SENSOR',
+        providesEsc: false,
+        condition: 80,
+        power: { id: 'radar-p', kind: 'sensor', demand: 10, idle: 0, supply: 0 },
+      },
+      {
+        id: 'gen-p',
+        partClass: 'UTILITY',
+        providesEsc: false,
+        condition: 80,
+        power: { id: 'gen-p', kind: 'other', demand: 0, idle: 0, supply },
+      },
+    ],
+  });
   const scan = (options: ScanOptions = {}) => {
     const { area = 60, strength = 4, ticks = 10, zone = 1, fuelUse, withExplore = true } = options;
     return resolveMission({
       seed: options.seed ?? 'scan',
       snapshot: snapshot({
         sheet: { ...snapshot().sheet, ...(fuelUse === undefined ? {} : { fuelUse }) },
+        ...(options.supply === undefined ? {} : layered(options.supply)),
       }),
       mission: mission({
         type: 'EXPLORE',
@@ -1240,10 +1263,44 @@ describe('the explore scan (last leg), paid by the share covered', () => {
 
   it('a dead radar or an empty area scans nothing and pays nothing, without NaN', () => {
     for (const out of [scan({ strength: 0 }), scan({ area: 0 })]) {
-      expect(of(out, 'explore_scanned')[0]?.magnitude).toBe(0);
+      expect(of(out, 'explore_scanned')).toHaveLength(0);
+      expect(of(out, 'explore_empty')).toHaveLength(1);
+      expect(out.legs[2]?.scanned).toBe(0);
       expect(out.creditsDelta).toBe(0);
       expect(Number.isNaN(out.creditsDelta)).toBe(false);
+      expect(out.status).toBe('partial_failure');
+      expect(of(out, 'core_drop')).toHaveLength(0);
     }
+  });
+
+  it('a radar short of power covers less than at full power (the sensor share, not the rig)', () => {
+    const full = scan({ supply: 10 });
+    expect(of(full, 'explore_scanned')[0]?.magnitude).toBe(60);
+    // 80% of its need: 70% of the time, 4 x 1.5 x 0.7 = 4.2 per tick, 10 ticks = 42
+    const short = scan({ supply: 8 });
+    expect(of(short, 'explore_scanned')[0]?.magnitude).toBe(42);
+    expect(of(short, 'explore_partial_failure')[0]?.effects.credits).toBe(Math.round(PAY * 0.7));
+    expect(short.status).toBe('partial_failure');
+  });
+
+  it('a radar under the success curve covers nothing, burns every planned tick and pays 0', () => {
+    const full = scan({ supply: 10 });
+    const dark = scan({ supply: 4, zone: 3 });
+    expect(of(dark, 'explore_scanned')).toHaveLength(0);
+    expect(of(dark, 'explore_empty')).toHaveLength(1);
+    expect(dark.legs[2]?.scanned).toBe(0);
+    expect(of(dark, 'explore_partial_failure')[0]?.effects.credits).toBe(0);
+    expect(dark.creditsDelta).toBe(0);
+    expect(dark.status).toBe('partial_failure');
+    expect(of(dark, 'core_drop')).toHaveLength(0);
+    // the 10 planned ticks of fuel are burned all the same
+    expect(dark.fuel).toBe(full.fuel);
+  });
+
+  it('stops early when the area is covered: only the ticks run burn fuel', () => {
+    const planned12 = scan({ ticks: 12, fuelUse: 0.7 });
+    const none = scan({ ticks: 12, fuelUse: 0.7, withExplore: false });
+    expect(none.fuel - planned12.fuel).toBe(10 * rules.explore.fuel_per_tick);
   });
 
   it('scan fuel is burned for ticks run, ion ships burn none', () => {
