@@ -1,6 +1,6 @@
 {
   "name": "rust-and-spark",
-  "version": "0.1.4-a",
+  "version": "0.1.5",
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "engines": {

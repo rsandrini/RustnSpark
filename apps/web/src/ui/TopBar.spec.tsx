@@ -117,7 +117,7 @@ describe('TopBar', () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Account menu' }));
-    expect(await screen.findByTestId('app-version')).toHaveTextContent('v0.1.4-a');
+    expect(await screen.findByTestId('app-version')).toHaveTextContent('v0.1.5');
   });
 
   it('opens the report-a-problem dialog on the page body, not inside the top bar', async () => {
