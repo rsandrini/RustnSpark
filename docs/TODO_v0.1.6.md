@@ -127,6 +127,8 @@ Prices already depend on the relation of the player's faction to the place's fac
 
 ## 12. UI polish (owner: features first)
 
+- [ ] (owner, 2026-11-27) Remove the vibration (haptics) switch from the account menu; put it, with settings like it, in a sub-menu
+  of the Profile.
 - [ ] (owner, 2026-11-27, "I really hate that") Ship screen drag: remove the weight/resistance on a carried part. It follows the
   pointer exactly, with no lag or easing, mouse and touch.
 - [ ] (owner, 2026-11-27) Ship screen drop: releasing a carried part OUTSIDE the ship-drawing box removes it from the ship (back to
