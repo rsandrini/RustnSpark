@@ -127,6 +127,10 @@ Prices already depend on the relation of the player's faction to the place's fac
 
 ## 12. UI polish (owner: features first)
 
+- [ ] (owner, 2026-11-27, "I really hate that") Ship screen drag: remove the weight/resistance on a carried part. It follows the
+  pointer exactly, with no lag or easing, mouse and touch.
+- [ ] (owner, 2026-11-27) Ship screen drop: releasing a carried part OUTSIDE the ship-drawing box removes it from the ship (back to
+  the hold), not only when dropped on the discard area on the left.
 - [ ] (owner, 2026-11-27) Ship screen: let the pilot collapse the RIGHT column too, so the ship view gets the room (the other side
   can already be hidden); remember the choice like that one.
 - [ ] Goods rows: per-item Sell button names, a row total, a named group region.
