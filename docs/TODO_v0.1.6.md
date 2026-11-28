@@ -127,6 +127,8 @@ Prices already depend on the relation of the player's faction to the place's fac
 
 ## 12. UI polish (owner: features first)
 
+- [ ] (owner, 2026-11-27) Ship screen: let the pilot collapse the RIGHT column too, so the ship view gets the room (the other side
+  can already be hidden); remember the choice like that one.
 - [ ] Goods rows: per-item Sell button names, a row total, a named group region.
 - [ ] A larger touch area for the repair/refuel slider thumb; the TankChart target line and corner nits.
 - [ ] Help tips: a name per topic (all read "Help"), a 44x44 touch area.
